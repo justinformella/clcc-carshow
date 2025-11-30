@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Lake Cars and Coffee - May 17, 2026</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 1rem 0;
+            transition: all 0.3s ease;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        nav ul li {
+            margin: 0 1.5rem;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        nav ul li a:hover {
+            color: #ff4444;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="100" fill="rgba(255,255,255,0.03)">🚗</text></svg>');
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero .date {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .hero .location {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: #ff4444;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(255, 68, 68, 0.4);
+        }
+
+        /* Section Styles */
+        section {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: #333;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 1rem auto;
+        }
+
+        /* Event Details */
+        .event-details {
+            background: #f8f9fa;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .detail-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .detail-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Registration */
+        .registration {
+            background: white;
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .price-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .price-card.featured {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .price-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+
+        .price-features {
+            list-style: none;
+            margin: 2rem 0;
+        }
+
+        .price-features li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Parking Map */
+        .parking-map {
+            background: #f8f9fa;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .parking-zones {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .zone {
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .zone.show-cars { background: #4CAF50; }
+        .zone.spectator { background: #2196F3; }
+        .zone.vendor { background: #FF9800; }
+        .zone.vip { background: #9C27B0; }
+
+        /* Charity Section */
+        .charity {
+            background: white;
+            text-align: center;
+        }
+
+        .charity-info {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 3rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+        }
+
+        .charity-info h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .donation-goal {
+            font-size: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 65%;
+            transition: width 2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f5576c;
+            font-weight: bold;
+        }
+
+        /* Weather Policy */
+        .weather-policy {
+            background: #f8f9fa;
+        }
+
+        .weather-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .weather-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Sponsors */
+        .sponsors {
+            background: white;
+            text-align: center;
+        }
+
+        .sponsor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .sponsor-logo {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 10px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+
+        .sponsor-logo:hover {
+            transform: scale(1.05);
+        }
+
+        /* FAQ */
+        .faq {
+            background: #f8f9fa;
+        }
+
+        .faq-item {
+            background: white;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .faq-question {
+            padding: 1.5rem;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .faq-question:hover {
+            background: #f8f9fa;
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 200px;
+            padding: 1.5rem;
+        }
+
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Footer */
+        footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 3rem 20px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #667eea;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero .date {
+                font-size: 1.5rem;
+            }
+            
+            nav ul li {
+                margin: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#details">Event Details</a></li>
+            <li><a href="#registration">Registration</a></li>
+            <li><a href="#parking">Parking</a></li>
+            <li><a href="#charity">Charity</a></li>
+            <li><a href="#weather">Weather Policy</a></li>
+            <li><a href="#sponsors">Sponsors</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>Crystal Lake Cars and Coffee</h1>
+            <p class="date">May 17, 2026</p>
+            <p class="location">Downtown Crystal Lake, Illinois</p>
+            <a href="#registration" class="cta-button">Register Your Vehicle</a>
+        </div>
+    </section>
+
+    <!-- Event Details -->
+    <section class="event-details" id="details">
+        <h2 class="section-title">Event Details</h2>
+        <div class="details-grid">
+            <div class="detail-card">
+                <h3>📅 Schedule</h3>
+                <div class="schedule-item">
+                    <span>Gates Open (Participants)</span>
+                    <span>7:00 AM</span>
+                </div>
+                <div class="schedule-item">
+                    <span>Public Entry</span>
+                    <span>8:00 AM</span>
+                </div>
+                <div class="schedule-item">
+                    <span>Judging Begins</span>
+                    <span>10:00 AM</span>
+                </div>
+                <div class="schedule-item">
+                    <span>Awards Ceremony</span>
+                    <span>2:00 PM</span>
+                </div>
+                <div class="schedule-item">
+                    <span>Event Ends</span>
+                    <span>4:00 PM</span>
+                </div>
+            </div>
+            
+            <div class="detail-card">
+                <h3>🏆 Award Categories</h3>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>✓ Best in Show</li>
+                    <li>✓ People's Choice</li>
+                    <li>✓ Best Classic (Pre-1980)</li>
+                    <li>✓ Best Modern (Post-2010)</li>
+                    <li>✓ Best Muscle Car</li>
+                    <li>✓ Best Import</li>
+                    <li>✓ Best Restoration</li>
+                    <li>✓ Best Engine Bay</li>
+                </ul>
+            </div>
+            
+            <div class="detail-card">
+                <h3>🎪 Activities & Features</h3>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li>✓ Live DJ & Music</li>
+                    <li>✓ Food Trucks & Vendors</li>
+                    <li>✓ Kids Zone with Activities</li>
+                    <li>✓ Raffle Prizes</li>
+                    <li>✓ Professional Photography</li>
+                    <li>✓ Engine Rev Competition</li>
+                    <li>✓ Swap Meet Area</li>
+                    <li>✓ Coffee & Donuts</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Registration -->
+    <section class="registration" id="registration">
+        <h2 class="section-title">Registration & Pricing</h2>
+        <div class="pricing-cards">
+            <div class="price-card">
+                <h3>Early Bird</h3>
+                <p class="price">$25</p>
+                <p>Register by April 1st</p>
+                <ul class="price-features">
+                    <li>Prime parking spot</li>
+                    <li>Event t-shirt</li>
+                    <li>Goodie bag</li>
+                    <li>Judging entry</li>
+                    <li>Dash plaque</li>
+                </ul>
+            </div>
+            
+            <div class="price-card featured">
+                <h3>Standard</h3>
+                <p class="price">$35</p>
+                <p>Register by May 10th</p>
+                <ul class="price-features">
+                    <li>Reserved parking spot</li>
+                    <li>Event t-shirt</li>
+                    <li>Goodie bag</li>
+                    <li>Judging entry</li>
+                    <li>Dash plaque</li>
+                </ul>
+            </div>
+            
+            <div class="price-card">
+                <h3>Day-Of</h3>
+                <p class="price">$45</p>
+                <p>Limited availability</p>
+                <ul class="price-features">
+                    <li>Parking (if available)</li>
+                    <li>Judging entry</li>
+                    <li>Dash plaque</li>
+                    <li>-</li>
+                    <li>-</li>
+                </ul>
+            </div>
+        </div>
+        <p style="text-align: center; margin-top: 2rem; color: #666;">
+            Spectator entry is FREE! Food and merchandise available for purchase.
+        </p>
+    </section>
+
+    <!-- Parking Map -->
+    <section class="parking-map" id="parking">
+        <h2 class="section-title">Parking Arrangement</h2>
+        <div class="map-container">
+            <p style="text-align: center; margin-bottom: 2rem;">
+                Downtown Crystal Lake will be closed to regular traffic from 6:00 AM to 5:00 PM
+            </p>
+            <div class="parking-zones">
+                <div class="zone show-cars">
+                    <h4>Zone A</h4>
+                    <p>Show Cars</p>
+                    <p>Main Street</p>
+                </div>
+                <div class="zone show-cars">
+                    <h4>Zone B</h4>
+                    <p>Show Cars</p>
+                    <p>Williams Street</p>
+                </div>
+                <div class="zone vip">
+                    <h4>Zone C</h4>
+                    <p>VIP/Featured</p>
+                    <p>Town Square</p>
+                </div>
+                <div class="zone spectator">
+                    <h4>Zone D</h4>
+                    <p>Spectator Parking</p>
+                    <p>Municipal Lot</p>
+                </div>
+                <div class="zone vendor">
+                    <h4>Zone E</h4>
+                    <p>Vendor Area</p>
+                    <p>Dole Avenue</p>
+                </div>
+                <div class="zone spectator">
+                    <h4>Zone F</h4>
+                    <p>Overflow Parking</p>
+                    <p>Train Station Lot</p>
+                </div>
+            </div>
+            <p style="margin-top: 2rem; text-align: center; color: #666;">
+                Free shuttle service available from overflow parking every 15 minutes.
+            </p>
+        </div>
+    </section>
+
+    <!-- Charity Section -->
+    <section class="charity" id="charity">
+        <h2 class="section-title">Supporting Our Community</h2>
+        <div class="charity-info">
+            <h3>Crystal Lake Food Pantry</h3>
+            <p style="margin: 1rem 0;">
+                All proceeds from this event will benefit the Crystal Lake Food Pantry, 
+                helping to provide meals for families in need throughout McHenry County.
+            </p>
+            <div class="donation-goal">
+                Goal: $50,000 | Raised: $32,500
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill">65%</div>
+            </div>
+            <p style="margin-top: 2rem;">
+                Additional donations accepted at registration. All donors receive a special recognition decal.
+            </p>
+        </div>
+    </section>
+
+    <!-- Weather Policy -->
+    <section class="weather-policy" id="weather">
+        <h2 class="section-title">Weather & Rain Policy</h2>
+        <div class="weather-card">
+            <div style="text-align: center;">
+                <div class="weather-icon">🌧️</div>
+                <h3 style="color: #667eea; margin-bottom: 1rem;">Rain or Shine Event</h3>
+            </div>
+            <p style="margin-bottom: 1rem;">
+                <strong>Light Rain:</strong> The show goes on! We're car enthusiasts - a little water won't stop us.
+            </p>
+            <p style="margin-bottom: 1rem;">
+                <strong>Heavy Rain/Storms:</strong> If severe weather is forecasted, the event will be postponed to the following Sunday, May 24th, 2026.
+            </p>
+            <p style="margin-bottom: 1rem;">
+                <strong>Decision Timeline:</strong> Weather decisions will be made by 6:00 PM on Friday, May 15th and announced via:
+            </p>
+            <ul style="margin-left: 2rem;">
+                <li>Our website and social media channels</li>
+                <li>Email to all registered participants</li>
+                <li>Local radio stations (WZSR 105.5 FM)</li>
+            </ul>
+            <p style="margin-top: 1rem;">
+                <strong>Refund Policy:</strong> If the event is cancelled entirely (not postponed), full refunds will be issued within 10 business days.
+            </p>
+        </div>
+    </section>
+
+    <!-- Sponsors -->
+    <section class="sponsors" id="sponsors">
+        <h2 class="section-title">Our Sponsors</h2>
+        <p style="text-align: center; margin-bottom: 2rem; color: #666;">
+            Thank you to our generous sponsors who make this event possible
+        </p>
+        <div class="sponsor-grid">
+            <div class="sponsor-logo">
+                <h4>Crystal Lake<br>Auto Group</h4>
+            </div>
+            <div class="sponsor-logo">
+                <h4>Mike's<br>Speed Shop</h4>
+            </div>
+            <div class="sponsor-logo">
+                <h4>Premier<br>Auto Detail</h4>
+            </div>
+            <div class="sponsor-logo">
+                <h4>Classic<br>Insurance Co.</h4>
+            </div>
+            <div class="sponsor-logo">
+                <h4>Joe's<br>Coffee House</h4>
+            </div>
+            <div class="sponsor-logo">
+                <h4>Crystal Lake<br>Chamber</h4>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq" id="faq">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>What types of vehicles can participate?</span>
+                <span class="faq-icon">▼</span>
+            </div>
+            <div class="faq-answer">
+                All vehicles are welcome! Classic cars, modern sports cars, muscle cars, imports, trucks, motorcycles, and anything with wheels that you're proud of. We celebrate all automotive enthusiasm!
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Can I leave early if needed?</span>
+                <span class="faq-icon">▼</span>
+            </div>
+            <div class="faq-answer">
+                For safety reasons, we ask that all show vehicles remain in place until 2:00 PM. Emergency exits are available if absolutely necessary. Please inform staff if you need to leave early.
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Are pets allowed at the event?</span>
+                <span class="faq-icon">▼</span>
+            </div>
+            <div class="faq-answer">
+                Leashed pets are welcome! Please keep them under control and clean up after them. Water stations for pets will be available throughout the venue.
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Is there handicap accessibility?</span>
+                <span class="faq-icon">▼</span>
+            </div>
+            <div class="faq-answer">
+                Yes! We have designated handicap parking areas close to the show field, and all areas of the event are wheelchair accessible. Golf cart shuttles are also available for those who need assistance.
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Can I sell parts or merchandise?</span>
+                <span class="faq-icon">▼</span>
+            </div>
+            <div class="faq-answer">
+                Yes, we have a designated swap meet area. Vendor spots are $50 and include a 10x10 space. Please register as a vendor in advance. No selling from show car spots please.
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="#">Facebook</a>
+            <a href="#">Instagram</a>
+            <a href="#">Contact Us</a>
+            <a href="#">Terms & Conditions</a>
+        </div>
+        <p>© 2026 Crystal Lake Cars and Coffee. All rights reserved.</p>
+        <p style="margin-top: 1rem; color: #999;">
+            For questions, email us at info@clcarsandcoffee.com or call (815) 555-CARS
+        </p>
+    </footer>
+
+    <script>
+        // FAQ Toggle
+        function toggleFaq(element) {
+            const faqItem = element.parentElement;
+            faqItem.classList.toggle('active');
+        }
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar background on scroll
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 100) {
+                nav.style.background = 'rgba(0, 0, 0, 0.98)';
+            } else {
+                nav.style.background = 'rgba(0, 0, 0, 0.95)';
+            }
+        });
+
+        // Animate progress bar when visible
+        const observerOptions = {
+            threshold: 0.5
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const progressFill = entry.target.querySelector('.progress-fill');
+                    if (progressFill) {
+                        progressFill.style.width = '65%';
+                    }
+                }
+            });
+        }, observerOptions);
+
+        const charitySection = document.querySelector('.charity-info');
+        if (charitySection) {
+            observer.observe(charitySection);
+        }
+    </script>
+</body>
+</html>
