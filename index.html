@@ -994,7 +994,7 @@
 
         .progress-fill {
             height: 100%;
-            width: 65%;
+            width: 0%;
             background: var(--gold);
             transition: width 1.5s ease;
         }
@@ -1429,37 +1429,6 @@
         </div>
     </section>
 
-    <!-- Photo Gallery -->
-    <section class="gallery">
-        <div class="gallery-header">
-            <span class="section-label">From Previous Years</span>
-            <h2 class="section-title">Gallery</h2>
-        </div>
-        <div class="gallery-grid">
-            <div class="gallery-item large">
-                <img src="images/PXL_20250831_173006625.jpg" alt="Classic Jaguar XK at Crystal Lake Cars and Coffee">
-            </div>
-            <div class="gallery-item">
-                <img src="images/PXL_20250831_160924653.jpg" alt="Ferrari California at car show">
-            </div>
-            <div class="gallery-item">
-                <img src="images/PXL_20250831_161026331.jpg" alt="Classic hot rod">
-            </div>
-            <div class="gallery-item">
-                <img src="images/PXL_20250831_160203006.jpg" alt="Mazda Miata at downtown Crystal Lake">
-            </div>
-            <div class="gallery-item">
-                <img src="images/PXL_20250831_155601203.jpg" alt="Street view of car show">
-            </div>
-            <div class="gallery-item">
-                <img src="images/PXL_20250831_155721458.jpg" alt="Downtown Crystal Lake with cars">
-            </div>
-            <div class="gallery-item">
-                <img src="images/PXL_20250831_173144069.jpg" alt="Classic car detail">
-            </div>
-        </div>
-    </section>
-
     <!-- Schedule & Awards -->
     <section class="schedule" id="schedule">
         <div class="section-inner">
@@ -1679,11 +1648,11 @@
                 <div class="charity-stats">
                     <div class="charity-stat">
                         <p class="charity-stat-label">2026 Goal</p>
-                        <p class="charity-stat-value">$50,000</p>
+                        <p class="charity-stat-value">$5,000</p>
                     </div>
                     <div class="charity-stat">
                         <p class="charity-stat-label">Raised To Date</p>
-                        <p class="charity-stat-value">$32,500</p>
+                        <p class="charity-stat-value">$0</p>
                     </div>
                 </div>
 
@@ -1691,7 +1660,7 @@
                     <div class="progress-bar">
                         <div class="progress-fill"></div>
                     </div>
-                    <p class="progress-label">65% of goal reached</p>
+                    <p class="progress-label">0% of goal reached</p>
                 </div>
 
                 <p style="margin-top: 2rem; color: var(--text-light); font-size: 0.95rem;">Additional donations accepted at registration. All donors receive special recognition.</p>
@@ -1838,6 +1807,37 @@
         </div>
     </section>
 
+    <!-- Photo Gallery -->
+    <section class="gallery">
+        <div class="gallery-header">
+            <span class="section-label">From Previous Years</span>
+            <h2 class="section-title">Gallery</h2>
+        </div>
+        <div class="gallery-grid">
+            <div class="gallery-item large">
+                <img src="images/PXL_20250831_173006625.jpg" alt="Classic Jaguar XK at Crystal Lake Cars and Caffeine">
+            </div>
+            <div class="gallery-item">
+                <img src="images/PXL_20250831_160924653.jpg" alt="Ferrari California at car show">
+            </div>
+            <div class="gallery-item">
+                <img src="images/PXL_20250831_161026331.jpg" alt="Classic hot rod">
+            </div>
+            <div class="gallery-item">
+                <img src="images/PXL_20250831_160203006.jpg" alt="Mazda Miata at downtown Crystal Lake">
+            </div>
+            <div class="gallery-item">
+                <img src="images/PXL_20250831_155601203.jpg" alt="Street view of car show">
+            </div>
+            <div class="gallery-item">
+                <img src="images/PXL_20250831_155721458.jpg" alt="Downtown Crystal Lake with cars">
+            </div>
+            <div class="gallery-item">
+                <img src="images/PXL_20250831_173144069.jpg" alt="Classic car detail">
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer>
         <div class="footer-inner">
@@ -1937,7 +1937,7 @@
                 if (entry.isIntersecting) {
                     const fill = entry.target.querySelector('.progress-fill');
                     if (fill) {
-                        fill.style.width = '65%';
+                        fill.style.width = '0%';
                     }
                 }
             });
