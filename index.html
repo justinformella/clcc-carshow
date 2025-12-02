@@ -1420,13 +1420,54 @@
         }
 
         @media (max-width: 768px) {
+            .hero {
+                min-height: 100vh;
+                min-height: 100dvh;
+                padding-top: 80px;
+            }
+
+            .hero-content {
+                padding: 0 1.5rem;
+            }
+
+            .hero-badge {
+                font-size: 0.65rem;
+                padding: 0.5rem 1rem;
+                margin-bottom: 1.5rem;
+                letter-spacing: 0.15em;
+            }
+
             .hero h1 {
-                font-size: 2.5rem;
+                font-size: 2rem;
+                line-height: 1.2;
+                margin-bottom: 1rem;
             }
 
             .hero-date {
-                font-size: 1.8rem;
-                padding: 0.4rem 1rem;
+                font-size: 1.4rem;
+                padding: 0.3rem 0.8rem;
+                margin-bottom: 1rem;
+            }
+
+            .hero-location {
+                font-size: 0.75rem;
+                letter-spacing: 0.15em;
+                margin-bottom: 2rem;
+                line-height: 1.6;
+            }
+
+            .hero-cta {
+                padding: 1rem 2rem;
+                font-size: 0.75rem;
+            }
+
+            .scroll-indicator {
+                bottom: 1.5rem;
+                font-size: 0.6rem;
+            }
+
+            .scroll-indicator::after {
+                height: 25px;
             }
 
             .highlights-grid,
