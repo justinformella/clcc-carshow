@@ -785,6 +785,84 @@
             color: var(--white);
         }
 
+        /* Sponsorship Form */
+        .sponsor-form {
+            max-width: 500px;
+            margin: 2rem auto 0;
+            text-align: left;
+        }
+
+        .sponsor-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .sponsor-form .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .sponsor-form label {
+            display: block;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .sponsor-form input,
+        .sponsor-form select,
+        .sponsor-form textarea {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: var(--text-dark);
+            background: var(--white);
+            transition: border-color 0.3s;
+        }
+
+        .sponsor-form input:focus,
+        .sponsor-form select:focus,
+        .sponsor-form textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .sponsor-form textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .sponsor-form button {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: var(--gold);
+            color: var(--charcoal);
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sponsor-form button:hover {
+            background: var(--charcoal);
+            color: var(--white);
+        }
+
+        @media (max-width: 600px) {
+            .sponsor-form .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Vendor Booths */
         .vendor-booths {
             background: var(--cream);
@@ -1570,7 +1648,46 @@
             <div class="sponsor-cta">
                 <h3>Become a Sponsor</h3>
                 <p>Join us in supporting the automotive community and Crystal Lake Food Pantry</p>
-                <a href="#" class="sponsor-cta-btn">Sponsorship Opportunities</a>
+
+                <form class="sponsor-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sponsor-name">Name</label>
+                            <input type="text" id="sponsor-name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sponsor-company">Company</label>
+                            <input type="text" id="sponsor-company" name="company" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sponsor-email">Email</label>
+                            <input type="email" id="sponsor-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sponsor-phone">Phone</label>
+                            <input type="tel" id="sponsor-phone" name="phone">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="sponsor-level">Sponsorship Level of Interest</label>
+                        <select id="sponsor-level" name="sponsorship_level">
+                            <option value="">Select a level...</option>
+                            <option value="Title Sponsor">Title Sponsor</option>
+                            <option value="Platinum Sponsor">Platinum Sponsor</option>
+                            <option value="Gold Sponsor">Gold Sponsor</option>
+                            <option value="Vendor Booth">Vendor Booth ($500)</option>
+                            <option value="Other">Other / Not Sure</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sponsor-message">Message (Optional)</label>
+                        <textarea id="sponsor-message" name="message" placeholder="Tell us about your business or any questions you have..."></textarea>
+                    </div>
+                    <input type="hidden" name="_subject" value="CLCC Sponsorship Inquiry">
+                    <button type="submit">Submit Inquiry</button>
+                </form>
             </div>
         </div>
     </section>
