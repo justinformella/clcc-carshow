@@ -667,6 +667,65 @@
             color: var(--text-light);
         }
 
+        /* Spectator Banner */
+        .spectator-banner {
+            background: var(--gold);
+            padding: 4rem 3rem;
+            text-align: center;
+        }
+
+        .spectator-banner h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+        }
+
+        .spectator-banner .free-badge {
+            display: inline-block;
+            background: var(--charcoal);
+            color: var(--white);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            padding: 0.5rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .spectator-banner p {
+            font-size: 1.15rem;
+            color: var(--charcoal);
+            max-width: 700px;
+            margin: 0 auto 1rem;
+            line-height: 1.8;
+        }
+
+        .spectator-features {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .spectator-feature {
+            text-align: center;
+        }
+
+        .spectator-feature-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .spectator-feature-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--charcoal);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
         /* Sponsors Section */
         .sponsors {
             background: var(--white);
@@ -1448,8 +1507,7 @@
                         <li>Be part of a great community event</li>
                         <li>Support a local charity</li>
                     </ul>
-                    <p style="color: var(--text-light); font-size: 0.95rem; margin-top: 2rem;">Spectator entry is <strong>FREE</strong>. Food and merchandise available for purchase.</p>
-                </div>
+                    </div>
                 <div class="registration-card">
                     <p class="registration-card-label">Show Participant</p>
                     <h3>Vehicle Entry</h3>
@@ -1458,6 +1516,31 @@
                     <a href="#" class="registration-btn">Register Now</a>
                     <p class="registration-note">Limited to 200 vehicles. Registration closes May 15th or when sold out. All vehicles welcome.</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Spectator Banner -->
+    <section class="spectator-banner">
+        <div class="free-badge">Free Admission</div>
+        <h2>Just Here to Look?</h2>
+        <p>No registration needed! Bring the whole family and spend the day in historic downtown Crystal Lake. Enjoy amazing cars, local restaurants, unique shops, and small-town charm.</p>
+        <div class="spectator-features">
+            <div class="spectator-feature">
+                <div class="spectator-feature-icon">&#127860;</div>
+                <div class="spectator-feature-text">Local Dining</div>
+            </div>
+            <div class="spectator-feature">
+                <div class="spectator-feature-icon">&#128717;</div>
+                <div class="spectator-feature-text">Unique Shops</div>
+            </div>
+            <div class="spectator-feature">
+                <div class="spectator-feature-icon">&#128664;</div>
+                <div class="spectator-feature-text">200+ Cars</div>
+            </div>
+            <div class="spectator-feature">
+                <div class="spectator-feature-icon">&#128106;</div>
+                <div class="spectator-feature-text">Family Friendly</div>
             </div>
         </div>
     </section>
