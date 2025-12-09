@@ -923,156 +923,9 @@
             }
         }
 
-        /* Vendor Booths */
-        .vendor-booths {
-            background: var(--cream);
-        }
-
-        .vendor-grid {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 5rem;
-            align-items: start;
-        }
-
-        .vendor-content h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .vendor-content > p {
-            color: var(--text-light);
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            line-height: 1.8;
-        }
-
-        .vendor-details {
-            background: var(--white);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .vendor-detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-        }
-
-        .vendor-detail-row:last-child {
-            border-bottom: none;
-        }
-
-        .vendor-detail-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-light);
-        }
-
-        .vendor-detail-value {
-            font-weight: 500;
-            color: var(--charcoal);
-        }
-
-        .vendor-detail-value.price {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-        }
-
-        .vendor-benefits h3 {
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .vendor-benefits ul {
-            list-style: none;
-        }
-
-        .vendor-benefits li {
-            padding: 0.8rem 0;
-            padding-left: 1.5rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            color: var(--text-dark);
-            position: relative;
-        }
-
-        .vendor-benefits li::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 6px;
-            height: 6px;
-            background: var(--gold);
-        }
-
-        .vendor-card {
-            background: var(--charcoal);
-            color: var(--white);
-            padding: 3rem;
-            position: sticky;
-            top: 120px;
-        }
-
-        .vendor-card h3 {
-            color: var(--white);
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .vendor-card p {
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 2rem;
-            line-height: 1.7;
-        }
-
-        .vendor-contact {
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 2rem;
-        }
-
-        .vendor-contact-name {
-            font-weight: 500;
-            margin-bottom: 0.3rem;
-        }
-
-        .vendor-contact-title {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-        }
-
-        .vendor-contact-detail {
-            margin-top: 0.5rem;
-            font-size: 0.95rem;
-        }
-
-        .vendor-btn {
-            display: block;
-            width: 100%;
-            padding: 1.2rem 2rem;
-            background: var(--gold);
-            color: var(--charcoal);
-            text-decoration: none;
-            text-align: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            transition: all 0.3s;
-        }
-
-        .vendor-btn:hover {
-            background: var(--gold-light);
-        }
-
         /* Charity Section */
         .charity {
-            background: var(--charcoal);
+            background: linear-gradient(135deg, #2D5016 0%, #1a3009 100%);
             color: var(--white);
             position: relative;
             overflow: hidden;
@@ -1085,7 +938,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A962' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             opacity: 0.5;
         }
 
@@ -1450,8 +1303,7 @@
             }
 
             .intro-grid,
-            .registration-wrapper,
-            .vendor-grid {
+            .registration-wrapper {
                 grid-template-columns: 1fr;
                 gap: 3rem;
             }
@@ -1474,8 +1326,7 @@
                 gap: 3rem;
             }
 
-            .registration-card,
-            .vendor-card {
+            .registration-card {
                 position: static;
             }
         }
@@ -1568,7 +1419,6 @@
                     <li><a href="#about">About</a></li>
                     <li><a href="#schedule">Schedule</a></li>
                     <li><a href="#sponsors">Sponsors</a></li>
-                    <li><a href="#vendors">Vendors</a></li>
                     <li><a href="#faq">FAQ</a></li>
                     <li><a href="#registration" class="nav-cta">Register</a></li>
                 </ul>
@@ -1745,7 +1595,7 @@
                 <div class="highlight-card">
                     <div class="highlight-icon">&#9832;</div>
                     <h3>Food &amp; Coffee</h3>
-                    <p>Over 20 food vendors offering gourmet food trucks, local favorites, and specialty coffee to fuel your day of automotive appreciation.</p>
+                    <p>Gourmet food trucks, local restaurant favorites, and specialty coffee from downtown shops to fuel your day of automotive appreciation.</p>
                 </div>
                 <div class="highlight-card">
                     <div class="highlight-icon">&#9875;</div>
@@ -1809,59 +1659,6 @@
         </div>
     </section>
 
-    <!-- Vendor Booths -->
-    <section class="vendor-booths" id="vendors">
-        <div class="section-inner">
-            <div class="vendor-grid">
-                <div class="vendor-content">
-                    <span class="section-label">Exhibit With Us</span>
-                    <h2>Vendor Booth Sponsorship</h2>
-                    <p>Showcase your business at CLCC 2026. We are offering 15 premium 10x10 booth spaces in the heart of downtown Crystal Lake, providing direct access to over 6,000 car enthusiasts and local residents.</p>
-
-                    <div class="vendor-details">
-                        <div class="vendor-detail-row">
-                            <span class="vendor-detail-label">Booth Size</span>
-                            <span class="vendor-detail-value">10 × 10 feet</span>
-                        </div>
-                        <div class="vendor-detail-row">
-                            <span class="vendor-detail-label">Investment</span>
-                            <span class="vendor-detail-value price">$500</span>
-                        </div>
-                        <div class="vendor-detail-row">
-                            <span class="vendor-detail-label">Available</span>
-                            <span class="vendor-detail-value">15 Booths Only</span>
-                        </div>
-                        <div class="vendor-detail-row">
-                            <span class="vendor-detail-label">Priority Deadline</span>
-                            <span class="vendor-detail-value">April 1, 2026</span>
-                        </div>
-                    </div>
-
-                    <div class="vendor-benefits">
-                        <h3>What's Included</h3>
-                        <ul>
-                            <li>Prime location on Brink Street parking lot</li>
-                            <li>Full freedom to sell products and services</li>
-                            <li>One complimentary vehicle registration ($30 value)</li>
-                            <li>Promotional materials in 200+ participant bags</li>
-                            <li>Business name on all event marketing materials</li>
-                            <li>Website, social media, and email recognition</li>
-                            <li>Direct access to 6,000+ potential customers</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="vendor-card">
-                    <h3>Reserve Your Booth</h3>
-                    <p>CLCC members and registered participants get priority access. After April 1st, remaining booths will be offered to the general public.</p>
-                    <p style="margin-top: 1.5rem;">Fill out the inquiry form below and someone from our team will reach out to discuss your booth reservation.</p>
-
-                    <a href="#sponsors" class="vendor-btn">Inquire About a Booth</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Sponsors -->
     <section class="sponsors" id="sponsors">
         <div class="section-inner">
@@ -1920,7 +1717,6 @@
                             <option value="">Select a level...</option>
                             <option value="Platinum Sponsor ($2,000)">Platinum Sponsor ($2,000)</option>
                             <option value="Gold Sponsor ($500)">Gold Sponsor ($500)</option>
-                            <option value="Vendor Booth ($500)">Vendor Booth ($500)</option>
                             <option value="Other">Other / Not Sure</option>
                         </select>
                     </div>
@@ -2010,15 +1806,6 @@
                 </div>
                 <div class="faq-item">
                     <div class="faq-question" onclick="toggleFaq(this)">
-                        <span>Can I sell parts or merchandise?</span>
-                        <span class="faq-icon">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        <div class="faq-answer-inner">Yes, we have a designated swap meet area. Vendor spots are $50 and include a 10x10 space. Please register as a vendor in advance through our website. Selling from show car spots is not permitted to maintain the quality of the show field.</div>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
                         <span>Is pre-registration required?</span>
                         <span class="faq-icon">+</span>
                     </div>
@@ -2082,7 +1869,6 @@
                     <h4>Partners</h4>
                     <ul>
                         <li><a href="#sponsors">Sponsors</a></li>
-                        <li><a href="#vendors">Vendor Booths</a></li>
                         <li><a href="#">Volunteer</a></li>
                     </ul>
                 </div>
