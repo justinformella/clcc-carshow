@@ -1072,75 +1072,132 @@
 
         /* Charity Section */
         .charity {
-            background: var(--white);
-            text-align: center;
-        }
-
-        .charity-content {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .charity h3 {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .charity p {
-            color: var(--text-light);
-            font-size: 1.1rem;
-            line-height: 1.9;
-            margin-bottom: 2rem;
-        }
-
-        .charity-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 3rem;
-            margin: 3rem 0;
-        }
-
-        .charity-stat {
-            padding: 2rem;
-            background: var(--cream);
-        }
-
-        .charity-stat-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            color: var(--text-light);
-            margin-bottom: 0.5rem;
-        }
-
-        .charity-stat-value {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            color: var(--charcoal);
-        }
-
-        .progress-container {
-            margin-top: 2rem;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #2D5016 0%, #1a3009 100%);
+            color: var(--white);
+            position: relative;
             overflow: hidden;
         }
 
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background: var(--gold);
-            transition: width 1.5s ease;
+        .charity::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
         }
 
-        .progress-label {
-            margin-top: 0.5rem;
+        .charity .section-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .charity .section-label {
+            color: var(--gold);
+        }
+
+        .charity .section-title {
+            color: var(--white);
+        }
+
+        .charity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5rem;
+            align-items: center;
+        }
+
+        .charity-main h3 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            color: var(--white);
+        }
+
+        .charity-main > p {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1.1rem;
+            line-height: 1.9;
+            margin-bottom: 1.5rem;
+        }
+
+        .charity-goal {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .charity-goal-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .charity-goal-amount {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: var(--white);
+        }
+
+        .charity-impact {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .impact-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .impact-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-3px);
+        }
+
+        .impact-number {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .impact-label {
             font-size: 0.85rem;
-            color: var(--text-light);
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        .charity-cta {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @media (max-width: 900px) {
+            .charity-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+            .charity-impact {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 500px) {
+            .charity-impact {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Parking Section */
@@ -1534,30 +1591,43 @@
         </div>
     </section>
 
-    <!-- Registration -->
-    <section class="registration" id="registration">
+    <!-- Charity -->
+    <section class="charity" id="charity">
         <div class="section-inner">
-            <div class="registration-wrapper">
-                <div class="registration-info">
-                    <span class="section-label">Join Us</span>
-                    <h2>Vehicle Registration</h2>
-                    <p>Secure your spot at the 2026 Crystal Lake Cars &amp; Caffeine. Space is limited to the first 200 cars. If space is available on event day, on-site registration will be available.</p>
-                    <ul class="registration-features">
-                        <li>Reserved parking spot in prime downtown location</li>
-                        <li>Entry into all award categories</li>
-                        <li>Be part of a great community event</li>
-                        <li>Support a local charity</li>
-                    </ul>
+            <div class="section-header">
+                <span class="section-label">Our Cause</span>
+                <h2 class="section-title">Driving Out Hunger</h2>
+            </div>
+            <div class="charity-grid">
+                <div class="charity-main">
+                    <h3>Crystal Lake Food Pantry</h3>
+                    <p>Every registration, every sponsorship, and every dollar raised goes directly to the Crystal Lake Food Pantry. Since 1983, they've been the safety net for families facing food insecurity in McHenry County.</p>
+                    <p>In our community, 1 in 8 people struggle with hunger. The Food Pantry serves over 800 families each month, providing nutritious food with dignity and compassion. Your participation in this car show helps stock their shelves and fill empty plates.</p>
+                    <div class="charity-goal">
+                        <p class="charity-goal-label">2026 Fundraising Goal</p>
+                        <p class="charity-goal-amount">$10,000</p>
                     </div>
-                <div class="registration-card">
-                    <p class="registration-card-label">Show Participant</p>
-                    <h3>Vehicle Entry</h3>
-                    <p class="registration-price">$30</p>
-                    <p class="registration-price-note">Per Vehicle</p>
-                    <a href="#" class="registration-btn">Register Now</a>
-                    <p class="registration-note">Limited to 200 vehicles. Registration fees are non-refundable. All registered participants will receive event details via email prior to the show.</p>
+                </div>
+                <div class="charity-impact">
+                    <div class="impact-card">
+                        <p class="impact-number">800+</p>
+                        <p class="impact-label">Families served monthly</p>
+                    </div>
+                    <div class="impact-card">
+                        <p class="impact-number">40+</p>
+                        <p class="impact-label">Years serving McHenry County</p>
+                    </div>
+                    <div class="impact-card">
+                        <p class="impact-number">50K+</p>
+                        <p class="impact-label">Families helped since 1983</p>
+                    </div>
+                    <div class="impact-card">
+                        <p class="impact-number">100%</p>
+                        <p class="impact-label">Net proceeds donated</p>
+                    </div>
                 </div>
             </div>
+            <p class="charity-cta">Every car registered helps feed local families. Additional donations welcome at check-in.</p>
         </div>
     </section>
 
@@ -1582,6 +1652,33 @@
             <div class="spectator-feature">
                 <div class="spectator-feature-icon">&#128106;</div>
                 <div class="spectator-feature-text">Family Friendly</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Registration -->
+    <section class="registration" id="registration">
+        <div class="section-inner">
+            <div class="registration-wrapper">
+                <div class="registration-info">
+                    <span class="section-label">Join Us</span>
+                    <h2>Vehicle Registration</h2>
+                    <p>Secure your spot at the 2026 Crystal Lake Cars &amp; Caffeine. Space is limited to the first 200 cars. If space is available on event day, on-site registration will be available.</p>
+                    <ul class="registration-features">
+                        <li>Reserved parking spot in prime downtown location</li>
+                        <li>Entry into all award categories</li>
+                        <li>Be part of a great community event</li>
+                        <li>Support a local charity</li>
+                    </ul>
+                    </div>
+                <div class="registration-card">
+                    <p class="registration-card-label">Show Participant</p>
+                    <h3>Vehicle Entry</h3>
+                    <p class="registration-price">$30</p>
+                    <p class="registration-price-note">Per Vehicle</p>
+                    <a href="#" class="registration-btn">Register Now</a>
+                    <p class="registration-note">Limited to 200 vehicles. Registration fees are non-refundable. All registered participants will receive event details via email prior to the show.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -1830,40 +1927,6 @@
                     <input type="hidden" name="_subject" value="CLCC Sponsorship Inquiry">
                     <button type="submit">Submit Inquiry</button>
                 </form>
-            </div>
-        </div>
-    </section>
-
-    <!-- Charity -->
-    <section class="charity">
-        <div class="section-inner">
-            <div class="section-header">
-                <span class="section-label">Giving Back</span>
-                <h2 class="section-title">Supporting Our Community</h2>
-            </div>
-            <div class="charity-content">
-                <h3>Crystal Lake Food Pantry</h3>
-                <p>All proceeds from this event benefit the Crystal Lake Food Pantry, helping to provide meals for families in need throughout McHenry County. Since 1983, the food pantry has served over 50,000 families in our community.</p>
-
-                <div class="charity-stats">
-                    <div class="charity-stat">
-                        <p class="charity-stat-label">2026 Goal</p>
-                        <p class="charity-stat-value">$10,000</p>
-                    </div>
-                    <div class="charity-stat">
-                        <p class="charity-stat-label">Raised To Date</p>
-                        <p class="charity-stat-value">$0</p>
-                    </div>
-                </div>
-
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill"></div>
-                    </div>
-                    <p class="progress-label">0% of goal reached</p>
-                </div>
-
-                <p style="margin-top: 2rem; color: var(--text-light); font-size: 0.95rem;">Additional donations accepted at registration. All donors receive special recognition.</p>
             </div>
         </div>
     </section>
