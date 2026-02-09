@@ -39,7 +39,8 @@ function LoginForm() {
       .ilike("email", userEmail);
 
     const redirect = searchParams.get("redirect") || "/admin";
-    router.push(redirect);
+    // Hard navigate so the browser sends the updated auth cookie to middleware
+    window.location.href = redirect;
   };
 
   return (
