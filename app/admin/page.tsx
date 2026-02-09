@@ -3,24 +3,33 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Registration } from "@/types/database";
+import type { Registration, Sponsor, SponsorStatus } from "@/types/database";
 import { MAX_REGISTRATIONS } from "@/types/database";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("registrations")
-        .select("*")
-        .in("payment_status", ["paid", "pending"])
-        .order("created_at", { ascending: false });
 
-      setRegistrations(data || []);
+      const [regResult, sponsorResult] = await Promise.all([
+        supabase
+          .from("registrations")
+          .select("*")
+          .in("payment_status", ["paid", "pending"])
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("sponsors")
+          .select("*")
+          .order("created_at", { ascending: false }),
+      ]);
+
+      setRegistrations(regResult.data || []);
+      setSponsors((sponsorResult.data as Sponsor[]) || []);
       setLoading(false);
     };
     fetchData();
@@ -33,6 +42,21 @@ export default function AdminDashboard() {
     0
   );
   const checkedIn = registrations.filter((r) => r.checked_in).length;
+
+  const eventDate = new Date("2026-05-17T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysUntilEvent = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  const sponsorRevenue = sponsors
+    .filter((s) => s.status === "paid")
+    .reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+
+  const openSponsors = sponsors.filter((s) => s.status === "prospect" || s.status === "inquired");
+  const openPipeline = openSponsors.reduce((sum, s) => {
+    const match = s.sponsorship_level.match(/\$([0-9,]+)/);
+    return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
+  }, 0);
 
   if (loading) {
     return (
@@ -86,6 +110,26 @@ export default function AdminDashboard() {
           value={`${MAX_REGISTRATIONS - registrations.length}`}
           note="available"
         />
+        <SummaryCard
+          label="Sponsors"
+          value={`${sponsors.length}`}
+          note={`${sponsors.filter((s) => s.status === "paid").length} paid`}
+        />
+        <SummaryCard
+          label="Sponsor Revenue"
+          value={`$${(sponsorRevenue / 100).toLocaleString()}`}
+          note="from paid sponsors"
+        />
+        <SummaryCard
+          label="Open Sponsor Pipeline"
+          value={openPipeline > 0 ? `$${(openPipeline / 100).toLocaleString()}` : "$0"}
+          note={`${openSponsors.length} prospect/inquired`}
+        />
+        <SummaryCard
+          label="Event Countdown"
+          value={daysUntilEvent > 0 ? `${daysUntilEvent}` : daysUntilEvent === 0 ? "Today!" : "Past"}
+          note={daysUntilEvent > 0 ? "days until May 17" : "May 17, 2026"}
+        />
       </div>
 
       {/* Recent Registrations */}
@@ -104,6 +148,7 @@ export default function AdminDashboard() {
           background: "var(--white)",
           overflow: "auto",
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          marginBottom: "3rem",
         }}
       >
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
@@ -168,6 +213,73 @@ export default function AdminDashboard() {
           </tbody>
         </table>
       </div>
+
+      {/* Recent Sponsors */}
+      <h2
+        style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: "1.4rem",
+          fontWeight: 400,
+          marginBottom: "1rem",
+        }}
+      >
+        Recent Sponsors
+      </h2>
+      <div
+        style={{
+          background: "var(--white)",
+          overflow: "auto",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        }}
+      >
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+          <thead>
+            <tr
+              style={{
+                background: "var(--cream)",
+                textAlign: "left",
+              }}
+            >
+              <th style={thStyle}>Company</th>
+              <th style={thStyle}>Contact</th>
+              <th style={thStyle}>Level</th>
+              <th style={thStyle}>Status</th>
+              <th style={thStyle}>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sponsors.slice(0, 5).map((s) => (
+              <tr
+                key={s.id}
+                onClick={() => router.push(`/admin/sponsors/${s.id}`)}
+                style={{ borderBottom: "1px solid #eee", cursor: "pointer" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--cream)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+              >
+                <td style={tdStyle}>{s.company}</td>
+                <td style={tdStyle}>{s.name}</td>
+                <td style={tdStyle}>{s.sponsorship_level}</td>
+                <td style={tdStyle}>
+                  <SponsorStatusBadge status={s.status} />
+                </td>
+                <td style={tdStyle}>
+                  {new Date(s.created_at).toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+            {sponsors.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  style={{ ...tdStyle, textAlign: "center", color: "var(--text-light)" }}
+                >
+                  No sponsors yet
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
@@ -215,6 +327,34 @@ function SummaryCard({
 }
 
 function StatusBadge({ label, color, bg }: { label: string; color: string; bg: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "0.2rem 0.6rem",
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
+        background: bg,
+        color,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function SponsorStatusBadge({ status }: { status: SponsorStatus }) {
+  const config: Record<SponsorStatus, { label: string; bg: string; color: string }> = {
+    prospect: { label: "Prospect", bg: "#f5f5f5", color: "#616161" },
+    inquired: { label: "Inquired", bg: "#e3f2fd", color: "#1565c0" },
+    engaged: { label: "Engaged", bg: "#fff3e0", color: "#e65100" },
+    paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },
+  };
+
+  const { label, bg, color } = config[status] || config.prospect;
+
   return (
     <span
       style={{

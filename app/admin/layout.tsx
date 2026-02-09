@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/registrations", label: "Registrations" },
+  { href: "/admin/sponsors", label: "Sponsors" },
   { href: "/admin/check-in", label: "Check-In" },
   { href: "/admin/placards", label: "Placards" },
   { href: "/admin/emails", label: "Emails" },
@@ -111,6 +113,13 @@ export default function AdminLayout({
         >
           &#9776;
         </button>
+        <Image
+          src="/images/CLCC_Logo2026.png"
+          alt="CLCC Logo"
+          width={32}
+          height={32}
+          style={{ borderRadius: "50%" }}
+        />
         <span
           style={{
             fontFamily: "'Playfair Display', serif",
@@ -133,18 +142,34 @@ export default function AdminLayout({
         className={`admin-sidebar${sidebarOpen ? " open" : ""}`}
       >
         {/* Brand */}
-        <div style={{ padding: "1.5rem 1.25rem 1rem" }}>
+        <div style={{ padding: "1.25rem 1.25rem 0.75rem" }}>
           <Link
             href="/admin"
             onClick={closeSidebar}
             style={{
-              fontFamily: "'Playfair Display', serif",
-              color: "var(--gold)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.6rem",
               textDecoration: "none",
-              fontSize: "1.15rem",
             }}
           >
-            CLCC Admin
+            <Image
+              src="/images/CLCC_Logo2026.png"
+              alt="CLCC Logo"
+              width={40}
+              height={40}
+              style={{ borderRadius: "50%" }}
+            />
+            <span
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                color: "var(--gold)",
+                fontSize: "1rem",
+                lineHeight: 1.2,
+              }}
+            >
+              CLCC Admin
+            </span>
           </Link>
         </div>
 

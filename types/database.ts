@@ -59,7 +59,7 @@ export type Admin = {
   last_login_at: string | null;
 };
 
-export type EmailType = "confirmation" | "admin_notification" | "announcement";
+export type EmailType = "confirmation" | "admin_notification" | "announcement" | "sponsor_notification";
 
 export type EmailLog = {
   id: string;
@@ -144,6 +144,38 @@ export type StripePaymentDetails = {
   };
   charge_id: string | null;
 };
+
+export type SponsorStatus = "prospect" | "inquired" | "engaged" | "paid";
+
+export type Sponsor = {
+  id: string;
+  name: string;
+  company: string;
+  email: string;
+  phone: string | null;
+  website: string | null;
+  sponsorship_level: string;
+  message: string | null;
+  status: SponsorStatus;
+  amount_paid: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SponsorAuditLogEntry = {
+  id: string;
+  sponsor_id: string;
+  changed_fields: Record<string, { old: unknown; new: unknown }>;
+  actor_email: string | null;
+  created_at: string;
+};
+
+export const SPONSORSHIP_LEVELS = [
+  "Platinum Sponsor ($2,000)",
+  "Gold Sponsor ($500)",
+  "Other / Not Sure",
+] as const;
 
 export const MAX_REGISTRATIONS = 200;
 export const REGISTRATION_PRICE_CENTS = 3000;

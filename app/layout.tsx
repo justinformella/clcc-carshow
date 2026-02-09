@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   description:
     "CLCC Annual Charity Car Show - May 17, 2026 in Downtown Crystal Lake. Register your vehicle, support the Crystal Lake Food Pantry.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
     apple: "/apple-touch-icon.png",
   },
 };

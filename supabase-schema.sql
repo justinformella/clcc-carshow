@@ -193,3 +193,108 @@ CREATE TRIGGER registrations_audit
   AFTER UPDATE ON registrations
   FOR EACH ROW
   EXECUTE FUNCTION log_registration_changes();
+
+-- ============================================================
+-- Sponsors table
+-- ============================================================
+CREATE TABLE sponsors (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  company TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  website TEXT,
+  sponsorship_level TEXT NOT NULL,
+  message TEXT,
+  status TEXT DEFAULT 'inquired',  -- prospect | inquired | engaged | paid
+  amount_paid INTEGER DEFAULT 0,   -- cents (consistent with registrations)
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_sponsors_email ON sponsors(email);
+CREATE INDEX idx_sponsors_status ON sponsors(status);
+
+ALTER TABLE sponsors ENABLE ROW LEVEL SECURITY;
+
+-- Allow anonymous inserts (for public sponsor inquiry form)
+CREATE POLICY "Allow anonymous insert sponsors" ON sponsors
+  FOR INSERT
+  WITH CHECK (true);
+
+-- Allow authenticated users (admin) full access
+CREATE POLICY "Allow authenticated read sponsors" ON sponsors
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated update sponsors" ON sponsors
+  FOR UPDATE TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated delete sponsors" ON sponsors
+  FOR DELETE TO authenticated USING (true);
+
+-- Reuse the update_updated_at() trigger function
+CREATE TRIGGER sponsors_updated_at
+  BEFORE UPDATE ON sponsors
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- Sponsor audit log
+-- ============================================================
+CREATE TABLE sponsor_audit_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sponsor_id UUID REFERENCES sponsors(id) ON DELETE CASCADE,
+  changed_fields JSONB NOT NULL,
+  actor_email TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_sponsor_audit_sponsor ON sponsor_audit_log(sponsor_id);
+CREATE INDEX idx_sponsor_audit_created_at ON sponsor_audit_log(created_at);
+
+ALTER TABLE sponsor_audit_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow authenticated read sponsor_audit" ON sponsor_audit_log
+  FOR SELECT TO authenticated USING (true);
+
+-- Trigger function: logs every field change on sponsors
+CREATE OR REPLACE FUNCTION log_sponsor_changes()
+RETURNS TRIGGER
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  changes JSONB := '{}'::JSONB;
+  actor TEXT := NULL;
+  uid UUID;
+BEGIN
+  uid := auth.uid();
+  IF uid IS NOT NULL THEN
+    SELECT email INTO actor FROM auth.users WHERE id = uid;
+  END IF;
+
+  IF OLD.name               IS DISTINCT FROM NEW.name               THEN changes := changes || jsonb_build_object('name',               jsonb_build_object('old', to_jsonb(OLD.name),               'new', to_jsonb(NEW.name))); END IF;
+  IF OLD.company            IS DISTINCT FROM NEW.company            THEN changes := changes || jsonb_build_object('company',            jsonb_build_object('old', to_jsonb(OLD.company),            'new', to_jsonb(NEW.company))); END IF;
+  IF OLD.email              IS DISTINCT FROM NEW.email              THEN changes := changes || jsonb_build_object('email',              jsonb_build_object('old', to_jsonb(OLD.email),              'new', to_jsonb(NEW.email))); END IF;
+  IF OLD.phone              IS DISTINCT FROM NEW.phone              THEN changes := changes || jsonb_build_object('phone',              jsonb_build_object('old', to_jsonb(OLD.phone),              'new', to_jsonb(NEW.phone))); END IF;
+  IF OLD.website            IS DISTINCT FROM NEW.website            THEN changes := changes || jsonb_build_object('website',            jsonb_build_object('old', to_jsonb(OLD.website),            'new', to_jsonb(NEW.website))); END IF;
+  IF OLD.sponsorship_level  IS DISTINCT FROM NEW.sponsorship_level  THEN changes := changes || jsonb_build_object('sponsorship_level',  jsonb_build_object('old', to_jsonb(OLD.sponsorship_level),  'new', to_jsonb(NEW.sponsorship_level))); END IF;
+  IF OLD.message            IS DISTINCT FROM NEW.message            THEN changes := changes || jsonb_build_object('message',            jsonb_build_object('old', to_jsonb(OLD.message),            'new', to_jsonb(NEW.message))); END IF;
+  IF OLD.status             IS DISTINCT FROM NEW.status             THEN changes := changes || jsonb_build_object('status',             jsonb_build_object('old', to_jsonb(OLD.status),             'new', to_jsonb(NEW.status))); END IF;
+  IF OLD.amount_paid        IS DISTINCT FROM NEW.amount_paid        THEN changes := changes || jsonb_build_object('amount_paid',        jsonb_build_object('old', to_jsonb(OLD.amount_paid),        'new', to_jsonb(NEW.amount_paid))); END IF;
+  IF OLD.notes              IS DISTINCT FROM NEW.notes              THEN changes := changes || jsonb_build_object('notes',              jsonb_build_object('old', to_jsonb(OLD.notes),              'new', to_jsonb(NEW.notes))); END IF;
+
+  IF changes != '{}'::JSONB THEN
+    INSERT INTO sponsor_audit_log (sponsor_id, changed_fields, actor_email)
+    VALUES (NEW.id, changes, actor);
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER sponsors_audit
+  AFTER UPDATE ON sponsors
+  FOR EACH ROW
+  EXECUTE FUNCTION log_sponsor_changes();

@@ -1,4 +1,4 @@
-import type { Registration } from "@/types/database";
+import type { Registration, Sponsor } from "@/types/database";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
@@ -110,6 +110,52 @@ export function adminNotificationEmail(
 
   return {
     subject: `New Registration: ${reg.first_name} ${reg.last_name} — #${reg.car_number}`,
+    html: htmlShell(content),
+  };
+}
+
+export function sponsorAdminNotificationEmail(
+  sponsor: Sponsor,
+  adminDetailUrl: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#1a1a2e;">New Sponsor Inquiry</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      A new sponsorship inquiry has been submitted:
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#666; width:140px;">Name</td>
+        <td style="padding:8px 0; font-size:14px; color:#1a1a2e;">${sponsor.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#666;">Company</td>
+        <td style="padding:8px 0; font-size:14px; color:#1a1a2e;">${sponsor.company}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#666;">Email</td>
+        <td style="padding:8px 0; font-size:14px; color:#1a1a2e;">${sponsor.email}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#666;">Phone</td>
+        <td style="padding:8px 0; font-size:14px; color:#1a1a2e;">${sponsor.phone || "—"}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#666;">Level</td>
+        <td style="padding:8px 0; font-size:14px; color:#1a1a2e;">${sponsor.sponsorship_level}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#666;">Message</td>
+        <td style="padding:8px 0; font-size:14px; color:#1a1a2e;">${sponsor.message || "—"}</td>
+      </tr>
+    </table>
+    <a href="${adminDetailUrl}" style="display:inline-block; padding:12px 24px; background:#c9a84c; color:#1a1a2e; text-decoration:none; font-weight:600; font-size:14px;">
+      View Sponsor
+    </a>
+  `;
+
+  return {
+    subject: `New Sponsor Inquiry: ${sponsor.company} — ${sponsor.sponsorship_level}`,
     html: htmlShell(content),
   };
 }

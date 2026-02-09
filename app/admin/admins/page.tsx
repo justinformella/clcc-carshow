@@ -11,6 +11,7 @@ export default function AdminsPage() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("admin");
   const [adding, setAdding] = useState(false);
+  const [resending, setResending] = useState<string | null>(null);
 
   const fetchAdmins = async () => {
     const supabase = createClient();
@@ -63,6 +64,30 @@ export default function AdminsPage() {
     const supabase = createClient();
     await supabase.from("admins").delete().eq("id", admin.id);
     await fetchAdmins();
+  };
+
+  const handleResendInvite = async (admin: Admin) => {
+    setResending(admin.id);
+    try {
+      const res = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: admin.email, resendOnly: true }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to resend invite");
+      } else if (data.invited) {
+        alert(`Invite email sent to ${admin.email}`);
+      } else {
+        alert(`${admin.email} has already accepted their invite.`);
+      }
+    } catch {
+      alert("Failed to resend invite.");
+    } finally {
+      setResending(null);
+    }
   };
 
   if (loading) {
@@ -220,22 +245,43 @@ export default function AdminsPage() {
                     ? new Date(admin.last_login_at).toLocaleString()
                     : "Never"}
                 </td>
-                <td style={tdStyle}>
-                  <button
-                    onClick={() => handleRemove(admin)}
-                    style={{
-                      background: "transparent",
-                      border: "1px solid #c00",
-                      color: "#c00",
-                      padding: "0.3rem 0.8rem",
-                      fontSize: "0.75rem",
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    Remove
-                  </button>
+                <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    {!admin.last_login_at && (
+                      <button
+                        onClick={() => handleResendInvite(admin)}
+                        disabled={resending === admin.id}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid #1565c0",
+                          color: "#1565c0",
+                          padding: "0.3rem 0.8rem",
+                          fontSize: "0.75rem",
+                          cursor: resending === admin.id ? "not-allowed" : "pointer",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          opacity: resending === admin.id ? 0.6 : 1,
+                        }}
+                      >
+                        {resending === admin.id ? "Sending..." : "Resend Invite"}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleRemove(admin)}
+                      style={{
+                        background: "transparent",
+                        border: "1px solid #c00",
+                        color: "#c00",
+                        padding: "0.3rem 0.8rem",
+                        fontSize: "0.75rem",
+                        cursor: "pointer",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
