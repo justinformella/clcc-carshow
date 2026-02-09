@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
+import { getResend } from "@/lib/resend";
+import { adminInviteEmail } from "@/lib/email-templates";
+
+const FROM_EMAIL = "Crystal Lake Cars & Coffee <noreply@crystallakecarshow.com>";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,18 +19,56 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Resend-only: just re-send the invite email, don't touch admins table
+    // Resend-only: generate a new invite link and send via Resend
     if (resendOnly) {
-      const { error: authError } = await supabase.auth.admin.inviteUserByEmail(email);
+      // Look up admin name from admins table
+      const { data: admin } = await supabase
+        .from("admins")
+        .select("name")
+        .eq("email", email)
+        .single();
 
-      if (authError) {
-        // "already been registered" means they already accepted
-        if (authError.message.includes("already been registered")) {
+      const { data: linkData, error: linkError } =
+        await supabase.auth.admin.generateLink({
+          type: "invite",
+          email,
+        });
+
+      if (linkError) {
+        if (linkError.message.includes("already been registered")) {
           return NextResponse.json({ success: true, invited: false });
         }
         return NextResponse.json(
-          { error: authError.message },
+          { error: linkError.message },
           { status: 400 }
+        );
+      }
+
+      const inviteLink = linkData?.properties?.action_link;
+      if (!inviteLink) {
+        return NextResponse.json(
+          { error: "Failed to generate invite link" },
+          { status: 500 }
+        );
+      }
+
+      const { subject, html } = adminInviteEmail(
+        admin?.name || "there",
+        inviteLink
+      );
+
+      const resend = getResend();
+      const { error: sendError } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: email,
+        subject,
+        html,
+      });
+
+      if (sendError) {
+        return NextResponse.json(
+          { error: sendError.message },
+          { status: 500 }
         );
       }
 
@@ -41,18 +83,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase Auth user with invite (sends password reset email)
-    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      data: { name, role: role || "admin" },
-    });
+    // Generate invite link (doesn't send email)
+    const { data: linkData, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "invite",
+        email,
+        options: {
+          data: { name, role: role || "admin" },
+        },
+      });
 
-    if (authError) {
+    let authUserId: string | null = null;
+
+    if (linkError) {
       // If user already exists in auth, that's okay — just add to admins table
-      if (!authError.message.includes("already been registered")) {
+      if (!linkError.message.includes("already been registered")) {
         return NextResponse.json(
-          { error: authError.message },
+          { error: linkError.message },
           { status: 400 }
         );
+      }
+    } else {
+      authUserId = linkData?.user?.id ?? null;
+
+      // Send the invite email via Resend
+      const inviteLink = linkData?.properties?.action_link;
+      if (inviteLink) {
+        const { subject, html } = adminInviteEmail(name, inviteLink);
+        const resend = getResend();
+        const { error: sendError } = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: email,
+          subject,
+          html,
+        });
+
+        if (sendError) {
+          console.error("Failed to send invite email via Resend:", sendError.message);
+        }
       }
     }
 
@@ -70,8 +138,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      invited: !authError,
-      authUserId: authData?.user?.id ?? null,
+      invited: !linkError,
+      authUserId,
     });
   } catch (err) {
     console.error("Admin invite error:", err);

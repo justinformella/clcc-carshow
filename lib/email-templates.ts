@@ -160,6 +160,32 @@ export function sponsorAdminNotificationEmail(
   };
 }
 
+export function adminInviteEmail(
+  name: string,
+  inviteLink: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#1a1a2e;">You're Invited</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Hi ${name}, you've been invited to join the Crystal Lake Cars &amp; Coffee admin team.
+    </p>
+    <p style="margin:0 0 24px; font-size:15px; color:#333; line-height:1.6;">
+      Click the button below to set your password and access the admin dashboard.
+    </p>
+    <a href="${inviteLink}" style="display:inline-block; padding:12px 24px; background:#c9a84c; color:#1a1a2e; text-decoration:none; font-weight:600; font-size:14px;">
+      Accept Invite
+    </a>
+    <p style="margin:24px 0 0; font-size:12px; color:#999; line-height:1.5;">
+      If you didn't expect this invite, you can safely ignore this email.
+    </p>
+  `;
+
+  return {
+    subject: "You're invited to Crystal Lake Cars & Coffee Admin",
+    html: htmlShell(content),
+  };
+}
+
 export function announcementEmail(
   emailSubject: string,
   body: string,
