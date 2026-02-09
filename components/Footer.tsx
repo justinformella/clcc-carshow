@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer() {
@@ -6,7 +7,16 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-top">
           <div className="footer-brand">
-            <h3>Crystal Lake Cars &amp; Caffeine</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+              <Image
+                src="/images/CLCC_Logo2026.png"
+                alt="CLCC Logo"
+                width={120}
+                height={120}
+                style={{ width: "60px", height: "60px", borderRadius: "50%" }}
+              />
+              <h3 style={{ margin: 0 }}>Crystal Lake Cars &amp; Caffeine</h3>
+            </div>
             <p>
               An annual celebration of automotive excellence benefiting the
               Crystal Lake Food Pantry. Join us in downtown Crystal Lake for the

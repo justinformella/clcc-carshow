@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Header() {
@@ -37,10 +38,20 @@ export default function Header() {
     <header id="header" className={scrolled ? "scrolled" : ""}>
       <div className="header-inner">
         <a href="#" className="logo">
-          <span className="logo-text">Crystal Lake Cars &amp; Caffeine</span>
-          <span className="logo-tagline">
-            Est. 2021 &middot; Crystal Lake, Illinois
-          </span>
+          <Image
+            src="/images/CLCC_Logo2026.png"
+            alt="CLCC Logo"
+            width={120}
+            height={120}
+            className="logo-mark"
+            priority
+          />
+          <div className="logo-text-group">
+            <span className="logo-text">Crystal Lake Cars &amp; Caffeine</span>
+            <span className="logo-tagline">
+              Est. 2021 &middot; Crystal Lake, Illinois
+            </span>
+          </div>
         </a>
         <nav>
           <ul style={menuOpen ? { display: "flex" } : undefined}>
