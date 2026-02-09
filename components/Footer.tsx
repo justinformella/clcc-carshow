@@ -60,6 +60,7 @@ export default function Footer() {
             <a href="#">Facebook</a>
             <a href="#">Instagram</a>
             <a href="#">YouTube</a>
+            <Link href="/admin" style={{ opacity: 0.5 }}>Admin</Link>
           </div>
         </div>
       </div>
