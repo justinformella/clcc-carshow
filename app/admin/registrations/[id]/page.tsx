@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Registration, EmailLog } from "@/types/database";
+import type { Registration, EmailLog, AuditLogEntry, StripePaymentDetails } from "@/types/database";
 import { AWARD_CATEGORIES } from "@/types/database";
-import Placard from "@/components/Placard";
+import { openPlacardPrintWindow } from "@/lib/placard-print";
 
 type EditForm = {
   first_name: string;
@@ -21,6 +21,7 @@ type EditForm = {
   modifications: string;
   story: string;
   preferred_category: string;
+  payment_status: string;
 };
 
 export default function RegistrationDetailPage() {
@@ -32,12 +33,17 @@ export default function RegistrationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [printing, setPrinting] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [form, setForm] = useState<EditForm | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailLog, setEmailLog] = useState<EmailLog[]>([]);
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [stripeDetails, setStripeDetails] = useState<StripePaymentDetails | null>(null);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const fetchRegistration = useCallback(async () => {
     const supabase = createClient();
@@ -61,10 +67,62 @@ export default function RegistrationDetailPage() {
     setEmailLog(data || []);
   }, [id]);
 
+  const fetchAuditLog = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("registration_audit_log")
+      .select("*")
+      .eq("registration_id", id)
+      .order("created_at", { ascending: false });
+    setAuditLog(data || []);
+  }, [id]);
+
+  const fetchStripeDetails = useCallback(async (opts: { paymentIntentId?: string; sessionId?: string }) => {
+    setStripeLoading(true);
+    setStripeError(null);
+    try {
+      const params = new URLSearchParams();
+      if (opts.paymentIntentId) params.set("payment_intent_id", opts.paymentIntentId);
+      else if (opts.sessionId) params.set("session_id", opts.sessionId);
+      const res = await fetch(`/api/admin/stripe-details?${params}`);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch Stripe details");
+      }
+      setStripeDetails(data);
+    } catch (err) {
+      setStripeError(err instanceof Error ? err.message : "Failed to load payment details");
+    } finally {
+      setStripeLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchRegistration();
     fetchEmailLog();
-  }, [fetchRegistration, fetchEmailLog]);
+    fetchAuditLog();
+  }, [fetchRegistration, fetchEmailLog, fetchAuditLog]);
+
+  useEffect(() => {
+    if (registration?.stripe_payment_intent_id) {
+      fetchStripeDetails({ paymentIntentId: registration.stripe_payment_intent_id });
+    } else if (registration?.stripe_session_id) {
+      fetchStripeDetails({ sessionId: registration.stripe_session_id });
+    }
+  }, [registration?.stripe_payment_intent_id, registration?.stripe_session_id, fetchStripeDetails]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   const handleCheckIn = async () => {
     if (!registration) return;
@@ -85,6 +143,7 @@ export default function RegistrationDetailPage() {
         checked_in: newCheckedIn,
         checked_in_at: newCheckedIn ? new Date().toISOString() : null,
       });
+      fetchAuditLog();
     }
   };
 
@@ -115,6 +174,7 @@ export default function RegistrationDetailPage() {
 
   const handleArchive = async () => {
     if (!registration) return;
+    setMenuOpen(false);
     if (!confirm("Are you sure you want to archive this registration? It will be hidden from the default list.")) {
       return;
     }
@@ -146,6 +206,7 @@ export default function RegistrationDetailPage() {
       modifications: registration.modifications || "",
       story: registration.story || "",
       preferred_category: registration.preferred_category,
+      payment_status: registration.payment_status,
     });
     setEditing(true);
   };
@@ -184,6 +245,7 @@ export default function RegistrationDetailPage() {
         modifications: form.modifications || null,
         story: form.story || null,
         preferred_category: form.preferred_category,
+        payment_status: form.payment_status,
       })
       .eq("id", registration.id);
 
@@ -193,15 +255,13 @@ export default function RegistrationDetailPage() {
       setEditing(false);
       setForm(null);
       await fetchRegistration();
+      fetchAuditLog();
     }
   };
 
   const handlePrint = () => {
-    setPrinting(true);
-    setTimeout(() => {
-      window.print();
-      setPrinting(false);
-    }, 100);
+    if (!registration) return;
+    openPlacardPrintWindow([registration]);
   };
 
   const handleGenerateImage = async () => {
@@ -243,15 +303,6 @@ export default function RegistrationDetailPage() {
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
         Registration not found
       </p>
-    );
-  }
-
-  // Print mode: only show the placard
-  if (printing) {
-    return (
-      <div className="print-only">
-        <Placard registration={registration} />
-      </div>
     );
   }
 
@@ -301,6 +352,8 @@ export default function RegistrationDetailPage() {
             <div style={{ display: "flex", gap: "0.5rem" }}>
               {r.payment_status === "archived" ? (
                 <StatusBadge label="Archived" bg="#f5f5f5" textColor="#616161" />
+              ) : r.payment_status === "refunded" ? (
+                <StatusBadge label="Refunded" bg="#fce4ec" textColor="#b71c1c" />
               ) : r.payment_status === "pending" ? (
                 <StatusBadge label="Unpaid" bg="#fff3e0" textColor="#e65100" />
               ) : r.checked_in ? (
@@ -317,33 +370,76 @@ export default function RegistrationDetailPage() {
 
         {/* Action buttons */}
         {!editing && (
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
             <ActionButton
               label={r.checked_in ? "Undo Check-In" : "Check In"}
               onClick={handleCheckIn}
               variant={r.checked_in ? "secondary" : "primary"}
             />
-            <ActionButton
-              label={
-                generatingImage
-                  ? "Generating..."
-                  : r.ai_image_url
-                  ? "Regenerate Image"
-                  : "Generate Image"
-              }
-              onClick={handleGenerateImage}
-              variant="secondary"
-              disabled={generatingImage}
-            />
-            <ActionButton
-              label={sendingEmail ? "Sending..." : "Resend Confirmation"}
-              onClick={handleResendConfirmation}
-              variant="secondary"
-              disabled={sendingEmail}
-            />
-            <ActionButton label="Print Placard" onClick={handlePrint} variant="secondary" />
             <ActionButton label="Edit" onClick={startEdit} variant="secondary" />
-            <ActionButton label="Archive" onClick={handleArchive} variant="danger" />
+            {/* More dropdown */}
+            <div ref={menuRef} style={{ position: "relative", display: "flex" }}>
+              <button
+                onClick={() => { setMenuOpen(!menuOpen); }}
+                style={{
+                  padding: "0 0.9rem",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  cursor: "pointer",
+                  background: menuOpen ? "#f0f0f0" : "var(--white)",
+                  color: "var(--charcoal)",
+                  border: "1px solid #ddd",
+                }}
+                title="More actions"
+              >
+                ···
+              </button>
+              {menuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "calc(100% + 4px)",
+                    background: "var(--white)",
+                    border: "1px solid #ddd",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                    minWidth: "200px",
+                    zIndex: 50,
+                  }}
+                >
+                  <DropdownItem
+                    label={
+                      generatingImage
+                        ? "Generating..."
+                        : r.ai_image_url
+                        ? "Regenerate Image"
+                        : "Generate Image"
+                    }
+                    onClick={() => { handleGenerateImage(); setMenuOpen(false); }}
+                    disabled={generatingImage}
+                  />
+                  <DropdownItem
+                    label={sendingEmail ? "Sending..." : "Resend Confirmation"}
+                    onClick={() => { handleResendConfirmation(); setMenuOpen(false); }}
+                    disabled={sendingEmail}
+                  />
+                  <DropdownItem
+                    label="Print Placard"
+                    onClick={() => { handlePrint(); setMenuOpen(false); }}
+                  />
+                  {/* Divider */}
+                  <div style={{ borderTop: "1px solid #eee", margin: "0.25rem 0" }} />
+                  {r.payment_status !== "archived" && (
+                    <DropdownItem
+                      label="Archive"
+                      onClick={handleArchive}
+                      danger
+                    />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -433,14 +529,25 @@ export default function RegistrationDetailPage() {
 
             {/* Event Info */}
             <SectionHeading>Event Information</SectionHeading>
-            <div className="form-group">
-              <label htmlFor="preferred_category">Preferred Award Category *</label>
-              <select id="preferred_category" name="preferred_category" value={form.preferred_category} onChange={handleFormChange} required>
-                <option value="">Select a category...</option>
-                {AWARD_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="preferred_category">Preferred Award Category *</label>
+                <select id="preferred_category" name="preferred_category" value={form.preferred_category} onChange={handleFormChange} required>
+                  <option value="">Select a category...</option>
+                  {AWARD_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="payment_status">Payment Status</label>
+                <select id="payment_status" name="payment_status" value={form.payment_status} onChange={handleFormChange}>
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="refunded">Refunded</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
             </div>
           </div>
         </form>
@@ -504,8 +611,271 @@ export default function RegistrationDetailPage() {
               <DetailSection title="Payment">
                 <DetailRow label="Status" value={r.payment_status} />
                 <DetailRow label="Amount Paid" value={`$${(r.amount_paid / 100).toFixed(2)}`} />
-                <DetailRow label="Session ID" value={r.stripe_session_id || "—"} />
-                <DetailRow label="Payment Intent" value={r.stripe_payment_intent_id || "—"} />
+
+                {!r.stripe_payment_intent_id && !r.stripe_session_id ? (
+                  <>
+                    <DetailRow label="Session ID" value="—" />
+                    <DetailRow label="Payment Intent" value="—" />
+                  </>
+                ) : stripeLoading ? (
+                  <p style={{ color: "var(--text-light)", fontSize: "0.85rem", marginTop: "0.5rem" }}>
+                    Loading payment details...
+                  </p>
+                ) : stripeError ? (
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <p style={{ color: "#c00", fontSize: "0.85rem" }}>{stripeError}</p>
+                    <button
+                      onClick={() => fetchStripeDetails(
+                        r.stripe_payment_intent_id
+                          ? { paymentIntentId: r.stripe_payment_intent_id }
+                          : { sessionId: r.stripe_session_id! }
+                      )}
+                      style={{
+                        marginTop: "0.4rem",
+                        padding: "0.3rem 0.8rem",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        cursor: "pointer",
+                        background: "var(--white)",
+                        color: "var(--charcoal)",
+                        border: "1px solid #ddd",
+                      }}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : stripeDetails ? (
+                  <>
+                    {/* Card Info */}
+                    {stripeDetails.card && (
+                      <>
+                        <DetailRow label="Card" value={formatCard(stripeDetails.card)} />
+                        <DetailRow
+                          label="Expires"
+                          value={`${String(stripeDetails.card.exp_month).padStart(2, "0")}/${stripeDetails.card.exp_year}`}
+                        />
+                        {stripeDetails.card.funding && (
+                          <DetailRow label="Funding" value={stripeDetails.card.funding} />
+                        )}
+                        {stripeDetails.card.country && (
+                          <DetailRow label="Card Country" value={stripeDetails.card.country} />
+                        )}
+                        {stripeDetails.card.wallet && (
+                          <DetailRow label="Wallet" value={stripeDetails.card.wallet} />
+                        )}
+                      </>
+                    )}
+
+                    {/* Paid At */}
+                    {stripeDetails.payment.created && (
+                      <DetailRow
+                        label="Paid At"
+                        value={new Date(stripeDetails.payment.created * 1000).toLocaleString()}
+                      />
+                    )}
+
+                    {/* Links */}
+                    {(stripeDetails.links.receipt_url || stripeDetails.links.dashboard_url) && (
+                      <div style={{ display: "flex", gap: "1rem", marginTop: "0.3rem" }}>
+                        <span
+                          style={{
+                            minWidth: "140px",
+                            color: "var(--text-light)",
+                            fontSize: "0.8rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            paddingTop: "0.1rem",
+                          }}
+                        >
+                          Links
+                        </span>
+                        <div style={{ display: "flex", gap: "1rem", fontSize: "0.9rem" }}>
+                          {stripeDetails.links.receipt_url && (
+                            <a
+                              href={stripeDetails.links.receipt_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "#1565c0", textDecoration: "underline" }}
+                            >
+                              View Receipt
+                            </a>
+                          )}
+                          {stripeDetails.links.dashboard_url && (
+                            <a
+                              href={stripeDetails.links.dashboard_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "#1565c0", textDecoration: "underline" }}
+                            >
+                              View in Stripe
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Billing Details */}
+                    {stripeDetails.billing && (stripeDetails.billing.name || stripeDetails.billing.address) && (
+                      <>
+                        <SubSectionHeading>Billing Details</SubSectionHeading>
+                        {stripeDetails.billing.name && (
+                          <DetailRow label="Name" value={stripeDetails.billing.name} />
+                        )}
+                        {stripeDetails.billing.address && (
+                          <DetailRow label="Address" value={formatAddress(stripeDetails.billing.address)} />
+                        )}
+                      </>
+                    )}
+
+                    {/* Risk Assessment */}
+                    {stripeDetails.risk && (
+                      <>
+                        <SubSectionHeading>Risk Assessment</SubSectionHeading>
+                        {stripeDetails.risk.risk_level && (
+                          <div style={{ display: "flex", gap: "1rem", fontSize: "0.9rem" }}>
+                            <span
+                              style={{
+                                minWidth: "140px",
+                                color: "var(--text-light)",
+                                fontSize: "0.8rem",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.05em",
+                                paddingTop: "0.1rem",
+                              }}
+                            >
+                              Risk Level
+                            </span>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "0.15rem 0.5rem",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.04em",
+                                background:
+                                  stripeDetails.risk.risk_level === "normal"
+                                    ? "#e8f5e9"
+                                    : stripeDetails.risk.risk_level === "elevated"
+                                    ? "#fff3e0"
+                                    : "#fce4ec",
+                                color:
+                                  stripeDetails.risk.risk_level === "normal"
+                                    ? "#2e7d32"
+                                    : stripeDetails.risk.risk_level === "elevated"
+                                    ? "#e65100"
+                                    : "#b71c1c",
+                              }}
+                            >
+                              {stripeDetails.risk.risk_level}
+                            </span>
+                          </div>
+                        )}
+                        {stripeDetails.risk.risk_score != null && (
+                          <DetailRow label="Risk Score" value={String(stripeDetails.risk.risk_score)} />
+                        )}
+                        {stripeDetails.risk.network_status && (
+                          <DetailRow label="Network" value={stripeDetails.risk.network_status} />
+                        )}
+                      </>
+                    )}
+
+                    {/* Fees */}
+                    {stripeDetails.fees && (
+                      <>
+                        <SubSectionHeading>Fees</SubSectionHeading>
+                        <DetailRow
+                          label="Stripe Fee"
+                          value={`$${(stripeDetails.fees.stripe_fee / 100).toFixed(2)}`}
+                        />
+                        <DetailRow
+                          label="Net Amount"
+                          value={`$${(stripeDetails.fees.net / 100).toFixed(2)}`}
+                        />
+                      </>
+                    )}
+
+                    {/* Refunds */}
+                    {stripeDetails.refunds.length > 0 && (
+                      <>
+                        <SubSectionHeading>Refunds</SubSectionHeading>
+                        {stripeDetails.refunds.map((refund) => (
+                          <div
+                            key={refund.id}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "0.4rem 0",
+                              borderBottom: "1px solid rgba(0,0,0,0.04)",
+                              fontSize: "0.85rem",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "0.15rem 0.5rem",
+                                  fontSize: "0.65rem",
+                                  fontWeight: 600,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.04em",
+                                  background: refund.status === "succeeded" ? "#e8f5e9" : "#fff3e0",
+                                  color: refund.status === "succeeded" ? "#2e7d32" : "#e65100",
+                                }}
+                              >
+                                {refund.status}
+                              </span>
+                              <span>${(refund.amount / 100).toFixed(2)}</span>
+                              {refund.reason && (
+                                <span style={{ color: "var(--text-light)", fontSize: "0.8rem" }}>
+                                  ({refund.reason.replace(/_/g, " ")})
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ color: "var(--text-light)", fontSize: "0.8rem" }}>
+                              {new Date(refund.created * 1000).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Dispute */}
+                    {stripeDetails.dispute && (
+                      <>
+                        <SubSectionHeading>Dispute</SubSectionHeading>
+                        <div
+                          style={{
+                            background: "#fce4ec",
+                            padding: "0.75rem 1rem",
+                            fontSize: "0.85rem",
+                            color: "#b71c1c",
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, marginBottom: "0.3rem" }}>
+                            Dispute — {stripeDetails.dispute.status.replace(/_/g, " ")}
+                          </div>
+                          <div>Amount: ${(stripeDetails.dispute.amount / 100).toFixed(2)}</div>
+                          <div>Reason: {stripeDetails.dispute.reason.replace(/_/g, " ")}</div>
+                          <div>
+                            Opened: {new Date(stripeDetails.dispute.created * 1000).toLocaleString()}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Stripe IDs */}
+                    <SubSectionHeading>Stripe IDs</SubSectionHeading>
+                    <DetailRow label="Session ID" value={r.stripe_session_id || "—"} />
+                    <DetailRow label="Payment Intent" value={r.stripe_payment_intent_id || "—"} />
+                    {stripeDetails.charge_id && (
+                      <DetailRow label="Charge ID" value={stripeDetails.charge_id} />
+                    )}
+                  </>
+                ) : null}
               </DetailSection>
 
               <DetailSection title="Email History">
@@ -552,6 +922,49 @@ export default function RegistrationDetailPage() {
                 ) : (
                   <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>
                     No emails sent yet.
+                  </p>
+                )}
+              </DetailSection>
+
+              <DetailSection title="Activity Log">
+                {auditLog.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    {auditLog.map((entry) => (
+                      <div
+                        key={entry.id}
+                        style={{
+                          padding: "0.5rem 0",
+                          borderBottom: "1px solid rgba(0,0,0,0.04)",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                          <span style={{ fontWeight: 500, color: "var(--charcoal)", fontSize: "0.8rem" }}>
+                            {entry.actor_email || "System"}
+                          </span>
+                          <span style={{ color: "var(--text-light)", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                            {new Date(entry.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                          {Object.entries(entry.changed_fields).map(([field, vals]) => (
+                            <div key={field} style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
+                              <span style={{ fontWeight: 500, color: "var(--charcoal)" }}>
+                                {formatFieldLabel(field)}
+                              </span>
+                              {": "}
+                              {formatAuditValue(vals.old)}
+                              {" → "}
+                              {formatAuditValue(vals.new)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>
+                    No changes recorded yet.
                   </p>
                 )}
               </DetailSection>
@@ -728,13 +1141,49 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function SubSectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: "0.8rem",
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        color: "var(--text-light)",
+        marginTop: "0.8rem",
+        paddingTop: "0.6rem",
+        borderTop: "1px solid rgba(0,0,0,0.06)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function formatCard(card: NonNullable<StripePaymentDetails["card"]>): string {
+  const brand = card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : "Card";
+  const last4 = card.last4 || "****";
+  const wallet = card.wallet ? ` (${card.wallet})` : "";
+  return `${brand} ending in ${last4}${wallet}`;
+}
+
+function formatAddress(address: NonNullable<NonNullable<StripePaymentDetails["billing"]>["address"]>): string {
+  const parts = [
+    address.line1,
+    address.line2,
+    [address.city, address.state, address.postal_code].filter(Boolean).join(", "),
+    address.country,
+  ].filter(Boolean);
+  return parts.join(", ") || "—";
+}
+
 function StatusBadge({ label, bg, textColor }: { label: string; bg: string; textColor: string }) {
   return (
     <span
       style={{
         display: "inline-block",
-        padding: "0.2rem 0.6rem",
-        fontSize: "0.7rem",
+        padding: "0.3rem 0.8rem",
+        fontSize: "0.8rem",
         fontWeight: 600,
         textTransform: "uppercase",
         letterSpacing: "0.05em",
@@ -817,6 +1266,79 @@ function ActionButton({
         opacity: disabled ? 0.6 : 1,
         border: "none",
         ...styles[variant],
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  first_name: "First Name",
+  last_name: "Last Name",
+  email: "Email",
+  phone: "Phone",
+  hometown: "Hometown",
+  vehicle_year: "Year",
+  vehicle_make: "Make",
+  vehicle_model: "Model",
+  vehicle_color: "Color",
+  engine_specs: "Engine Specs",
+  modifications: "Modifications",
+  story: "Story",
+  preferred_category: "Category",
+  payment_status: "Payment Status",
+  stripe_payment_intent_id: "Payment Intent",
+  checked_in: "Checked In",
+  ai_image_url: "AI Image",
+};
+
+function formatFieldLabel(field: string): string {
+  return FIELD_LABELS[field] || field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatAuditValue(val: unknown): string {
+  if (val === null || val === undefined) return "\u2014";
+  if (typeof val === "boolean") return val ? "Yes" : "No";
+  const str = String(val);
+  if (str.length > 60) return str.slice(0, 57) + "...";
+  return str;
+}
+
+function DropdownItem({
+  label,
+  onClick,
+  disabled = false,
+  danger = false,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: "block",
+        width: "100%",
+        padding: "0.55rem 1rem",
+        fontSize: "0.8rem",
+        fontWeight: 400,
+        textAlign: "left",
+        background: "none",
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        color: danger ? "#c00" : "var(--charcoal)",
+        whiteSpace: "nowrap",
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) (e.currentTarget as HTMLButtonElement).style.background = "#f5f5f5";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background = "none";
       }}
     >
       {label}

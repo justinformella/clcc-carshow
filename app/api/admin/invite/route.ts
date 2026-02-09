@@ -3,7 +3,8 @@ import { createServerClient } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, role } = await request.json();
+    const { name, email: rawEmail, role } = await request.json();
+    const email = rawEmail?.toLowerCase().trim();
 
     if (!name || !email) {
       return NextResponse.json(

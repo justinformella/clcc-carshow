@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
 import Placard from "@/components/Placard";
+import { placardPrintStyles, openPlacardPrintWindow } from "@/lib/placard-print";
 
 export default function PlacardsPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [printMode, setPrintMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export default function PlacardsPage() {
       const { data } = await supabase
         .from("registrations")
         .select("*")
-        .eq("payment_status", "paid")
+        .neq("payment_status", "archived")
         .order("car_number", { ascending: true });
 
       setRegistrations(data || []);
@@ -45,17 +45,12 @@ export default function PlacardsPage() {
   };
 
   const handlePrint = () => {
-    setPrintMode(true);
-    setTimeout(() => {
-      window.print();
-      setPrintMode(false);
-    }, 100);
+    const toPrint =
+      selectedIds.size > 0
+        ? registrations.filter((r) => selectedIds.has(r.id))
+        : registrations;
+    openPlacardPrintWindow(toPrint);
   };
-
-  const toPrint =
-    selectedIds.size > 0
-      ? registrations.filter((r) => selectedIds.has(r.id))
-      : registrations;
 
   if (loading) {
     return (
@@ -65,23 +60,10 @@ export default function PlacardsPage() {
     );
   }
 
-  // Print view
-  if (printMode) {
-    return (
-      <div className="print-container">
-        <style>{placardPrintStyles}</style>
-        {toPrint.map((reg) => (
-          <Placard key={reg.id} registration={reg} />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <>
       <style>{placardPrintStyles}</style>
-
-      <div className="no-print">
+      <div>
         <div
           style={{
             display: "flex",
@@ -163,10 +145,10 @@ export default function PlacardsPage() {
             >
               <div
                 style={{
-                  transform: "scale(0.6)",
+                  transform: "scale(0.4)",
                   transformOrigin: "top left",
-                  height: "300px",
-                  overflow: "hidden",
+                  width: "11in",
+                  height: "8.5in",
                   pointerEvents: "none",
                 }}
               >
@@ -174,12 +156,13 @@ export default function PlacardsPage() {
               </div>
               <div
                 style={{
+                  marginTop: `calc(-8.5in * 0.6 + 0.5rem)`,
                   padding: "0.5rem",
                   fontSize: "0.8rem",
                   color: "var(--text-light)",
                   display: "flex",
                   justifyContent: "space-between",
-                  marginTop: "-150px",
+                  alignItems: "center",
                   position: "relative",
                   background: "var(--white)",
                 }}
@@ -187,7 +170,22 @@ export default function PlacardsPage() {
                 <span>
                   #{reg.car_number} — {reg.first_name} {reg.last_name}
                 </span>
-                <span>
+                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {!reg.checked_in && (
+                    <span
+                      style={{
+                        fontSize: "0.65rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                        padding: "0.15rem 0.5rem",
+                        background: "#fff3e0",
+                        color: "#e65100",
+                      }}
+                    >
+                      Not Checked In
+                    </span>
+                  )}
                   {reg.vehicle_year} {reg.vehicle_make} {reg.vehicle_model}
                 </span>
               </div>
@@ -198,146 +196,3 @@ export default function PlacardsPage() {
     </>
   );
 }
-
-const placardPrintStyles = `
-  .placard {
-    width: 5.5in;
-    height: 8.5in;
-    padding: 0.5in;
-    border: 1px solid #ddd;
-    page-break-after: always;
-    page-break-inside: avoid;
-    font-family: 'Inter', sans-serif;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-  }
-
-  .placard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.3in;
-    padding-bottom: 0.15in;
-    border-bottom: 2px solid #C9A962;
-  }
-
-  .placard-event {
-    font-size: 9pt;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #6B6B6B;
-  }
-
-  .placard-number {
-    font-family: 'Playfair Display', serif;
-    font-size: 36pt;
-    color: #C9A962;
-    line-height: 1;
-  }
-
-  .placard-vehicle {
-    font-family: 'Playfair Display', serif;
-    font-size: 22pt;
-    color: #1C1C1C;
-    margin-bottom: 0.1in;
-    line-height: 1.2;
-  }
-
-  .placard-owner {
-    font-size: 14pt;
-    color: #2D2D2D;
-    margin-bottom: 0.1in;
-  }
-
-  .placard-hometown {
-    color: #6B6B6B;
-  }
-
-  .placard-category {
-    display: inline-block;
-    padding: 4pt 12pt;
-    background: #C9A962;
-    color: #1C1C1C;
-    font-size: 9pt;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 0.2in;
-  }
-
-  .placard-details {
-    border-top: 1px solid #eee;
-    padding-top: 0.15in;
-    margin-bottom: 0.15in;
-  }
-
-  .placard-detail {
-    display: flex;
-    gap: 0.15in;
-    margin-bottom: 0.08in;
-    font-size: 10pt;
-    color: #2D2D2D;
-    line-height: 1.5;
-  }
-
-  .placard-detail-label {
-    font-size: 8pt;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #C9A962;
-    font-weight: 600;
-    min-width: 1in;
-    flex-shrink: 0;
-  }
-
-  .placard-story {
-    flex: 1;
-    border-top: 1px solid #eee;
-    padding-top: 0.15in;
-    margin-bottom: 0.15in;
-  }
-
-  .placard-story p {
-    font-size: 10pt;
-    color: #2D2D2D;
-    line-height: 1.6;
-    margin-top: 0.05in;
-  }
-
-  .placard-footer {
-    margin-top: auto;
-    padding-top: 0.15in;
-    border-top: 2px solid #1C1C1C;
-    font-size: 8pt;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: #6B6B6B;
-    text-align: center;
-  }
-
-  @media print {
-    .no-print {
-      display: none !important;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-    }
-
-    .placard {
-      border: none;
-      margin: 0;
-    }
-  }
-
-  @media screen {
-    .print-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
-    }
-  }
-`;

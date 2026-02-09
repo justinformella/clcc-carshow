@@ -188,6 +188,7 @@ export default function AdminsPage() {
               <th style={thStyle}>Email</th>
               <th style={thStyle}>Role</th>
               <th style={thStyle}>Date Added</th>
+              <th style={thStyle}>Last Login</th>
               <th style={thStyle}></th>
             </tr>
           </thead>
@@ -214,6 +215,11 @@ export default function AdminsPage() {
                 <td style={tdStyle}>
                   {new Date(admin.created_at).toLocaleDateString()}
                 </td>
+                <td style={{ ...tdStyle, color: admin.last_login_at ? "var(--charcoal)" : "var(--text-light)" }}>
+                  {admin.last_login_at
+                    ? new Date(admin.last_login_at).toLocaleString()
+                    : "Never"}
+                </td>
                 <td style={tdStyle}>
                   <button
                     onClick={() => handleRemove(admin)}
@@ -236,7 +242,7 @@ export default function AdminsPage() {
             {admins.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   style={{
                     ...tdStyle,
                     textAlign: "center",

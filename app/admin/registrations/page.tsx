@@ -151,7 +151,24 @@ export default function RegistrationsPage() {
         >
           Registrations ({filtered.length})
         </h1>
-        <button
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            onClick={() => router.push("/admin/registrations/new")}
+            style={{
+              padding: "0.6rem 1.5rem",
+              background: "var(--white)",
+              color: "var(--charcoal)",
+              border: "1px solid #ddd",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              cursor: "pointer",
+            }}
+          >
+            Add Registration
+          </button>
+          <button
           onClick={exportCSV}
           style={{
             padding: "0.6rem 1.5rem",
@@ -167,6 +184,7 @@ export default function RegistrationsPage() {
         >
           Export CSV
         </button>
+        </div>
       </div>
 
       {/* Filters */}

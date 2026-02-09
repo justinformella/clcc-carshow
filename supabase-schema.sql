@@ -86,7 +86,8 @@ CREATE TABLE admins (
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   role TEXT DEFAULT 'admin',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login_at TIMESTAMPTZ
 );
 
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
@@ -122,3 +123,73 @@ ALTER TABLE email_log ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow authenticated read email_log" ON email_log
   FOR SELECT TO authenticated USING (true);
+
+-- ============================================================
+-- Registration audit log
+-- ============================================================
+CREATE TABLE registration_audit_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  registration_id UUID REFERENCES registrations(id) ON DELETE CASCADE,
+  changed_fields JSONB NOT NULL,   -- {"field": {"old": ..., "new": ...}}
+  actor_email TEXT,                 -- admin email or null for system/webhook
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_registration ON registration_audit_log(registration_id);
+CREATE INDEX idx_audit_created_at ON registration_audit_log(created_at);
+
+ALTER TABLE registration_audit_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow authenticated read audit" ON registration_audit_log
+  FOR SELECT TO authenticated USING (true);
+
+-- Trigger function: logs every field change on registrations
+CREATE OR REPLACE FUNCTION log_registration_changes()
+RETURNS TRIGGER
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  changes JSONB := '{}'::JSONB;
+  actor TEXT := NULL;
+  uid UUID;
+BEGIN
+  -- Resolve actor email from auth.uid() (NULL for service-role calls)
+  uid := auth.uid();
+  IF uid IS NOT NULL THEN
+    SELECT email INTO actor FROM auth.users WHERE id = uid;
+  END IF;
+
+  -- Compare tracked fields (skip updated_at — noise from auto-update trigger)
+  IF OLD.first_name              IS DISTINCT FROM NEW.first_name              THEN changes := changes || jsonb_build_object('first_name',              jsonb_build_object('old', to_jsonb(OLD.first_name),              'new', to_jsonb(NEW.first_name))); END IF;
+  IF OLD.last_name               IS DISTINCT FROM NEW.last_name               THEN changes := changes || jsonb_build_object('last_name',               jsonb_build_object('old', to_jsonb(OLD.last_name),               'new', to_jsonb(NEW.last_name))); END IF;
+  IF OLD.email                   IS DISTINCT FROM NEW.email                   THEN changes := changes || jsonb_build_object('email',                   jsonb_build_object('old', to_jsonb(OLD.email),                   'new', to_jsonb(NEW.email))); END IF;
+  IF OLD.phone                   IS DISTINCT FROM NEW.phone                   THEN changes := changes || jsonb_build_object('phone',                   jsonb_build_object('old', to_jsonb(OLD.phone),                   'new', to_jsonb(NEW.phone))); END IF;
+  IF OLD.hometown                IS DISTINCT FROM NEW.hometown                THEN changes := changes || jsonb_build_object('hometown',                jsonb_build_object('old', to_jsonb(OLD.hometown),                'new', to_jsonb(NEW.hometown))); END IF;
+  IF OLD.vehicle_year            IS DISTINCT FROM NEW.vehicle_year            THEN changes := changes || jsonb_build_object('vehicle_year',            jsonb_build_object('old', to_jsonb(OLD.vehicle_year),            'new', to_jsonb(NEW.vehicle_year))); END IF;
+  IF OLD.vehicle_make            IS DISTINCT FROM NEW.vehicle_make            THEN changes := changes || jsonb_build_object('vehicle_make',            jsonb_build_object('old', to_jsonb(OLD.vehicle_make),            'new', to_jsonb(NEW.vehicle_make))); END IF;
+  IF OLD.vehicle_model           IS DISTINCT FROM NEW.vehicle_model           THEN changes := changes || jsonb_build_object('vehicle_model',           jsonb_build_object('old', to_jsonb(OLD.vehicle_model),           'new', to_jsonb(NEW.vehicle_model))); END IF;
+  IF OLD.vehicle_color           IS DISTINCT FROM NEW.vehicle_color           THEN changes := changes || jsonb_build_object('vehicle_color',           jsonb_build_object('old', to_jsonb(OLD.vehicle_color),           'new', to_jsonb(NEW.vehicle_color))); END IF;
+  IF OLD.engine_specs            IS DISTINCT FROM NEW.engine_specs            THEN changes := changes || jsonb_build_object('engine_specs',            jsonb_build_object('old', to_jsonb(OLD.engine_specs),            'new', to_jsonb(NEW.engine_specs))); END IF;
+  IF OLD.modifications           IS DISTINCT FROM NEW.modifications           THEN changes := changes || jsonb_build_object('modifications',           jsonb_build_object('old', to_jsonb(OLD.modifications),           'new', to_jsonb(NEW.modifications))); END IF;
+  IF OLD.story                   IS DISTINCT FROM NEW.story                   THEN changes := changes || jsonb_build_object('story',                   jsonb_build_object('old', to_jsonb(OLD.story),                   'new', to_jsonb(NEW.story))); END IF;
+  IF OLD.preferred_category      IS DISTINCT FROM NEW.preferred_category      THEN changes := changes || jsonb_build_object('preferred_category',      jsonb_build_object('old', to_jsonb(OLD.preferred_category),      'new', to_jsonb(NEW.preferred_category))); END IF;
+  IF OLD.payment_status          IS DISTINCT FROM NEW.payment_status          THEN changes := changes || jsonb_build_object('payment_status',          jsonb_build_object('old', to_jsonb(OLD.payment_status),          'new', to_jsonb(NEW.payment_status))); END IF;
+  IF OLD.stripe_payment_intent_id IS DISTINCT FROM NEW.stripe_payment_intent_id THEN changes := changes || jsonb_build_object('stripe_payment_intent_id', jsonb_build_object('old', to_jsonb(OLD.stripe_payment_intent_id), 'new', to_jsonb(NEW.stripe_payment_intent_id))); END IF;
+  IF OLD.checked_in              IS DISTINCT FROM NEW.checked_in              THEN changes := changes || jsonb_build_object('checked_in',              jsonb_build_object('old', to_jsonb(OLD.checked_in),              'new', to_jsonb(NEW.checked_in))); END IF;
+  IF OLD.ai_image_url            IS DISTINCT FROM NEW.ai_image_url            THEN changes := changes || jsonb_build_object('ai_image_url',            jsonb_build_object('old', to_jsonb(OLD.ai_image_url),            'new', to_jsonb(NEW.ai_image_url))); END IF;
+
+  -- Only insert if something actually changed
+  IF changes != '{}'::JSONB THEN
+    INSERT INTO registration_audit_log (registration_id, changed_fields, actor_email)
+    VALUES (NEW.id, changes, actor);
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER registrations_audit
+  AFTER UPDATE ON registrations
+  FOR EACH ROW
+  EXECUTE FUNCTION log_registration_changes();

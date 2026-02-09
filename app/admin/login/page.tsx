@@ -20,7 +20,7 @@ function LoginForm() {
 
     const supabase = createClient();
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -30,6 +30,13 @@ function LoginForm() {
       setLoading(false);
       return;
     }
+
+    // Track last login time — use ilike for case-insensitive match
+    const userEmail = authData.user?.email ?? email;
+    await supabase
+      .from("admins")
+      .update({ last_login_at: new Date().toISOString() })
+      .ilike("email", userEmail);
 
     const redirect = searchParams.get("redirect") || "/admin";
     router.push(redirect);

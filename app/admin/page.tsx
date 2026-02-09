@@ -26,7 +26,9 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const totalRevenue = registrations.reduce(
+  const paidRegistrations = registrations.filter((r) => r.payment_status === "paid");
+  const unpaidRegistrations = registrations.filter((r) => r.payment_status === "pending");
+  const totalRevenue = paidRegistrations.reduce(
     (sum, r) => sum + (r.amount_paid || 0),
     0
   );
@@ -70,7 +72,9 @@ export default function AdminDashboard() {
         <SummaryCard
           label="Revenue"
           value={`$${(totalRevenue / 100).toLocaleString()}`}
-          note="total collected"
+          note={unpaidRegistrations.length > 0
+            ? `collected \u00b7 ${unpaidRegistrations.length} unpaid`
+            : "collected"}
         />
         <SummaryCard
           label="Checked In"
