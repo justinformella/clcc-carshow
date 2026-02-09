@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
 
 export default function CheckInPage() {
+  const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -233,7 +235,10 @@ export default function CheckInPage() {
                     marginBottom: "0.8rem",
                   }}
                 >
-                  <div>
+                  <div
+                    onClick={() => router.push(`/admin/registrations/${reg.id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <p
                       style={{
                         fontFamily: "'Playfair Display', serif",
