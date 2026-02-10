@@ -699,7 +699,7 @@ section {
     content: '';
     position: absolute;
     top: 50%;
-    width: calc(50% - 100px);
+    width: calc(50% - 180px);
     height: 1px;
     background: rgba(0, 0, 0, 0.1);
 }
