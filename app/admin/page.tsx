@@ -347,7 +347,7 @@ function StatusBadge({ label, color, bg }: { label: string; color: string; bg: s
 
 function SponsorStatusBadge({ status }: { status: SponsorStatus }) {
   const config: Record<SponsorStatus, { label: string; bg: string; color: string }> = {
-    prospect: { label: "Prospect", bg: "#f5f5f5", color: "#616161" },
+    prospect: { label: "Prospect", bg: "#ede7f6", color: "#5e35b1" },
     inquired: { label: "Inquired", bg: "#e3f2fd", color: "#1565c0" },
     engaged: { label: "Engaged", bg: "#fff3e0", color: "#e65100" },
     paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },
