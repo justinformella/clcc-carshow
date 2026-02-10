@@ -4,6 +4,7 @@ import { getResend } from "@/lib/resend";
 import { adminInviteEmail } from "@/lib/email-templates";
 
 const FROM_EMAIL = "Crystal Lake Cars & Coffee <noreply@crystallakecarshow.com>";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest) {
         await supabase.auth.admin.generateLink({
           type: "invite",
           email,
+          options: {
+            redirectTo: `${SITE_URL}/admin/set-password`,
+          },
         });
 
       if (linkError) {
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
         email,
         options: {
           data: { name, role: role || "admin" },
+          redirectTo: `${SITE_URL}/admin/set-password`,
         },
       });
 

@@ -6,7 +6,8 @@ export async function middleware(request: NextRequest) {
   // Only protect /admin routes (except /admin/login)
   if (
     request.nextUrl.pathname.startsWith("/admin") &&
-    !request.nextUrl.pathname.startsWith("/admin/login")
+    !request.nextUrl.pathname.startsWith("/admin/login") &&
+    !request.nextUrl.pathname.startsWith("/admin/set-password")
   ) {
     const response = NextResponse.next();
 
