@@ -6,10 +6,15 @@ import { adminInviteEmail } from "@/lib/email-templates";
 const FROM_EMAIL = "Crystal Lake Cars & Coffee <noreply@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
-function rewriteRedirect(actionLink: string): string {
+function wrapInviteLink(actionLink: string): string {
+  // Rewrite redirect_to so Supabase sends the user to /admin/set-password
   const url = new URL(actionLink);
   url.searchParams.set("redirect_to", `${SITE_URL}/admin/set-password`);
-  return url.toString();
+  const rewrittenLink = url.toString();
+
+  // Wrap in our intermediate page so link previews don't consume the token
+  const encoded = btoa(encodeURIComponent(rewrittenLink));
+  return `${SITE_URL}/admin/accept-invite?link=${encoded}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
 
           const { subject, html } = adminInviteEmail(
             admin?.name || "there",
-            rewriteRedirect(recoveryData.properties.action_link)
+            wrapInviteLink(recoveryData.properties.action_link)
           );
 
           const resend = getResend();
@@ -99,7 +104,7 @@ export async function POST(request: NextRequest) {
 
       const { subject, html } = adminInviteEmail(
         admin?.name || "there",
-        rewriteRedirect(inviteLink)
+        wrapInviteLink(inviteLink)
       );
 
       const resend = getResend();
@@ -155,7 +160,7 @@ export async function POST(request: NextRequest) {
       // Send the invite email via Resend
       const inviteLink = linkData?.properties?.action_link;
       if (inviteLink) {
-        const { subject, html } = adminInviteEmail(name, rewriteRedirect(inviteLink));
+        const { subject, html } = adminInviteEmail(name, wrapInviteLink(inviteLink));
         const resend = getResend();
         const { error: sendError } = await resend.emails.send({
           from: FROM_EMAIL,
