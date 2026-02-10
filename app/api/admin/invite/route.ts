@@ -46,7 +46,42 @@ export async function POST(request: NextRequest) {
 
       if (linkError) {
         if (linkError.message.includes("already been registered")) {
-          return NextResponse.json({ success: true, invited: false });
+          // Invite was consumed (e.g. by link preview) but user never set password.
+          // Send a recovery link so they can still set their password.
+          const { data: recoveryData, error: recoveryError } =
+            await supabase.auth.admin.generateLink({
+              type: "recovery",
+              email,
+            });
+
+          if (recoveryError || !recoveryData?.properties?.action_link) {
+            return NextResponse.json(
+              { error: recoveryError?.message || "Failed to generate recovery link" },
+              { status: 400 }
+            );
+          }
+
+          const { subject, html } = adminInviteEmail(
+            admin?.name || "there",
+            rewriteRedirect(recoveryData.properties.action_link)
+          );
+
+          const resend = getResend();
+          const { error: sendError } = await resend.emails.send({
+            from: FROM_EMAIL,
+            to: email,
+            subject,
+            html,
+          });
+
+          if (sendError) {
+            return NextResponse.json(
+              { error: sendError.message },
+              { status: 500 }
+            );
+          }
+
+          return NextResponse.json({ success: true, invited: true });
         }
         return NextResponse.json(
           { error: linkError.message },
