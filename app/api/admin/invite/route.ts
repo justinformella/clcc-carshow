@@ -6,6 +6,12 @@ import { adminInviteEmail } from "@/lib/email-templates";
 const FROM_EMAIL = "Crystal Lake Cars & Coffee <noreply@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
+function rewriteRedirect(actionLink: string): string {
+  const url = new URL(actionLink);
+  url.searchParams.set("redirect_to", `${SITE_URL}/admin/set-password`);
+  return url.toString();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email: rawEmail, role, resendOnly } = await request.json();
@@ -58,7 +64,7 @@ export async function POST(request: NextRequest) {
 
       const { subject, html } = adminInviteEmail(
         admin?.name || "there",
-        inviteLink
+        rewriteRedirect(inviteLink)
       );
 
       const resend = getResend();
@@ -114,7 +120,7 @@ export async function POST(request: NextRequest) {
       // Send the invite email via Resend
       const inviteLink = linkData?.properties?.action_link;
       if (inviteLink) {
-        const { subject, html } = adminInviteEmail(name, inviteLink);
+        const { subject, html } = adminInviteEmail(name, rewriteRedirect(inviteLink));
         const resend = getResend();
         const { error: sendError } = await resend.emails.send({
           from: FROM_EMAIL,
