@@ -8,7 +8,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/admin") &&
     !request.nextUrl.pathname.startsWith("/admin/login") &&
     !request.nextUrl.pathname.startsWith("/admin/set-password") &&
-    !request.nextUrl.pathname.startsWith("/admin/accept-invite")
+    !request.nextUrl.pathname.startsWith("/admin/accept-invite") &&
+    !request.nextUrl.pathname.startsWith("/admin/auth/callback")
   ) {
     const response = NextResponse.next();
 
