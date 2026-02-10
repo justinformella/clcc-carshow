@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Sponsor, SponsorStatus, SponsorAuditLogEntry } from "@/types/database";
+import type { Sponsor, SponsorStatus, SponsorAuditLogEntry, Admin } from "@/types/database";
 import { SPONSORSHIP_LEVELS } from "@/types/database";
 
 type EditForm = {
@@ -17,6 +17,7 @@ type EditForm = {
   status: string;
   amount_paid: string;
   notes: string;
+  assigned_to: string;
 };
 
 export default function SponsorDetailPage() {
@@ -30,6 +31,7 @@ export default function SponsorDetailPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<EditForm | null>(null);
   const [auditLog, setAuditLog] = useState<SponsorAuditLogEntry[]>([]);
+  const [admins, setAdmins] = useState<Admin[]>([]);
   const [logoVisible, setLogoVisible] = useState(true);
 
   const fetchSponsor = useCallback(async () => {
@@ -58,6 +60,13 @@ export default function SponsorDetailPage() {
     fetchSponsor();
     fetchAuditLog();
     setLogoVisible(true);
+
+    const fetchAdmins = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("admins").select("*").order("name");
+      setAdmins((data as Admin[]) || []);
+    };
+    fetchAdmins();
   }, [fetchSponsor, fetchAuditLog]);
 
   const startEdit = () => {
@@ -73,6 +82,7 @@ export default function SponsorDetailPage() {
       status: sponsor.status,
       amount_paid: String(sponsor.amount_paid / 100),
       notes: sponsor.notes || "",
+      assigned_to: sponsor.assigned_to || "",
     });
     setEditing(true);
   };
@@ -108,6 +118,7 @@ export default function SponsorDetailPage() {
         status: form.status,
         amount_paid: Math.round(parseFloat(form.amount_paid || "0") * 100),
         notes: form.notes || null,
+        assigned_to: form.assigned_to || null,
       })
       .eq("id", sponsor.id);
 
@@ -301,9 +312,20 @@ export default function SponsorDetailPage() {
                 <input type="tel" id="phone" name="phone" value={form.phone} onChange={handleFormChange} />
               </div>
             </div>
-            <div className="form-group">
-              <label htmlFor="website">Website</label>
-              <input type="text" id="website" name="website" value={form.website} onChange={handleFormChange} placeholder="e.g. acme.com" />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="website">Website</label>
+                <input type="text" id="website" name="website" value={form.website} onChange={handleFormChange} placeholder="e.g. acme.com" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="assigned_to">Assigned To</label>
+                <select id="assigned_to" name="assigned_to" value={form.assigned_to} onChange={handleFormChange}>
+                  <option value="">Unassigned</option>
+                  {admins.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <SectionHeading>Sponsorship Details</SectionHeading>
@@ -366,6 +388,7 @@ export default function SponsorDetailPage() {
                 {s.website}
               </a>
             ) : "—"} />
+            <DetailRow label="Assigned To" value={s.assigned_to ? (admins.find((a) => a.id === s.assigned_to)?.name || "—") : "Unassigned"} />
           </div>
 
           <div
@@ -513,7 +536,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 
 function SponsorStatusBadge({ status }: { status: SponsorStatus }) {
   const config: Record<SponsorStatus, { label: string; bg: string; color: string }> = {
-    prospect: { label: "Prospect", bg: "#f5f5f5", color: "#616161" },
+    prospect: { label: "Prospect", bg: "#ede7f6", color: "#5e35b1" },
     inquired: { label: "Inquired", bg: "#e3f2fd", color: "#1565c0" },
     engaged: { label: "Engaged", bg: "#fff3e0", color: "#e65100" },
     paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },
@@ -549,6 +572,7 @@ const FIELD_LABELS: Record<string, string> = {
   status: "Status",
   amount_paid: "Amount Paid",
   notes: "Notes",
+  assigned_to: "Assigned To",
 };
 
 function formatFieldLabel(field: string): string {

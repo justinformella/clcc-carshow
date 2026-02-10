@@ -209,12 +209,14 @@ CREATE TABLE sponsors (
   status TEXT DEFAULT 'inquired',  -- prospect | inquired | engaged | paid
   amount_paid INTEGER DEFAULT 0,   -- cents (consistent with registrations)
   notes TEXT,
+  assigned_to UUID REFERENCES admins(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_sponsors_email ON sponsors(email);
 CREATE INDEX idx_sponsors_status ON sponsors(status);
+CREATE INDEX idx_sponsors_assigned_to ON sponsors(assigned_to);
 
 ALTER TABLE sponsors ENABLE ROW LEVEL SECURITY;
 
@@ -284,6 +286,7 @@ BEGIN
   IF OLD.status             IS DISTINCT FROM NEW.status             THEN changes := changes || jsonb_build_object('status',             jsonb_build_object('old', to_jsonb(OLD.status),             'new', to_jsonb(NEW.status))); END IF;
   IF OLD.amount_paid        IS DISTINCT FROM NEW.amount_paid        THEN changes := changes || jsonb_build_object('amount_paid',        jsonb_build_object('old', to_jsonb(OLD.amount_paid),        'new', to_jsonb(NEW.amount_paid))); END IF;
   IF OLD.notes              IS DISTINCT FROM NEW.notes              THEN changes := changes || jsonb_build_object('notes',              jsonb_build_object('old', to_jsonb(OLD.notes),              'new', to_jsonb(NEW.notes))); END IF;
+  IF OLD.assigned_to        IS DISTINCT FROM NEW.assigned_to        THEN changes := changes || jsonb_build_object('assigned_to',        jsonb_build_object('old', to_jsonb(OLD.assigned_to),        'new', to_jsonb(NEW.assigned_to))); END IF;
 
   IF changes != '{}'::JSONB THEN
     INSERT INTO sponsor_audit_log (sponsor_id, changed_fields, actor_email)

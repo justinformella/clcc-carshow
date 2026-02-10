@@ -3,24 +3,27 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Sponsor, SponsorStatus } from "@/types/database";
+import type { Sponsor, SponsorStatus, Admin } from "@/types/database";
 
 export default function SponsorsPage() {
   const router = useRouter();
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("sponsors")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [sponsorsRes, adminsRes] = await Promise.all([
+        supabase.from("sponsors").select("*").order("created_at", { ascending: false }),
+        supabase.from("admins").select("*").order("name"),
+      ]);
 
-      setSponsors((data as Sponsor[]) || []);
+      setSponsors((sponsorsRes.data as Sponsor[]) || []);
+      setAdmins((adminsRes.data as Admin[]) || []);
       setLoading(false);
     };
     fetchData();
@@ -35,7 +38,11 @@ export default function SponsorsPage() {
 
     const matchesStatus = !statusFilter || s.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesAssignee =
+      !assigneeFilter ||
+      (assigneeFilter === "unassigned" ? !s.assigned_to : s.assigned_to === assigneeFilter);
+
+    return matchesSearch && matchesStatus && matchesAssignee;
   });
 
   if (loading) {
@@ -124,6 +131,22 @@ export default function SponsorsPage() {
           <option value="engaged">Engaged</option>
           <option value="paid">Paid</option>
         </select>
+        <select
+          value={assigneeFilter}
+          onChange={(e) => setAssigneeFilter(e.target.value)}
+          style={{
+            padding: "0.6rem 1rem",
+            border: "1px solid #ddd",
+            fontSize: "0.9rem",
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          <option value="">All Assignees</option>
+          <option value="unassigned">Unassigned</option>
+          {admins.map((a) => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}
@@ -147,6 +170,7 @@ export default function SponsorsPage() {
               <th style={thStyle}>Contact</th>
               <th style={thStyle}>Level</th>
               <th style={thStyle}>Status</th>
+              <th style={thStyle}>Assigned To</th>
               <th style={thStyle}>Amount Paid</th>
               <th style={thStyle}>Date</th>
             </tr>
@@ -173,6 +197,9 @@ export default function SponsorsPage() {
                   <SponsorStatusBadge status={s.status} />
                 </td>
                 <td style={tdStyle}>
+                  {s.assigned_to ? (admins.find((a) => a.id === s.assigned_to)?.name || "—") : "—"}
+                </td>
+                <td style={tdStyle}>
                   {s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
                 </td>
                 <td style={tdStyle}>
@@ -183,7 +210,7 @@ export default function SponsorsPage() {
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   style={{
                     ...tdStyle,
                     textAlign: "center",
@@ -203,7 +230,7 @@ export default function SponsorsPage() {
 
 function SponsorStatusBadge({ status }: { status: SponsorStatus }) {
   const config: Record<SponsorStatus, { label: string; bg: string; color: string }> = {
-    prospect: { label: "Prospect", bg: "#f5f5f5", color: "#616161" },
+    prospect: { label: "Prospect", bg: "#ede7f6", color: "#5e35b1" },
     inquired: { label: "Inquired", bg: "#e3f2fd", color: "#1565c0" },
     engaged: { label: "Engaged", bg: "#fff3e0", color: "#e65100" },
     paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },

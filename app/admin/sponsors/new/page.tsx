@@ -1,14 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { SPONSORSHIP_LEVELS } from "@/types/database";
+import type { Admin } from "@/types/database";
 
 export default function NewSponsorPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("admins").select("*").order("name");
+      setAdmins((data as Admin[]) || []);
+    };
+    fetchAdmins();
+  }, []);
 
   const [form, setForm] = useState({
     name: "",
@@ -20,6 +31,7 @@ export default function NewSponsorPage() {
     message: "",
     status: "prospect",
     notes: "",
+    assigned_to: "",
   });
 
   const handleChange = (
@@ -46,6 +58,7 @@ export default function NewSponsorPage() {
         message: form.message || null,
         status: form.status,
         notes: form.notes || null,
+        assigned_to: form.assigned_to || null,
       })
       .select()
       .single();
@@ -166,9 +179,20 @@ export default function NewSponsorPage() {
             <label htmlFor="message">Message</label>
             <textarea id="message" name="message" value={form.message} onChange={handleChange} />
           </div>
-          <div className="form-group">
-            <label htmlFor="notes">Internal Notes</label>
-            <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} rows={4} />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="notes">Internal Notes</label>
+              <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} rows={4} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="assigned_to">Assign To</label>
+              <select id="assigned_to" name="assigned_to" value={form.assigned_to} onChange={handleChange}>
+                <option value="">Unassigned</option>
+                {admins.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
