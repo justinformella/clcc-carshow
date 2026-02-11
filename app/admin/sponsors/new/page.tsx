@@ -49,9 +49,9 @@ export default function NewSponsorPage() {
     const { data, error: insertError } = await supabase
       .from("sponsors")
       .insert({
-        name: form.name,
+        name: form.name || "",
         company: form.company,
-        email: form.email,
+        email: form.email || "",
         phone: form.phone || null,
         website: form.website || null,
         sponsorship_level: form.sponsorship_level,
@@ -129,29 +129,29 @@ export default function NewSponsorPage() {
       >
         <div className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
           <SectionHeading>Contact Information</SectionHeading>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="name">Name *</label>
-              <input type="text" id="name" name="name" value={form.name} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="company">Company *</label>
-              <input type="text" id="company" name="company" value={form.company} onChange={handleChange} required />
-            </div>
+          <div className="form-group">
+            <label htmlFor="company">Business Name *</label>
+            <input type="text" id="company" name="company" value={form.company} onChange={handleChange} required />
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="email">Email *</label>
-              <input type="email" id="email" name="email" value={form.email} onChange={handleChange} required />
+              <label htmlFor="name">Contact Name</label>
+              <input type="text" id="name" name="name" value={form.name} onChange={handleChange} />
             </div>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input type="email" id="email" name="email" value={form.email} onChange={handleChange} />
+            </div>
+          </div>
+          <div className="form-row">
             <div className="form-group">
               <label htmlFor="phone">Phone</label>
               <input type="tel" id="phone" name="phone" value={form.phone} onChange={handleChange} />
             </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="website">Website</label>
-            <input type="text" id="website" name="website" value={form.website} onChange={handleChange} placeholder="e.g. acme.com" />
+            <div className="form-group">
+              <label htmlFor="website">Website</label>
+              <input type="text" id="website" name="website" value={form.website} onChange={handleChange} placeholder="e.g. acme.com" />
+            </div>
           </div>
 
           <SectionHeading>Sponsorship Details</SectionHeading>

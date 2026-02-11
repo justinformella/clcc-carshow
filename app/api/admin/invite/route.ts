@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase-server";
+import { createServerClient as createServiceClient } from "@/lib/supabase-server";
+import { createServerClient } from "@supabase/ssr";
 import { getResend } from "@/lib/resend";
 import { adminInviteEmail } from "@/lib/email-templates";
 
 const FROM_EMAIL = "Crystal Lake Cars & Coffee <noreply@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
+
+function createAuthClient(request: NextRequest) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {
+          // No-op: route handlers don't need to set cookies here
+        },
+      },
+    }
+  );
+}
 
 function wrapInviteLink(actionLink: string): string {
   // Rewrite redirect_to so Supabase sends the user to /admin/set-password
@@ -19,6 +37,28 @@ function wrapInviteLink(actionLink: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authorize: only admins can invite/manage users
+    const authSupabase = createAuthClient(request);
+    const { data: { user: caller } } = await authSupabase.auth.getUser();
+    if (!caller?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabase = createServiceClient();
+
+    const { data: callerAdmin } = await supabase
+      .from("admins")
+      .select("role")
+      .ilike("email", caller.email)
+      .maybeSingle();
+
+    if (callerAdmin?.role !== "admin") {
+      return NextResponse.json(
+        { error: "Only admins can manage users" },
+        { status: 403 }
+      );
+    }
+
     const { name, email: rawEmail, role, resendOnly } = await request.json();
     const email = rawEmail?.toLowerCase().trim();
 
@@ -28,8 +68,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const supabase = createServerClient();
 
     // Resend-only: generate a new invite link and send via Resend
     if (resendOnly) {
@@ -139,7 +177,7 @@ export async function POST(request: NextRequest) {
         type: "invite",
         email,
         options: {
-          data: { name, role: role || "admin" },
+          data: { name, role: role || "organizer" },
           redirectTo: `${SITE_URL}/admin/set-password`,
         },
       });
@@ -178,7 +216,7 @@ export async function POST(request: NextRequest) {
     // Add to admins table for notification emails
     const { error: insertError } = await supabase
       .from("admins")
-      .insert({ name, email, role: role || "admin" });
+      .insert({ name, email, role: role || "organizer" });
 
     if (insertError) {
       return NextResponse.json(

@@ -261,15 +261,17 @@ export default function CheckInPage() {
                       {reg.vehicle_year} {reg.vehicle_make} {reg.vehicle_model}
                       {reg.vehicle_color ? ` — ${reg.vehicle_color}` : ""}
                     </p>
-                    <p
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--gold)",
-                        marginTop: "0.2rem",
-                      }}
-                    >
-                      {reg.preferred_category}
-                    </p>
+                    {reg.award_category && (
+                      <p
+                        style={{
+                          fontSize: "0.8rem",
+                          color: "var(--gold)",
+                          marginTop: "0.2rem",
+                        }}
+                      >
+                        {reg.award_category}
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={() => handleCheckIn(reg)}

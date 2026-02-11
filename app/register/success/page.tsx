@@ -2,11 +2,48 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
+
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
+function downloadCalendarEvent() {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//CLCC Car Show//EN",
+    "BEGIN:VEVENT",
+    "DTSTART:20260517T123000Z",
+    "DTEND:20260517T180000Z",
+    "SUMMARY:CLCC Annual Charity Car Show",
+    "LOCATION:Downtown Crystal Lake\\, IL — Grant\\, Brink & Williams Streets",
+    "DESCRIPTION:Check-in starts at 7:30 AM. Bring your registered vehicle. 100% of net proceeds go to the Crystal Lake Food Pantry.",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+  const blob = new Blob([lines.join("\r\n")], {
+    type: "text/calendar;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "clcc-car-show-2026.ics";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.fbq) {
+      window.fbq("track", "CompleteRegistration");
+    }
+  }, []);
 
   return (
     <>
@@ -129,22 +166,47 @@ function SuccessContent() {
               </p>
             )}
 
-            <Link
-              href="/"
+            <div
               style={{
-                display: "inline-block",
-                padding: "1rem 2.5rem",
-                background: "var(--gold)",
-                color: "var(--charcoal)",
-                textDecoration: "none",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
+                display: "flex",
+                gap: "1rem",
+                justifyContent: "center",
+                flexWrap: "wrap",
               }}
             >
-              Back to Home
-            </Link>
+              <button
+                onClick={downloadCalendarEvent}
+                style={{
+                  padding: "1rem 2.5rem",
+                  background: "transparent",
+                  color: "var(--charcoal)",
+                  border: "2px solid var(--charcoal)",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                }}
+              >
+                Add to Calendar
+              </button>
+              <Link
+                href="/"
+                style={{
+                  display: "inline-block",
+                  padding: "1rem 2.5rem",
+                  background: "var(--gold)",
+                  color: "var(--charcoal)",
+                  textDecoration: "none",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                }}
+              >
+                Back to Home
+              </Link>
+            </div>
           </div>
         </div>
       </div>

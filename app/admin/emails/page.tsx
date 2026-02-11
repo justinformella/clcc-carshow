@@ -3,70 +3,51 @@
 import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
+import {
+  confirmationEmail,
+  adminNotificationEmail,
+  announcementEmail,
+} from "@/lib/email-templates";
 
 type Recipient = Pick<Registration, "id" | "first_name" | "last_name" | "email">;
 
-const SITE_URL = "https://crystallakecarshow.com";
+const sampleReg: Registration = {
+  id: "sample",
+  car_number: 42,
+  first_name: "John",
+  last_name: "Smith",
+  email: "john@example.com",
+  phone: null,
+  hometown: "Crystal Lake, IL",
+  vehicle_year: 1967,
+  vehicle_make: "Ford",
+  vehicle_model: "Mustang",
+  vehicle_color: "Red",
+  engine_specs: null,
+  modifications: null,
+  story: null,
+  award_category: null,
+  stripe_session_id: null,
+  stripe_payment_intent_id: null,
+  payment_status: "paid",
+  amount_paid: 3000,
+  checked_in: false,
+  checked_in_at: null,
+  ai_image_url: null,
+  utm_source: null,
+  utm_medium: null,
+  utm_campaign: null,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
 
-function emailShell(content: string): string {
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
-<body style="margin:0; padding:0; background:#f5f5f5; font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5; padding:24px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
-        <tr><td style="background:#1a1a2e; padding:24px 32px; text-align:center;">
-          <span style="font-size:22px; font-weight:700; color:#c9a84c; letter-spacing:0.08em;">CRYSTAL LAKE CARS &amp; COFFEE</span>
-        </td></tr>
-        <tr><td style="background:#ffffff; padding:32px;">${content}</td></tr>
-        <tr><td style="padding:20px 32px; text-align:center; font-size:12px; color:#999;">
-          Crystal Lake Cars &amp; Coffee &middot; Crystal Lake, IL<br/>
-          <a href="${SITE_URL}" style="color:#c9a84c; text-decoration:none;">crystallakecarshow.com</a>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-}
-
-const sampleConfirmationHtml = emailShell(`
-  <h1 style="margin:0 0 16px; font-size:24px; color:#1a1a2e;">You're Registered!</h1>
-  <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
-    Thank you for registering for Crystal Lake Cars &amp; Coffee. Here are your details:
-  </p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
-    <tr><td style="padding:8px 0; font-size:14px; color:#666; width:140px;">Car Number</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e; font-weight:600;">#42</td></tr>
-    <tr><td style="padding:8px 0; font-size:14px; color:#666;">Vehicle</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e;">1967 Ford Mustang</td></tr>
-    <tr><td style="padding:8px 0; font-size:14px; color:#666;">Category</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e;">Best Classic (Pre-2000)</td></tr>
-    <tr><td style="padding:8px 0; font-size:14px; color:#666;">Event Date</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e;">August 30, 2026</td></tr>
-  </table>
-  <p style="margin:0; font-size:14px; color:#666; line-height:1.5;">We'll send more details as the event approaches. See you there!</p>
-`);
-
-const sampleAdminHtml = emailShell(`
-  <h1 style="margin:0 0 16px; font-size:24px; color:#1a1a2e;">New Registration</h1>
-  <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
-    A new registration has been submitted and paid:
-  </p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
-    <tr><td style="padding:8px 0; font-size:14px; color:#666; width:140px;">Name</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e;">John Smith</td></tr>
-    <tr><td style="padding:8px 0; font-size:14px; color:#666;">Email</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e;">john@example.com</td></tr>
-    <tr><td style="padding:8px 0; font-size:14px; color:#666;">Vehicle</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e;">1967 Ford Mustang</td></tr>
-    <tr><td style="padding:8px 0; font-size:14px; color:#666;">Car Number</td><td style="padding:8px 0; font-size:14px; color:#1a1a2e;">#42</td></tr>
-  </table>
-  <a href="#" style="display:inline-block; padding:12px 24px; background:#c9a84c; color:#1a1a2e; text-decoration:none; font-weight:600; font-size:14px;">View Registration</a>
-`);
-
-const sampleAnnouncementHtml = emailShell(`
-  <h1 style="margin:0 0 16px; font-size:24px; color:#1a1a2e;">Parking Update for August 30th</h1>
-  <p style="margin:0 0 8px; font-size:14px; color:#666;">Hi John,</p>
-  <div style="margin:0 0 24px; font-size:15px; color:#333; line-height:1.6; white-space:pre-wrap;">We wanted to let you know about updated parking arrangements for the show. Please arrive by 8:00 AM to ensure you get your assigned spot.
-
-Gates open at 7:30 AM and we'll have volunteers directing traffic. Look for the signs marked with your car number.</div>
-  <p style="margin:0; font-size:14px; color:#666;">&mdash; Crystal Lake Cars &amp; Coffee Team</p>
-`);
+const sampleConfirmationHtml = confirmationEmail(sampleReg).html;
+const sampleAdminHtml = adminNotificationEmail(sampleReg, "#").html;
+const sampleAnnouncementHtml = announcementEmail(
+  "Parking Update for May 17th",
+  "We wanted to let you know about updated parking arrangements for the show. Please arrive by 8:00 AM to ensure you get your assigned spot.\n\nGates open at 7:30 AM and we'll have volunteers directing traffic. Look for the signs marked with your car number.",
+  "John"
+).html;
 
 export default function EmailsPage() {
   const [registrations, setRegistrations] = useState<Recipient[]>([]);

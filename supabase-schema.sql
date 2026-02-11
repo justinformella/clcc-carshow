@@ -18,8 +18,8 @@ CREATE TABLE registrations (
   engine_specs TEXT,
   modifications TEXT,
   story TEXT,
-  -- Event info
-  preferred_category TEXT NOT NULL,
+  -- Award (admin-assigned; NULL = no award yet)
+  award_category TEXT,
   -- Payment
   stripe_session_id TEXT,
   stripe_payment_intent_id TEXT,
@@ -30,6 +30,10 @@ CREATE TABLE registrations (
   checked_in_at TIMESTAMPTZ,
   -- AI image
   ai_image_url TEXT,
+  -- UTM attribution
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT,
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -39,6 +43,7 @@ CREATE TABLE registrations (
 CREATE INDEX idx_registrations_email ON registrations(email);
 CREATE INDEX idx_registrations_payment_status ON registrations(payment_status);
 CREATE INDEX idx_registrations_stripe_session ON registrations(stripe_session_id);
+CREATE UNIQUE INDEX idx_one_winner_per_category ON registrations (award_category) WHERE award_category IS NOT NULL;
 
 -- Enable Row Level Security
 ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
@@ -85,7 +90,7 @@ CREATE TABLE admins (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
-  role TEXT DEFAULT 'admin',
+  role TEXT DEFAULT 'organizer',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_login_at TIMESTAMPTZ
 );
@@ -95,14 +100,17 @@ ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow authenticated read admins" ON admins
   FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "Allow authenticated insert admins" ON admins
-  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Allow admin role insert admins" ON admins
+  FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (SELECT 1 FROM admins WHERE email = auth.jwt()->>'email' AND role = 'admin'));
 
-CREATE POLICY "Allow authenticated update admins" ON admins
-  FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Allow admin role update admins" ON admins
+  FOR UPDATE TO authenticated
+  USING (EXISTS (SELECT 1 FROM admins WHERE email = auth.jwt()->>'email' AND role = 'admin'));
 
-CREATE POLICY "Allow authenticated delete admins" ON admins
-  FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Allow admin role delete admins" ON admins
+  FOR DELETE TO authenticated
+  USING (EXISTS (SELECT 1 FROM admins WHERE email = auth.jwt()->>'email' AND role = 'admin'));
 
 -- ============================================================
 -- Email log table
@@ -173,11 +181,14 @@ BEGIN
   IF OLD.engine_specs            IS DISTINCT FROM NEW.engine_specs            THEN changes := changes || jsonb_build_object('engine_specs',            jsonb_build_object('old', to_jsonb(OLD.engine_specs),            'new', to_jsonb(NEW.engine_specs))); END IF;
   IF OLD.modifications           IS DISTINCT FROM NEW.modifications           THEN changes := changes || jsonb_build_object('modifications',           jsonb_build_object('old', to_jsonb(OLD.modifications),           'new', to_jsonb(NEW.modifications))); END IF;
   IF OLD.story                   IS DISTINCT FROM NEW.story                   THEN changes := changes || jsonb_build_object('story',                   jsonb_build_object('old', to_jsonb(OLD.story),                   'new', to_jsonb(NEW.story))); END IF;
-  IF OLD.preferred_category      IS DISTINCT FROM NEW.preferred_category      THEN changes := changes || jsonb_build_object('preferred_category',      jsonb_build_object('old', to_jsonb(OLD.preferred_category),      'new', to_jsonb(NEW.preferred_category))); END IF;
+  IF OLD.award_category           IS DISTINCT FROM NEW.award_category           THEN changes := changes || jsonb_build_object('award_category',           jsonb_build_object('old', to_jsonb(OLD.award_category),           'new', to_jsonb(NEW.award_category))); END IF;
   IF OLD.payment_status          IS DISTINCT FROM NEW.payment_status          THEN changes := changes || jsonb_build_object('payment_status',          jsonb_build_object('old', to_jsonb(OLD.payment_status),          'new', to_jsonb(NEW.payment_status))); END IF;
   IF OLD.stripe_payment_intent_id IS DISTINCT FROM NEW.stripe_payment_intent_id THEN changes := changes || jsonb_build_object('stripe_payment_intent_id', jsonb_build_object('old', to_jsonb(OLD.stripe_payment_intent_id), 'new', to_jsonb(NEW.stripe_payment_intent_id))); END IF;
   IF OLD.checked_in              IS DISTINCT FROM NEW.checked_in              THEN changes := changes || jsonb_build_object('checked_in',              jsonb_build_object('old', to_jsonb(OLD.checked_in),              'new', to_jsonb(NEW.checked_in))); END IF;
   IF OLD.ai_image_url            IS DISTINCT FROM NEW.ai_image_url            THEN changes := changes || jsonb_build_object('ai_image_url',            jsonb_build_object('old', to_jsonb(OLD.ai_image_url),            'new', to_jsonb(NEW.ai_image_url))); END IF;
+  IF OLD.utm_source              IS DISTINCT FROM NEW.utm_source              THEN changes := changes || jsonb_build_object('utm_source',              jsonb_build_object('old', to_jsonb(OLD.utm_source),              'new', to_jsonb(NEW.utm_source))); END IF;
+  IF OLD.utm_medium              IS DISTINCT FROM NEW.utm_medium              THEN changes := changes || jsonb_build_object('utm_medium',              jsonb_build_object('old', to_jsonb(OLD.utm_medium),              'new', to_jsonb(NEW.utm_medium))); END IF;
+  IF OLD.utm_campaign            IS DISTINCT FROM NEW.utm_campaign            THEN changes := changes || jsonb_build_object('utm_campaign',            jsonb_build_object('old', to_jsonb(OLD.utm_campaign),            'new', to_jsonb(NEW.utm_campaign))); END IF;
 
   -- Only insert if something actually changed
   IF changes != '{}'::JSONB THEN
@@ -301,3 +312,40 @@ CREATE TRIGGER sponsors_audit
   AFTER UPDATE ON sponsors
   FOR EACH ROW
   EXECUTE FUNCTION log_sponsor_changes();
+
+-- ============================================================
+-- Ad campaigns table (manual campaign tracker)
+-- ============================================================
+CREATE TABLE ad_campaigns (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  platform TEXT NOT NULL,          -- 'facebook', 'instagram', 'google', etc.
+  campaign_name TEXT NOT NULL,
+  status TEXT DEFAULT 'active',    -- 'active', 'paused', 'completed'
+  budget_cents INTEGER,            -- planned budget in cents
+  spent_cents INTEGER DEFAULT 0,   -- actual spend in cents
+  impressions INTEGER DEFAULT 0,
+  clicks INTEGER DEFAULT 0,
+  utm_campaign TEXT,               -- links to registration attribution
+  external_url TEXT,               -- link to open in Ads Manager
+  notes TEXT,
+  start_date DATE,
+  end_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE ad_campaigns ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow authenticated read ad_campaigns" ON ad_campaigns
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated insert ad_campaigns" ON ad_campaigns
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Allow authenticated update ad_campaigns" ON ad_campaigns
+  FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "Allow authenticated delete ad_campaigns" ON ad_campaigns
+  FOR DELETE TO authenticated USING (true);
+
+CREATE TRIGGER ad_campaigns_updated_at
+  BEFORE UPDATE ON ad_campaigns
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at();

@@ -56,7 +56,8 @@ export default function RegistrationsPage() {
         .includes(search.toLowerCase());
 
     const matchesCategory =
-      !categoryFilter || r.preferred_category === categoryFilter;
+      !categoryFilter ||
+      (categoryFilter === "__none__" ? !r.award_category : r.award_category === categoryFilter);
 
     const matchesStatus =
       !statusFilter ||
@@ -81,9 +82,12 @@ export default function RegistrationsPage() {
       "Engine Specs",
       "Modifications",
       "Story",
-      "Category",
+      "Award",
       "Checked In",
       "Registered At",
+      "UTM Source",
+      "UTM Medium",
+      "UTM Campaign",
     ];
 
     const rows = filtered.map((r) => [
@@ -100,9 +104,12 @@ export default function RegistrationsPage() {
       r.engine_specs || "",
       r.modifications || "",
       r.story || "",
-      r.preferred_category,
+      r.award_category || "",
       r.checked_in ? "Yes" : "No",
       new Date(r.created_at).toLocaleDateString(),
+      r.utm_source || "",
+      r.utm_medium || "",
+      r.utm_campaign || "",
     ]);
 
     const csv = [headers, ...rows]
@@ -128,7 +135,7 @@ export default function RegistrationsPage() {
     );
   }
 
-  const categories = [...new Set(registrations.map((r) => r.preferred_category))];
+  const categories = [...new Set(registrations.map((r) => r.award_category).filter(Boolean))] as string[];
 
   return (
     <>
@@ -220,7 +227,8 @@ export default function RegistrationsPage() {
             fontFamily: "'Inter', sans-serif",
           }}
         >
-          <option value="">All Categories</option>
+          <option value="">All Awards</option>
+          <option value="__none__">No Award</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
@@ -353,7 +361,8 @@ export default function RegistrationsPage() {
                 <th style={thStyle}>Name</th>
                 <th style={thStyle}>Email</th>
                 <th style={thStyle}>Vehicle</th>
-                <th style={thStyle}>Category</th>
+                <th style={thStyle}>Award</th>
+                <th style={thStyle}>Source</th>
                 <th style={thStyle}>Hometown</th>
                 <th style={thStyle}>Status</th>
               </tr>
@@ -379,7 +388,40 @@ export default function RegistrationsPage() {
                   <td style={tdStyle}>
                     {reg.vehicle_year} {reg.vehicle_make} {reg.vehicle_model}
                   </td>
-                  <td style={tdStyle}>{reg.preferred_category}</td>
+                  <td style={tdStyle}>
+                    {reg.award_category ? (
+                      <span style={{
+                        display: "inline-block",
+                        padding: "0.2rem 0.6rem",
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        background: "#fff8e1",
+                        color: "#f9a825",
+                      }}>
+                        {reg.award_category}
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-light)" }}>&mdash;</span>
+                    )}
+                  </td>
+                  <td style={tdStyle}>
+                    {reg.utm_source ? (
+                      <span style={{
+                        display: "inline-block",
+                        padding: "0.2rem 0.6rem",
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        background: "#e3f2fd",
+                        color: "#1565c0",
+                      }}>
+                        {reg.utm_source}
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-light)" }}>&mdash;</span>
+                    )}
+                  </td>
                   <td style={tdStyle}>{reg.hometown || "—"}</td>
                   <td style={tdStyle}>
                     <StatusBadge reg={reg} />
@@ -389,7 +431,7 @@ export default function RegistrationsPage() {
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     style={{
                       ...tdStyle,
                       textAlign: "center",
@@ -470,7 +512,21 @@ export default function RegistrationsPage() {
                   {reg.vehicle_color ? ` — ${reg.vehicle_color}` : ""}
                 </p>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.6rem", fontSize: "0.78rem", color: "var(--text-light)" }}>
-                  <span>{reg.preferred_category}</span>
+                  <span>
+                    {reg.award_category ? (
+                      <span style={{
+                        display: "inline-block",
+                        padding: "0.15rem 0.5rem",
+                        fontSize: "0.65rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        background: "#fff8e1",
+                        color: "#f9a825",
+                      }}>
+                        {reg.award_category}
+                      </span>
+                    ) : null}
+                  </span>
                   <span>{reg.hometown || ""}</span>
                 </div>
               </div>

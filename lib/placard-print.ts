@@ -12,7 +12,7 @@ export function buildPlacardHtml(reg: Registration): string {
     <div class="placard-vehicle">${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}</div>
     <div class="placard-owner">${reg.first_name} ${reg.last_name}${reg.hometown ? `<span class="placard-hometown"> &mdash; ${reg.hometown}</span>` : ""}</div>
     <div class="placard-divider"></div>
-    <div class="placard-category">${reg.preferred_category}</div>
+    ${reg.award_category ? `<div class="placard-category">${reg.award_category}</div>` : ""}
     ${
       reg.vehicle_color || reg.engine_specs || reg.modifications
         ? `<div class="placard-details">${detail("Color", reg.vehicle_color)}${detail("Engine", reg.engine_specs)}${detail("Modifications", reg.modifications)}</div>`

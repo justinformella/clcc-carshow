@@ -20,7 +20,7 @@ type EditForm = {
   engine_specs: string;
   modifications: string;
   story: string;
-  preferred_category: string;
+  award_category: string;
   payment_status: string;
 };
 
@@ -205,7 +205,7 @@ export default function RegistrationDetailPage() {
       engine_specs: registration.engine_specs || "",
       modifications: registration.modifications || "",
       story: registration.story || "",
-      preferred_category: registration.preferred_category,
+      award_category: registration.award_category || "",
       payment_status: registration.payment_status,
     });
     setEditing(true);
@@ -223,12 +223,35 @@ export default function RegistrationDetailPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form || !registration) return;
     setSaving(true);
+    setSaveError(null);
 
     const supabase = createClient();
+    const awardValue = form.award_category || null;
+
+    // Uniqueness pre-check: if assigning an award, verify no other reg has it
+    if (awardValue) {
+      const { data: existing } = await supabase
+        .from("registrations")
+        .select("id, first_name, last_name, car_number")
+        .eq("award_category", awardValue)
+        .neq("id", registration.id)
+        .maybeSingle();
+
+      if (existing) {
+        setSaving(false);
+        setSaveError(
+          `"${awardValue}" is already assigned to #${existing.car_number} ${existing.first_name} ${existing.last_name}. Remove it from that registration first.`
+        );
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("registrations")
       .update({
@@ -244,14 +267,16 @@ export default function RegistrationDetailPage() {
         engine_specs: form.engine_specs || null,
         modifications: form.modifications || null,
         story: form.story || null,
-        preferred_category: form.preferred_category,
+        award_category: awardValue,
         payment_status: form.payment_status,
       })
       .eq("id", registration.id);
 
     setSaving(false);
 
-    if (!error) {
+    if (error) {
+      setSaveError(error.message);
+    } else {
       setEditing(false);
       setForm(null);
       await fetchRegistration();
@@ -454,6 +479,18 @@ export default function RegistrationDetailPage() {
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           }}
         >
+          {saveError && (
+            <div style={{
+              background: "#fee",
+              border: "1px solid #c00",
+              color: "#c00",
+              padding: "0.8rem",
+              marginBottom: "1rem",
+              fontSize: "0.85rem",
+            }}>
+              {saveError}
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", fontWeight: 400 }}>
               Edit Registration
@@ -527,17 +564,20 @@ export default function RegistrationDetailPage() {
               <textarea id="story" name="story" value={form.story} onChange={handleFormChange} />
             </div>
 
-            {/* Event Info */}
-            <SectionHeading>Event Information</SectionHeading>
+            {/* Award Winner & Status */}
+            <SectionHeading>Award Winner & Status</SectionHeading>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="preferred_category">Preferred Award Category *</label>
-                <select id="preferred_category" name="preferred_category" value={form.preferred_category} onChange={handleFormChange} required>
-                  <option value="">Select a category...</option>
+                <label htmlFor="award_category">Award Winner</label>
+                <select id="award_category" name="award_category" value={form.award_category} onChange={handleFormChange}>
+                  <option value="">No Award</option>
                   {AWARD_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.3rem", display: "block" }}>
+                  Selecting a category designates this vehicle as the winner.
+                </span>
               </div>
               <div className="form-group">
                 <label htmlFor="payment_status">Payment Status</label>
@@ -575,6 +615,14 @@ export default function RegistrationDetailPage() {
                 <DetailRow label="Email" value={r.email} />
                 <DetailRow label="Phone" value={r.phone || "—"} />
                 <DetailRow label="Hometown" value={r.hometown || "—"} />
+                <DetailRow
+                  label="Source"
+                  value={
+                    r.utm_source
+                      ? [r.utm_source, r.utm_medium, r.utm_campaign].filter(Boolean).join(" / ")
+                      : "Direct"
+                  }
+                />
               </DetailSection>
 
               <DetailSection title="Vehicle Details">
@@ -1042,7 +1090,21 @@ export default function RegistrationDetailPage() {
                   Quick Info
                 </h3>
                 <QuickInfoRow label="Car #" value={`#${r.car_number}`} />
-                <QuickInfoRow label="Category" value={r.preferred_category} />
+                {r.award_category && (
+                  <div style={{
+                    background: "#fffde7",
+                    border: "1px solid #f9a825",
+                    padding: "0.5rem 0.75rem",
+                    textAlign: "center",
+                  }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#f57f17", marginBottom: "0.15rem" }}>
+                      Award Winner
+                    </div>
+                    <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#e65100" }}>
+                      {r.award_category}
+                    </div>
+                  </div>
+                )}
                 <QuickInfoRow
                   label="Check-in"
                   value={r.checked_in ? "Checked In" : "Not Checked In"}
@@ -1286,7 +1348,7 @@ const FIELD_LABELS: Record<string, string> = {
   engine_specs: "Engine Specs",
   modifications: "Modifications",
   story: "Story",
-  preferred_category: "Category",
+  award_category: "Award Winner",
   payment_status: "Payment Status",
   stripe_payment_intent_id: "Payment Intent",
   checked_in: "Checked In",

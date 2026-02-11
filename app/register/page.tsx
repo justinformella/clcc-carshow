@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { AWARD_CATEGORIES, REGISTRATION_PRICE_DISPLAY, MAX_REGISTRATIONS } from "@/types/database";
+import { useSearchParams } from "next/navigation";
+import { REGISTRATION_PRICE_DISPLAY, MAX_REGISTRATIONS } from "@/types/database";
 
-export default function RegisterPage() {
+function RegisterContent() {
+  const searchParams = useSearchParams();
+  const utmRef = useRef({
+    utm_source: searchParams.get("utm_source") || "",
+    utm_medium: searchParams.get("utm_medium") || "",
+    utm_campaign: searchParams.get("utm_campaign") || "",
+  });
+
   const [spotsRemaining, setSpotsRemaining] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +30,6 @@ export default function RegisterPage() {
     engine_specs: "",
     modifications: "",
     story: "",
-    preferred_category: "",
   });
 
   useEffect(() => {
@@ -56,6 +63,9 @@ export default function RegisterPage() {
         body: JSON.stringify({
           ...form,
           vehicle_year: parseInt(form.vehicle_year),
+          utm_source: utmRef.current.utm_source || undefined,
+          utm_medium: utmRef.current.utm_medium || undefined,
+          utm_campaign: utmRef.current.utm_campaign || undefined,
         }),
       });
 
@@ -372,26 +382,6 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="preferred_category">
-                    Preferred Award Category *
-                  </label>
-                  <select
-                    id="preferred_category"
-                    name="preferred_category"
-                    value={form.preferred_category}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select a category...</option>
-                    {AWARD_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* Summary */}
                 <div
                   style={{
@@ -451,5 +441,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
   );
 }

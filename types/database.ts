@@ -15,8 +15,8 @@ export type Registration = {
   engine_specs: string | null;
   modifications: string | null;
   story: string | null;
-  // Event info
-  preferred_category: string;
+  // Award (admin-assigned, null = no award)
+  award_category: string | null;
   // Payment
   stripe_session_id: string | null;
   stripe_payment_intent_id: string | null;
@@ -27,6 +27,10 @@ export type Registration = {
   checked_in_at: string | null;
   // AI image
   ai_image_url: string | null;
+  // UTM attribution
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -34,7 +38,7 @@ export type Registration = {
 
 export type RegistrationInsert = Omit<
   Registration,
-  "id" | "car_number" | "created_at" | "updated_at" | "checked_in" | "checked_in_at" | "payment_status" | "amount_paid" | "ai_image_url"
+  "id" | "car_number" | "created_at" | "updated_at" | "checked_in" | "checked_in_at" | "payment_status" | "amount_paid" | "ai_image_url" | "award_category" | "utm_source" | "utm_medium" | "utm_campaign"
 > & {
   payment_status?: string;
   amount_paid?: number;
@@ -54,7 +58,7 @@ export type Admin = {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: "admin" | "organizer";
   created_at: string;
   last_login_at: string | null;
 };
@@ -181,3 +185,29 @@ export const SPONSORSHIP_LEVELS = [
 export const MAX_REGISTRATIONS = 200;
 export const REGISTRATION_PRICE_CENTS = 3000;
 export const REGISTRATION_PRICE_DISPLAY = "$30";
+
+export const AD_PLATFORMS = [
+  "facebook",
+  "instagram",
+  "google",
+  "tiktok",
+  "other",
+] as const;
+
+export type AdCampaign = {
+  id: string;
+  platform: string;
+  campaign_name: string;
+  status: "active" | "paused" | "completed";
+  budget_cents: number | null;
+  spent_cents: number;
+  impressions: number;
+  clicks: number;
+  utm_campaign: string | null;
+  external_url: string | null;
+  notes: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+};

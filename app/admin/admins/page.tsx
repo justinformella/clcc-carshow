@@ -9,9 +9,11 @@ export default function AdminsPage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("organizer");
   const [adding, setAdding] = useState(false);
   const [resending, setResending] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<Admin["role"] | null>(null);
 
   const fetchAdmins = async () => {
     const supabase = createClient();
@@ -24,7 +26,21 @@ export default function AdminsPage() {
   };
 
   useEffect(() => {
-    fetchAdmins();
+    const init = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setCurrentUserEmail(user.email.toLowerCase());
+        const { data } = await supabase
+          .from("admins")
+          .select("role")
+          .ilike("email", user.email)
+          .maybeSingle();
+        if (data?.role) setCurrentUserRole(data.role);
+      }
+      await fetchAdmins();
+    };
+    init();
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -59,6 +75,10 @@ export default function AdminsPage() {
   };
 
   const handleRemove = async (admin: Admin) => {
+    if (currentUserEmail && admin.email.toLowerCase() === currentUserEmail) {
+      alert("You cannot remove yourself.");
+      return;
+    }
     if (!confirm(`Remove ${admin.name} (${admin.email}) as an admin?`)) return;
 
     const supabase = createClient();
@@ -90,11 +110,31 @@ export default function AdminsPage() {
     }
   };
 
-  if (loading) {
+  if (loading || currentUserRole === null) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
         Loading...
       </p>
+    );
+  }
+
+  if (currentUserRole !== "admin") {
+    return (
+      <div style={{ textAlign: "center", padding: "4rem 2rem" }}>
+        <h1
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "2rem",
+            fontWeight: 400,
+            marginBottom: "1rem",
+          }}
+        >
+          Access Denied
+        </h1>
+        <p style={{ color: "var(--text-light)" }}>
+          Only admins can manage users. Contact an admin if you need access.
+        </p>
+      </div>
     );
   }
 
@@ -166,8 +206,8 @@ export default function AdminsPage() {
               onChange={(e) => setRole(e.target.value)}
               style={inputStyle}
             >
+              <option value="organizer">Organizer</option>
               <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
             </select>
           </div>
           <button
@@ -230,8 +270,8 @@ export default function AdminsPage() {
                       fontSize: "0.7rem",
                       fontWeight: 600,
                       textTransform: "uppercase",
-                      background: admin.role === "owner" ? "#fff3e0" : "#e3f2fd",
-                      color: admin.role === "owner" ? "#e65100" : "#1565c0",
+                      background: admin.role === "admin" ? "#fff3e0" : "#e3f2fd",
+                      color: admin.role === "admin" ? "#e65100" : "#1565c0",
                     }}
                   >
                     {admin.role}

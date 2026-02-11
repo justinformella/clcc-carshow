@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
       engine_specs,
       modifications,
       story,
-      preferred_category,
+      utm_source,
+      utm_medium,
+      utm_campaign,
     } = body;
 
     // Validate required fields
@@ -30,8 +32,7 @@ export async function POST(request: NextRequest) {
       !email ||
       !vehicle_year ||
       !vehicle_make ||
-      !vehicle_model ||
-      !preferred_category
+      !vehicle_model
     ) {
       return NextResponse.json(
         { error: "Please fill in all required fields." },
@@ -70,7 +71,9 @@ export async function POST(request: NextRequest) {
         engine_specs: engine_specs || null,
         modifications: modifications || null,
         story: story || null,
-        preferred_category,
+        utm_source: utm_source || null,
+        utm_medium: utm_medium || null,
+        utm_campaign: utm_campaign || null,
         payment_status: "pending",
       })
       .select()
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest) {
     if (insertError || !registration) {
       console.error("Supabase insert error:", insertError);
       return NextResponse.json(
-        { error: "Failed to save registration. Please try again." },
+        { error: `Failed to save registration: ${insertError?.message || "Unknown error"}` },
         { status: 500 }
       );
     }
@@ -95,7 +98,7 @@ export async function POST(request: NextRequest) {
             currency: "usd",
             product_data: {
               name: "CLCC Car Show Registration",
-              description: `${vehicle_year} ${vehicle_make} ${vehicle_model} - ${preferred_category}`,
+              description: `${vehicle_year} ${vehicle_make} ${vehicle_model}`,
             },
             unit_amount: REGISTRATION_PRICE_CENTS,
           },

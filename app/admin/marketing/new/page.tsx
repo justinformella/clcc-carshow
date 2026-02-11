@@ -3,27 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { AD_PLATFORMS } from "@/types/database";
 
-
-
-export default function NewRegistrationPage() {
+export default function NewCampaignPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    hometown: "",
-    vehicle_year: "",
-    vehicle_make: "",
-    vehicle_model: "",
-    vehicle_color: "",
-    engine_specs: "",
-    modifications: "",
-    story: "",
+    platform: "",
+    campaign_name: "",
+    status: "active",
+    budget: "",
+    utm_campaign: "",
+    external_url: "",
+    start_date: "",
+    end_date: "",
+    notes: "",
   });
 
   const handleChange = (
@@ -39,22 +35,17 @@ export default function NewRegistrationPage() {
 
     const supabase = createClient();
     const { data, error: insertError } = await supabase
-      .from("registrations")
+      .from("ad_campaigns")
       .insert({
-        first_name: form.first_name,
-        last_name: form.last_name,
-        email: form.email,
-        phone: form.phone || null,
-        hometown: form.hometown || null,
-        vehicle_year: parseInt(form.vehicle_year),
-        vehicle_make: form.vehicle_make,
-        vehicle_model: form.vehicle_model,
-        vehicle_color: form.vehicle_color || null,
-        engine_specs: form.engine_specs || null,
-        modifications: form.modifications || null,
-        story: form.story || null,
-        payment_status: "pending",
-        amount_paid: 0,
+        platform: form.platform,
+        campaign_name: form.campaign_name,
+        status: form.status,
+        budget_cents: form.budget ? Math.round(parseFloat(form.budget) * 100) : null,
+        utm_campaign: form.utm_campaign || null,
+        external_url: form.external_url || null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        notes: form.notes || null,
       })
       .select()
       .single();
@@ -62,17 +53,27 @@ export default function NewRegistrationPage() {
     setSaving(false);
 
     if (insertError || !data) {
-      setError(insertError?.message || "Failed to create registration");
+      setError(insertError?.message || "Failed to create campaign");
       return;
     }
 
-    router.push(`/admin/registrations/${data.id}`);
+    router.push(`/admin/marketing/${data.id}`);
+  };
+
+  // Auto-suggest utm_campaign from campaign name
+  const suggestUtm = () => {
+    if (!form.utm_campaign && form.campaign_name) {
+      setForm({
+        ...form,
+        utm_campaign: form.campaign_name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+      });
+    }
   };
 
   return (
     <>
       <button
-        onClick={() => router.push("/admin/registrations")}
+        onClick={() => router.push("/admin/marketing")}
         style={{
           background: "none",
           border: "none",
@@ -83,7 +84,7 @@ export default function NewRegistrationPage() {
           marginBottom: "1.5rem",
         }}
       >
-        &larr; Back to Registrations
+        &larr; Back to Marketing
       </button>
 
       <h1
@@ -94,10 +95,10 @@ export default function NewRegistrationPage() {
           marginBottom: "0.5rem",
         }}
       >
-        Add Registration
+        Add Campaign
       </h1>
       <p style={{ color: "var(--text-light)", fontSize: "0.9rem", marginBottom: "2rem" }}>
-        Manually add a registration (e.g. staff, VIPs). No payment required.
+        Track a new ad campaign. Update spend and metrics manually from Ads Manager.
       </p>
 
       {error && (
@@ -124,66 +125,94 @@ export default function NewRegistrationPage() {
         }}
       >
         <div className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
-          <SectionHeading>Owner Information</SectionHeading>
+          <SectionHeading>Campaign Details</SectionHeading>
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="first_name">First Name *</label>
-              <input type="text" id="first_name" name="first_name" value={form.first_name} onChange={handleChange} required />
+              <label htmlFor="platform">Platform *</label>
+              <select id="platform" name="platform" value={form.platform} onChange={handleChange} required>
+                <option value="">Select platform...</option>
+                {AD_PLATFORMS.map((p) => (
+                  <option key={p} value={p}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-group">
-              <label htmlFor="last_name">Last Name *</label>
-              <input type="text" id="last_name" name="last_name" value={form.last_name} onChange={handleChange} required />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="email">Email *</label>
-              <input type="email" id="email" name="email" value={form.email} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="phone">Phone</label>
-              <input type="tel" id="phone" name="phone" value={form.phone} onChange={handleChange} />
+              <label htmlFor="status">Status</label>
+              <select id="status" name="status" value={form.status} onChange={handleChange}>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="completed">Completed</option>
+              </select>
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="hometown">Hometown</label>
-            <input type="text" id="hometown" name="hometown" value={form.hometown} onChange={handleChange} />
+            <label htmlFor="campaign_name">Campaign Name *</label>
+            <input
+              type="text"
+              id="campaign_name"
+              name="campaign_name"
+              value={form.campaign_name}
+              onChange={handleChange}
+              onBlur={suggestUtm}
+              placeholder="e.g., Summer 2026 Launch"
+              required
+            />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="budget">Budget ($)</label>
+              <input
+                type="number"
+                id="budget"
+                name="budget"
+                value={form.budget}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                placeholder="e.g., 500.00"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="utm_campaign">UTM Campaign Tag</label>
+              <input
+                type="text"
+                id="utm_campaign"
+                name="utm_campaign"
+                value={form.utm_campaign}
+                onChange={handleChange}
+                placeholder="auto-suggested from name"
+              />
+            </div>
           </div>
 
-          <SectionHeading>Vehicle Information</SectionHeading>
+          <SectionHeading>Dates & Links</SectionHeading>
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="vehicle_year">Year *</label>
-              <input type="number" id="vehicle_year" name="vehicle_year" value={form.vehicle_year} onChange={handleChange} min="1900" max="2027" required />
+              <label htmlFor="start_date">Start Date</label>
+              <input type="date" id="start_date" name="start_date" value={form.start_date} onChange={handleChange} />
             </div>
             <div className="form-group">
-              <label htmlFor="vehicle_make">Make *</label>
-              <input type="text" id="vehicle_make" name="vehicle_make" value={form.vehicle_make} onChange={handleChange} required />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="vehicle_model">Model *</label>
-              <input type="text" id="vehicle_model" name="vehicle_model" value={form.vehicle_model} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="vehicle_color">Color</label>
-              <input type="text" id="vehicle_color" name="vehicle_color" value={form.vehicle_color} onChange={handleChange} />
+              <label htmlFor="end_date">End Date</label>
+              <input type="date" id="end_date" name="end_date" value={form.end_date} onChange={handleChange} />
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="engine_specs">Engine Specs</label>
-            <input type="text" id="engine_specs" name="engine_specs" value={form.engine_specs} onChange={handleChange} />
+            <label htmlFor="external_url">Ads Manager URL</label>
+            <input
+              type="url"
+              id="external_url"
+              name="external_url"
+              value={form.external_url}
+              onChange={handleChange}
+              placeholder="Link to campaign in Ads Manager"
+            />
           </div>
           <div className="form-group">
-            <label htmlFor="modifications">Modifications</label>
-            <textarea id="modifications" name="modifications" value={form.modifications} onChange={handleChange} />
+            <label htmlFor="notes">Notes</label>
+            <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} rows={4} />
           </div>
-          <div className="form-group">
-            <label htmlFor="story">Car&apos;s Story</label>
-            <textarea id="story" name="story" value={form.story} onChange={handleChange} />
-          </div>
-
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "2rem" }}>
@@ -203,11 +232,11 @@ export default function NewRegistrationPage() {
               opacity: saving ? 0.6 : 1,
             }}
           >
-            {saving ? "Creating..." : "Create Registration"}
+            {saving ? "Creating..." : "Create Campaign"}
           </button>
           <button
             type="button"
-            onClick={() => router.push("/admin/registrations")}
+            onClick={() => router.push("/admin/marketing")}
             style={{
               padding: "0.6rem 1.5rem",
               background: "var(--white)",

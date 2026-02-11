@@ -26,8 +26,10 @@ export default function Placard({ registration }: { registration: Registration }
       {/* Divider */}
       <div className="placard-divider" />
 
-      {/* Category */}
-      <div className="placard-category">{r.preferred_category}</div>
+      {/* Category (only if award assigned) */}
+      {r.award_category && (
+        <div className="placard-category">{r.award_category}</div>
+      )}
 
       {/* Details */}
       {(r.engine_specs || r.modifications || r.vehicle_color) && (

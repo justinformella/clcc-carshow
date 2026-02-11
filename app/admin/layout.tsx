@@ -1,19 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import type { Admin } from "@/types/database";
 
-const navItems = [
+const allNavItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/registrations", label: "Registrations" },
   { href: "/admin/sponsors", label: "Sponsors" },
   { href: "/admin/check-in", label: "Check-In" },
   { href: "/admin/placards", label: "Placards" },
+  { href: "/admin/marketing", label: "Marketing" },
+  { href: "/admin/finances", label: "Finances" },
   { href: "/admin/emails", label: "Emails" },
-  { href: "/admin/admins", label: "Admins" },
+  { href: "/admin/admins", label: "Admins", adminOnly: true },
 ];
 
 const SIDEBAR_WIDTH = 200;
@@ -26,6 +29,26 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState<Admin["role"] | null>(null);
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) return;
+      const { data } = await supabase
+        .from("admins")
+        .select("role")
+        .ilike("email", user.email)
+        .maybeSingle();
+      if (data?.role) setUserRole(data.role);
+    };
+    fetchRole();
+  }, []);
+
+  const navItems = allNavItems.filter(
+    (item) => !("adminOnly" in item && item.adminOnly) || userRole === "admin"
+  );
 
   // Don't wrap login page with admin nav
   if (pathname === "/admin/login" || pathname === "/admin/set-password" || pathname === "/admin/accept-invite") {

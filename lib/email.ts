@@ -8,7 +8,7 @@ import {
 } from "@/lib/email-templates";
 import type { Registration, Sponsor } from "@/types/database";
 
-const FROM_EMAIL = "Crystal Lake Cars & Coffee <noreply@crystallakecarshow.com>";
+const FROM_EMAIL = "Crystal Lake Cars & Caffeine <noreply@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
