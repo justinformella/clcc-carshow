@@ -449,6 +449,9 @@ export default function SponsorDetailPage() {
             }}
           >
             <SectionHeading>Timestamps</SectionHeading>
+            {s.paid_at && (
+              <DetailRow label="Paid At" value={new Date(s.paid_at).toLocaleString()} />
+            )}
             <DetailRow label="Created" value={new Date(s.created_at).toLocaleString()} />
             <DetailRow label="Updated" value={new Date(s.updated_at).toLocaleString()} />
           </div>
