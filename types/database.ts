@@ -31,6 +31,8 @@ export type Registration = {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  // Payment timestamp
+  paid_at: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -164,6 +166,7 @@ export type Sponsor = {
   amount_paid: number;
   notes: string | null;
   assigned_to: string | null;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
 };

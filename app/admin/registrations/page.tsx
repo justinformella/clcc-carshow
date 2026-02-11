@@ -15,9 +15,9 @@ export default function RegistrationsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "cards">(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("registrations-view") as "table" | "cards") || "table";
+      return (localStorage.getItem("registrations-view") as "table" | "cards") || "cards";
     }
-    return "table";
+    return "cards";
   });
 
   const handleViewMode = (mode: "table" | "cards") => {
@@ -285,31 +285,6 @@ export default function RegistrationsPage() {
           }}
         >
           <button
-            onClick={() => handleViewMode("table")}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.5rem 1.4rem",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              border: "none",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              background: viewMode === "table" ? "var(--charcoal)" : "var(--white)",
-              color: viewMode === "table" ? "var(--white)" : "var(--text-light)",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="1" y="1" width="14" height="3" rx="0.5" />
-              <rect x="1" y="6.5" width="14" height="3" rx="0.5" />
-              <rect x="1" y="12" width="14" height="3" rx="0.5" />
-            </svg>
-            Table
-          </button>
-          <button
             onClick={() => handleViewMode("cards")}
             style={{
               display: "inline-flex",
@@ -321,7 +296,6 @@ export default function RegistrationsPage() {
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               border: "none",
-              borderLeft: "1px solid #ddd",
               cursor: "pointer",
               whiteSpace: "nowrap",
               background: viewMode === "cards" ? "var(--charcoal)" : "var(--white)",
@@ -335,6 +309,32 @@ export default function RegistrationsPage() {
               <rect x="9" y="9" width="6" height="6" rx="0.5" />
             </svg>
             Cards
+          </button>
+          <button
+            onClick={() => handleViewMode("table")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.5rem 1.4rem",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              border: "none",
+              borderLeft: "1px solid #ddd",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              background: viewMode === "table" ? "var(--charcoal)" : "var(--white)",
+              color: viewMode === "table" ? "var(--white)" : "var(--text-light)",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="1" y="1" width="14" height="3" rx="0.5" />
+              <rect x="1" y="6.5" width="14" height="3" rx="0.5" />
+              <rect x="1" y="12" width="14" height="3" rx="0.5" />
+            </svg>
+            Table
           </button>
         </div>
       </div>

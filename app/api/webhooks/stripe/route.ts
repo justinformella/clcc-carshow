@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         .from("registrations")
         .update({
           payment_status: "paid",
+          paid_at: new Date().toISOString(),
           stripe_payment_intent_id: session.payment_intent as string,
         })
         .eq("id", registrationId);

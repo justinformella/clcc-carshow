@@ -37,6 +37,7 @@ const sampleReg: Registration = {
   utm_source: null,
   utm_medium: null,
   utm_campaign: null,
+  paid_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };

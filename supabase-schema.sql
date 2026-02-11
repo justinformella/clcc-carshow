@@ -34,6 +34,8 @@ CREATE TABLE registrations (
   utm_source TEXT,
   utm_medium TEXT,
   utm_campaign TEXT,
+  -- Payment timestamp
+  paid_at TIMESTAMPTZ,
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -221,6 +223,7 @@ CREATE TABLE sponsors (
   amount_paid INTEGER DEFAULT 0,   -- cents (consistent with registrations)
   notes TEXT,
   assigned_to UUID REFERENCES admins(id) ON DELETE SET NULL,
+  paid_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

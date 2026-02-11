@@ -252,6 +252,16 @@ export default function RegistrationDetailPage() {
       }
     }
 
+    // Determine paid_at value based on payment status transition
+    const wasPaid = registration.payment_status === "paid";
+    const nowPaid = form.payment_status === "paid";
+    let paidAtUpdate: Record<string, string | null> = {};
+    if (nowPaid && !wasPaid) {
+      paidAtUpdate = { paid_at: new Date().toISOString() };
+    } else if (!nowPaid) {
+      paidAtUpdate = { paid_at: null };
+    }
+
     const { error } = await supabase
       .from("registrations")
       .update({
@@ -269,6 +279,7 @@ export default function RegistrationDetailPage() {
         story: form.story || null,
         award_category: awardValue,
         payment_status: form.payment_status,
+        ...paidAtUpdate,
       })
       .eq("id", registration.id);
 
@@ -1112,6 +1123,9 @@ export default function RegistrationDetailPage() {
                 />
                 {r.checked_in_at && (
                   <QuickInfoRow label="" value={new Date(r.checked_in_at).toLocaleString()} small />
+                )}
+                {r.paid_at && (
+                  <QuickInfoRow label="Paid" value={new Date(r.paid_at).toLocaleString()} small />
                 )}
                 <QuickInfoRow label="Registered" value={new Date(r.created_at).toLocaleString()} small />
                 <QuickInfoRow label="Updated" value={new Date(r.updated_at).toLocaleString()} small />

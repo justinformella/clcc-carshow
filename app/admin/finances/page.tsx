@@ -135,12 +135,12 @@ export default function FinancesPage() {
   const areaData = (() => {
     const dayMap: Record<string, { reg: number; sponsor: number }> = {};
     paidRegs.forEach((r) => {
-      const day = r.created_at.slice(0, 10);
+      const day = (r.paid_at || r.created_at).slice(0, 10);
       if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0 };
       dayMap[day].reg += r.amount_paid || 0;
     });
     paidSponsors.forEach((s) => {
-      const day = s.created_at.slice(0, 10);
+      const day = (s.paid_at || s.created_at).slice(0, 10);
       if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0 };
       dayMap[day].sponsor += s.amount_paid || 0;
     });
@@ -187,7 +187,7 @@ export default function FinancesPage() {
       })),
     ...sponsors.map((s) => ({
       id: s.id,
-      date: s.created_at,
+      date: s.status === "paid" ? (s.paid_at || s.created_at) : s.created_at,
       type: "sponsorship" as const,
       description: `${s.company} — ${s.sponsorship_level}`,
       amountCents: s.amount_paid || 0,

@@ -105,6 +105,17 @@ export default function SponsorDetailPage() {
     setSaving(true);
 
     const supabase = createClient();
+
+    // Determine paid_at value based on status transition
+    const wasPaid = sponsor.status === "paid";
+    const nowPaid = form.status === "paid";
+    let paidAtUpdate: Record<string, string | null> = {};
+    if (nowPaid && !wasPaid) {
+      paidAtUpdate = { paid_at: new Date().toISOString() };
+    } else if (!nowPaid) {
+      paidAtUpdate = { paid_at: null };
+    }
+
     const { error } = await supabase
       .from("sponsors")
       .update({
@@ -119,6 +130,7 @@ export default function SponsorDetailPage() {
         amount_paid: Math.round(parseFloat(form.amount_paid || "0") * 100),
         notes: form.notes || null,
         assigned_to: form.assigned_to || null,
+        ...paidAtUpdate,
       })
       .eq("id", sponsor.id);
 
@@ -406,6 +418,9 @@ export default function SponsorDetailPage() {
               label="Amount Paid"
               value={s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
             />
+            {s.paid_at && (
+              <DetailRow label="Paid At" value={new Date(s.paid_at).toLocaleString()} />
+            )}
             <DetailRow label="Message" value={s.message || "—"} />
           </div>
 
