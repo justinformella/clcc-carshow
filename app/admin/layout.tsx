@@ -16,7 +16,7 @@ const allNavItems = [
   { href: "/admin/marketing", label: "Marketing" },
   { href: "/admin/finances", label: "Finances" },
   { href: "/admin/emails", label: "Emails" },
-  { href: "/admin/admins", label: "Admins", adminOnly: true },
+  { href: "/admin/admins", label: "Users" },
 ];
 
 const SIDEBAR_WIDTH = 200;
@@ -47,7 +47,7 @@ export default function AdminLayout({
   }, []);
 
   const navItems = allNavItems.filter(
-    (item) => !("adminOnly" in item && item.adminOnly) || userRole === "admin"
+    (item) => !("adminOnly" in item) || userRole === "admin"
   );
 
   // Don't wrap login page with admin nav

@@ -58,17 +58,17 @@ export default function AdminsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Failed to add admin");
+        alert(data.error || "Failed to add user");
         setAdding(false);
         return;
       }
 
       setName("");
       setEmail("");
-      setRole("admin");
+      setRole("organizer");
       await fetchAdmins();
     } catch {
-      alert("Failed to add admin.");
+      alert("Failed to add user.");
     } finally {
       setAdding(false);
     }
@@ -79,7 +79,7 @@ export default function AdminsPage() {
       alert("You cannot remove yourself.");
       return;
     }
-    if (!confirm(`Remove ${admin.name} (${admin.email}) as an admin?`)) return;
+    if (!confirm(`Remove ${admin.name} (${admin.email})?`)) return;
 
     const supabase = createClient();
     await supabase.from("admins").delete().eq("id", admin.id);
@@ -118,25 +118,7 @@ export default function AdminsPage() {
     );
   }
 
-  if (currentUserRole !== "admin") {
-    return (
-      <div style={{ textAlign: "center", padding: "4rem 2rem" }}>
-        <h1
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "2rem",
-            fontWeight: 400,
-            marginBottom: "1rem",
-          }}
-        >
-          Access Denied
-        </h1>
-        <p style={{ color: "var(--text-light)" }}>
-          Only admins can manage users. Contact an admin if you need access.
-        </p>
-      </div>
-    );
-  }
+  const isAdmin = currentUserRole === "admin";
 
   return (
     <>
@@ -148,91 +130,93 @@ export default function AdminsPage() {
           marginBottom: "1.5rem",
         }}
       >
-        Admin Management
+        User Management
       </h1>
 
-      {/* Add Admin Form */}
-      <div
-        style={{
-          background: "var(--white)",
-          padding: "1.5rem 2rem",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <h2
+      {/* Add User Form — admin only */}
+      {isAdmin && (
+        <div
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "1.1rem",
-            fontWeight: 400,
-            marginBottom: "1rem",
-            paddingBottom: "0.5rem",
-            borderBottom: "1px solid rgba(0,0,0,0.08)",
-            color: "var(--charcoal)",
+            background: "var(--white)",
+            padding: "1.5rem 2rem",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            marginBottom: "1.5rem",
           }}
         >
-          Add Admin
-        </h2>
-        <form
-          onSubmit={handleAdd}
-          style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "flex-end" }}
-        >
-          <div style={{ flex: 1, minWidth: "160px" }}>
-            <label style={labelStyle}>Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              style={inputStyle}
-              placeholder="Jane Doe"
-            />
-          </div>
-          <div style={{ flex: 1, minWidth: "200px" }}>
-            <label style={labelStyle}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={inputStyle}
-              placeholder="jane@example.com"
-            />
-          </div>
-          <div style={{ minWidth: "140px" }}>
-            <label style={labelStyle}>Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              style={inputStyle}
-            >
-              <option value="organizer">Organizer</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            disabled={adding}
+          <h2
             style={{
-              padding: "0.6rem 1.5rem",
-              background: "var(--gold)",
+              fontFamily: "'Playfair Display', serif",
+              fontSize: "1.1rem",
+              fontWeight: 400,
+              marginBottom: "1rem",
+              paddingBottom: "0.5rem",
+              borderBottom: "1px solid rgba(0,0,0,0.08)",
               color: "var(--charcoal)",
-              border: "none",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              cursor: adding ? "not-allowed" : "pointer",
-              opacity: adding ? 0.6 : 1,
-              whiteSpace: "nowrap",
             }}
           >
-            {adding ? "Adding..." : "Add Admin"}
-          </button>
-        </form>
-      </div>
+            Add User
+          </h2>
+          <form
+            onSubmit={handleAdd}
+            style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "flex-end" }}
+          >
+            <div style={{ flex: 1, minWidth: "160px" }}>
+              <label style={labelStyle}>Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                style={inputStyle}
+                placeholder="Jane Doe"
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: "200px" }}>
+              <label style={labelStyle}>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={inputStyle}
+                placeholder="jane@example.com"
+              />
+            </div>
+            <div style={{ minWidth: "140px" }}>
+              <label style={labelStyle}>Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                style={inputStyle}
+              >
+                <option value="organizer">Organizer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              disabled={adding}
+              style={{
+                padding: "0.6rem 1.5rem",
+                background: "var(--gold)",
+                color: "var(--charcoal)",
+                border: "none",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                cursor: adding ? "not-allowed" : "pointer",
+                opacity: adding ? 0.6 : 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {adding ? "Adding..." : "Add User"}
+            </button>
+          </form>
+        </div>
+      )}
 
-      {/* Admins Table */}
+      {/* Users Table */}
       <div
         style={{
           background: "var(--white)",
@@ -254,7 +238,7 @@ export default function AdminsPage() {
               <th style={thStyle}>Role</th>
               <th style={thStyle}>Date Added</th>
               <th style={thStyle}>Last Login</th>
-              <th style={thStyle}></th>
+              {isAdmin && <th style={thStyle}></th>}
             </tr>
           </thead>
           <tbody>
@@ -285,57 +269,59 @@ export default function AdminsPage() {
                     ? new Date(admin.last_login_at).toLocaleString()
                     : "Never"}
                 </td>
-                <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    {!admin.last_login_at && (
+                {isAdmin && (
+                  <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      {!admin.last_login_at && (
+                        <button
+                          onClick={() => handleResendInvite(admin)}
+                          disabled={resending === admin.id}
+                          style={{
+                            background: "transparent",
+                            border: "1px solid #1565c0",
+                            color: "#1565c0",
+                            padding: "0.3rem 0.8rem",
+                            fontSize: "0.75rem",
+                            cursor: resending === admin.id ? "not-allowed" : "pointer",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.04em",
+                            opacity: resending === admin.id ? 0.6 : 1,
+                          }}
+                        >
+                          {resending === admin.id ? "Sending..." : "Resend Invite"}
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleResendInvite(admin)}
-                        disabled={resending === admin.id}
+                        onClick={() => handleRemove(admin)}
                         style={{
                           background: "transparent",
-                          border: "1px solid #1565c0",
-                          color: "#1565c0",
+                          border: "1px solid #c00",
+                          color: "#c00",
                           padding: "0.3rem 0.8rem",
                           fontSize: "0.75rem",
-                          cursor: resending === admin.id ? "not-allowed" : "pointer",
+                          cursor: "pointer",
                           textTransform: "uppercase",
                           letterSpacing: "0.04em",
-                          opacity: resending === admin.id ? 0.6 : 1,
                         }}
                       >
-                        {resending === admin.id ? "Sending..." : "Resend Invite"}
+                        Remove
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleRemove(admin)}
-                      style={{
-                        background: "transparent",
-                        border: "1px solid #c00",
-                        color: "#c00",
-                        padding: "0.3rem 0.8rem",
-                        fontSize: "0.75rem",
-                        cursor: "pointer",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </td>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
             {admins.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={isAdmin ? 6 : 5}
                   style={{
                     ...tdStyle,
                     textAlign: "center",
                     color: "var(--text-light)",
                   }}
                 >
-                  No admins configured. Add one above to receive notification emails.
+                  No users configured.
                 </td>
               </tr>
             )}
