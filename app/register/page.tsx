@@ -3,7 +3,32 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { REGISTRATION_PRICE_DISPLAY, MAX_REGISTRATIONS } from "@/types/database";
+import {
+  REGISTRATION_PRICE_DISPLAY,
+  REGISTRATION_PRICE_CENTS,
+  MAX_REGISTRATIONS,
+  MAX_VEHICLES_PER_CHECKOUT,
+} from "@/types/database";
+
+type VehicleForm = {
+  vehicle_year: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_color: string;
+  engine_specs: string;
+  modifications: string;
+  story: string;
+};
+
+const emptyVehicle = (): VehicleForm => ({
+  vehicle_year: "",
+  vehicle_make: "",
+  vehicle_model: "",
+  vehicle_color: "",
+  engine_specs: "",
+  modifications: "",
+  story: "",
+});
 
 function RegisterContent() {
   const searchParams = useSearchParams();
@@ -17,20 +42,15 @@ function RegisterContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const [owner, setOwner] = useState({
     first_name: "",
     last_name: "",
     email: "",
     phone: "",
     hometown: "",
-    vehicle_year: "",
-    vehicle_make: "",
-    vehicle_model: "",
-    vehicle_color: "",
-    engine_specs: "",
-    modifications: "",
-    story: "",
   });
+
+  const [vehicles, setVehicles] = useState<VehicleForm[]>([emptyVehicle()]);
 
   useEffect(() => {
     fetch("/api/registrations/count")
@@ -43,13 +63,39 @@ function RegisterContent() {
       });
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+  const handleOwnerChange = (
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setOwner({ ...owner, [e.target.name]: e.target.value });
   };
+
+  const handleVehicleChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const updated = [...vehicles];
+    updated[index] = { ...updated[index], [e.target.name]: e.target.value };
+    setVehicles(updated);
+  };
+
+  const addVehicle = () => {
+    if (vehicles.length < MAX_VEHICLES_PER_CHECKOUT) {
+      setVehicles([...vehicles, emptyVehicle()]);
+    }
+  };
+
+  const removeVehicle = (index: number) => {
+    if (vehicles.length > 1) {
+      setVehicles(vehicles.filter((_, i) => i !== index));
+    }
+  };
+
+  const canAddMore =
+    vehicles.length < MAX_VEHICLES_PER_CHECKOUT &&
+    (spotsRemaining === null || vehicles.length < spotsRemaining);
+
+  const totalCents = vehicles.length * REGISTRATION_PRICE_CENTS;
+  const totalDisplay = `$${totalCents / 100}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,8 +107,11 @@ function RegisterContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
-          vehicle_year: parseInt(form.vehicle_year),
+          ...owner,
+          vehicles: vehicles.map((v) => ({
+            ...v,
+            vehicle_year: parseInt(v.vehicle_year),
+          })),
           utm_source: utmRef.current.utm_source || undefined,
           utm_medium: utmRef.current.utm_medium || undefined,
           utm_campaign: utmRef.current.utm_campaign || undefined,
@@ -224,8 +273,8 @@ function RegisterContent() {
                       type="text"
                       id="first_name"
                       name="first_name"
-                      value={form.first_name}
-                      onChange={handleChange}
+                      value={owner.first_name}
+                      onChange={handleOwnerChange}
                       required
                     />
                   </div>
@@ -235,8 +284,8 @@ function RegisterContent() {
                       type="text"
                       id="last_name"
                       name="last_name"
-                      value={form.last_name}
-                      onChange={handleChange}
+                      value={owner.last_name}
+                      onChange={handleOwnerChange}
                       required
                     />
                   </div>
@@ -249,8 +298,8 @@ function RegisterContent() {
                       type="email"
                       id="email"
                       name="email"
-                      value={form.email}
-                      onChange={handleChange}
+                      value={owner.email}
+                      onChange={handleOwnerChange}
                       required
                     />
                   </div>
@@ -260,8 +309,8 @@ function RegisterContent() {
                       type="tel"
                       id="phone"
                       name="phone"
-                      value={form.phone}
-                      onChange={handleChange}
+                      value={owner.phone}
+                      onChange={handleOwnerChange}
                     />
                   </div>
                 </div>
@@ -272,115 +321,170 @@ function RegisterContent() {
                     type="text"
                     id="hometown"
                     name="hometown"
-                    value={form.hometown}
-                    onChange={handleChange}
+                    value={owner.hometown}
+                    onChange={handleOwnerChange}
                     placeholder="e.g., Crystal Lake, IL"
                   />
                 </div>
 
-                {/* Vehicle Information */}
-                <h3
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: "1.3rem",
-                    marginBottom: "1.5rem",
-                    marginTop: "2rem",
-                    paddingBottom: "0.5rem",
-                    borderBottom: "1px solid rgba(0,0,0,0.1)",
-                  }}
-                >
-                  Vehicle Information
-                </h3>
+                {/* Vehicle(s) */}
+                {vehicles.map((vehicle, index) => (
+                  <div key={index}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginTop: "2rem",
+                        marginBottom: "1.5rem",
+                        paddingBottom: "0.5rem",
+                        borderBottom: "1px solid rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <h3
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: "1.3rem",
+                          margin: 0,
+                        }}
+                      >
+                        {vehicles.length > 1 ? `Vehicle ${index + 1}` : "Vehicle Information"}
+                      </h3>
+                      {vehicles.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeVehicle(index)}
+                          style={{
+                            background: "none",
+                            border: "1px solid #c00",
+                            color: "#c00",
+                            padding: "0.3rem 0.8rem",
+                            fontSize: "0.75rem",
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            width: "auto",
+                            flexShrink: 0,
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="vehicle_year">Year *</label>
-                    <input
-                      type="number"
-                      id="vehicle_year"
-                      name="vehicle_year"
-                      value={form.vehicle_year}
-                      onChange={handleChange}
-                      min="1900"
-                      max="2027"
-                      required
-                    />
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor={`vehicle_year_${index}`}>Year *</label>
+                        <input
+                          type="number"
+                          id={`vehicle_year_${index}`}
+                          name="vehicle_year"
+                          value={vehicle.vehicle_year}
+                          onChange={(e) => handleVehicleChange(index, e)}
+                          min="1900"
+                          max="2027"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor={`vehicle_make_${index}`}>Make *</label>
+                        <input
+                          type="text"
+                          id={`vehicle_make_${index}`}
+                          name="vehicle_make"
+                          value={vehicle.vehicle_make}
+                          onChange={(e) => handleVehicleChange(index, e)}
+                          placeholder="e.g., Ford"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor={`vehicle_model_${index}`}>Model *</label>
+                        <input
+                          type="text"
+                          id={`vehicle_model_${index}`}
+                          name="vehicle_model"
+                          value={vehicle.vehicle_model}
+                          onChange={(e) => handleVehicleChange(index, e)}
+                          placeholder="e.g., Mustang GT"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor={`vehicle_color_${index}`}>Color</label>
+                        <input
+                          type="text"
+                          id={`vehicle_color_${index}`}
+                          name="vehicle_color"
+                          value={vehicle.vehicle_color}
+                          onChange={(e) => handleVehicleChange(index, e)}
+                          placeholder="e.g., Guards Red"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`engine_specs_${index}`}>Engine Specs</label>
+                      <input
+                        type="text"
+                        id={`engine_specs_${index}`}
+                        name="engine_specs"
+                        value={vehicle.engine_specs}
+                        onChange={(e) => handleVehicleChange(index, e)}
+                        placeholder="e.g., 5.0L V8, 460hp"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`modifications_${index}`}>Modifications</label>
+                      <textarea
+                        id={`modifications_${index}`}
+                        name="modifications"
+                        value={vehicle.modifications}
+                        onChange={(e) => handleVehicleChange(index, e)}
+                        placeholder="List any modifications or upgrades..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor={`story_${index}`}>
+                        Your Car&apos;s Story (shown on placard)
+                      </label>
+                      <textarea
+                        id={`story_${index}`}
+                        name="story"
+                        value={vehicle.story}
+                        onChange={(e) => handleVehicleChange(index, e)}
+                        placeholder="Tell us about your car — how you got it, what it means to you, fun facts..."
+                      />
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="vehicle_make">Make *</label>
-                    <input
-                      type="text"
-                      id="vehicle_make"
-                      name="vehicle_make"
-                      value={form.vehicle_make}
-                      onChange={handleChange}
-                      placeholder="e.g., Ford"
-                      required
-                    />
-                  </div>
-                </div>
+                ))}
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="vehicle_model">Model *</label>
-                    <input
-                      type="text"
-                      id="vehicle_model"
-                      name="vehicle_model"
-                      value={form.vehicle_model}
-                      onChange={handleChange}
-                      placeholder="e.g., Mustang GT"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="vehicle_color">Color</label>
-                    <input
-                      type="text"
-                      id="vehicle_color"
-                      name="vehicle_color"
-                      value={form.vehicle_color}
-                      onChange={handleChange}
-                      placeholder="e.g., Guards Red"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="engine_specs">Engine Specs</label>
-                  <input
-                    type="text"
-                    id="engine_specs"
-                    name="engine_specs"
-                    value={form.engine_specs}
-                    onChange={handleChange}
-                    placeholder="e.g., 5.0L V8, 460hp"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="modifications">Modifications</label>
-                  <textarea
-                    id="modifications"
-                    name="modifications"
-                    value={form.modifications}
-                    onChange={handleChange}
-                    placeholder="List any modifications or upgrades..."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="story">
-                    Your Car&apos;s Story (shown on placard)
-                  </label>
-                  <textarea
-                    id="story"
-                    name="story"
-                    value={form.story}
-                    onChange={handleChange}
-                    placeholder="Tell us about your car — how you got it, what it means to you, fun facts..."
-                  />
-                </div>
+                {/* Add Vehicle Button */}
+                {canAddMore && (
+                  <button
+                    type="button"
+                    onClick={addVehicle}
+                    style={{
+                      marginTop: "1.5rem",
+                      width: "100%",
+                      padding: "0.8rem",
+                      background: "var(--cream)",
+                      border: "2px dashed rgba(0,0,0,0.15)",
+                      color: "var(--charcoal)",
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    + Add Another Vehicle ({REGISTRATION_PRICE_DISPLAY})
+                  </button>
+                )}
 
                 {/* Summary */}
                 <div
@@ -410,8 +514,19 @@ function RegisterContent() {
                       color: "var(--charcoal)",
                     }}
                   >
-                    {REGISTRATION_PRICE_DISPLAY}
+                    {totalDisplay}
                   </p>
+                  {vehicles.length > 1 && (
+                    <p
+                      style={{
+                        fontSize: "0.9rem",
+                        color: "var(--text-light)",
+                        marginTop: "0.25rem",
+                      }}
+                    >
+                      {vehicles.length} vehicles &times; {REGISTRATION_PRICE_DISPLAY}
+                    </p>
+                  )}
                   <p
                     style={{
                       fontSize: "0.85rem",

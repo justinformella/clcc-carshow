@@ -186,6 +186,7 @@ export const SPONSORSHIP_LEVELS = [
 ] as const;
 
 export const MAX_REGISTRATIONS = 200;
+export const MAX_VEHICLES_PER_CHECKOUT = 5;
 export const REGISTRATION_PRICE_CENTS = 3000;
 export const REGISTRATION_PRICE_DISPLAY = "$30";
 

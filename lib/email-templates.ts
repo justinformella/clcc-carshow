@@ -161,6 +161,127 @@ export function confirmationEmail(reg: Registration): { subject: string; html: s
   };
 }
 
+export function multiVehicleConfirmationEmail(
+  registrations: Registration[]
+): { subject: string; html: string } {
+  const carNumbers = registrations.map((r) => `#${r.car_number}`).join(", ");
+
+  const badges = registrations
+    .map(
+      (reg) => `
+        <table cellpadding="0" cellspacing="0" style="border:2px solid #c9a84c; border-radius:8px; padding:16px 28px; text-align:center; margin-bottom:12px;">
+          <tr>
+            <td>
+              <span style="font-size:13px; color:#888; letter-spacing:0.06em; text-transform:uppercase;">Your Car Number</span><br/>
+              <span style="font-size:32px; font-weight:700; color:#2c2c2c; letter-spacing:0.04em;">CAR #${reg.car_number}</span><br/>
+              <span style="font-size:15px; color:#555;">${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}</span>
+            </td>
+          </tr>
+        </table>`
+    )
+    .join("");
+
+  const content = `
+    <!-- Heading -->
+    <h1 style="margin:0 0 24px; font-size:26px; color:#2c2c2c; text-align:center;">
+      &#9989; You're Registered!
+    </h1>
+
+    <p style="margin:0 0 20px; font-size:16px; color:#555; text-align:center;">
+      ${registrations.length} vehicles registered
+    </p>
+
+    <!-- Car Number Badges -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr><td align="center">
+        ${badges}
+      </td></tr>
+    </table>
+
+    <!-- Event Details Card -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px; background:#f8f5f0; border-radius:8px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
+          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">Saturday, May 17, 2026</p>
+          <p style="margin:0 0 8px; font-size:15px; color:#444;">Grant, Brink &amp; Williams Streets<br/>Downtown Crystal Lake, IL</p>
+          <a href="${GOOGLE_MAPS_URL}" style="font-size:14px; color:#c9a84c; text-decoration:none; font-weight:600;">View on Google Maps &rarr;</a>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Schedule -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr>
+        <td>
+          <p style="margin:0 0 12px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Schedule</p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; width:90px; vertical-align:top;">7:30 AM</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Check-in &amp; Day-of Registration</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">9:30 AM</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Registration Closes</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">10:00 AM</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Show Starts</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">12:30 PM</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Awards Ceremony</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">1:00 PM</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Show Ends</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Arrival Instructions -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr>
+        <td>
+          <p style="margin:0 0 12px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Arrival Instructions</p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:4px 0; font-size:14px; color:#333; line-height:1.5;">&#8226;&nbsp; Arrive between 7:30 &ndash; 9:30 AM for check-in</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0; font-size:14px; color:#333; line-height:1.5;">&#8226;&nbsp; Drive your vehicle to the registration area on Grant Street</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0; font-size:14px; color:#333; line-height:1.5;">&#8226;&nbsp; You'll receive your car number placards at check-in</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Add to Calendar Button -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr><td align="center">
+        <a href="${GOOGLE_CALENDAR_URL}" style="display:inline-block; padding:14px 32px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:15px; border-radius:6px; letter-spacing:0.02em;">
+          Add to Calendar
+        </a>
+      </td></tr>
+    </table>
+
+    <!-- Charity Note -->
+    <p style="margin:0; font-size:13px; color:#888; text-align:center; line-height:1.5;">
+      100% of net proceeds benefit the Crystal Lake Food Pantry
+    </p>
+  `;
+
+  return {
+    subject: `You're Registered! Cars ${carNumbers} — Crystal Lake Cars & Caffeine`,
+    html: htmlShell(content),
+  };
+}
+
 export function adminNotificationEmail(
   reg: Registration,
   adminDetailUrl: string

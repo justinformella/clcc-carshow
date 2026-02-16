@@ -10,6 +10,7 @@ import type { Admin } from "@/types/database";
 const allNavItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/registrations", label: "Registrations" },
+  { href: "/admin/attendees", label: "Attendees" },
   { href: "/admin/sponsors", label: "Sponsors" },
   { href: "/admin/check-in", label: "Check-In" },
   { href: "/admin/placards", label: "Placards" },

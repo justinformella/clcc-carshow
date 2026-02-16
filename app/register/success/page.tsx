@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
   }
 }
+
+type VehicleSummary = {
+  car_number: number;
+  vehicle_year: number;
+  vehicle_make: string;
+  vehicle_model: string;
+};
 
 function downloadCalendarEvent() {
   const lines = [
@@ -38,12 +45,29 @@ function downloadCalendarEvent() {
 function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const [vehicles, setVehicles] = useState<VehicleSummary[] | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.fbq) {
       window.fbq("track", "CompleteRegistration");
     }
   }, []);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetch(`/api/registrations/by-session?session_id=${encodeURIComponent(sessionId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.vehicles && data.vehicles.length > 0) {
+          setVehicles(data.vehicles);
+        }
+      })
+      .catch(() => {
+        // Fail silently — generic message will show
+      });
+  }, [sessionId]);
+
+  const isMulti = vehicles && vehicles.length > 1;
 
   return (
     <>
@@ -102,8 +126,49 @@ function SuccessContent() {
                 marginBottom: "1rem",
               }}
             >
-              Registration Confirmed!
+              {isMulti
+                ? `${vehicles.length} Vehicles Registered!`
+                : "Registration Confirmed!"}
             </h1>
+
+            {/* Vehicle details */}
+            {vehicles && vehicles.length > 0 && (
+              <div style={{ marginBottom: "1.5rem" }}>
+                {vehicles.map((v) => (
+                  <div
+                    key={v.car_number}
+                    style={{
+                      display: "inline-block",
+                      margin: "0.4rem",
+                      padding: "0.6rem 1.2rem",
+                      border: "2px solid var(--gold)",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "0.7rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        color: "var(--text-light)",
+                      }}
+                    >
+                      Car #{v.car_number}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.9rem",
+                        color: "var(--charcoal)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {v.vehicle_year} {v.vehicle_make} {v.vehicle_model}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <p
               style={{
                 color: "var(--text-light)",
@@ -148,7 +213,7 @@ function SuccessContent() {
                   &#10003; Event day: May 17, 2026 — Check-in starts at 7:30 AM
                 </li>
                 <li style={{ padding: "0.5rem 0" }}>
-                  &#10003; Bring your vehicle to Grant, Brink &amp; Williams
+                  &#10003; Bring your vehicle{isMulti ? "s" : ""} to Grant, Brink &amp; Williams
                   Streets
                 </li>
               </ul>

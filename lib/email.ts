@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase-server";
 import { getResend } from "@/lib/resend";
 import {
   confirmationEmail,
+  multiVehicleConfirmationEmail,
   adminNotificationEmail,
   sponsorAdminNotificationEmail,
   announcementEmail,
@@ -63,6 +64,31 @@ export async function sendConfirmation(registrationId: string) {
   const result = await sendWithRetry({ from: FROM_EMAIL, to: reg.email, subject, html });
 
   await logEmail(registrationId, "confirmation", reg.email, subject, result.id ?? null);
+}
+
+export async function sendMultiVehicleConfirmation(registrationIds: string[]) {
+  // If only 1, delegate to existing single-vehicle confirmation
+  if (registrationIds.length === 1) {
+    return sendConfirmation(registrationIds[0]);
+  }
+
+  const supabase = createServerClient();
+  const { data: regs } = await supabase
+    .from("registrations")
+    .select("*")
+    .in("id", registrationIds)
+    .order("car_number", { ascending: true });
+
+  if (!regs || regs.length === 0) throw new Error("Registrations not found");
+
+  const { subject, html } = multiVehicleConfirmationEmail(regs as Registration[]);
+
+  const result = await sendWithRetry({ from: FROM_EMAIL, to: regs[0].email, subject, html });
+
+  // Log the email against each registration row
+  for (const reg of regs) {
+    await logEmail(reg.id, "confirmation", reg.email, subject, result.id ?? null);
+  }
 }
 
 export async function sendAdminNotification(registrationId: string) {

@@ -3,33 +3,68 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { MAX_VEHICLES_PER_CHECKOUT } from "@/types/database";
 
+type VehicleForm = {
+  vehicle_year: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_color: string;
+  engine_specs: string;
+  modifications: string;
+  story: string;
+};
 
+const emptyVehicle = (): VehicleForm => ({
+  vehicle_year: "",
+  vehicle_make: "",
+  vehicle_model: "",
+  vehicle_color: "",
+  engine_specs: "",
+  modifications: "",
+  story: "",
+});
 
 export default function NewRegistrationPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const [owner, setOwner] = useState({
     first_name: "",
     last_name: "",
     email: "",
     phone: "",
     hometown: "",
-    vehicle_year: "",
-    vehicle_make: "",
-    vehicle_model: "",
-    vehicle_color: "",
-    engine_specs: "",
-    modifications: "",
-    story: "",
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  const [vehicles, setVehicles] = useState<VehicleForm[]>([emptyVehicle()]);
+
+  const handleOwnerChange = (
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setOwner({ ...owner, [e.target.name]: e.target.value });
+  };
+
+  const handleVehicleChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const updated = [...vehicles];
+    updated[index] = { ...updated[index], [e.target.name]: e.target.value };
+    setVehicles(updated);
+  };
+
+  const addVehicle = () => {
+    if (vehicles.length < MAX_VEHICLES_PER_CHECKOUT) {
+      setVehicles([...vehicles, emptyVehicle()]);
+    }
+  };
+
+  const removeVehicle = (index: number) => {
+    if (vehicles.length > 1) {
+      setVehicles(vehicles.filter((_, i) => i !== index));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,36 +72,50 @@ export default function NewRegistrationPage() {
     setSaving(true);
     setError(null);
 
+    const rows = vehicles.map((v) => ({
+      first_name: owner.first_name,
+      last_name: owner.last_name,
+      email: owner.email,
+      phone: owner.phone || null,
+      hometown: owner.hometown || null,
+      vehicle_year: parseInt(v.vehicle_year),
+      vehicle_make: v.vehicle_make,
+      vehicle_model: v.vehicle_model,
+      vehicle_color: v.vehicle_color || null,
+      engine_specs: v.engine_specs || null,
+      modifications: v.modifications || null,
+      story: v.story || null,
+      payment_status: "pending",
+      amount_paid: 0,
+    }));
+
     const supabase = createClient();
-    const { data, error: insertError } = await supabase
-      .from("registrations")
-      .insert({
-        first_name: form.first_name,
-        last_name: form.last_name,
-        email: form.email,
-        phone: form.phone || null,
-        hometown: form.hometown || null,
-        vehicle_year: parseInt(form.vehicle_year),
-        vehicle_make: form.vehicle_make,
-        vehicle_model: form.vehicle_model,
-        vehicle_color: form.vehicle_color || null,
-        engine_specs: form.engine_specs || null,
-        modifications: form.modifications || null,
-        story: form.story || null,
-        payment_status: "pending",
-        amount_paid: 0,
-      })
-      .select()
-      .single();
 
-    setSaving(false);
+    if (rows.length === 1) {
+      const { data, error: insertError } = await supabase
+        .from("registrations")
+        .insert(rows[0])
+        .select()
+        .single();
 
-    if (insertError || !data) {
-      setError(insertError?.message || "Failed to create registration");
-      return;
+      setSaving(false);
+      if (insertError || !data) {
+        setError(insertError?.message || "Failed to create registration");
+        return;
+      }
+      router.push(`/admin/registrations/${data.id}`);
+    } else {
+      const { error: insertError } = await supabase
+        .from("registrations")
+        .insert(rows);
+
+      setSaving(false);
+      if (insertError) {
+        setError(insertError.message || "Failed to create registrations");
+        return;
+      }
+      router.push("/admin/registrations");
     }
-
-    router.push(`/admin/registrations/${data.id}`);
   };
 
   return (
@@ -128,62 +177,125 @@ export default function NewRegistrationPage() {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="first_name">First Name *</label>
-              <input type="text" id="first_name" name="first_name" value={form.first_name} onChange={handleChange} required />
+              <input type="text" id="first_name" name="first_name" value={owner.first_name} onChange={handleOwnerChange} required />
             </div>
             <div className="form-group">
               <label htmlFor="last_name">Last Name *</label>
-              <input type="text" id="last_name" name="last_name" value={form.last_name} onChange={handleChange} required />
+              <input type="text" id="last_name" name="last_name" value={owner.last_name} onChange={handleOwnerChange} required />
             </div>
           </div>
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="email">Email *</label>
-              <input type="email" id="email" name="email" value={form.email} onChange={handleChange} required />
+              <input type="email" id="email" name="email" value={owner.email} onChange={handleOwnerChange} required />
             </div>
             <div className="form-group">
               <label htmlFor="phone">Phone</label>
-              <input type="tel" id="phone" name="phone" value={form.phone} onChange={handleChange} />
+              <input type="tel" id="phone" name="phone" value={owner.phone} onChange={handleOwnerChange} />
             </div>
           </div>
           <div className="form-group">
             <label htmlFor="hometown">Hometown</label>
-            <input type="text" id="hometown" name="hometown" value={form.hometown} onChange={handleChange} />
+            <input type="text" id="hometown" name="hometown" value={owner.hometown} onChange={handleOwnerChange} />
           </div>
 
-          <SectionHeading>Vehicle Information</SectionHeading>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="vehicle_year">Year *</label>
-              <input type="number" id="vehicle_year" name="vehicle_year" value={form.vehicle_year} onChange={handleChange} min="1900" max="2027" required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="vehicle_make">Make *</label>
-              <input type="text" id="vehicle_make" name="vehicle_make" value={form.vehicle_make} onChange={handleChange} required />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="vehicle_model">Model *</label>
-              <input type="text" id="vehicle_model" name="vehicle_model" value={form.vehicle_model} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="vehicle_color">Color</label>
-              <input type="text" id="vehicle_color" name="vehicle_color" value={form.vehicle_color} onChange={handleChange} />
-            </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="engine_specs">Engine Specs</label>
-            <input type="text" id="engine_specs" name="engine_specs" value={form.engine_specs} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="modifications">Modifications</label>
-            <textarea id="modifications" name="modifications" value={form.modifications} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="story">Car&apos;s Story</label>
-            <textarea id="story" name="story" value={form.story} onChange={handleChange} />
-          </div>
+          {vehicles.map((vehicle, index) => (
+            <div key={index}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginTop: "2rem",
+                  marginBottom: "1.5rem",
+                  paddingBottom: "0.5rem",
+                  borderBottom: "1px solid rgba(0,0,0,0.1)",
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: "1.3rem",
+                    margin: 0,
+                  }}
+                >
+                  {vehicles.length > 1 ? `Vehicle ${index + 1}` : "Vehicle Information"}
+                </h3>
+                {vehicles.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeVehicle(index)}
+                    style={{
+                      background: "none",
+                      border: "1px solid #c00",
+                      color: "#c00",
+                      padding: "0.3rem 0.8rem",
+                      fontSize: "0.75rem",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor={`vehicle_year_${index}`}>Year *</label>
+                  <input type="number" id={`vehicle_year_${index}`} name="vehicle_year" value={vehicle.vehicle_year} onChange={(e) => handleVehicleChange(index, e)} min="1900" max="2027" required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor={`vehicle_make_${index}`}>Make *</label>
+                  <input type="text" id={`vehicle_make_${index}`} name="vehicle_make" value={vehicle.vehicle_make} onChange={(e) => handleVehicleChange(index, e)} required />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor={`vehicle_model_${index}`}>Model *</label>
+                  <input type="text" id={`vehicle_model_${index}`} name="vehicle_model" value={vehicle.vehicle_model} onChange={(e) => handleVehicleChange(index, e)} required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor={`vehicle_color_${index}`}>Color</label>
+                  <input type="text" id={`vehicle_color_${index}`} name="vehicle_color" value={vehicle.vehicle_color} onChange={(e) => handleVehicleChange(index, e)} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor={`engine_specs_${index}`}>Engine Specs</label>
+                <input type="text" id={`engine_specs_${index}`} name="engine_specs" value={vehicle.engine_specs} onChange={(e) => handleVehicleChange(index, e)} />
+              </div>
+              <div className="form-group">
+                <label htmlFor={`modifications_${index}`}>Modifications</label>
+                <textarea id={`modifications_${index}`} name="modifications" value={vehicle.modifications} onChange={(e) => handleVehicleChange(index, e)} />
+              </div>
+              <div className="form-group">
+                <label htmlFor={`story_${index}`}>Car&apos;s Story</label>
+                <textarea id={`story_${index}`} name="story" value={vehicle.story} onChange={(e) => handleVehicleChange(index, e)} />
+              </div>
+            </div>
+          ))}
+
+          {vehicles.length < MAX_VEHICLES_PER_CHECKOUT && (
+            <button
+              type="button"
+              onClick={addVehicle}
+              style={{
+                marginTop: "1.5rem",
+                width: "100%",
+                padding: "0.8rem",
+                background: "var(--cream)",
+                border: "2px dashed rgba(0,0,0,0.15)",
+                color: "var(--charcoal)",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+              }}
+            >
+              + Add Another Vehicle
+            </button>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "2rem" }}>
@@ -203,7 +315,11 @@ export default function NewRegistrationPage() {
               opacity: saving ? 0.6 : 1,
             }}
           >
-            {saving ? "Creating..." : "Create Registration"}
+            {saving
+              ? "Creating..."
+              : vehicles.length > 1
+              ? `Create ${vehicles.length} Registrations`
+              : "Create Registration"}
           </button>
           <button
             type="button"

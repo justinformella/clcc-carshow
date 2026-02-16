@@ -59,6 +59,7 @@ export default function AdminDashboard() {
     0
   );
   const checkedIn = registrations.filter((r) => r.checked_in).length;
+  const uniqueAttendees = new Set(registrations.map((r) => r.email.toLowerCase())).size;
 
   const eventDate = new Date("2026-05-17T00:00:00");
   const today = new Date();
@@ -209,6 +210,13 @@ export default function AdminDashboard() {
           value={`${checkedIn}`}
           note={`of ${registrations.length} registered`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>}
+        />
+        <DashboardCard
+          href="/admin/attendees"
+          label="Attendees"
+          value={`${uniqueAttendees}`}
+          note="unique registrants"
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
         />
         <DashboardCard
           href="/admin/registrations"
