@@ -6,7 +6,10 @@ export type Registration = {
   last_name: string;
   email: string;
   phone: string | null;
-  hometown: string | null;
+  address_street: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
   // Vehicle info
   vehicle_year: number;
   vehicle_make: string;
@@ -22,6 +25,7 @@ export type Registration = {
   stripe_payment_intent_id: string | null;
   payment_status: "pending" | "paid" | "refunded" | "archived";
   amount_paid: number;
+  donation_cents: number;
   // Check-in
   checked_in: boolean;
   checked_in_at: string | null;
@@ -184,6 +188,8 @@ export const SPONSORSHIP_LEVELS = [
   "Gold Sponsor ($500)",
   "Other / Not Sure",
 ] as const;
+
+export const DONATION_PRESETS = [500, 1000, 2500, 5000] as const;
 
 export const MAX_REGISTRATIONS = 200;
 export const MAX_VEHICLES_PER_CHECKOUT = 5;

@@ -12,7 +12,10 @@ type EditForm = {
   last_name: string;
   email: string;
   phone: string;
-  hometown: string;
+  address_street: string;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
   vehicle_year: string;
   vehicle_make: string;
   vehicle_model: string;
@@ -197,7 +200,10 @@ export default function RegistrationDetailPage() {
       last_name: registration.last_name,
       email: registration.email,
       phone: registration.phone || "",
-      hometown: registration.hometown || "",
+      address_street: registration.address_street || "",
+      address_city: registration.address_city || "",
+      address_state: registration.address_state || "",
+      address_zip: registration.address_zip || "",
       vehicle_year: String(registration.vehicle_year),
       vehicle_make: registration.vehicle_make,
       vehicle_model: registration.vehicle_model,
@@ -269,7 +275,10 @@ export default function RegistrationDetailPage() {
         last_name: form.last_name,
         email: form.email,
         phone: form.phone || null,
-        hometown: form.hometown || null,
+        address_street: form.address_street || null,
+        address_city: form.address_city || null,
+        address_state: form.address_state || null,
+        address_zip: form.address_zip || null,
         vehicle_year: parseInt(form.vehicle_year),
         vehicle_make: form.vehicle_make,
         vehicle_model: form.vehicle_model,
@@ -536,8 +545,22 @@ export default function RegistrationDetailPage() {
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="hometown">Hometown</label>
-              <input type="text" id="hometown" name="hometown" value={form.hometown} onChange={handleFormChange} />
+              <label htmlFor="address_street">Street Address</label>
+              <input type="text" id="address_street" name="address_street" value={form.address_street} onChange={handleFormChange} />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="address_city">City</label>
+                <input type="text" id="address_city" name="address_city" value={form.address_city} onChange={handleFormChange} />
+              </div>
+              <div className="form-group">
+                <label htmlFor="address_state">State</label>
+                <input type="text" id="address_state" name="address_state" value={form.address_state} onChange={handleFormChange} maxLength={2} />
+              </div>
+            </div>
+            <div className="form-group" style={{ maxWidth: "200px" }}>
+              <label htmlFor="address_zip">ZIP Code</label>
+              <input type="text" id="address_zip" name="address_zip" value={form.address_zip} onChange={handleFormChange} maxLength={10} />
             </div>
 
             {/* Vehicle Information */}
@@ -625,7 +648,9 @@ export default function RegistrationDetailPage() {
                 <DetailRow label="Name" value={`${r.first_name} ${r.last_name}`} />
                 <DetailRow label="Email" value={r.email} />
                 <DetailRow label="Phone" value={r.phone || "—"} />
-                <DetailRow label="Hometown" value={r.hometown || "—"} />
+                <DetailRow label="Address" value={
+                  [r.address_street, [r.address_city, r.address_state].filter(Boolean).join(", "), r.address_zip].filter(Boolean).join(", ") || "—"
+                } />
                 <DetailRow
                   label="Source"
                   value={
@@ -670,6 +695,9 @@ export default function RegistrationDetailPage() {
               <DetailSection title="Payment">
                 <DetailRow label="Status" value={r.payment_status} />
                 <DetailRow label="Amount Paid" value={`$${(r.amount_paid / 100).toFixed(2)}`} />
+                {(r.donation_cents || 0) > 0 && (
+                  <DetailRow label="Donation" value={`$${(r.donation_cents / 100).toFixed(2)}`} />
+                )}
 
                 {!r.stripe_payment_intent_id && !r.stripe_session_id ? (
                   <>
@@ -1354,7 +1382,10 @@ const FIELD_LABELS: Record<string, string> = {
   last_name: "Last Name",
   email: "Email",
   phone: "Phone",
-  hometown: "Hometown",
+  address_street: "Street Address",
+  address_city: "City",
+  address_state: "State",
+  address_zip: "ZIP Code",
   vehicle_year: "Year",
   vehicle_make: "Make",
   vehicle_model: "Model",
@@ -1367,6 +1398,7 @@ const FIELD_LABELS: Record<string, string> = {
   stripe_payment_intent_id: "Payment Intent",
   checked_in: "Checked In",
   ai_image_url: "AI Image",
+  donation_cents: "Donation",
 };
 
 function formatFieldLabel(field: string): string {

@@ -26,11 +26,18 @@ export async function POST(request: NextRequest) {
       last_name,
       email,
       phone,
-      hometown,
+      address_street,
+      address_city,
+      address_state,
+      address_zip,
       utm_source,
       utm_medium,
       utm_campaign,
     } = body;
+
+    // Parse and validate donation
+    const rawDonation = Number(body.donation_cents) || 0;
+    const donationCents = Math.max(0, Math.min(rawDonation, 50000)); // cap at $500
 
     // Validate required owner fields
     if (!first_name || !last_name || !email) {
@@ -112,13 +119,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build rows to insert
-    const rows = vehicles.map((v) => ({
+    // Build rows to insert — donation stored on first row only
+    const rows = vehicles.map((v, index) => ({
       first_name,
       last_name,
       email,
       phone: phone || null,
-      hometown: hometown || null,
+      address_street: address_street || null,
+      address_city: address_city || null,
+      address_state: address_state || null,
+      address_zip: address_zip || null,
       vehicle_year: v.vehicle_year,
       vehicle_make: v.vehicle_make,
       vehicle_model: v.vehicle_model,
@@ -130,6 +140,7 @@ export async function POST(request: NextRequest) {
       utm_medium: utm_medium || null,
       utm_campaign: utm_campaign || null,
       payment_status: "pending",
+      donation_cents: index === 0 ? donationCents : 0,
     }));
 
     // Insert all registration rows
@@ -149,7 +160,14 @@ export async function POST(request: NextRequest) {
     // Create Stripe Checkout Session with one line item per vehicle
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-    const lineItems = registrations.map((reg) => ({
+    const lineItems: Array<{
+      price_data: {
+        currency: string;
+        product_data: { name: string; description?: string };
+        unit_amount: number;
+      };
+      quantity: number;
+    }> = registrations.map((reg) => ({
       price_data: {
         currency: "usd",
         product_data: {
@@ -161,6 +179,20 @@ export async function POST(request: NextRequest) {
       quantity: 1,
     }));
 
+    // Add donation as a separate line item
+    if (donationCents > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Donation to Crystal Lake Food Pantry",
+          },
+          unit_amount: donationCents,
+        },
+        quantity: 1,
+      });
+    }
+
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
@@ -170,6 +202,7 @@ export async function POST(request: NextRequest) {
       customer_email: email,
       metadata: {
         registration_ids: registrations.map((r) => r.id).join(","),
+        donation_cents: String(donationCents),
       },
     });
 

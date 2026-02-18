@@ -74,7 +74,10 @@ export default function RegistrationsPage() {
       "Last Name",
       "Email",
       "Phone",
-      "Hometown",
+      "Street Address",
+      "City",
+      "State",
+      "ZIP",
       "Year",
       "Make",
       "Model",
@@ -96,7 +99,10 @@ export default function RegistrationsPage() {
       r.last_name,
       r.email,
       r.phone || "",
-      r.hometown || "",
+      r.address_street || "",
+      r.address_city || "",
+      r.address_state || "",
+      r.address_zip || "",
       r.vehicle_year,
       r.vehicle_make,
       r.vehicle_model,
@@ -363,7 +369,7 @@ export default function RegistrationsPage() {
                 <th style={thStyle}>Vehicle</th>
                 <th style={thStyle}>Award</th>
                 <th style={thStyle}>Source</th>
-                <th style={thStyle}>Hometown</th>
+                <th style={thStyle}>City/State</th>
                 <th style={thStyle}>Status</th>
               </tr>
             </thead>
@@ -422,7 +428,7 @@ export default function RegistrationsPage() {
                       <span style={{ color: "var(--text-light)" }}>&mdash;</span>
                     )}
                   </td>
-                  <td style={tdStyle}>{reg.hometown || "—"}</td>
+                  <td style={tdStyle}>{[reg.address_city, reg.address_state].filter(Boolean).join(", ") || "—"}</td>
                   <td style={tdStyle}>
                     <StatusBadge reg={reg} />
                   </td>
@@ -527,7 +533,7 @@ export default function RegistrationsPage() {
                       </span>
                     ) : null}
                   </span>
-                  <span>{reg.hometown || ""}</span>
+                  <span>{[reg.address_city, reg.address_state].filter(Boolean).join(", ") || ""}</span>
                 </div>
               </div>
             </div>

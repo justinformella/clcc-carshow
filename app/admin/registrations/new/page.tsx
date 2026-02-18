@@ -35,7 +35,10 @@ export default function NewRegistrationPage() {
     last_name: "",
     email: "",
     phone: "",
-    hometown: "",
+    address_street: "",
+    address_city: "",
+    address_state: "",
+    address_zip: "",
   });
 
   const [vehicles, setVehicles] = useState<VehicleForm[]>([emptyVehicle()]);
@@ -77,7 +80,10 @@ export default function NewRegistrationPage() {
       last_name: owner.last_name,
       email: owner.email,
       phone: owner.phone || null,
-      hometown: owner.hometown || null,
+      address_street: owner.address_street || null,
+      address_city: owner.address_city || null,
+      address_state: owner.address_state || null,
+      address_zip: owner.address_zip || null,
       vehicle_year: parseInt(v.vehicle_year),
       vehicle_make: v.vehicle_make,
       vehicle_model: v.vehicle_model,
@@ -195,8 +201,22 @@ export default function NewRegistrationPage() {
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="hometown">Hometown</label>
-            <input type="text" id="hometown" name="hometown" value={owner.hometown} onChange={handleOwnerChange} />
+            <label htmlFor="address_street">Street Address</label>
+            <input type="text" id="address_street" name="address_street" value={owner.address_street} onChange={handleOwnerChange} />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="address_city">City</label>
+              <input type="text" id="address_city" name="address_city" value={owner.address_city} onChange={handleOwnerChange} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="address_state">State</label>
+              <input type="text" id="address_state" name="address_state" value={owner.address_state} onChange={handleOwnerChange} maxLength={2} />
+            </div>
+          </div>
+          <div className="form-group" style={{ maxWidth: "200px" }}>
+            <label htmlFor="address_zip">ZIP Code</label>
+            <input type="text" id="address_zip" name="address_zip" value={owner.address_zip} onChange={handleOwnerChange} maxLength={10} />
           </div>
 
           {vehicles.map((vehicle, index) => (

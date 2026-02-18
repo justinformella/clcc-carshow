@@ -46,6 +46,7 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [vehicles, setVehicles] = useState<VehicleSummary[] | null>(null);
+  const [donationCents, setDonationCents] = useState(0);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.fbq) {
@@ -60,6 +61,9 @@ function SuccessContent() {
       .then((data) => {
         if (data.vehicles && data.vehicles.length > 0) {
           setVehicles(data.vehicles);
+        }
+        if (data.donation_cents > 0) {
+          setDonationCents(data.donation_cents);
         }
       })
       .catch(() => {
@@ -166,6 +170,29 @@ function SuccessContent() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Donation thank-you banner */}
+            {donationCents > 0 && (
+              <div
+                style={{
+                  background: "#e8f5e9",
+                  border: "1px solid #a5d6a7",
+                  padding: "1rem 1.5rem",
+                  marginBottom: "1.5rem",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "1rem",
+                    color: "#2e7d32",
+                    fontWeight: 600,
+                  }}
+                >
+                  Thank you for your ${donationCents / 100} donation to the Crystal Lake Food Pantry!
+                </p>
               </div>
             )}
 

@@ -14,9 +14,28 @@ export default function Hero() {
         <p className="hero-location">
           Grant, Brink &amp; Williams Streets &middot; Downtown Crystal Lake
         </p>
-        <Link href="/register" className="hero-cta">
-          Register Your Vehicle
-        </Link>
+        <div className="hero-buttons">
+          <Link href="/register" className="hero-cta">
+            Register Your Vehicle
+          </Link>
+          <a href="#sponsors" className="hero-cta hero-cta-outline">
+            Become a Sponsor
+          </a>
+        </div>
+        <div className="hero-sponsors">
+          <p className="hero-sponsors-label">Presented by our sponsors</p>
+          <div className="hero-sponsors-row">
+            <div className="hero-sponsor-logo">
+              <span>Your Logo Here</span>
+            </div>
+            <div className="hero-sponsor-logo">
+              <span>Your Logo Here</span>
+            </div>
+            <div className="hero-sponsor-logo">
+              <span>Your Logo Here</span>
+            </div>
+          </div>
+        </div>
       </div>
       <div className="scroll-indicator">
         <span>Scroll</span>

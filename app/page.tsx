@@ -1,14 +1,12 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import CharitySection from "@/components/CharitySection";
-import SpectatorBanner from "@/components/SpectatorBanner";
-import RegistrationSection from "@/components/RegistrationSection";
-import AboutSection from "@/components/AboutSection";
+import AboutCharitySection from "@/components/AboutCharitySection";
 import ScheduleAwards from "@/components/ScheduleAwards";
-import SponsorsSection from "@/components/SponsorsSection";
+import SpectatorBanner from "@/components/SpectatorBanner";
 import WeatherPolicy from "@/components/WeatherPolicy";
 import FAQ from "@/components/FAQ";
 import Gallery from "@/components/Gallery";
+import SponsorsSection from "@/components/SponsorsSection";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -16,15 +14,13 @@ export default function Home() {
     <>
       <Header />
       <Hero />
-      <CharitySection />
-      <SpectatorBanner />
-      <RegistrationSection />
-      <AboutSection />
+      <AboutCharitySection />
       <ScheduleAwards />
-      <SponsorsSection />
+      <SpectatorBanner />
       <WeatherPolicy />
       <FAQ />
       <Gallery />
+      <SponsorsSection />
       <Footer />
     </>
   );

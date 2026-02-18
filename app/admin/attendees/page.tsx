@@ -15,7 +15,8 @@ type Attendee = {
   firstName: string;
   lastName: string;
   phone: string | null;
-  hometown: string | null;
+  addressCity: string | null;
+  addressState: string | null;
   vehicles: Registration[];
   totalPaid: number;
   checkedInCount: number;
@@ -37,9 +38,10 @@ function groupByEmail(registrations: Registration[]): Attendee[] {
       firstName: first.first_name,
       lastName: first.last_name,
       phone: first.phone,
-      hometown: first.hometown,
+      addressCity: first.address_city,
+      addressState: first.address_state,
       vehicles,
-      totalPaid: vehicles.reduce((sum, v) => sum + (v.amount_paid || 0), 0),
+      totalPaid: vehicles.reduce((sum, v) => sum + (v.amount_paid || 0) + (v.donation_cents || 0), 0),
       checkedInCount: vehicles.filter((v) => v.checked_in).length,
     };
   });

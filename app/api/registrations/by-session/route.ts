@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("registrations")
-    .select("car_number, vehicle_year, vehicle_make, vehicle_model")
+    .select("car_number, vehicle_year, vehicle_make, vehicle_model, donation_cents")
     .eq("stripe_session_id", sessionId)
     .order("car_number", { ascending: true });
 
@@ -27,5 +27,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ vehicles: data || [] });
+  const vehicles = data || [];
+  const donationCents = vehicles.reduce(
+    (sum: number, v: { donation_cents?: number }) => sum + (v.donation_cents || 0),
+    0
+  );
+
+  return NextResponse.json({ vehicles, donation_cents: donationCents });
 }

@@ -8,6 +8,7 @@ import {
   REGISTRATION_PRICE_CENTS,
   MAX_REGISTRATIONS,
   MAX_VEHICLES_PER_CHECKOUT,
+  DONATION_PRESETS,
 } from "@/types/database";
 
 type VehicleForm = {
@@ -47,10 +48,16 @@ function RegisterContent() {
     last_name: "",
     email: "",
     phone: "",
-    hometown: "",
+    address_street: "",
+    address_city: "",
+    address_state: "",
+    address_zip: "",
   });
 
   const [vehicles, setVehicles] = useState<VehicleForm[]>([emptyVehicle()]);
+  const [donationCents, setDonationCents] = useState(0);
+  const [showCustomDonation, setShowCustomDonation] = useState(false);
+  const [customDonationValue, setCustomDonationValue] = useState("");
 
   useEffect(() => {
     fetch("/api/registrations/count")
@@ -94,7 +101,8 @@ function RegisterContent() {
     vehicles.length < MAX_VEHICLES_PER_CHECKOUT &&
     (spotsRemaining === null || vehicles.length < spotsRemaining);
 
-  const totalCents = vehicles.length * REGISTRATION_PRICE_CENTS;
+  const regCents = vehicles.length * REGISTRATION_PRICE_CENTS;
+  const totalCents = regCents + donationCents;
   const totalDisplay = `$${totalCents / 100}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,6 +120,7 @@ function RegisterContent() {
             ...v,
             vehicle_year: parseInt(v.vehicle_year),
           })),
+          donation_cents: donationCents,
           utm_source: utmRef.current.utm_source || undefined,
           utm_medium: utmRef.current.utm_medium || undefined,
           utm_campaign: utmRef.current.utm_campaign || undefined,
@@ -316,14 +325,57 @@ function RegisterContent() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="hometown">Hometown</label>
+                  <label htmlFor="address_street">Street Address *</label>
                   <input
                     type="text"
-                    id="hometown"
-                    name="hometown"
-                    value={owner.hometown}
+                    id="address_street"
+                    name="address_street"
+                    value={owner.address_street}
                     onChange={handleOwnerChange}
-                    placeholder="e.g., Crystal Lake, IL"
+                    placeholder="e.g., 123 Main St"
+                    required
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="address_city">City *</label>
+                    <input
+                      type="text"
+                      id="address_city"
+                      name="address_city"
+                      value={owner.address_city}
+                      onChange={handleOwnerChange}
+                      placeholder="e.g., Crystal Lake"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="address_state">State *</label>
+                    <input
+                      type="text"
+                      id="address_state"
+                      name="address_state"
+                      value={owner.address_state}
+                      onChange={handleOwnerChange}
+                      placeholder="e.g., IL"
+                      maxLength={2}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ maxWidth: "200px" }}>
+                  <label htmlFor="address_zip">ZIP Code *</label>
+                  <input
+                    type="text"
+                    id="address_zip"
+                    name="address_zip"
+                    value={owner.address_zip}
+                    onChange={handleOwnerChange}
+                    placeholder="e.g., 60014"
+                    maxLength={10}
+                    required
                   />
                 </div>
 
@@ -505,7 +557,7 @@ function RegisterContent() {
                       marginBottom: "0.5rem",
                     }}
                   >
-                    Registration Fee
+                    {donationCents > 0 ? "Total" : "Registration Fee"}
                   </p>
                   <p
                     style={{
@@ -516,16 +568,25 @@ function RegisterContent() {
                   >
                     {totalDisplay}
                   </p>
-                  {vehicles.length > 1 && (
-                    <p
+                  {(vehicles.length > 1 || donationCents > 0) && (
+                    <div
                       style={{
                         fontSize: "0.9rem",
                         color: "var(--text-light)",
                         marginTop: "0.25rem",
                       }}
                     >
-                      {vehicles.length} vehicles &times; {REGISTRATION_PRICE_DISPLAY}
-                    </p>
+                      {vehicles.length > 1 ? (
+                        <span>
+                          {vehicles.length} vehicles &times; {REGISTRATION_PRICE_DISPLAY}
+                        </span>
+                      ) : (
+                        <span>Registration: {REGISTRATION_PRICE_DISPLAY}</span>
+                      )}
+                      {donationCents > 0 && (
+                        <span> + ${donationCents / 100} donation</span>
+                      )}
+                    </div>
                   )}
                   <p
                     style={{
@@ -537,6 +598,145 @@ function RegisterContent() {
                     Non-refundable. 100% of net proceeds go to the Crystal Lake
                     Food Pantry.
                   </p>
+                </div>
+
+                {/* Donation Section */}
+                <div
+                  style={{
+                    marginTop: "1.5rem",
+                    padding: "1.5rem",
+                    background: "#fffde7",
+                    border: "1px solid rgba(201,168,76,0.3)",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: "1.2rem",
+                      marginBottom: "0.5rem",
+                      color: "var(--charcoal)",
+                      textAlign: "center",
+                    }}
+                  >
+                    Additional Donation to the Crystal Lake Food Pantry
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "var(--text-light)",
+                      textAlign: "center",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    Add an optional donation with your registration
+                  </p>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.5rem",
+                      flexWrap: "wrap",
+                      justifyContent: "center",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    {DONATION_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          if (donationCents === preset) {
+                            setDonationCents(0);
+                          } else {
+                            setDonationCents(preset);
+                            setShowCustomDonation(false);
+                            setCustomDonationValue("");
+                          }
+                        }}
+                        style={{
+                          padding: "0.5rem 1.2rem",
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          background: donationCents === preset ? "var(--gold)" : "var(--white)",
+                          color: donationCents === preset ? "var(--charcoal)" : "var(--charcoal)",
+                          border: `2px solid ${donationCents === preset ? "var(--gold)" : "rgba(201,168,76,0.5)"}`,
+                          width: "auto",
+                        }}
+                      >
+                        +${preset / 100}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showCustomDonation) {
+                          setShowCustomDonation(false);
+                          setCustomDonationValue("");
+                          setDonationCents(0);
+                        } else {
+                          setShowCustomDonation(true);
+                          setDonationCents(0);
+                        }
+                      }}
+                      style={{
+                        padding: "0.5rem 1.2rem",
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        background: showCustomDonation ? "var(--gold)" : "var(--white)",
+                        color: "var(--charcoal)",
+                        border: `2px solid ${showCustomDonation ? "var(--gold)" : "rgba(201,168,76,0.5)"}`,
+                        width: "auto",
+                      }}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
+                  {showCustomDonation && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--charcoal)" }}>$</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="500"
+                        step="1"
+                        placeholder="Enter amount"
+                        value={customDonationValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomDonationValue(val);
+                          const dollars = parseInt(val);
+                          if (!isNaN(dollars) && dollars > 0 && dollars <= 500) {
+                            setDonationCents(dollars * 100);
+                          } else {
+                            setDonationCents(0);
+                          }
+                        }}
+                        style={{
+                          width: "160px",
+                          padding: "0.5rem 0.75rem",
+                          fontSize: "1rem",
+                          border: "1px solid rgba(0,0,0,0.15)",
+                          textAlign: "center",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {donationCents === 0 && !showCustomDonation && (
+                    <p
+                      style={{
+                        fontSize: "0.8rem",
+                        color: "var(--text-light)",
+                        textAlign: "center",
+                        marginTop: "0.25rem",
+                      }}
+                    >
+                      No thanks, just register
+                    </p>
+                  )}
                 </div>
 
                 <button

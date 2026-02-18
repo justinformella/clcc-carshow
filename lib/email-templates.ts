@@ -149,6 +149,22 @@ export function confirmationEmail(reg: Registration): { subject: string; html: s
       </td></tr>
     </table>
 
+    ${reg.donation_cents > 0 ? `
+    <!-- Donation Acknowledgment -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px; background:#e8f5e9; border-radius:8px;">
+      <tr>
+        <td style="padding:16px 24px; text-align:center;">
+          <p style="margin:0; font-size:16px; font-weight:700; color:#2e7d32;">
+            Thank you for your $${(reg.donation_cents / 100).toFixed(0)} donation!
+          </p>
+          <p style="margin:4px 0 0; font-size:13px; color:#388e3c;">
+            Your generous contribution to the Crystal Lake Food Pantry makes a real difference.
+          </p>
+        </td>
+      </tr>
+    </table>
+    ` : ""}
+
     <!-- Charity Note -->
     <p style="margin:0; font-size:13px; color:#888; text-align:center; line-height:1.5;">
       100% of net proceeds benefit the Crystal Lake Food Pantry
@@ -165,6 +181,7 @@ export function multiVehicleConfirmationEmail(
   registrations: Registration[]
 ): { subject: string; html: string } {
   const carNumbers = registrations.map((r) => `#${r.car_number}`).join(", ");
+  const totalDonation = registrations.reduce((sum, r) => sum + (r.donation_cents || 0), 0);
 
   const badges = registrations
     .map(
@@ -269,6 +286,22 @@ export function multiVehicleConfirmationEmail(
         </a>
       </td></tr>
     </table>
+
+    ${totalDonation > 0 ? `
+    <!-- Donation Acknowledgment -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px; background:#e8f5e9; border-radius:8px;">
+      <tr>
+        <td style="padding:16px 24px; text-align:center;">
+          <p style="margin:0; font-size:16px; font-weight:700; color:#2e7d32;">
+            Thank you for your $${(totalDonation / 100).toFixed(0)} donation!
+          </p>
+          <p style="margin:4px 0 0; font-size:13px; color:#388e3c;">
+            Your generous contribution to the Crystal Lake Food Pantry makes a real difference.
+          </p>
+        </td>
+      </tr>
+    </table>
+    ` : ""}
 
     <!-- Charity Note -->
     <p style="margin:0; font-size:13px; color:#888; text-align:center; line-height:1.5;">

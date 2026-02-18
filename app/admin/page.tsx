@@ -54,10 +54,15 @@ export default function AdminDashboard() {
 
   const paidRegistrations = registrations.filter((r) => r.payment_status === "paid");
   const unpaidRegistrations = registrations.filter((r) => r.payment_status === "pending");
-  const totalRevenue = paidRegistrations.reduce(
+  const regRevenueCents = paidRegistrations.reduce(
     (sum, r) => sum + (r.amount_paid || 0),
     0
   );
+  const donationRevenueCents = paidRegistrations.reduce(
+    (sum, r) => sum + (r.donation_cents || 0),
+    0
+  );
+  const totalRevenue = regRevenueCents + donationRevenueCents;
   const checkedIn = registrations.filter((r) => r.checked_in).length;
   const uniqueAttendees = new Set(registrations.map((r) => r.email.toLowerCase())).size;
 
@@ -199,9 +204,10 @@ export default function AdminDashboard() {
           href="/admin/finances"
           label="Revenue"
           value={`$${(totalRevenue / 100).toLocaleString()}`}
-          note={unpaidRegistrations.length > 0
-            ? `collected \u00b7 ${unpaidRegistrations.length} unpaid`
-            : "collected"}
+          note={
+            (donationRevenueCents > 0 ? `incl. $${(donationRevenueCents / 100).toLocaleString()} in donations` : "collected") +
+            (unpaidRegistrations.length > 0 ? ` \u00b7 ${unpaidRegistrations.length} unpaid` : "")
+          }
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
         />
         <DashboardCard

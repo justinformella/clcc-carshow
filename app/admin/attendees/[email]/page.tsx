@@ -114,6 +114,10 @@ export default function AttendeeDetailPage() {
     (sum, r) => sum + (r.amount_paid || 0),
     0
   );
+  const totalDonated = registrations.reduce(
+    (sum, r) => sum + (r.donation_cents || 0),
+    0
+  );
   const checkedInCount = registrations.filter((r) => r.checked_in).length;
 
   return (
@@ -178,11 +182,19 @@ export default function AttendeeDetailPage() {
         >
           <InfoItem label="Email" value={email} />
           <InfoItem label="Phone" value={first.phone || "\u2014"} />
-          <InfoItem label="Hometown" value={first.hometown || "\u2014"} />
+          <InfoItem label="Address" value={
+            [first.address_street, [first.address_city, first.address_state].filter(Boolean).join(", "), first.address_zip].filter(Boolean).join(", ") || "\u2014"
+          } />
           <InfoItem
             label="Total Paid"
             value={`$${(totalPaid / 100).toLocaleString()}`}
           />
+          {totalDonated > 0 && (
+            <InfoItem
+              label="Total Donated"
+              value={`$${(totalDonated / 100).toLocaleString()}`}
+            />
+          )}
           <InfoItem
             label="Vehicles"
             value={`${registrations.length}`}

@@ -92,6 +92,8 @@ export default function FinancesPage() {
   const refundedRegs = registrations.filter((r) => r.payment_status === "refunded");
 
   const regRevenue = paidRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
+  const donationRevenue = paidRegs.reduce((sum, r) => sum + (r.donation_cents || 0), 0);
+  const donorCount = paidRegs.filter((r) => (r.donation_cents || 0) > 0).length;
   const refundedAmount = refundedRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
 
   const paidSponsors = sponsors.filter((s) => s.status === "paid");
@@ -107,10 +109,10 @@ export default function FinancesPage() {
   }, 0);
   const pendingRegValue = pendingRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
 
-  const totalRevenue = regRevenue + sponsorRevenue;
+  const totalRevenue = regRevenue + sponsorRevenue + donationRevenue;
 
-  // Stripe fee estimate: applied to each paid registration and paid sponsor
-  const regFees = paidRegs.reduce((sum, r) => sum + estimateStripeFee(r.amount_paid || 0), 0);
+  // Stripe fee estimate: applied to each paid registration (incl. donation) and paid sponsor
+  const regFees = paidRegs.reduce((sum, r) => sum + estimateStripeFee((r.amount_paid || 0) + (r.donation_cents || 0)), 0);
   const sponsorFees = paidSponsors.reduce((sum, s) => sum + estimateStripeFee(s.amount_paid || 0), 0);
   const totalFees = regFees + sponsorFees;
 
@@ -133,29 +135,33 @@ export default function FinancesPage() {
 
   // Area chart data — cumulative revenue over time
   const areaData = (() => {
-    const dayMap: Record<string, { reg: number; sponsor: number }> = {};
+    const dayMap: Record<string, { reg: number; sponsor: number; donation: number }> = {};
     paidRegs.forEach((r) => {
       const day = (r.paid_at || r.created_at).slice(0, 10);
-      if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0 };
+      if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0, donation: 0 };
       dayMap[day].reg += r.amount_paid || 0;
+      dayMap[day].donation += r.donation_cents || 0;
     });
     paidSponsors.forEach((s) => {
       const day = (s.paid_at || s.created_at).slice(0, 10);
-      if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0 };
+      if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0, donation: 0 };
       dayMap[day].sponsor += s.amount_paid || 0;
     });
     const sortedDays = Object.keys(dayMap).sort();
     let cumReg = 0;
     let cumSponsor = 0;
+    let cumDonation = 0;
     return sortedDays.map((day) => {
       cumReg += dayMap[day].reg;
       cumSponsor += dayMap[day].sponsor;
+      cumDonation += dayMap[day].donation;
       const d = new Date(day + "T00:00:00");
       return {
         date: `${d.getMonth() + 1}/${d.getDate()}`,
         registrations: cumReg,
         sponsorships: cumSponsor,
-        total: cumReg + cumSponsor,
+        donations: cumDonation,
+        total: cumReg + cumSponsor + cumDonation,
       };
     });
   })();
@@ -164,6 +170,7 @@ export default function FinancesPage() {
   const donutData = [
     { name: "Registrations", value: regRevenue },
     { name: "Sponsorships", value: sponsorRevenue },
+    ...(donationRevenue > 0 ? [{ name: "Donations", value: donationRevenue }] : []),
   ];
 
   // === Unified transaction list ===
@@ -175,12 +182,12 @@ export default function FinancesPage() {
         id: r.id,
         date: r.created_at,
         type: "registration" as const,
-        description: `${r.first_name} ${r.last_name} — ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}`,
-        amountCents: r.amount_paid || 0,
-        feeCents: r.payment_status === "paid" ? estimateStripeFee(r.amount_paid || 0) : 0,
+        description: `${r.first_name} ${r.last_name} — ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}${(r.donation_cents || 0) > 0 ? ` + $${(r.donation_cents / 100).toFixed(0)} donation` : ""}`,
+        amountCents: (r.amount_paid || 0) + (r.donation_cents || 0),
+        feeCents: r.payment_status === "paid" ? estimateStripeFee((r.amount_paid || 0) + (r.donation_cents || 0)) : 0,
         netCents:
           r.payment_status === "paid"
-            ? (r.amount_paid || 0) - estimateStripeFee(r.amount_paid || 0)
+            ? (r.amount_paid || 0) + (r.donation_cents || 0) - estimateStripeFee((r.amount_paid || 0) + (r.donation_cents || 0))
             : 0,
         status: r.payment_status,
         detailUrl: `/admin/registrations/${r.id}`,
@@ -215,18 +222,23 @@ export default function FinancesPage() {
   // === CSV Export ===
 
   function exportCSV() {
-    const header = "Date,Type,Description,Amount,Est. Fee,Net,Status";
-    const rows = filtered.map((t) =>
-      [
+    const header = "Date,Type,Description,Amount,Donation,Est. Fee,Net,Status";
+    const rows = filtered.map((t) => {
+      // Look up donation for registration transactions
+      const donation = t.type === "registration"
+        ? registrations.find((r) => r.id === t.id)?.donation_cents || 0
+        : 0;
+      return [
         new Date(t.date).toLocaleDateString(),
         t.type === "registration" ? "Registration" : "Sponsorship",
         `"${t.description.replace(/"/g, '""')}"`,
         fmtMoney(t.amountCents),
+        donation > 0 ? fmtMoney(donation) : "$0.00",
         fmtMoney(t.feeCents),
         fmtMoney(t.netCents),
         t.status.charAt(0).toUpperCase() + t.status.slice(1),
-      ].join(",")
-    );
+      ].join(",");
+    });
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -355,6 +367,12 @@ export default function FinancesPage() {
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>}
         />
         <SummaryCard
+          label="Donation Revenue"
+          value={fmtMoney(donationRevenue)}
+          note={`${donorCount} donor${donorCount !== 1 ? "s" : ""}`}
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>}
+        />
+        <SummaryCard
           label="Pending"
           value={`${pendingRegs.length + pendingSponsors.length}`}
           note={`${fmtMoney(pendingRegValue + pendingSponsorValue)} awaiting payment`}
@@ -420,6 +438,10 @@ export default function FinancesPage() {
                     <stop offset="5%" stopColor={COLORS.sponsor} stopOpacity={0.3} />
                     <stop offset="95%" stopColor={COLORS.sponsor} stopOpacity={0.02} />
                   </linearGradient>
+                  <linearGradient id="gradDonation" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.green} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={COLORS.green} stopOpacity={0.02} />
+                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis
@@ -438,7 +460,7 @@ export default function FinancesPage() {
                 <Tooltip
                   formatter={(value: number | undefined, name: string | undefined) => {
                     const v = typeof value === "number" ? value : 0;
-                    const label = name === "registrations" ? "Registrations" : name === "sponsorships" ? "Sponsorships" : "Total";
+                    const label = name === "registrations" ? "Registrations" : name === "sponsorships" ? "Sponsorships" : name === "donations" ? "Donations" : "Total";
                     return [fmtMoney(v), label];
                   }}
                   labelStyle={{ fontWeight: 600 }}
@@ -465,6 +487,14 @@ export default function FinancesPage() {
                   strokeWidth={2}
                   fill="url(#gradSponsor)"
                 />
+                <Area
+                  type="monotone"
+                  dataKey="donations"
+                  stackId="1"
+                  stroke={COLORS.green}
+                  strokeWidth={2}
+                  fill="url(#gradDonation)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -477,6 +507,10 @@ export default function FinancesPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
               <span style={{ width: "10px", height: "10px", background: COLORS.sponsor, display: "inline-block", borderRadius: "2px" }} />
               <span style={{ fontSize: "0.75rem", color: "var(--text-light)" }}>Sponsorships</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span style={{ width: "10px", height: "10px", background: COLORS.green, display: "inline-block", borderRadius: "2px" }} />
+              <span style={{ fontSize: "0.75rem", color: "var(--text-light)" }}>Donations</span>
             </div>
           </div>
         </div>
@@ -527,6 +561,7 @@ export default function FinancesPage() {
                   >
                     <Cell fill={COLORS.reg} />
                     <Cell fill={COLORS.sponsor} />
+                    {donationRevenue > 0 && <Cell fill={COLORS.green} />}
                   </Pie>
                   <Tooltip
                     formatter={(value: number | undefined) => fmtMoney(typeof value === "number" ? value : 0)}
@@ -601,6 +636,7 @@ export default function FinancesPage() {
           <tbody>
             <LedgerRow label="Gross Revenue (Registrations)" amount={regRevenue} />
             <LedgerRow label="Gross Revenue (Sponsorships)" amount={sponsorRevenue} />
+            <LedgerRow label="Gross Revenue (Donations)" amount={donationRevenue} />
             <LedgerRow label="Total Gross Revenue" amount={totalRevenue} bold separator />
             <LedgerRow label="Less: Stripe Processing Fees (est.)" amount={-totalFees} />
             <LedgerRow label="Less: Refunds Issued" amount={-refundedAmount} />

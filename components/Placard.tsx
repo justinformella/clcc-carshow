@@ -15,11 +15,11 @@ export default function Placard({ registration }: { registration: Registration }
         {r.vehicle_year} {r.vehicle_make} {r.vehicle_model}
       </div>
 
-      {/* Owner + hometown */}
+      {/* Owner + location */}
       <div className="placard-owner">
         {r.first_name} {r.last_name}
-        {r.hometown && (
-          <span className="placard-hometown"> &mdash; {r.hometown}</span>
+        {(r.address_city || r.address_state) && (
+          <span className="placard-hometown"> &mdash; {[r.address_city, r.address_state].filter(Boolean).join(", ")}</span>
         )}
       </div>
 
