@@ -16,12 +16,7 @@ const faqs = [
   {
     question: "Are pets allowed at the event?",
     answer:
-      "Leashed pets are welcome! Please keep them under control at all times and clean up after them. Water stations for pets will be available throughout the venue. We ask that pets be kept away from show vehicles unless you're the owner.",
-  },
-  {
-    question: "Is there handicap accessibility?",
-    answer:
-      "Yes, the event is fully accessible. We have designated handicap parking areas close to the show field, and all areas of the event are wheelchair accessible. Golf cart shuttles are available for those who need assistance getting around the venue.",
+      "Leashed pets are welcome! Please keep them under control at all times and clean up after them. We ask that pets be kept away from show vehicles unless you're the owner.",
   },
   {
     question: "Is pre-registration required?",

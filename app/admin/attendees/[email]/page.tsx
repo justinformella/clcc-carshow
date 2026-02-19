@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -19,6 +19,17 @@ type GravatarProfile = {
   verified_accounts: { service_type: string; service_label: string; url: string }[];
 };
 
+type EditForm = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address_street: string;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
+};
+
 async function sha256(str: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str.trim().toLowerCase()));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
@@ -34,20 +45,26 @@ export default function AttendeeDetailPage() {
   const [gravatar, setGravatar] = useState<GravatarProfile | null>(null);
   const [gravatarLoading, setGravatarLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("registrations")
-        .select("*")
-        .ilike("email", email)
-        .in("payment_status", ["paid", "pending"])
-        .order("car_number", { ascending: true });
-      setRegistrations(data || []);
-      setLoading(false);
-    };
-    fetchData();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [form, setForm] = useState<EditForm | null>(null);
+
+  const fetchData = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("registrations")
+      .select("*")
+      .ilike("email", email)
+      .in("payment_status", ["paid", "pending"])
+      .order("car_number", { ascending: true });
+    setRegistrations(data || []);
+    setLoading(false);
   }, [email]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     const fetchGravatar = async () => {
@@ -67,6 +84,73 @@ export default function AttendeeDetailPage() {
     };
     fetchGravatar();
   }, [email]);
+
+  const startEdit = () => {
+    if (registrations.length === 0) return;
+    const first = registrations[0];
+    setForm({
+      first_name: first.first_name,
+      last_name: first.last_name,
+      email: first.email,
+      phone: first.phone || "",
+      address_street: first.address_street || "",
+      address_city: first.address_city || "",
+      address_state: first.address_state || "",
+      address_zip: first.address_zip || "",
+    });
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setForm(null);
+    setSaveError(null);
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!form) return;
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form || registrations.length === 0) return;
+    setSaving(true);
+    setSaveError(null);
+
+    const supabase = createClient();
+    const ids = registrations.map((r) => r.id);
+
+    const { error } = await supabase
+      .from("registrations")
+      .update({
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        phone: form.phone || null,
+        address_street: form.address_street || null,
+        address_city: form.address_city || null,
+        address_state: form.address_state || null,
+        address_zip: form.address_zip || null,
+      })
+      .in("id", ids);
+
+    setSaving(false);
+
+    if (error) {
+      setSaveError(error.message);
+    } else {
+      setEditing(false);
+      setForm(null);
+      // If email changed, redirect to new attendee URL
+      if (form.email.toLowerCase() !== email.toLowerCase()) {
+        router.push(`/admin/attendees/${encodeURIComponent(form.email.toLowerCase())}`);
+      } else {
+        await fetchData();
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -163,51 +247,154 @@ export default function AttendeeDetailPage() {
           marginBottom: "2rem",
         }}
       >
-        <h1
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "1.75rem",
-            fontWeight: 400,
-            marginBottom: "1rem",
-          }}
-        >
-          {name}
-        </h1>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "1rem",
-          }}
-        >
-          <InfoItem label="Email" value={email} />
-          <InfoItem label="Phone" value={first.phone || "\u2014"} />
-          <InfoItem label="Address" value={
-            [first.address_street, [first.address_city, first.address_state].filter(Boolean).join(", "), first.address_zip].filter(Boolean).join(", ") || "\u2014"
-          } />
-          <InfoItem
-            label="Total Paid"
-            value={`$${(totalPaid / 100).toLocaleString()}`}
-          />
-          {totalDonated > 0 && (
-            <InfoItem
-              label="Total Donated"
-              value={`$${(totalDonated / 100).toLocaleString()}`}
-            />
-          )}
-          <InfoItem
-            label="Vehicles"
-            value={`${registrations.length}`}
-          />
-          <InfoItem
-            label="Check-In"
-            value={`${checkedInCount}/${registrations.length} checked in`}
-          />
-        </div>
+        {editing && form ? (
+          <form onSubmit={handleSave}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+              <h1
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: "1.75rem",
+                  fontWeight: 400,
+                }}
+              >
+                Edit Attendee
+              </h1>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  style={btnSecondary}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    ...btnPrimary,
+                    opacity: saving ? 0.6 : 1,
+                    cursor: saving ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+
+            {saveError && (
+              <div style={{
+                background: "#fee",
+                border: "1px solid #c00",
+                color: "#c00",
+                padding: "0.8rem",
+                marginBottom: "1rem",
+                fontSize: "0.85rem",
+              }}>
+                {saveError}
+              </div>
+            )}
+
+            <p style={{ fontSize: "0.8rem", color: "var(--text-light)", marginBottom: "1.25rem" }}>
+              Changes will apply to all {registrations.length} registration{registrations.length > 1 ? "s" : ""} for this attendee.
+            </p>
+
+            <div className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="first_name">First Name *</label>
+                  <input type="text" id="first_name" name="first_name" value={form.first_name} onChange={handleFormChange} required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="last_name">Last Name *</label>
+                  <input type="text" id="last_name" name="last_name" value={form.last_name} onChange={handleFormChange} required />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="email">Email *</label>
+                  <input type="email" id="email" name="email" value={form.email} onChange={handleFormChange} required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="phone">Phone</label>
+                  <input type="tel" id="phone" name="phone" value={form.phone} onChange={handleFormChange} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="address_street">Street Address</label>
+                <input type="text" id="address_street" name="address_street" value={form.address_street} onChange={handleFormChange} />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="address_city">City</label>
+                  <input type="text" id="address_city" name="address_city" value={form.address_city} onChange={handleFormChange} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="address_state">State</label>
+                  <input type="text" id="address_state" name="address_state" value={form.address_state} onChange={handleFormChange} maxLength={2} />
+                </div>
+              </div>
+              <div className="form-group" style={{ maxWidth: "200px" }}>
+                <label htmlFor="address_zip">ZIP Code</label>
+                <input type="text" id="address_zip" name="address_zip" value={form.address_zip} onChange={handleFormChange} maxLength={10} />
+              </div>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+              <h1
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: "1.75rem",
+                  fontWeight: 400,
+                }}
+              >
+                {name}
+              </h1>
+              <button
+                onClick={startEdit}
+                style={btnSecondary}
+              >
+                Edit
+              </button>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "1rem",
+              }}
+            >
+              <InfoItem label="Email" value={email} />
+              <InfoItem label="Phone" value={first.phone || "\u2014"} />
+              <InfoItem label="Address" value={
+                [first.address_street, [first.address_city, first.address_state].filter(Boolean).join(", "), first.address_zip].filter(Boolean).join(", ") || "\u2014"
+              } />
+              <InfoItem
+                label="Total Paid"
+                value={`$${(totalPaid / 100).toLocaleString()}`}
+              />
+              {totalDonated > 0 && (
+                <InfoItem
+                  label="Total Donated"
+                  value={`$${(totalDonated / 100).toLocaleString()}`}
+                />
+              )}
+              <InfoItem
+                label="Vehicles"
+                value={`${registrations.length}`}
+              />
+              <InfoItem
+                label="Check-In"
+                value={`${checkedInCount}/${registrations.length} checked in`}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Gravatar profile card */}
-      {!gravatarLoading && gravatar && (
+      {!editing && !gravatarLoading && gravatar && (
         <div
           style={{
             background: "var(--white)",
@@ -527,3 +714,27 @@ function PaymentBadge({
     </span>
   );
 }
+
+const btnPrimary: React.CSSProperties = {
+  padding: "0.5rem 1.2rem",
+  fontSize: "0.8rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  cursor: "pointer",
+  background: "var(--gold)",
+  color: "var(--charcoal)",
+  border: "none",
+};
+
+const btnSecondary: React.CSSProperties = {
+  padding: "0.5rem 1.2rem",
+  fontSize: "0.8rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  cursor: "pointer",
+  background: "var(--white)",
+  color: "var(--charcoal)",
+  border: "1px solid #ddd",
+};

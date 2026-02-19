@@ -75,6 +75,35 @@ export default function SponsorsSection() {
           </div>
         </div>
 
+        {/* Why Sponsor */}
+        <div className="sponsor-why">
+          <h3 className="sponsor-why-heading">Why Sponsor?</h3>
+          <p className="sponsor-why-text">
+            Put your brand in front of thousands of engaged attendees in the
+            heart of downtown Crystal Lake. Our sponsors get prominent logo
+            placement, on-site signage, PA mentions, and a direct connection to
+            the community&mdash;all while supporting the Crystal Lake Food Pantry.
+          </p>
+          <div className="sponsor-why-stats">
+            <div className="sponsor-why-stat">
+              <p className="sponsor-why-stat-number">6,000+</p>
+              <p className="sponsor-why-stat-label">Attendees</p>
+            </div>
+            <div className="sponsor-why-stat">
+              <p className="sponsor-why-stat-number">200+</p>
+              <p className="sponsor-why-stat-label">Show Vehicles</p>
+            </div>
+            <div className="sponsor-why-stat">
+              <p className="sponsor-why-stat-number">3</p>
+              <p className="sponsor-why-stat-label">City Blocks</p>
+            </div>
+            <div className="sponsor-why-stat">
+              <p className="sponsor-why-stat-number">4th</p>
+              <p className="sponsor-why-stat-label">Annual Event</p>
+            </div>
+          </div>
+        </div>
+
         <div className="sponsor-cta">
           <h3>Become a Sponsor</h3>
           <p>

@@ -929,6 +929,57 @@ section {
     font-size: 1.3rem;
 }
 
+.sponsor-why {
+    margin-top: 4rem;
+    padding: 3rem;
+    background: var(--charcoal);
+    text-align: center;
+}
+
+.sponsor-why-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: var(--white);
+    margin-bottom: 1rem;
+}
+
+.sponsor-why-text {
+    color: rgba(255, 255, 255, 0.7);
+    max-width: 640px;
+    margin: 0 auto 2rem;
+    line-height: 1.8;
+    font-size: 1rem;
+}
+
+.sponsor-why-stats {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.sponsor-why-stat {
+    flex: 1;
+    max-width: 160px;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sponsor-why-stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--gold);
+    margin-bottom: 0.2rem;
+}
+
+.sponsor-why-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
 .sponsor-cta {
     text-align: center;
     margin-top: 4rem;

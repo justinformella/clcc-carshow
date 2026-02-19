@@ -22,21 +22,21 @@ export default function WeatherPolicy() {
             <h4>Severe Weather</h4>
             <p>
               If severe weather is forecasted, the event will be postponed to
-              Sunday, May 31, 2026. Decision made by Friday 6:00 PM.
+              Sunday, May 18, 2026. Decision made by Friday, May 15 at 4:00 PM.
             </p>
           </div>
           <div className="weather-card">
             <h4>Updates</h4>
             <p>
-              Weather decisions announced via our website, email to registered
-              participants, and local radio (WZSR 105.5 FM).
+              Weather decisions announced via our website and email to registered
+              participants.
             </p>
           </div>
           <div className="weather-card">
             <h4>Refunds</h4>
             <p>
-              If the event is cancelled entirely (not postponed), full refunds
-              will be issued within 10 business days.
+              All registrations are non-refundable. 100% of net proceeds are
+              donated to the Crystal Lake Food Pantry.
             </p>
           </div>
         </div>

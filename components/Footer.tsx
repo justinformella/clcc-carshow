@@ -43,9 +43,6 @@ export default function Footer() {
               <li>
                 <a href="#sponsors">Sponsors</a>
               </li>
-              <li>
-                <a href="#">Volunteer</a>
-              </li>
             </ul>
           </div>
           <div className="footer-links">
@@ -67,9 +64,7 @@ export default function Footer() {
             &copy; 2026 Crystal Lake Cars and Coffee. All rights reserved.
           </p>
           <div className="footer-social">
-            <a href="#">Facebook</a>
-            <a href="#">Instagram</a>
-            <a href="#">YouTube</a>
+            <a href="https://www.facebook.com/groups/389632989553839" target="_blank" rel="noopener noreferrer">Facebook</a>
             <Link href="/admin" style={{ opacity: 0.5 }}>Admin</Link>
           </div>
         </div>
