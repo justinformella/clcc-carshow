@@ -145,24 +145,26 @@ function RegisterContent() {
     <>
       <header className="scrolled" id="header">
         <div className="header-inner">
-          <Link href="/" className="logo">
-            <span className="logo-text" style={{ color: "var(--charcoal)" }}>
-              Crystal Lake Cars &amp; Caffeine
-            </span>
-            <span className="logo-tagline" style={{ color: "var(--text-light)" }}>
-              Est. 2021 &middot; Crystal Lake, Illinois
-            </span>
+          <Link href="/" className="logo reg-logo">
+            <img
+              src="/images/CLCC_Logo2026.png"
+              alt="CLCC Logo"
+              className="reg-logo-img"
+            />
+            <div style={{ minWidth: 0, overflow: "hidden" }}>
+              <span className="logo-text" style={{ color: "var(--charcoal)" }}>
+                Crystal Lake Cars &amp; Caffeine
+              </span>
+              <span className="logo-tagline reg-logo-tagline" style={{ color: "var(--text-light)" }}>
+                Est. 2021 &middot; Crystal Lake, Illinois
+              </span>
+            </div>
           </Link>
           <nav>
             <ul style={{ display: "flex" }}>
               <li>
                 <Link href="/" style={{ color: "var(--text-dark)" }}>
                   Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/register" className="nav-cta">
-                  Register
                 </Link>
               </li>
             </ul>
@@ -763,6 +765,33 @@ function RegisterContent() {
           )}
         </div>
       </div>
+
+      <style>{`
+        .reg-logo {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+        .reg-logo-img {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        @media (max-width: 600px) {
+          .reg-logo .logo-text {
+            font-size: 1rem !important;
+            letter-spacing: 0.03em !important;
+          }
+          .reg-logo-tagline {
+            display: none;
+          }
+          .reg-logo-img {
+            width: 34px;
+            height: 34px;
+          }
+        }
+      `}</style>
     </>
   );
 }
