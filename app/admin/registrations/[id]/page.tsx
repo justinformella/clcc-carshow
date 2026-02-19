@@ -16,12 +16,11 @@ type EditForm = {
   address_city: string;
   address_state: string;
   address_zip: string;
+  hide_owner_details: boolean;
   vehicle_year: string;
   vehicle_make: string;
   vehicle_model: string;
   vehicle_color: string;
-  engine_specs: string;
-  modifications: string;
   story: string;
   award_category: string;
   payment_status: string;
@@ -204,12 +203,11 @@ export default function RegistrationDetailPage() {
       address_city: registration.address_city || "",
       address_state: registration.address_state || "",
       address_zip: registration.address_zip || "",
+      hide_owner_details: registration.hide_owner_details,
       vehicle_year: String(registration.vehicle_year),
       vehicle_make: registration.vehicle_make,
       vehicle_model: registration.vehicle_model,
       vehicle_color: registration.vehicle_color || "",
-      engine_specs: registration.engine_specs || "",
-      modifications: registration.modifications || "",
       story: registration.story || "",
       award_category: registration.award_category || "",
       payment_status: registration.payment_status,
@@ -279,12 +277,11 @@ export default function RegistrationDetailPage() {
         address_city: form.address_city || null,
         address_state: form.address_state || null,
         address_zip: form.address_zip || null,
+        hide_owner_details: form.hide_owner_details,
         vehicle_year: parseInt(form.vehicle_year),
         vehicle_make: form.vehicle_make,
         vehicle_model: form.vehicle_model,
         vehicle_color: form.vehicle_color || null,
-        engine_specs: form.engine_specs || null,
-        modifications: form.modifications || null,
         story: form.story || null,
         award_category: awardValue,
         payment_status: form.payment_status,
@@ -393,6 +390,14 @@ export default function RegistrationDetailPage() {
             >
               <span style={{ color: "var(--gold)" }}>#{r.car_number}</span>{" "}
               {r.first_name} {r.last_name}
+              {r.hide_owner_details && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9e9e9e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "0.5rem", verticalAlign: "middle", display: "inline" }}>
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              )}
             </h1>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               {r.payment_status === "archived" ? (
@@ -563,6 +568,26 @@ export default function RegistrationDetailPage() {
               <input type="text" id="address_zip" name="address_zip" value={form.address_zip} onChange={handleFormChange} maxLength={10} />
             </div>
 
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "0.9rem",
+                color: "var(--charcoal)",
+                cursor: "pointer",
+                marginTop: "0.5rem",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.hide_owner_details}
+                onChange={(e) => setForm({ ...form, hide_owner_details: e.target.checked })}
+                style={{ width: "auto", margin: 0 }}
+              />
+              Hide owner details from placard
+            </label>
+
             {/* Vehicle Information */}
             <SectionHeading>Vehicle Information</SectionHeading>
             <div className="form-row">
@@ -586,15 +611,7 @@ export default function RegistrationDetailPage() {
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="engine_specs">Engine Specs</label>
-              <input type="text" id="engine_specs" name="engine_specs" value={form.engine_specs} onChange={handleFormChange} />
-            </div>
-            <div className="form-group">
-              <label htmlFor="modifications">Modifications</label>
-              <textarea id="modifications" name="modifications" value={form.modifications} onChange={handleFormChange} />
-            </div>
-            <div className="form-group">
-              <label htmlFor="story">Car&apos;s Story</label>
+              <label htmlFor="story">Car&apos;s Story (optional)</label>
               <textarea id="story" name="story" value={form.story} onChange={handleFormChange} />
             </div>
 
@@ -645,6 +662,29 @@ export default function RegistrationDetailPage() {
             {/* Left column */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <DetailSection title="Owner Information">
+                {r.hide_owner_details && (
+                  <div
+                    style={{
+                      background: "#f3e5f5",
+                      border: "1px solid #ce93d8",
+                      padding: "0.75rem 1rem",
+                      marginBottom: "0.5rem",
+                      fontSize: "0.85rem",
+                      color: "#6a1b9a",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6a1b9a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                    This registrant has requested their personal details be hidden from placards.
+                  </div>
+                )}
                 <DetailRow label="Name" value={`${r.first_name} ${r.last_name}`} />
                 <DetailRow label="Email" value={r.email} />
                 <DetailRow label="Phone" value={r.phone || "—"} />
@@ -666,29 +706,15 @@ export default function RegistrationDetailPage() {
                 <DetailRow label="Make" value={r.vehicle_make} />
                 <DetailRow label="Model" value={r.vehicle_model} />
                 <DetailRow label="Color" value={r.vehicle_color || "—"} />
-                <DetailRow label="Engine Specs" value={r.engine_specs || "—"} />
               </DetailSection>
 
-              <DetailSection title="Story & Modifications">
-                {r.modifications ? (
-                  <div style={{ fontSize: "0.9rem", color: "var(--charcoal)", lineHeight: 1.6 }}>
-                    <span style={{ color: "var(--text-light)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.4rem" }}>
-                      Modifications
-                    </span>
-                    {r.modifications}
-                  </div>
-                ) : (
-                  <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>No modifications listed.</p>
-                )}
+              <DetailSection title="Car's Story">
                 {r.story ? (
-                  <div style={{ fontSize: "0.9rem", color: "var(--charcoal)", lineHeight: 1.6, marginTop: "1rem" }}>
-                    <span style={{ color: "var(--text-light)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.4rem" }}>
-                      Story
-                    </span>
+                  <div style={{ fontSize: "0.9rem", color: "var(--charcoal)", lineHeight: 1.6 }}>
                     {r.story}
                   </div>
                 ) : (
-                  <p style={{ color: "var(--text-light)", fontSize: "0.85rem", marginTop: "1rem" }}>No story provided.</p>
+                  <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>No story provided.</p>
                 )}
               </DetailSection>
 
@@ -1390,8 +1416,6 @@ const FIELD_LABELS: Record<string, string> = {
   vehicle_make: "Make",
   vehicle_model: "Model",
   vehicle_color: "Color",
-  engine_specs: "Engine Specs",
-  modifications: "Modifications",
   story: "Story",
   award_category: "Award Winner",
   payment_status: "Payment Status",
@@ -1399,6 +1423,7 @@ const FIELD_LABELS: Record<string, string> = {
   checked_in: "Checked In",
   ai_image_url: "AI Image",
   donation_cents: "Donation",
+  hide_owner_details: "Hide Owner Details",
 };
 
 function formatFieldLabel(field: string): string {

@@ -25,9 +25,6 @@ export async function generateCarImage(registrationId: string): Promise<string> 
   parts.push(
     "facing left in a three-quarter front view, parked at an outdoor car show on a sunny day, on green grass with other classic and modern cars softly blurred in the background."
   );
-  if (reg.modifications) {
-    parts.push(`The car features: ${reg.modifications}.`);
-  }
   parts.push(
     "Wide landscape composition with the full car visible and generous space on the sides. Professional automotive photography, natural lighting, slight low-angle perspective, shallow depth of field."
   );

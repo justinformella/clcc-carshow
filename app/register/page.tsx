@@ -16,8 +16,6 @@ type VehicleForm = {
   vehicle_make: string;
   vehicle_model: string;
   vehicle_color: string;
-  engine_specs: string;
-  modifications: string;
   story: string;
 };
 
@@ -26,8 +24,6 @@ const emptyVehicle = (): VehicleForm => ({
   vehicle_make: "",
   vehicle_model: "",
   vehicle_color: "",
-  engine_specs: "",
-  modifications: "",
   story: "",
 });
 
@@ -52,6 +48,7 @@ function RegisterContent() {
     address_city: "",
     address_state: "",
     address_zip: "",
+    hide_owner_details: false,
   });
 
   const [vehicles, setVehicles] = useState<VehicleForm[]>([emptyVehicle()]);
@@ -116,6 +113,7 @@ function RegisterContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...owner,
+          hide_owner_details: owner.hide_owner_details,
           vehicles: vehicles.map((v) => ({
             ...v,
             vehicle_year: parseInt(v.vehicle_year),
@@ -379,6 +377,39 @@ function RegisterContent() {
                   />
                 </div>
 
+                <div
+                  style={{
+                    marginTop: "1.25rem",
+                    padding: "1rem 1.25rem",
+                    background: "var(--cream)",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.6rem",
+                      fontSize: "0.9rem",
+                      color: "var(--charcoal)",
+                      cursor: "pointer",
+                      textTransform: "none",
+                      letterSpacing: "0",
+                      fontWeight: 400,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={owner.hide_owner_details}
+                      onChange={(e) =>
+                        setOwner({ ...owner, hide_owner_details: e.target.checked })
+                      }
+                      style={{ width: "auto", margin: 0 }}
+                    />
+                    Keep my name and city anonymous for my vehicle registration placard
+                  </label>
+                </div>
+
                 {/* Vehicle(s) */}
                 {vehicles.map((vehicle, index) => (
                   <div key={index}>
@@ -480,31 +511,8 @@ function RegisterContent() {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor={`engine_specs_${index}`}>Engine Specs</label>
-                      <input
-                        type="text"
-                        id={`engine_specs_${index}`}
-                        name="engine_specs"
-                        value={vehicle.engine_specs}
-                        onChange={(e) => handleVehicleChange(index, e)}
-                        placeholder="e.g., 5.0L V8, 460hp"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor={`modifications_${index}`}>Modifications</label>
-                      <textarea
-                        id={`modifications_${index}`}
-                        name="modifications"
-                        value={vehicle.modifications}
-                        onChange={(e) => handleVehicleChange(index, e)}
-                        placeholder="List any modifications or upgrades..."
-                      />
-                    </div>
-
-                    <div className="form-group">
                       <label htmlFor={`story_${index}`}>
-                        Your Car&apos;s Story (shown on placard)
+                        Your Car&apos;s Story (optional, shown on placard)
                       </label>
                       <textarea
                         id={`story_${index}`}

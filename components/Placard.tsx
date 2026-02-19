@@ -32,28 +32,6 @@ export default function Placard({ registration }: { registration: Registration }
       )}
 
       {/* Details */}
-      {(r.engine_specs || r.modifications || r.vehicle_color) && (
-        <div className="placard-details">
-          {r.vehicle_color && (
-            <div className="placard-detail">
-              <span className="placard-detail-label">Color</span>
-              <span>{r.vehicle_color}</span>
-            </div>
-          )}
-          {r.engine_specs && (
-            <div className="placard-detail">
-              <span className="placard-detail-label">Engine</span>
-              <span>{r.engine_specs}</span>
-            </div>
-          )}
-          {r.modifications && (
-            <div className="placard-detail">
-              <span className="placard-detail-label">Modifications</span>
-              <span>{r.modifications}</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Story */}
       {r.story && (

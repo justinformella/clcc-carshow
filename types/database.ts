@@ -15,8 +15,6 @@ export type Registration = {
   vehicle_make: string;
   vehicle_model: string;
   vehicle_color: string | null;
-  engine_specs: string | null;
-  modifications: string | null;
   story: string | null;
   // Award (admin-assigned, null = no award)
   award_category: string | null;
@@ -26,6 +24,8 @@ export type Registration = {
   payment_status: "pending" | "paid" | "refunded" | "archived";
   amount_paid: number;
   donation_cents: number;
+  // Privacy
+  hide_owner_details: boolean;
   // Check-in
   checked_in: boolean;
   checked_in_at: string | null;

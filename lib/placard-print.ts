@@ -13,11 +13,7 @@ export function buildPlacardHtml(reg: Registration): string {
     <div class="placard-owner">${reg.first_name} ${reg.last_name}${(reg.address_city || reg.address_state) ? `<span class="placard-hometown"> &mdash; ${[reg.address_city, reg.address_state].filter(Boolean).join(", ")}</span>` : ""}</div>
     <div class="placard-divider"></div>
     ${reg.award_category ? `<div class="placard-category">${reg.award_category}</div>` : ""}
-    ${
-      reg.vehicle_color || reg.engine_specs || reg.modifications
-        ? `<div class="placard-details">${detail("Color", reg.vehicle_color)}${detail("Engine", reg.engine_specs)}${detail("Modifications", reg.modifications)}</div>`
-        : ""
-    }
+    ${""}
     ${reg.story ? `<div class="placard-story"><p>${reg.story}</p></div>` : ""}
   </div>`;
 }

@@ -10,8 +10,6 @@ type VehicleForm = {
   vehicle_make: string;
   vehicle_model: string;
   vehicle_color: string;
-  engine_specs: string;
-  modifications: string;
   story: string;
 };
 
@@ -20,8 +18,6 @@ const emptyVehicle = (): VehicleForm => ({
   vehicle_make: "",
   vehicle_model: "",
   vehicle_color: "",
-  engine_specs: "",
-  modifications: "",
   story: "",
 });
 
@@ -39,6 +35,7 @@ export default function NewRegistrationPage() {
     address_city: "",
     address_state: "",
     address_zip: "",
+    hide_owner_details: false,
   });
 
   const [vehicles, setVehicles] = useState<VehicleForm[]>([emptyVehicle()]);
@@ -84,12 +81,11 @@ export default function NewRegistrationPage() {
       address_city: owner.address_city || null,
       address_state: owner.address_state || null,
       address_zip: owner.address_zip || null,
+      hide_owner_details: owner.hide_owner_details,
       vehicle_year: parseInt(v.vehicle_year),
       vehicle_make: v.vehicle_make,
       vehicle_model: v.vehicle_model,
       vehicle_color: v.vehicle_color || null,
-      engine_specs: v.engine_specs || null,
-      modifications: v.modifications || null,
       story: v.story || null,
       payment_status: "pending",
       amount_paid: 0,
@@ -219,6 +215,28 @@ export default function NewRegistrationPage() {
             <input type="text" id="address_zip" name="address_zip" value={owner.address_zip} onChange={handleOwnerChange} maxLength={10} />
           </div>
 
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              fontSize: "0.9rem",
+              color: "var(--charcoal)",
+              cursor: "pointer",
+              marginTop: "0.5rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={owner.hide_owner_details}
+              onChange={(e) =>
+                setOwner({ ...owner, hide_owner_details: e.target.checked })
+              }
+              style={{ width: "auto", margin: 0 }}
+            />
+            Hide owner details from placard
+          </label>
+
           {vehicles.map((vehicle, index) => (
             <div key={index}>
               <div
@@ -283,15 +301,7 @@ export default function NewRegistrationPage() {
                 </div>
               </div>
               <div className="form-group">
-                <label htmlFor={`engine_specs_${index}`}>Engine Specs</label>
-                <input type="text" id={`engine_specs_${index}`} name="engine_specs" value={vehicle.engine_specs} onChange={(e) => handleVehicleChange(index, e)} />
-              </div>
-              <div className="form-group">
-                <label htmlFor={`modifications_${index}`}>Modifications</label>
-                <textarea id={`modifications_${index}`} name="modifications" value={vehicle.modifications} onChange={(e) => handleVehicleChange(index, e)} />
-              </div>
-              <div className="form-group">
-                <label htmlFor={`story_${index}`}>Car&apos;s Story</label>
+                <label htmlFor={`story_${index}`}>Car&apos;s Story (optional)</label>
                 <textarea id={`story_${index}`} name="story" value={vehicle.story} onChange={(e) => handleVehicleChange(index, e)} />
               </div>
             </div>

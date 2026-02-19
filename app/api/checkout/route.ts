@@ -12,8 +12,6 @@ type VehicleInput = {
   vehicle_make: string;
   vehicle_model: string;
   vehicle_color?: string;
-  engine_specs?: string;
-  modifications?: string;
   story?: string;
 };
 
@@ -33,6 +31,7 @@ export async function POST(request: NextRequest) {
       utm_source,
       utm_medium,
       utm_campaign,
+      hide_owner_details,
     } = body;
 
     // Parse and validate donation
@@ -59,8 +58,6 @@ export async function POST(request: NextRequest) {
           vehicle_make: body.vehicle_make,
           vehicle_model: body.vehicle_model,
           vehicle_color: body.vehicle_color,
-          engine_specs: body.engine_specs,
-          modifications: body.modifications,
           story: body.story,
         },
       ];
@@ -133,12 +130,11 @@ export async function POST(request: NextRequest) {
       vehicle_make: v.vehicle_make,
       vehicle_model: v.vehicle_model,
       vehicle_color: v.vehicle_color || null,
-      engine_specs: v.engine_specs || null,
-      modifications: v.modifications || null,
       story: v.story || null,
       utm_source: utm_source || null,
       utm_medium: utm_medium || null,
       utm_campaign: utm_campaign || null,
+      hide_owner_details: !!hide_owner_details,
       payment_status: "pending",
       donation_cents: index === 0 ? donationCents : 0,
     }));
