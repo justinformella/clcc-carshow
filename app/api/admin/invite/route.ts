@@ -25,9 +25,10 @@ function createAuthClient(request: NextRequest) {
 }
 
 function wrapInviteLink(actionLink: string): string {
-  // Rewrite redirect_to so Supabase sends the user to /admin/set-password
+  // Rewrite redirect_to to go through the server-side auth callback,
+  // which exchanges the code and then redirects to set-password
   const url = new URL(actionLink);
-  url.searchParams.set("redirect_to", `${SITE_URL}/admin/set-password`);
+  url.searchParams.set("redirect_to", `${SITE_URL}/admin/auth/callback?next=/admin/set-password`);
   const rewrittenLink = url.toString();
 
   // Wrap in our intermediate page so link previews don't consume the token
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
             await supabase.auth.admin.generateLink({
               type: "recovery",
               email,
+              options: {
+                redirectTo: `${SITE_URL}/admin/auth/callback?next=/admin/set-password`,
+              },
             });
 
           if (recoveryError || !recoveryData?.properties?.action_link) {

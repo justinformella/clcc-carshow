@@ -27,40 +27,52 @@ function SetPasswordForm() {
     const supabase = createClient();
 
     async function establish() {
-      // PKCE flow: Supabase redirects with ?code=... query param
-      const code = searchParams.get("code");
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
-          setVerifyError("This invite link has expired or already been used. Please ask an admin to resend your invite.");
-          return;
-        }
+      // Check for existing session first (set by server-side auth callback)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
         setReady(true);
         return;
       }
 
-      // Implicit flow fallback: tokens in hash fragment
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (event) => {
-          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-            setReady(true);
+      // PKCE flow fallback: if code is in URL, try client-side exchange
+      const code = searchParams.get("code");
+      if (code) {
+        try {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            setVerifyError("This invite link has expired or already been used. Please ask an admin to resend your invite.");
+            return;
           }
-        }
-      );
-
-      // Already signed in (e.g. page refresh)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setReady(true);
-      } else {
-        // No code, no hash, no session — bad link
-        const hash = window.location.hash;
-        if (!hash || !hash.includes("access_token")) {
-          setVerifyError("This invite link is invalid or has expired. Please ask an admin to resend your invite.");
+          setReady(true);
+          return;
+        } catch {
+          setVerifyError("Failed to verify invite. Please ask an admin to resend your invite.");
+          return;
         }
       }
 
-      return () => subscription.unsubscribe();
+      // Implicit flow fallback: tokens in hash fragment
+      const hash = window.location.hash;
+      if (hash && hash.includes("access_token")) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event) => {
+            if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+              setReady(true);
+            }
+          }
+        );
+        // Give it a few seconds, then show error
+        const timeout = setTimeout(() => {
+          setVerifyError("This invite link has expired or already been used. Please ask an admin to resend your invite.");
+        }, 8000);
+        return () => {
+          subscription.unsubscribe();
+          clearTimeout(timeout);
+        };
+      }
+
+      // No code, no hash, no session — bad link
+      setVerifyError("This invite link is invalid or has expired. Please ask an admin to resend your invite.");
     }
 
     establish();

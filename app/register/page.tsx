@@ -151,7 +151,7 @@ function RegisterContent() {
               alt="CLCC Logo"
               className="reg-logo-img"
             />
-            <div style={{ minWidth: 0, overflow: "hidden" }}>
+            <div style={{ minWidth: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
               <span className="logo-text" style={{ color: "var(--charcoal)" }}>
                 Crystal Lake Cars &amp; Caffeine
               </span>

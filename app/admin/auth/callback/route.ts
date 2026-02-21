@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
-  const response = NextResponse.redirect(new URL("/admin", request.url));
+  const next = searchParams.get("next") || "/admin";
+  // Only allow internal redirects
+  const safeDest = next.startsWith("/") ? next : "/admin";
+  const response = NextResponse.redirect(new URL(safeDest, request.url));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
