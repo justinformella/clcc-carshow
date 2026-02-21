@@ -58,7 +58,16 @@ export default function SponsorsSection() {
         </div>
 
         <div className="sponsor-tier title">
-          <p className="sponsor-tier-label">Platinum Sponsors — $2,000</p>
+          <p className="sponsor-tier-label">Presenting Sponsor — $2,500</p>
+          <div className="sponsor-grid">
+            <div className="sponsor-logo">
+              <h4>Home State Bank</h4>
+            </div>
+          </div>
+        </div>
+
+        <div className="sponsor-tier">
+          <p className="sponsor-tier-label">Premier Sponsors — $1,000</p>
           <div className="sponsor-grid">
             <div className="sponsor-logo">
               <h4>Your Business Here</h4>
@@ -67,7 +76,7 @@ export default function SponsorsSection() {
         </div>
 
         <div className="sponsor-tier">
-          <p className="sponsor-tier-label">Gold Sponsors — $500</p>
+          <p className="sponsor-tier-label">Community Sponsors — $500</p>
           <div className="sponsor-grid">
             <div className="sponsor-logo">
               <h4>Your Business Here</h4>
@@ -182,11 +191,14 @@ export default function SponsorsSection() {
                 </label>
                 <select id="sponsor-level" name="sponsorship_level">
                   <option value="">Select a level...</option>
-                  <option value="Platinum Sponsor ($2,000)">
-                    Platinum Sponsor ($2,000)
+                  <option value="Presenting Sponsor ($2,500)">
+                    Presenting Sponsor ($2,500)
                   </option>
-                  <option value="Gold Sponsor ($500)">
-                    Gold Sponsor ($500)
+                  <option value="Premier Sponsor ($1,000)">
+                    Premier Sponsor ($1,000)
+                  </option>
+                  <option value="Community Sponsor ($500)">
+                    Community Sponsor ($500)
                   </option>
                   <option value="Other">Other / Not Sure</option>
                 </select>

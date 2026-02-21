@@ -425,6 +425,32 @@ export function adminInviteEmail(
   };
 }
 
+export function adminPasswordResetEmail(
+  name: string,
+  resetLink: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c;">Reset Your Password</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Hi ${name}, a password reset was requested for your Crystal Lake Cars &amp; Caffeine admin account.
+    </p>
+    <p style="margin:0 0 24px; font-size:15px; color:#333; line-height:1.6;">
+      Click the button below to set a new password.
+    </p>
+    <a href="${resetLink}" style="display:inline-block; padding:12px 24px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:600; font-size:14px; border-radius:6px;">
+      Reset Password
+    </a>
+    <p style="margin:24px 0 0; font-size:12px; color:#999; line-height:1.5;">
+      If you didn't request this, you can safely ignore this email. This link will expire in 24 hours.
+    </p>
+  `;
+
+  return {
+    subject: "Reset Your Password — Crystal Lake Cars & Caffeine Admin",
+    html: htmlShell(content),
+  };
+}
+
 export function announcementEmail(
   emailSubject: string,
   body: string,

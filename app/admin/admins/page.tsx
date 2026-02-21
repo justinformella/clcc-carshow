@@ -12,6 +12,7 @@ export default function AdminsPage() {
   const [role, setRole] = useState("organizer");
   const [adding, setAdding] = useState(false);
   const [resending, setResending] = useState<string | null>(null);
+  const [resettingPassword, setResettingPassword] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<Admin["role"] | null>(null);
 
@@ -107,6 +108,29 @@ export default function AdminsPage() {
       alert("Failed to resend invite.");
     } finally {
       setResending(null);
+    }
+  };
+
+  const handleResetPassword = async (admin: Admin) => {
+    if (!confirm(`Send a password reset email to ${admin.email}?`)) return;
+    setResettingPassword(admin.id);
+    try {
+      const res = await fetch("/api/admin/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: admin.email }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to send reset link");
+      } else {
+        alert(`Password reset email sent to ${admin.email}`);
+      }
+    } catch {
+      alert("Failed to send reset link.");
+    } finally {
+      setResettingPassword(null);
     }
   };
 
@@ -271,7 +295,7 @@ export default function AdminsPage() {
                 </td>
                 {isAdmin && (
                   <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                       {!admin.last_login_at && (
                         <button
                           onClick={() => handleResendInvite(admin)}
@@ -291,6 +315,23 @@ export default function AdminsPage() {
                           {resending === admin.id ? "Sending..." : "Resend Invite"}
                         </button>
                       )}
+                      <button
+                        onClick={() => handleResetPassword(admin)}
+                        disabled={resettingPassword === admin.id}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid #e65100",
+                          color: "#e65100",
+                          padding: "0.3rem 0.8rem",
+                          fontSize: "0.75rem",
+                          cursor: resettingPassword === admin.id ? "not-allowed" : "pointer",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          opacity: resettingPassword === admin.id ? 0.6 : 1,
+                        }}
+                      >
+                        {resettingPassword === admin.id ? "Sending..." : "Reset Password"}
+                      </button>
                       <button
                         onClick={() => handleRemove(admin)}
                         style={{

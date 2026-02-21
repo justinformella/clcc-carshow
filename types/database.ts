@@ -58,6 +58,7 @@ export const AWARD_CATEGORIES = [
   "Best Domestic",
   "Best Vanity Plate",
   "Best Interior",
+  "Best Custom",
 ] as const;
 
 export type Admin = {
@@ -184,8 +185,9 @@ export type SponsorAuditLogEntry = {
 };
 
 export const SPONSORSHIP_LEVELS = [
-  "Platinum Sponsor ($2,000)",
-  "Gold Sponsor ($500)",
+  "Presenting Sponsor ($2,500)",
+  "Premier Sponsor ($1,000)",
+  "Community Sponsor ($500)",
   "Other / Not Sure",
 ] as const;
 
