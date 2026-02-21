@@ -264,13 +264,17 @@ header.scrolled .mobile-toggle span {
 
 .hero-sponsors {
     margin-top: 3rem;
+    margin-bottom: 4rem;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 1.5rem 2.5rem;
+    border-radius: 8px;
 }
 
 .hero-sponsors-label {
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.25em;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 0.6rem;
 }
 
@@ -281,7 +285,7 @@ header.scrolled .mobile-toggle span {
 .hero-presenting-sponsor span {
     font-family: 'Playfair Display', serif;
     font-size: 1.6rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: #ffffff;
     letter-spacing: 0.04em;
 }
 
@@ -293,7 +297,7 @@ header.scrolled .mobile-toggle span {
     font-size: 0.6rem;
     text-transform: uppercase;
     letter-spacing: 0.2em;
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.6);
     margin-bottom: 0.5rem;
 }
 
@@ -305,8 +309,8 @@ header.scrolled .mobile-toggle span {
 }
 
 .hero-sponsor-logo {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 0.5rem 1.2rem;
     display: flex;
     align-items: center;
@@ -315,7 +319,7 @@ header.scrolled .mobile-toggle span {
 
 .hero-sponsor-logo span {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     white-space: nowrap;
