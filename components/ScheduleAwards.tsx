@@ -31,7 +31,7 @@ export default function ScheduleAwards() {
               <span className="schedule-event">Awards Ceremony</span>
             </div>
             <div className="schedule-item">
-              <span className="schedule-time">1:00 PM</span>
+              <span className="schedule-time">2:00 PM</span>
               <span className="schedule-event">Show Ends</span>
             </div>
           </div>

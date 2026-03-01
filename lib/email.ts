@@ -6,8 +6,11 @@ import {
   adminNotificationEmail,
   sponsorAdminNotificationEmail,
   announcementEmail,
+  helpRequestConfirmationEmail,
+  helpRequestAdminNotificationEmail,
+  helpRequestReplyNotificationEmail,
 } from "@/lib/email-templates";
-import type { Registration, Sponsor } from "@/types/database";
+import type { Registration, Sponsor, HelpRequest, HelpRequestMessage } from "@/types/database";
 
 const FROM_EMAIL = "Crystal Lake Cars & Caffeine <noreply@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
@@ -206,4 +209,104 @@ export async function sendAnnouncement(
   }
 
   return { sent, failed };
+}
+
+export async function sendHelpRequestConfirmation(requestId: string) {
+  const supabase = createServerClient();
+  const { data: request } = await supabase
+    .from("help_requests")
+    .select("*")
+    .eq("id", requestId)
+    .single();
+
+  if (!request) throw new Error("Help request not found");
+
+  const { subject, html } = helpRequestConfirmationEmail(
+    request.name,
+    request.request_number,
+    request.subject
+  );
+
+  const result = await sendWithRetry({ from: FROM_EMAIL, to: request.email, subject, html });
+  await logEmail(null, "help_request_confirmation", request.email, subject, result.id ?? null);
+}
+
+export async function sendHelpRequestAdminNotification(requestId: string) {
+  const supabase = createServerClient();
+
+  const { data: request } = await supabase
+    .from("help_requests")
+    .select("*")
+    .eq("id", requestId)
+    .single();
+
+  if (!request) throw new Error("Help request not found");
+
+  const { data: messages } = await supabase
+    .from("help_request_messages")
+    .select("*")
+    .eq("help_request_id", requestId)
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  const firstMessage = messages?.[0]?.body || "";
+
+  const { data: admins } = await supabase.from("admins").select("*");
+
+  if (!admins || admins.length === 0) {
+    console.log("No admins configured — skipping help request admin notification");
+    return;
+  }
+
+  const adminDetailUrl = `${SITE_URL}/admin/help-desk/${requestId}`;
+  const registrationLink = request.registration_id
+    ? `${SITE_URL}/admin/registrations/${request.registration_id}`
+    : undefined;
+
+  const { subject, html } = helpRequestAdminNotificationEmail(
+    request as HelpRequest,
+    firstMessage,
+    adminDetailUrl,
+    registrationLink
+  );
+
+  for (const admin of admins) {
+    try {
+      const result = await sendWithRetry({ from: FROM_EMAIL, to: admin.email, subject, html });
+      await logEmail(null, "help_request_admin_notification", admin.email, subject, result.id ?? null);
+    } catch (err) {
+      console.error(`Failed to notify admin ${admin.email} about help request:`, err);
+    }
+  }
+}
+
+export async function sendHelpRequestReplyNotification(requestId: string, messageId: string) {
+  const supabase = createServerClient();
+
+  const { data: request } = await supabase
+    .from("help_requests")
+    .select("*")
+    .eq("id", requestId)
+    .single();
+
+  if (!request) throw new Error("Help request not found");
+
+  const { data: message } = await supabase
+    .from("help_request_messages")
+    .select("*")
+    .eq("id", messageId)
+    .single();
+
+  if (!message) throw new Error("Help request message not found");
+
+  const { subject, html } = helpRequestReplyNotificationEmail(
+    request.name,
+    request.request_number,
+    request.subject,
+    message.body,
+    message.sender_name
+  );
+
+  const result = await sendWithRetry({ from: FROM_EMAIL, to: request.email, subject, html });
+  await logEmail(null, "help_request_reply", request.email, subject, result.id ?? null);
 }

@@ -352,3 +352,62 @@ CREATE TRIGGER ad_campaigns_updated_at
   BEFORE UPDATE ON ad_campaigns
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- Marketing prospects (email outreach contacts)
+-- ============================================================
+CREATE TABLE marketing_prospects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL,
+  name TEXT,
+  source TEXT DEFAULT 'manual',        -- 'manual' or 'import'
+  unsubscribed BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_marketing_prospects_email ON marketing_prospects(LOWER(email));
+
+ALTER TABLE marketing_prospects ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow authenticated read marketing_prospects" ON marketing_prospects
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated insert marketing_prospects" ON marketing_prospects
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Allow authenticated update marketing_prospects" ON marketing_prospects
+  FOR UPDATE TO authenticated USING (true);
+
+-- Allow anonymous update for unsubscribe endpoint (service role bypasses RLS anyway,
+-- but this also supports direct calls)
+CREATE POLICY "Allow anon unsubscribe update" ON marketing_prospects
+  FOR UPDATE
+  USING (true)
+  WITH CHECK (unsubscribed = TRUE);
+
+-- ============================================================
+-- Marketing sends (tracks each email sent per prospect)
+-- ============================================================
+CREATE TABLE marketing_sends (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  prospect_id UUID NOT NULL REFERENCES marketing_prospects(id) ON DELETE CASCADE,
+  template_key TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'sent',   -- 'sent' or 'failed'
+  resend_id TEXT,
+  error_message TEXT,
+  sent_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_marketing_sends_prospect ON marketing_sends(prospect_id);
+CREATE INDEX idx_marketing_sends_template ON marketing_sends(template_key);
+
+-- Prevent duplicate successful sends of the same template to the same prospect
+CREATE UNIQUE INDEX idx_marketing_sends_no_dupe
+  ON marketing_sends(prospect_id, template_key)
+  WHERE status = 'sent';
+
+ALTER TABLE marketing_sends ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow authenticated read marketing_sends" ON marketing_sends
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow authenticated insert marketing_sends" ON marketing_sends
+  FOR INSERT TO authenticated WITH CHECK (true);

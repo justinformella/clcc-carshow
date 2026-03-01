@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         type: "recovery",
         email,
         options: {
-          redirectTo: `${SITE_URL}/admin/auth/callback?next=/admin/set-password`,
+          redirectTo: `${SITE_URL}/admin/set-password`,
         },
       });
 
@@ -89,11 +89,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Wrap through the accept-invite intermediate page to prevent link preview consumption
+    // Point redirect directly to set-password page (client-side handles hash fragments)
     const actionLink = linkData.properties.action_link;
     const url = new URL(actionLink);
-    url.searchParams.set("redirect_to", `${SITE_URL}/admin/auth/callback?next=/admin/set-password`);
+    url.searchParams.set("redirect_to", `${SITE_URL}/admin/set-password`);
     const rewrittenLink = url.toString();
+    // Wrap through intermediate page to prevent link preview bots from consuming the token
     const encoded = btoa(encodeURIComponent(rewrittenLink));
     const safeLink = `${SITE_URL}/admin/accept-invite?link=${encoded}`;
 

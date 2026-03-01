@@ -12,6 +12,7 @@ const allNavItems = [
   { href: "/admin/registrations", label: "Registrations" },
   { href: "/admin/attendees", label: "Attendees" },
   { href: "/admin/sponsors", label: "Sponsors" },
+  { href: "/admin/help-desk", label: "Help Desk" },
   { href: "/admin/check-in", label: "Check-In" },
   { href: "/admin/placards", label: "Placards" },
   { href: "/admin/marketing", label: "Marketing" },

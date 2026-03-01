@@ -49,12 +49,7 @@ export default function Footer() {
             <h4>Contact</h4>
             <ul>
               <li>
-                <a href="mailto:info@clcarsandcoffee.com">
-                  info@clcarsandcoffee.com
-                </a>
-              </li>
-              <li>
-                <a href="tel:815-555-2277">(815) 555-CARS</a>
+                <Link href="/contact">Contact Us</Link>
               </li>
             </ul>
           </div>

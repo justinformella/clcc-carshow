@@ -16,6 +16,10 @@
     box-sizing: border-box;
 }
 
+html {
+    overflow-x: hidden;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.7;
@@ -167,12 +171,13 @@ header.scrolled .mobile-toggle span {
 
 /* Hero Section */
 .hero {
-    height: 100vh;
-    min-height: 700px;
+    min-height: 100vh;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-top: 140px;
+    padding-bottom: 40px;
     background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.5) 100%),
                 url('/images/PXL_20250831_172232318.jpg') center/cover no-repeat;
 }
@@ -262,64 +267,74 @@ header.scrolled .mobile-toggle span {
     border-color: var(--white);
 }
 
-.hero-sponsors {
-    margin-top: 3rem;
-    margin-bottom: 4rem;
-    background: rgba(0, 0, 0, 0.55);
-    padding: 1.5rem 2.5rem;
-    border-radius: 8px;
+/* Hero Sponsors Bar — full-width strip below hero */
+.hero-sponsors-bar {
+    background: var(--charcoal);
+    color: var(--white);
+    padding: 1.5rem 2rem;
 }
 
-.hero-sponsors-label {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.25em;
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 0.6rem;
-}
-
-.hero-presenting-sponsor {
-    margin-bottom: 1.5rem;
-}
-
-.hero-presenting-sponsor span {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.6rem;
-    color: #ffffff;
-    letter-spacing: 0.04em;
-}
-
-.hero-sponsors-tier {
-    margin-bottom: 1rem;
-}
-
-.hero-sponsors-tier-label {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 0.5rem;
-}
-
-.hero-sponsors-row {
+.hero-sponsors-bar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 1rem;
+    gap: 2.5rem;
     flex-wrap: wrap;
 }
 
-.hero-sponsor-logo {
-    background: rgba(255, 255, 255, 0.1);
+.hero-sponsors-bar-presenting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.hero-sponsors-bar-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.04em;
+}
+
+.hero-sponsors-bar-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.hero-sponsors-bar-divider {
+    width: 1px;
+    height: 3rem;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.hero-sponsors-bar-tier {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.hero-sponsors-bar-logos {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.hero-sponsors-bar-logo {
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 0.5rem 1.2rem;
+    padding: 0.4rem 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.hero-sponsor-logo span {
-    font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.8);
+.hero-sponsors-bar-logo span {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.7);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     white-space: nowrap;
@@ -480,7 +495,7 @@ section {
 }
 
 .about-charity-col {
-    /* each column */
+    min-width: 0;
 }
 
 .about-charity-col--dark {
@@ -983,6 +998,7 @@ section {
     display: flex;
     gap: 1rem;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .sponsor-why-stat {
@@ -1410,10 +1426,53 @@ footer {
 @media (max-width: 1024px) {
     .header-inner {
         padding: 1rem 2rem;
+        flex-wrap: wrap;
+    }
+
+    nav {
+        width: 100%;
+        order: 3;
     }
 
     nav ul {
         display: none;
+    }
+
+    nav ul[style] {
+        flex-direction: column;
+        width: 100%;
+        gap: 0;
+        background: var(--charcoal);
+        padding: 1rem 0;
+    }
+
+    header.scrolled nav ul[style] {
+        background: var(--white);
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    nav ul[style] li a {
+        display: block;
+        padding: 0.75rem 2rem;
+        color: var(--white);
+        border-bottom: none;
+    }
+
+    header.scrolled nav ul[style] li a {
+        color: var(--text-dark);
+    }
+
+    nav ul[style] li a:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    header.scrolled nav ul[style] li a:hover {
+        background: rgba(0, 0, 0, 0.03);
+    }
+
+    nav ul[style] .nav-cta {
+        margin: 0.5rem 2rem;
+        text-align: center;
     }
 
     .mobile-toggle {
@@ -1459,6 +1518,30 @@ footer {
 }
 
 @media (max-width: 768px) {
+    .header-inner {
+        padding: 0.6rem 1rem;
+    }
+
+    .logo-mark {
+        width: 36px;
+        height: 36px;
+        max-width: 36px;
+    }
+
+    .logo {
+        gap: 0.5rem;
+    }
+
+    .logo-text {
+        font-size: 0.95rem;
+        letter-spacing: 0.05em;
+    }
+
+    .logo-tagline {
+        font-size: 0.5rem;
+        letter-spacing: 0.15em;
+    }
+
     .hero {
         min-height: 100vh;
         min-height: 100dvh;
@@ -1505,20 +1588,14 @@ footer {
         font-size: 0.75rem;
     }
 
-    .hero-presenting-sponsor span {
-        font-size: 1.2rem;
+    .hero-sponsors-bar-inner {
+        flex-direction: column;
+        gap: 1.2rem;
     }
 
-    .hero-sponsors-row {
-        gap: 0.6rem;
-    }
-
-    .hero-sponsor-logo {
-        padding: 0.4rem 0.8rem;
-    }
-
-    .hero-sponsor-logo span {
-        font-size: 0.55rem;
+    .hero-sponsors-bar-divider {
+        width: 80%;
+        height: 1px;
     }
 
     .scroll-indicator {

@@ -7,7 +7,11 @@ import {
   confirmationEmail,
   adminNotificationEmail,
   announcementEmail,
+  helpRequestConfirmationEmail,
+  helpRequestAdminNotificationEmail,
+  helpRequestReplyNotificationEmail,
 } from "@/lib/email-templates";
+import type { HelpRequest } from "@/types/database";
 
 type Recipient = Pick<Registration, "id" | "first_name" | "last_name" | "email">;
 
@@ -45,12 +49,51 @@ const sampleReg: Registration = {
   updated_at: new Date().toISOString(),
 };
 
+const sampleHelpRequest: HelpRequest = {
+  id: "sample-help",
+  request_number: 7,
+  name: "Jane Doe",
+  email: "jane@example.com",
+  phone: null,
+  subject: "Can I change my vehicle after registering?",
+  category: "general",
+  status: "open",
+  priority: "normal",
+  assigned_to: null,
+  registration_id: null,
+  internal_notes: null,
+  resolved_at: null,
+  closed_at: null,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 const sampleConfirmationHtml = confirmationEmail(sampleReg).html;
 const sampleAdminHtml = adminNotificationEmail(sampleReg, "#").html;
 const sampleAnnouncementHtml = announcementEmail(
   "Parking Update for May 17th",
   "We wanted to let you know about updated parking arrangements for the show. Please arrive by 8:00 AM to ensure you get your assigned spot.\n\nGates open at 7:30 AM and we'll have volunteers directing traffic. Look for the signs marked with your car number.",
   "John"
+).html;
+
+const sampleHelpConfirmationHtml = helpRequestConfirmationEmail(
+  "Jane",
+  7,
+  "Can I change my vehicle after registering?"
+).html;
+
+const sampleHelpAdminHtml = helpRequestAdminNotificationEmail(
+  sampleHelpRequest,
+  "Hi, I registered my 2019 Civic but I'd like to bring my 1970 Chevelle instead. Is it possible to swap the vehicle on my registration?",
+  "#"
+).html;
+
+const sampleHelpReplyHtml = helpRequestReplyNotificationEmail(
+  "Jane",
+  7,
+  "Can I change my vehicle after registering?",
+  "Hi Jane! Absolutely — we can update your vehicle info. I've swapped it to the 1970 Chevelle. You're all set!",
+  "Mike"
 ).html;
 
 export default function EmailsPage() {
@@ -188,6 +231,21 @@ export default function EmailsPage() {
             name="Announcement"
             description="Manually sent from this page. Freeform subject and body, sent to selected paid registrants."
             previewHtml={sampleAnnouncementHtml}
+          />
+          <TemplateRow
+            name="Help Request Confirmation"
+            description="Sent automatically to the submitter after they submit a contact form request. Includes request number and subject."
+            previewHtml={sampleHelpConfirmationHtml}
+          />
+          <TemplateRow
+            name="Help Request Admin Notification"
+            description="Sent automatically to admins when a new help request is submitted. Includes submitter info, subject, and message."
+            previewHtml={sampleHelpAdminHtml}
+          />
+          <TemplateRow
+            name="Help Request Reply"
+            description="Sent to the submitter when an admin replies to their help request from the admin help desk."
+            previewHtml={sampleHelpReplyHtml}
           />
         </div>
       </div>

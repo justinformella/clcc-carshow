@@ -37,7 +37,7 @@ export default function Header() {
   return (
     <header id="header" className={scrolled ? "scrolled" : ""}>
       <div className="header-inner">
-        <a href="#" className="logo">
+        <Link href="/" className="logo">
           <Image
             src="/images/CLCC_Logo2026.png"
             alt="CLCC Logo"
@@ -52,7 +52,7 @@ export default function Header() {
               Est. 2021 &middot; Crystal Lake, Illinois
             </span>
           </div>
-        </a>
+        </Link>
         <nav>
           <ul style={menuOpen ? { display: "flex" } : undefined}>
             <li>
@@ -80,6 +80,9 @@ export default function Header() {
               <a href="#faq" onClick={(e) => handleAnchorClick(e, "#faq")}>
                 FAQ
               </a>
+            </li>
+            <li>
+              <Link href="/contact">Contact</Link>
             </li>
             <li>
               <Link href="/register" className="nav-cta">

@@ -46,7 +46,7 @@ function AcceptInviteContent() {
             marginBottom: "0.5rem",
           }}
         >
-          Welcome
+          Crystal Lake Cars &amp; Coffee
         </h1>
         <p
           style={{
@@ -56,7 +56,7 @@ function AcceptInviteContent() {
             lineHeight: 1.6,
           }}
         >
-          You&apos;ve been invited to join the Crystal Lake Cars &amp; Coffee admin team.
+          Click below to set your admin password.
         </p>
 
         {inviteLink ? (

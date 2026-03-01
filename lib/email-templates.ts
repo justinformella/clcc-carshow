@@ -1,4 +1,4 @@
-import type { Registration, Sponsor } from "@/types/database";
+import type { Registration, Sponsor, HelpRequest } from "@/types/database";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
@@ -8,7 +8,7 @@ const GOOGLE_MAPS_URL =
 const GOOGLE_CALENDAR_URL =
   "https://calendar.google.com/calendar/render?action=TEMPLATE" +
   "&text=Crystal+Lake+Cars+%26+Caffeine+Car+Show" +
-  "&dates=20260517T073000/20260517T130000" +
+  "&dates=20260517T073000/20260517T140000" +
   "&location=Grant%2C+Brink+%26+Williams+Streets%2C+Downtown+Crystal+Lake%2C+IL" +
   "&details=Annual+car+show+benefiting+the+Crystal+Lake+Food+Pantry.+Check-in+opens+at+7%3A30+AM.";
 
@@ -112,7 +112,7 @@ export function confirmationEmail(reg: Registration): { subject: string; html: s
               <td style="padding:6px 0; font-size:14px; color:#333;">Awards Ceremony</td>
             </tr>
             <tr>
-              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">1:00 PM</td>
+              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">2:00 PM</td>
               <td style="padding:6px 0; font-size:14px; color:#333;">Show Ends</td>
             </tr>
           </table>
@@ -250,7 +250,7 @@ export function multiVehicleConfirmationEmail(
               <td style="padding:6px 0; font-size:14px; color:#333;">Awards Ceremony</td>
             </tr>
             <tr>
-              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">1:00 PM</td>
+              <td style="padding:6px 0; font-size:14px; color:#c9a84c; font-weight:700; vertical-align:top;">2:00 PM</td>
               <td style="padding:6px 0; font-size:14px; color:#333;">Show Ends</td>
             </tr>
           </table>
@@ -467,6 +467,117 @@ export function announcementEmail(
 
   return {
     subject: emailSubject,
+    html: htmlShell(content),
+  };
+}
+
+export function helpRequestConfirmationEmail(
+  name: string,
+  requestNumber: number,
+  subject: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c;">We Received Your Request</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Hi ${name}, thanks for reaching out! We've received your request and will get back to you as soon as possible.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px; background:#f8f5f0; border-radius:8px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Subject</p>
+          <p style="margin:0; font-size:15px; color:#2c2c2c;">${subject}</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0; font-size:13px; color:#888; line-height:1.5;">
+      You don't need to do anything else &mdash; we'll reply to this email address when we have an update.
+    </p>
+  `;
+
+  return {
+    subject: `Request Received — Crystal Lake Cars & Caffeine`,
+    html: htmlShell(content),
+  };
+}
+
+export function helpRequestAdminNotificationEmail(
+  request: HelpRequest,
+  message: string,
+  adminDetailUrl: string,
+  registrationLink?: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c;">New Help Request</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      A new help request has been submitted:
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888; width:140px;">Name</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${request.name}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Email</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${request.email}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Subject</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${request.subject}</td>
+      </tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px; background:#f8f5f0; border-radius:8px;">
+      <tr>
+        <td style="padding:16px 20px;">
+          <p style="margin:0 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Message</p>
+          <p style="margin:0; font-size:14px; color:#333; line-height:1.6; white-space:pre-wrap;">${message}</p>
+        </td>
+      </tr>
+    </table>
+    ${registrationLink ? `
+    <p style="margin:0 0 16px; font-size:13px; color:#888;">
+      This submitter has a <a href="${registrationLink}" style="color:#c9a84c;">linked registration</a>.
+    </p>
+    ` : ""}
+    <a href="${adminDetailUrl}" style="display:inline-block; padding:12px 24px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:600; font-size:14px; border-radius:6px;">
+      View Request
+    </a>
+  `;
+
+  return {
+    subject: `New Help Request: ${request.subject}`,
+    html: htmlShell(content),
+  };
+}
+
+export function helpRequestReplyNotificationEmail(
+  submitterName: string,
+  requestNumber: number,
+  subject: string,
+  replyBody: string,
+  adminName: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c;">Update on Your Request</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Hi ${submitterName}, you have a new reply on your request:
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px; background:#f8f5f0; border-radius:8px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 8px; font-size:13px; color:#888;">
+            <strong>${adminName}</strong> replied:
+          </p>
+          <div style="margin:0; font-size:15px; color:#333; line-height:1.6; white-space:pre-wrap;">${replyBody}</div>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0; font-size:13px; color:#888; line-height:1.5;">
+      If you need anything else, just reply to this email or submit a new request on our website.
+    </p>
+  `;
+
+  return {
+    subject: `Re: ${subject} — Crystal Lake Cars & Caffeine`,
     html: htmlShell(content),
   };
 }

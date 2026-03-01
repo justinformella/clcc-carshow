@@ -22,37 +22,6 @@ export default function Hero() {
             Become a Sponsor
           </a>
         </div>
-        <div className="hero-sponsors">
-          <p className="hero-sponsors-label">Presented by</p>
-          <div className="hero-presenting-sponsor">
-            <span>Home State Bank</span>
-          </div>
-          <div className="hero-sponsors-tier">
-            <p className="hero-sponsors-tier-label">Premier Sponsors</p>
-            <div className="hero-sponsors-row">
-              <div className="hero-sponsor-logo">
-                <span>Your Logo Here</span>
-              </div>
-              <div className="hero-sponsor-logo">
-                <span>Your Logo Here</span>
-              </div>
-            </div>
-          </div>
-          <div className="hero-sponsors-tier">
-            <p className="hero-sponsors-tier-label">Community Sponsors</p>
-            <div className="hero-sponsors-row">
-              <div className="hero-sponsor-logo">
-                <span>Your Logo Here</span>
-              </div>
-              <div className="hero-sponsor-logo">
-                <span>Your Logo Here</span>
-              </div>
-              <div className="hero-sponsor-logo">
-                <span>Your Logo Here</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
       <div className="scroll-indicator">
         <span>Scroll</span>

@@ -11,13 +11,15 @@ export default function AdminDashboard() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
+  const [openRequests, setOpenRequests] = useState(0);
+  const [unassignedRequests, setUnassignedRequests] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
 
-      const [regResult, sponsorResult, campaignResult] = await Promise.all([
+      const [regResult, sponsorResult, campaignResult, helpResult] = await Promise.all([
         supabase
           .from("registrations")
           .select("*")
@@ -30,11 +32,19 @@ export default function AdminDashboard() {
         supabase
           .from("ad_campaigns")
           .select("*"),
+        supabase
+          .from("help_requests")
+          .select("id, status, assigned_to")
+          .in("status", ["open", "in_progress", "waiting_on_submitter"]),
       ]);
 
       setRegistrations(regResult.data || []);
       setSponsors((sponsorResult.data as Sponsor[]) || []);
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
+
+      const helpRequests = helpResult.data || [];
+      setOpenRequests(helpRequests.length);
+      setUnassignedRequests(helpRequests.filter((r: { assigned_to: string | null }) => !r.assigned_to).length);
 
       // Fetch current admin record
       const { data: { user } } = await supabase.auth.getUser();
@@ -302,6 +312,25 @@ export default function AdminDashboard() {
             />
           </div>
         </div>
+      </div>
+
+      {/* ─── Support ─── */}
+      <SectionHeader title="Support" />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "1.25rem",
+          marginBottom: "2.5rem",
+        }}
+      >
+        <DashboardCard
+          href="/admin/help-desk"
+          label="Open Requests"
+          value={`${openRequests}`}
+          note={unassignedRequests > 0 ? `${unassignedRequests} unassigned` : "all assigned"}
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+        />
       </div>
 
       {/* ─── My Sponsors ─── */}

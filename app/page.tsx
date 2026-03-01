@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import HeroSponsors from "@/components/HeroSponsors";
 import AboutCharitySection from "@/components/AboutCharitySection";
 import ScheduleAwards from "@/components/ScheduleAwards";
 import SpectatorBanner from "@/components/SpectatorBanner";
@@ -14,6 +15,7 @@ export default function Home() {
     <>
       <Header />
       <Hero />
+      <HeroSponsors />
       <AboutCharitySection />
       <ScheduleAwards />
       <SpectatorBanner />

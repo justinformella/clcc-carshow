@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { AdCampaign } from "@/types/database";
+import { MARKETING_TEMPLATES } from "@/types/database";
+import type { AdCampaign, MarketingProspect, MarketingSend } from "@/types/database";
+import { getMarketingPreviewHtml } from "@/lib/marketing-email-templates";
 
 type RegistrationUtm = {
   id: string;
@@ -13,7 +15,525 @@ type RegistrationUtm = {
   payment_status: string;
 };
 
+type ProspectWithSends = MarketingProspect & { sends: MarketingSend[] };
+
+type Tab = "email" | "ads";
+
 export default function MarketingPage() {
+  const [activeTab, setActiveTab] = useState<Tab>("email");
+
+  return (
+    <>
+      <h1
+        style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: "2rem",
+          fontWeight: 400,
+          marginBottom: "1.5rem",
+        }}
+      >
+        Marketing
+      </h1>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 0, marginBottom: "1.5rem", borderBottom: "2px solid #eee" }}>
+        <TabButton label="Email Outreach" active={activeTab === "email"} onClick={() => setActiveTab("email")} />
+        <TabButton label="Ad Campaigns" active={activeTab === "ads"} onClick={() => setActiveTab("ads")} />
+      </div>
+
+      {activeTab === "email" ? <EmailOutreachTab /> : <AdCampaignsTab />}
+    </>
+  );
+}
+
+function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "0.75rem 1.5rem",
+        background: "transparent",
+        border: "none",
+        borderBottom: active ? "2px solid var(--gold)" : "2px solid transparent",
+        marginBottom: "-2px",
+        fontSize: "0.85rem",
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        color: active ? "var(--gold)" : "var(--text-light)",
+        cursor: "pointer",
+        transition: "color 0.2s, border-color 0.2s",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// EMAIL OUTREACH TAB
+// ════════════════════════════════════════════════════════════
+
+function EmailOutreachTab() {
+  const [prospects, setProspects] = useState<ProspectWithSends[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(MARKETING_TEMPLATES[0].key);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const fetchProspects = useCallback(async () => {
+    const supabase = createClient();
+    const { data: prospectData } = await supabase
+      .from("marketing_prospects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    const { data: sendData } = await supabase
+      .from("marketing_sends")
+      .select("*")
+      .order("sent_at", { ascending: false });
+
+    const sends = sendData || [];
+    const combined = (prospectData || []).map((p: MarketingProspect) => ({
+      ...p,
+      sends: sends.filter((s: MarketingSend) => s.prospect_id === p.id),
+    }));
+
+    setProspects(combined);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchProspects();
+  }, [fetchProspects]);
+
+  if (loading) {
+    return (
+      <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
+        Loading...
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <ImportSection onImported={fetchProspects} />
+      <ProspectListSection
+        prospects={prospects}
+        selectedIds={selectedIds}
+        setSelectedIds={setSelectedIds}
+        selectedTemplate={selectedTemplate}
+      />
+      <SendCampaignSection
+        prospects={prospects}
+        selectedIds={selectedIds}
+        selectedTemplate={selectedTemplate}
+        setSelectedTemplate={setSelectedTemplate}
+        onSent={fetchProspects}
+      />
+    </>
+  );
+}
+
+// ─── Import Prospects ───
+
+function ImportSection({ onImported }: { onImported: () => void }) {
+  const [raw, setRaw] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{
+    total: number;
+    added: number;
+    skippedRegistered: number;
+    skippedDuplicate: number;
+  } | null>(null);
+
+  const handleImport = async () => {
+    if (!raw.trim()) return;
+    setImporting(true);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/marketing/import-prospects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ raw: raw.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Import failed");
+      } else {
+        setResult(data);
+        setRaw("");
+        onImported();
+      }
+    } catch {
+      alert("Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={sectionHeadingStyle}>Import Prospects</h2>
+      <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "0.75rem" }}>
+        Paste email addresses below. Supports: <code>email</code>, <code>Name &lt;email&gt;</code>, or <code>name, email</code> formats (one per line).
+      </p>
+      <textarea
+        value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+        rows={6}
+        placeholder={"john@example.com\nJane Doe <jane@example.com>\nBob Smith, bob@example.com"}
+        style={{ ...inputStyle, resize: "vertical", marginBottom: "0.75rem" }}
+      />
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <button onClick={handleImport} disabled={importing || !raw.trim()} style={btnStyle(importing)}>
+          {importing ? "Importing..." : "Import"}
+        </button>
+        {result && (
+          <span style={{ fontSize: "0.85rem", color: "#2e7d32" }}>
+            Added: {result.added}
+            {result.skippedDuplicate > 0 && ` | Already imported: ${result.skippedDuplicate}`}
+            {result.skippedRegistered > 0 && ` | Already registered: ${result.skippedRegistered}`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Prospect List ───
+
+type SortKey = "name" | "email" | "source" | "created_at" | "sends" | "status";
+type SortDir = "asc" | "desc";
+
+function ProspectListSection({
+  prospects,
+  selectedIds,
+  setSelectedIds,
+  selectedTemplate,
+}: {
+  prospects: ProspectWithSends[];
+  selectedIds: Set<string>;
+  setSelectedIds: (ids: Set<string>) => void;
+  selectedTemplate: string;
+}) {
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir(key === "created_at" ? "desc" : "asc");
+    }
+  };
+
+  const getStatus = (p: ProspectWithSends) => {
+    if (p.unsubscribed) return "unsubscribed";
+    if (p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent")) return "sent";
+    return "ready";
+  };
+
+  const sorted = [...prospects].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    switch (sortKey) {
+      case "name":
+        return dir * (a.name || "").localeCompare(b.name || "");
+      case "email":
+        return dir * a.email.localeCompare(b.email);
+      case "source":
+        return dir * a.source.localeCompare(b.source);
+      case "created_at":
+        return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      case "sends":
+        return dir * (a.sends.filter((s) => s.status === "sent").length - b.sends.filter((s) => s.status === "sent").length);
+      case "status": {
+        const order = { ready: 0, sent: 1, unsubscribed: 2 };
+        return dir * (order[getStatus(a)] - order[getStatus(b)]);
+      }
+      default:
+        return 0;
+    }
+  });
+
+  const eligible = prospects.filter(
+    (p) =>
+      !p.unsubscribed &&
+      !p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent")
+  );
+
+  const handleToggle = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const handleSelectAll = () => {
+    setSelectedIds(new Set(eligible.map((p) => p.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
+  const sortArrow = (key: SortKey) => {
+    if (sortKey !== key) return "";
+    return sortDir === "asc" ? " \u25B2" : " \u25BC";
+  };
+
+  const sortableThStyle = (key: SortKey): React.CSSProperties => ({
+    ...prospectThStyle,
+    cursor: "pointer",
+    userSelect: "none",
+    color: sortKey === key ? "var(--gold)" : "var(--text-light)",
+  });
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={sectionHeadingStyle}>
+        Prospect List
+        <span style={{ fontWeight: 400, fontSize: "0.85rem", color: "var(--text-light)", marginLeft: "0.5rem" }}>
+          ({prospects.length} total, {eligible.length} eligible for selected template)
+        </span>
+      </h2>
+
+      {prospects.length === 0 ? (
+        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", padding: "1rem 0" }}>
+          No prospects imported yet. Use the import section above.
+        </p>
+      ) : (
+        <>
+          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
+            <button onClick={handleSelectAll} style={smallBtnStyle}>
+              Select All Eligible ({eligible.length})
+            </button>
+            <button onClick={handleDeselectAll} style={smallBtnStyle}>
+              Deselect All
+            </button>
+          </div>
+
+          <div style={{ overflow: "auto", maxHeight: "400px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+              <thead>
+                <tr style={{ background: "var(--cream)", textAlign: "left", position: "sticky", top: 0 }}>
+                  <th style={prospectThStyle}></th>
+                  <th style={sortableThStyle("name")} onClick={() => handleSort("name")}>Name{sortArrow("name")}</th>
+                  <th style={sortableThStyle("email")} onClick={() => handleSort("email")}>Email{sortArrow("email")}</th>
+                  <th style={sortableThStyle("source")} onClick={() => handleSort("source")}>Source{sortArrow("source")}</th>
+                  <th style={sortableThStyle("created_at")} onClick={() => handleSort("created_at")}>Added{sortArrow("created_at")}</th>
+                  <th style={sortableThStyle("sends")} onClick={() => handleSort("sends")}>Sends{sortArrow("sends")}</th>
+                  <th style={sortableThStyle("status")} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((p) => {
+                  const alreadySent = p.sends.some(
+                    (s) => s.template_key === selectedTemplate && s.status === "sent"
+                  );
+                  const isEligible = !p.unsubscribed && !alreadySent;
+                  const dimmed = !isEligible;
+
+                  return (
+                    <tr
+                      key={p.id}
+                      style={{
+                        borderBottom: "1px solid #eee",
+                        opacity: dimmed ? 0.5 : 1,
+                      }}
+                    >
+                      <td style={prospectTdStyle}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(p.id)}
+                          disabled={!isEligible}
+                          onChange={() => handleToggle(p.id)}
+                        />
+                      </td>
+                      <td style={prospectTdStyle}>{p.name || "\u2014"}</td>
+                      <td style={prospectTdStyle}>{p.email}</td>
+                      <td style={prospectTdStyle}>
+                        <span style={badgeStyle(p.source === "import" ? "#e3f2fd" : "#f3e5f5", p.source === "import" ? "#1565c0" : "#7b1fa2")}>
+                          {p.source}
+                        </span>
+                      </td>
+                      <td style={{ ...prospectTdStyle, whiteSpace: "nowrap" }}>
+                        {new Date(p.created_at).toLocaleDateString()}
+                      </td>
+                      <td style={prospectTdStyle}>{p.sends.filter((s) => s.status === "sent").length}</td>
+                      <td style={prospectTdStyle}>
+                        {p.unsubscribed ? (
+                          <span style={badgeStyle("#ffebee", "#c62828")}>Unsubscribed</span>
+                        ) : alreadySent ? (
+                          <span style={badgeStyle("#e8f5e9", "#2e7d32")}>Sent</span>
+                        ) : (
+                          <span style={badgeStyle("#f5f5f5", "#616161")}>Ready</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Send Campaign ───
+
+function SendCampaignSection({
+  prospects,
+  selectedIds,
+  selectedTemplate,
+  setSelectedTemplate,
+  onSent,
+}: {
+  prospects: ProspectWithSends[];
+  selectedIds: Set<string>;
+  selectedTemplate: string;
+  setSelectedTemplate: (key: string) => void;
+  onSent: () => void;
+}) {
+  const [showPreview, setShowPreview] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ sent: number; failed: number; skipped: number } | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const template = MARKETING_TEMPLATES.find((t) => t.key === selectedTemplate)!;
+  const eligibleSelected = prospects.filter(
+    (p) =>
+      selectedIds.has(p.id) &&
+      !p.unsubscribed &&
+      !p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent")
+  );
+
+  useEffect(() => {
+    if (showPreview && iframeRef.current) {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(getMarketingPreviewHtml(selectedTemplate as Parameters<typeof getMarketingPreviewHtml>[0]));
+        doc.close();
+      }
+    }
+  }, [showPreview, selectedTemplate]);
+
+  const handleSend = async () => {
+    if (eligibleSelected.length === 0) {
+      alert("No eligible recipients selected.");
+      return;
+    }
+
+    const msg = `Send "${template.label}" to ${eligibleSelected.length} recipient${eligibleSelected.length === 1 ? "" : "s"}?`;
+    if (!confirm(msg)) return;
+
+    setSending(true);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/marketing/send-campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateKey: selectedTemplate,
+          prospectIds: eligibleSelected.map((p) => p.id),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Send failed");
+      } else {
+        setResult(data);
+        onSent();
+      }
+    } catch {
+      alert("Send failed");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={sectionHeadingStyle}>Send Campaign</h2>
+
+      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "1rem" }}>
+        <div style={{ flex: 1, minWidth: "200px" }}>
+          <label style={labelStyle}>Template</label>
+          <select
+            value={selectedTemplate}
+            onChange={(e) => setSelectedTemplate(e.target.value)}
+            style={inputStyle}
+          >
+            {MARKETING_TEMPLATES.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button onClick={() => setShowPreview(!showPreview)} style={smallBtnStyle}>
+          {showPreview ? "Hide Preview" : "Preview"}
+        </button>
+      </div>
+
+      {showPreview && (
+        <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+          <iframe
+            ref={iframeRef}
+            style={{
+              width: "640px",
+              maxWidth: "100%",
+              height: "600px",
+              border: "1px solid #ddd",
+              background: "#f5f5f5",
+            }}
+            title="Template preview"
+          />
+        </div>
+      )}
+
+      <div style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
+        <strong>{eligibleSelected.length}</strong> eligible recipient{eligibleSelected.length === 1 ? "" : "s"} selected
+        {selectedIds.size > eligibleSelected.length && (
+          <span style={{ color: "#e65100" }}>
+            {" "}({selectedIds.size - eligibleSelected.length} excluded: already sent or unsubscribed)
+          </span>
+        )}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <button
+          onClick={handleSend}
+          disabled={sending || eligibleSelected.length === 0}
+          style={{
+            ...btnStyle(sending || eligibleSelected.length === 0),
+            background: sending || eligibleSelected.length === 0 ? "#ccc" : "var(--gold)",
+          }}
+        >
+          {sending ? "Sending..." : `Send to ${eligibleSelected.length} Recipient${eligibleSelected.length === 1 ? "" : "s"}`}
+        </button>
+        {result && (
+          <span style={{ fontSize: "0.85rem", color: result.failed > 0 ? "#e65100" : "#2e7d32" }}>
+            Sent: {result.sent}
+            {result.skipped > 0 && ` | Skipped: ${result.skipped}`}
+            {result.failed > 0 && ` | Failed: ${result.failed}`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// AD CAMPAIGNS TAB
+// ════════════════════════════════════════════════════════════
+
+function AdCampaignsTab() {
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [registrations, setRegistrations] = useState<RegistrationUtm[]>([]);
@@ -63,25 +583,8 @@ export default function MarketingPage() {
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}
-      >
-        <h1
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "2rem",
-            fontWeight: 400,
-          }}
-        >
-          Marketing
-        </h1>
+      {/* Action bar */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1.5rem" }}>
         <button
           onClick={() => router.push("/admin/marketing/new")}
           style={{
@@ -176,7 +679,7 @@ export default function MarketingPage() {
           </thead>
           <tbody>
             {filtered.map((c) => {
-              const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(1) : "—";
+              const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(1) : "\u2014";
               const regs = regCountByUtmCampaign(c.utm_campaign);
               return (
                 <tr
@@ -206,16 +709,16 @@ export default function MarketingPage() {
                     <CampaignStatusBadge status={c.status} />
                   </td>
                   <td style={tdStyle}>
-                    {c.budget_cents != null ? `$${(c.budget_cents / 100).toLocaleString()}` : "—"}
+                    {c.budget_cents != null ? `$${(c.budget_cents / 100).toLocaleString()}` : "\u2014"}
                   </td>
                   <td style={tdStyle}>${(c.spent_cents / 100).toLocaleString()}</td>
                   <td style={tdStyle}>{c.impressions.toLocaleString()}</td>
                   <td style={tdStyle}>{c.clicks.toLocaleString()}</td>
-                  <td style={tdStyle}>{ctr}{ctr !== "—" ? "%" : ""}</td>
+                  <td style={tdStyle}>{ctr}{ctr !== "\u2014" ? "%" : ""}</td>
                   <td style={tdStyle}>{regs}</td>
                   <td style={{ ...tdStyle, whiteSpace: "nowrap", fontSize: "0.8rem" }}>
-                    {c.start_date ? new Date(c.start_date + "T00:00:00").toLocaleDateString() : "—"}
-                    {c.end_date ? ` – ${new Date(c.end_date + "T00:00:00").toLocaleDateString()}` : ""}
+                    {c.start_date ? new Date(c.start_date + "T00:00:00").toLocaleDateString() : "\u2014"}
+                    {c.end_date ? ` \u2013 ${new Date(c.end_date + "T00:00:00").toLocaleDateString()}` : ""}
                   </td>
                 </tr>
               );
@@ -233,6 +736,10 @@ export default function MarketingPage() {
     </>
   );
 }
+
+// ════════════════════════════════════════════════════════════
+// SHARED COMPONENTS & STYLES
+// ════════════════════════════════════════════════════════════
 
 function MiniCard({ label, value }: { label: string; value: string }) {
   return (
@@ -282,6 +789,68 @@ function platformColor(platform: string): { bg: string; text: string } {
   return map[platform] || { bg: "#f5f5f5", text: "#616161" };
 }
 
+const cardStyle: React.CSSProperties = {
+  background: "var(--white)",
+  padding: "1.5rem 2rem",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  marginBottom: "1.5rem",
+};
+
+const sectionHeadingStyle: React.CSSProperties = {
+  fontFamily: "'Playfair Display', serif",
+  fontSize: "1.1rem",
+  fontWeight: 400,
+  marginBottom: "1rem",
+  paddingBottom: "0.5rem",
+  borderBottom: "1px solid rgba(0,0,0,0.08)",
+  color: "var(--charcoal)",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "var(--text-light)",
+  marginBottom: "0.3rem",
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "0.6rem 1rem",
+  border: "1px solid #ddd",
+  fontSize: "0.9rem",
+  fontFamily: "'Inter', sans-serif",
+  boxSizing: "border-box",
+};
+
+const btnStyle = (disabled: boolean): React.CSSProperties => ({
+  padding: "0.6rem 1.5rem",
+  background: disabled ? "#ccc" : "var(--gold)",
+  color: "var(--charcoal)",
+  border: "none",
+  fontSize: "0.8rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  cursor: disabled ? "not-allowed" : "pointer",
+  opacity: disabled ? 0.6 : 1,
+});
+
+const smallBtnStyle: React.CSSProperties = {
+  background: "transparent",
+  border: "1px solid #ddd",
+  padding: "0.4rem 0.8rem",
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  cursor: "pointer",
+  color: "var(--charcoal)",
+  whiteSpace: "nowrap",
+};
+
 const thStyle: React.CSSProperties = {
   padding: "0.8rem 1rem",
   fontWeight: 600,
@@ -295,3 +864,27 @@ const thStyle: React.CSSProperties = {
 const tdStyle: React.CSSProperties = {
   padding: "0.8rem 1rem",
 };
+
+const prospectThStyle: React.CSSProperties = {
+  padding: "0.8rem 1rem",
+  fontWeight: 600,
+  fontSize: "0.7rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "var(--text-light)",
+  whiteSpace: "nowrap",
+};
+
+const prospectTdStyle: React.CSSProperties = {
+  padding: "0.6rem 1rem",
+};
+
+const badgeStyle = (bg: string, color: string): React.CSSProperties => ({
+  display: "inline-block",
+  padding: "0.2rem 0.6rem",
+  fontSize: "0.7rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  background: bg,
+  color,
+});

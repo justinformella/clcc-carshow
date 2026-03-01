@@ -59,6 +59,7 @@ export const AWARD_CATEGORIES = [
   "Best Vanity Plate",
   "Best Interior",
   "Best Custom",
+  "Best of Show",
 ] as const;
 
 export type Admin = {
@@ -70,7 +71,14 @@ export type Admin = {
   last_login_at: string | null;
 };
 
-export type EmailType = "confirmation" | "admin_notification" | "announcement" | "sponsor_notification";
+export type EmailType =
+  | "confirmation"
+  | "admin_notification"
+  | "announcement"
+  | "sponsor_notification"
+  | "help_request_confirmation"
+  | "help_request_admin_notification"
+  | "help_request_reply";
 
 export type EmailLog = {
   id: string;
@@ -223,3 +231,102 @@ export type AdCampaign = {
   created_at: string;
   updated_at: string;
 };
+
+// ─── Help Desk ───
+
+export type HelpRequestStatus = "open" | "in_progress" | "waiting_on_submitter" | "resolved" | "closed";
+export type HelpRequestCategory = "general" | "registration" | "sponsorship" | "event_day" | "website" | "other";
+export type HelpRequestPriority = "low" | "normal" | "high";
+
+export const HELP_REQUEST_STATUSES: { value: HelpRequestStatus; label: string }[] = [
+  { value: "open", label: "Open" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "waiting_on_submitter", label: "Waiting on Submitter" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+];
+
+export const HELP_REQUEST_CATEGORIES: { value: HelpRequestCategory; label: string }[] = [
+  { value: "general", label: "General" },
+  { value: "registration", label: "Registration" },
+  { value: "sponsorship", label: "Sponsorship" },
+  { value: "event_day", label: "Event Day" },
+  { value: "website", label: "Website" },
+  { value: "other", label: "Other" },
+];
+
+export const HELP_REQUEST_PRIORITIES: { value: HelpRequestPriority; label: string }[] = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
+];
+
+export type HelpRequest = {
+  id: string;
+  request_number: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  category: HelpRequestCategory;
+  status: HelpRequestStatus;
+  priority: HelpRequestPriority;
+  assigned_to: string | null;
+  registration_id: string | null;
+  internal_notes: string | null;
+  resolved_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HelpRequestMessage = {
+  id: string;
+  help_request_id: string;
+  sender_type: "submitter" | "admin";
+  sender_name: string;
+  sender_email: string;
+  body: string;
+  is_internal: boolean;
+  created_at: string;
+};
+
+export type HelpRequestAuditLogEntry = {
+  id: string;
+  help_request_id: string;
+  changed_fields: Record<string, { old: unknown; new: unknown }>;
+  actor_email: string | null;
+  created_at: string;
+};
+
+// ─── Marketing Email Outreach ───
+
+export type MarketingProspect = {
+  id: string;
+  email: string;
+  name: string | null;
+  source: "manual" | "import";
+  unsubscribed: boolean;
+  created_at: string;
+};
+
+export type MarketingSend = {
+  id: string;
+  prospect_id: string;
+  template_key: string;
+  subject: string;
+  status: "sent" | "failed";
+  resend_id: string | null;
+  error_message: string | null;
+  sent_at: string;
+};
+
+export const MARKETING_TEMPLATES = [
+  {
+    key: "save_the_date_2026",
+    label: "Save the Date — May 17, 2026",
+    subject: "Save the Date: Crystal Lake Cars & Caffeine — May 17, 2026",
+  },
+] as const;
+
+export type MarketingTemplateKey = (typeof MARKETING_TEMPLATES)[number]["key"];
