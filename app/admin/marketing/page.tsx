@@ -158,7 +158,6 @@ function ImportSection({ onImported }: { onImported: () => void }) {
   const [result, setResult] = useState<{
     total: number;
     added: number;
-    skippedRegistered: number;
     skippedDuplicate: number;
   } | null>(null);
 
@@ -209,7 +208,6 @@ function ImportSection({ onImported }: { onImported: () => void }) {
           <span style={{ fontSize: "0.85rem", color: "#2e7d32" }}>
             Added: {result.added}
             {result.skippedDuplicate > 0 && ` | Already imported: ${result.skippedDuplicate}`}
-            {result.skippedRegistered > 0 && ` | Already registered: ${result.skippedRegistered}`}
           </span>
         )}
       </div>

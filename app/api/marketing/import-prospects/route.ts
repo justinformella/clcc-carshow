@@ -45,15 +45,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No valid emails found" }, { status: 400 });
   }
 
-  // Check which emails already exist as registered participants
-  const emails = parsed.map((p) => p.email);
-  const { data: existingRegs } = await supabase
-    .from("registrations")
-    .select("email")
-    .in("email", emails);
-  const registeredEmails = new Set((existingRegs || []).map((r: { email: string }) => r.email.toLowerCase()));
-
   // Check which emails already exist as prospects
+  const emails = parsed.map((p) => p.email);
   const { data: existingProspects } = await supabase
     .from("marketing_prospects")
     .select("email")
@@ -61,16 +54,11 @@ export async function POST(request: Request) {
   const existingProspectEmails = new Set((existingProspects || []).map((p: { email: string }) => p.email.toLowerCase()));
 
   let added = 0;
-  let skippedRegistered = 0;
   let skippedDuplicate = 0;
 
   const toInsert: { email: string; name: string | null; source: string }[] = [];
 
   for (const { email, name } of parsed) {
-    if (registeredEmails.has(email)) {
-      skippedRegistered++;
-      continue;
-    }
     if (existingProspectEmails.has(email)) {
       skippedDuplicate++;
       continue;
@@ -91,7 +79,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     total: parsed.length,
     added,
-    skippedRegistered,
     skippedDuplicate,
   });
 }
