@@ -143,7 +143,7 @@ function RegisterContent() {
 
   return (
     <>
-      <header className="scrolled" id="header">
+      <header className="scrolled reg-header" id="header">
         <div className="header-inner">
           <Link href="/" className="logo reg-logo">
             <img
@@ -161,11 +161,9 @@ function RegisterContent() {
             </div>
           </Link>
           <nav>
-            <ul style={{ display: "flex" }}>
+            <ul>
               <li>
-                <Link href="/" style={{ color: "var(--text-dark)" }}>
-                  Home
-                </Link>
+                <Link href="/">Home</Link>
               </li>
             </ul>
           </nav>
@@ -767,6 +765,23 @@ function RegisterContent() {
       </div>
 
       <style>{`
+        .reg-header .header-inner {
+          flex-wrap: nowrap;
+        }
+        .reg-header nav {
+          width: auto;
+          order: 0;
+        }
+        .reg-header nav ul {
+          display: flex !important;
+          background: none !important;
+          padding: 0 !important;
+          flex-direction: row !important;
+        }
+        .reg-header nav ul li a {
+          color: var(--text-dark) !important;
+          padding: 0 !important;
+        }
         .reg-logo {
           display: flex;
           align-items: center;
