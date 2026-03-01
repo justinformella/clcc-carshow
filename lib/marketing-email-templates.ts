@@ -19,6 +19,7 @@ function marketingHtmlShell(content: string, unsubscribeUrl: string): string {
         <!-- Header -->
         <tr>
           <td style="background:#2c2c2c; padding:28px 32px; text-align:center;">
+            <img src="${SITE_URL}/images/CLCC_Logo2026.png" alt="CLCC Logo" width="60" height="60" style="display:block; margin:0 auto 12px; border:0;" />
             <span style="font-size:22px; font-weight:700; color:#c9a84c; letter-spacing:0.08em;">
               CRYSTAL LAKE CARS &amp; CAFFEINE
             </span>
