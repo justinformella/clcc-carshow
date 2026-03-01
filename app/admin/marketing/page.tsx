@@ -206,6 +206,9 @@ function ImportSection({ onImported }: { onImported: () => void }) {
 type SortKey = "name" | "email" | "source" | "created_at" | "sends" | "status";
 type SortDir = "asc" | "desc";
 
+type StatusFilter = "all" | "ready" | "sent" | "unsubscribed";
+type SourceFilter = "all" | "import" | "manual";
+
 function ProspectListSection({
   prospects,
   selectedIds,
@@ -219,6 +222,9 @@ function ProspectListSection({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -235,7 +241,17 @@ function ProspectListSection({
     return "ready";
   };
 
-  const sorted = [...prospects].sort((a, b) => {
+  const searchLower = search.toLowerCase();
+  const filtered = prospects.filter((p) => {
+    if (searchLower && !(p.email.toLowerCase().includes(searchLower) || (p.name || "").toLowerCase().includes(searchLower))) {
+      return false;
+    }
+    if (statusFilter !== "all" && getStatus(p) !== statusFilter) return false;
+    if (sourceFilter !== "all" && p.source !== sourceFilter) return false;
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
     switch (sortKey) {
       case "name":
@@ -257,7 +273,7 @@ function ProspectListSection({
     }
   });
 
-  const eligible = prospects.filter(
+  const eligible = filtered.filter(
     (p) =>
       !p.unsubscribed &&
       !p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent")
@@ -295,7 +311,7 @@ function ProspectListSection({
       <h2 style={sectionHeadingStyle}>
         Prospect List
         <span style={{ fontWeight: 400, fontSize: "0.85rem", color: "var(--text-light)", marginLeft: "0.5rem" }}>
-          ({prospects.length} total, {eligible.length} eligible for selected template)
+          ({prospects.length} total, {filtered.length} shown, {eligible.length} eligible)
         </span>
       </h2>
 
@@ -305,6 +321,45 @@ function ProspectListSection({
         </p>
       ) : (
         <>
+          {/* Filters */}
+          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name or email..."
+              style={{
+                padding: "0.5rem 0.75rem",
+                border: "1px solid #ddd",
+                fontSize: "0.85rem",
+                fontFamily: "'Inter', sans-serif",
+                minWidth: "200px",
+                flex: "1 1 200px",
+                maxWidth: "300px",
+              }}
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              style={filterSelectStyle}
+            >
+              <option value="all">All Statuses</option>
+              <option value="ready">Ready</option>
+              <option value="sent">Sent</option>
+              <option value="unsubscribed">Unsubscribed</option>
+            </select>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
+              style={filterSelectStyle}
+            >
+              <option value="all">All Sources</option>
+              <option value="import">Import</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          {/* Actions */}
           <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
             <button onClick={handleSelectAll} style={smallBtnStyle}>
               Select All Eligible ({eligible.length})
@@ -837,6 +892,14 @@ const btnStyle = (disabled: boolean): React.CSSProperties => ({
   cursor: disabled ? "not-allowed" : "pointer",
   opacity: disabled ? 0.6 : 1,
 });
+
+const filterSelectStyle: React.CSSProperties = {
+  padding: "0.5rem 0.75rem",
+  border: "1px solid #ddd",
+  fontSize: "0.85rem",
+  fontFamily: "'Inter', sans-serif",
+  minWidth: "140px",
+};
 
 const smallBtnStyle: React.CSSProperties = {
   background: "transparent",
