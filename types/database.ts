@@ -78,7 +78,8 @@ export type EmailType =
   | "sponsor_notification"
   | "help_request_confirmation"
   | "help_request_admin_notification"
-  | "help_request_reply";
+  | "help_request_reply"
+  | "email_reply";
 
 export type EmailLog = {
   id: string;
