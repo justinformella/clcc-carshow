@@ -15,6 +15,13 @@ type RegistrationUtm = {
   payment_status: string;
 };
 
+type RegistrationMatch = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  payment_status: string;
+};
+
 type ProspectWithSends = MarketingProspect & { sends: MarketingSend[] };
 
 type Tab = "email" | "ads";
@@ -76,28 +83,36 @@ function TabButton({ label, active, onClick }: { label: string; active: boolean;
 
 function EmailOutreachTab() {
   const [prospects, setProspects] = useState<ProspectWithSends[]>([]);
+  const [regMap, setRegMap] = useState<Map<string, RegistrationMatch>>(new Map());
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<string>(MARKETING_TEMPLATES[0].key);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const fetchProspects = useCallback(async () => {
     const supabase = createClient();
-    const { data: prospectData } = await supabase
-      .from("marketing_prospects")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const [prospectResult, sendResult, regResult] = await Promise.all([
+      supabase.from("marketing_prospects").select("*").order("created_at", { ascending: false }),
+      supabase.from("marketing_sends").select("*").order("sent_at", { ascending: false }),
+      supabase.from("registrations").select("first_name, last_name, email, payment_status"),
+    ]);
 
-    const { data: sendData } = await supabase
-      .from("marketing_sends")
-      .select("*")
-      .order("sent_at", { ascending: false });
-
-    const sends = sendData || [];
-    const combined = (prospectData || []).map((p: MarketingProspect) => ({
+    const sends = sendResult.data || [];
+    const combined = (prospectResult.data || []).map((p: MarketingProspect) => ({
       ...p,
       sends: sends.filter((s: MarketingSend) => s.prospect_id === p.id),
     }));
 
+    const map = new Map<string, RegistrationMatch>();
+    for (const r of (regResult.data || []) as RegistrationMatch[]) {
+      const key = r.email.toLowerCase();
+      // Keep the most relevant match (paid > pending > others)
+      const existing = map.get(key);
+      if (!existing || (r.payment_status === "paid" && existing.payment_status !== "paid")) {
+        map.set(key, r);
+      }
+    }
+
+    setRegMap(map);
     setProspects(combined);
     setLoading(false);
   }, []);
@@ -122,6 +137,7 @@ function EmailOutreachTab() {
         selectedIds={selectedIds}
         setSelectedIds={setSelectedIds}
         selectedTemplate={selectedTemplate}
+        regMap={regMap}
       />
       <SendCampaignSection
         prospects={prospects}
@@ -214,11 +230,13 @@ function ProspectListSection({
   selectedIds,
   setSelectedIds,
   selectedTemplate,
+  regMap,
 }: {
   prospects: ProspectWithSends[];
   selectedIds: Set<string>;
   setSelectedIds: (ids: Set<string>) => void;
   selectedTemplate: string;
+  regMap: Map<string, RegistrationMatch>;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -397,6 +415,7 @@ function ProspectListSection({
                   <th style={{ ...prospectThStyle, width: "36px", paddingRight: 0 }}></th>
                   <th style={{ ...sortableThStyle("email"), minWidth: "180px" }} onClick={() => handleSort("email")}>Email{sortArrow("email")}</th>
                   <th style={sortableThStyle("name")} onClick={() => handleSort("name")}>Name{sortArrow("name")}</th>
+                  <th style={{ ...prospectThStyle, textAlign: "center" }}>Registered</th>
                   <th style={{ ...sortableThStyle("source"), textAlign: "center" }} onClick={() => handleSort("source")}>Source{sortArrow("source")}</th>
                   <th style={{ ...sortableThStyle("status"), textAlign: "center" }} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
                   <th style={{ ...sortableThStyle("sends"), textAlign: "center" }} onClick={() => handleSort("sends")}>Sends{sortArrow("sends")}</th>
@@ -410,6 +429,8 @@ function ProspectListSection({
                   );
                   const isEligible = !p.unsubscribed && !alreadySent;
                   const dimmed = !isEligible;
+                  const reg = regMap.get(p.email.toLowerCase());
+                  const displayName = p.name || (reg ? `${reg.first_name} ${reg.last_name}` : null);
 
                   return (
                     <tr
@@ -433,7 +454,24 @@ function ProspectListSection({
                         />
                       </td>
                       <td style={{ ...prospectTdStyle, fontWeight: 500 }}>{p.email}</td>
-                      <td style={{ ...prospectTdStyle, color: p.name ? "var(--charcoal)" : "#ccc" }}>{p.name || "\u2014"}</td>
+                      <td style={{ ...prospectTdStyle, color: displayName ? "var(--charcoal)" : "#ccc" }}>
+                        {displayName || "\u2014"}
+                        {!p.name && reg && (
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-light)", marginLeft: "0.3rem" }}>(reg)</span>
+                        )}
+                      </td>
+                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>
+                        {reg ? (
+                          <span style={badgeStyle(
+                            reg.payment_status === "paid" ? "#e8f5e9" : reg.payment_status === "pending" ? "#fff3e0" : "#f5f5f5",
+                            reg.payment_status === "paid" ? "#2e7d32" : reg.payment_status === "pending" ? "#e65100" : "#616161",
+                          )}>
+                            {reg.payment_status}
+                          </span>
+                        ) : (
+                          <span style={{ color: "#ccc" }}>\u2014</span>
+                        )}
+                      </td>
                       <td style={{ ...prospectTdStyle, textAlign: "center" }}>
                         <span style={badgeStyle(p.source === "import" ? "#e3f2fd" : "#f3e5f5", p.source === "import" ? "#1565c0" : "#7b1fa2")}>
                           {p.source}
