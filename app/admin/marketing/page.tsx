@@ -315,11 +315,7 @@ function ProspectListSection({
     }
   });
 
-  const eligible = filtered.filter(
-    (p) =>
-      !p.unsubscribed &&
-      !p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent")
-  );
+  const eligible = filtered.filter((p) => !p.unsubscribed);
 
   const handleToggle = (id: string) => {
     const next = new Set(selectedIds);
@@ -350,7 +346,7 @@ function ProspectListSection({
 
   const selectedCount = [...selectedIds].filter((id) => {
     const p = prospects.find((pr) => pr.id === id);
-    return p && !p.unsubscribed && !p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent");
+    return p && !p.unsubscribed;
   }).length;
 
   return (
@@ -461,8 +457,8 @@ function ProspectListSection({
                   const alreadySent = p.sends.some(
                     (s) => s.template_key === selectedTemplate && s.status === "sent"
                   );
-                  const isEligible = !p.unsubscribed && !alreadySent;
-                  const dimmed = !isEligible;
+                  const isEligible = !p.unsubscribed;
+                  const dimmed = p.unsubscribed;
                   const reg = regMap.get(p.email.toLowerCase());
                   const displayName = p.name || (reg ? `${reg.first_name} ${reg.last_name}` : null);
 
@@ -553,15 +549,12 @@ function SendCampaignSection({
 }) {
   const [showPreview, setShowPreview] = useState(false);
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<{ sent: number; failed: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const template = MARKETING_TEMPLATES.find((t) => t.key === selectedTemplate)!;
   const eligibleSelected = prospects.filter(
-    (p) =>
-      selectedIds.has(p.id) &&
-      !p.unsubscribed &&
-      !p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent")
+    (p) => selectedIds.has(p.id) && !p.unsubscribed
   );
 
   useEffect(() => {
@@ -654,7 +647,7 @@ function SendCampaignSection({
         <strong>{eligibleSelected.length}</strong> eligible recipient{eligibleSelected.length === 1 ? "" : "s"} selected
         {selectedIds.size > eligibleSelected.length && (
           <span style={{ color: "#e65100" }}>
-            {" "}({selectedIds.size - eligibleSelected.length} excluded: already sent or unsubscribed)
+            {" "}({selectedIds.size - eligibleSelected.length} excluded: unsubscribed)
           </span>
         )}
       </div>
@@ -673,7 +666,6 @@ function SendCampaignSection({
         {result && (
           <span style={{ fontSize: "0.85rem", color: result.failed > 0 ? "#e65100" : "#2e7d32" }}>
             Sent: {result.sent}
-            {result.skipped > 0 && ` | Skipped: ${result.skipped}`}
             {result.failed > 0 && ` | Failed: ${result.failed}`}
           </span>
         )}

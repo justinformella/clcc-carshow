@@ -60,22 +60,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No eligible prospects found" }, { status: 400 });
   }
 
-  // Check which prospects already received this template successfully
-  const { data: existingSends } = await supabase
-    .from("marketing_sends")
-    .select("prospect_id")
-    .eq("template_key", templateKey)
-    .eq("status", "sent")
-    .in("prospect_id", prospects.map((p) => p.id));
-
-  const alreadySentIds = new Set((existingSends || []).map((s: { prospect_id: string }) => s.prospect_id));
-  const toSend = prospects.filter((p) => !alreadySentIds.has(p.id));
-
   let sent = 0;
   let failed = 0;
-  let skipped = alreadySentIds.size;
 
-  for (const prospect of toSend) {
+  for (const prospect of prospects) {
     try {
       const unsubUrl = makeUnsubscribeUrl(prospect.email);
       const html = getMarketingEmailHtml(templateKey as MarketingTemplateKey, unsubUrl);
@@ -125,5 +113,5 @@ export async function POST(request: Request) {
     await wait(200);
   }
 
-  return NextResponse.json({ sent, failed, skipped });
+  return NextResponse.json({ sent, failed });
 }

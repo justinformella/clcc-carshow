@@ -400,10 +400,6 @@ CREATE TABLE marketing_sends (
 CREATE INDEX idx_marketing_sends_prospect ON marketing_sends(prospect_id);
 CREATE INDEX idx_marketing_sends_template ON marketing_sends(template_key);
 
--- Prevent duplicate successful sends of the same template to the same prospect
-CREATE UNIQUE INDEX idx_marketing_sends_no_dupe
-  ON marketing_sends(prospect_id, template_key)
-  WHERE status = 'sent';
 
 ALTER TABLE marketing_sends ENABLE ROW LEVEL SECURITY;
 
