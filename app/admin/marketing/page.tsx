@@ -223,6 +223,7 @@ type SortDir = "asc" | "desc";
 type StatusFilter = "all" | "ready" | "sent" | "unsubscribed";
 type SourceFilter = "all" | "import" | "manual";
 type RegisteredFilter = "all" | "paid" | "pending" | "not_registered";
+type EmailedFilter = "all" | "emailed" | "not_emailed";
 
 function ProspectListSection({
   prospects,
@@ -243,6 +244,7 @@ function ProspectListSection({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [registeredFilter, setRegisteredFilter] = useState<RegisteredFilter>("all");
+  const [emailedFilter, setEmailedFilter] = useState<EmailedFilter>("all");
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -276,6 +278,11 @@ function ProspectListSection({
       if (registeredFilter === "not_registered" && regStatus !== null) return false;
       if (registeredFilter === "paid" && regStatus !== "paid") return false;
       if (registeredFilter === "pending" && regStatus !== "pending") return false;
+    }
+    if (emailedFilter !== "all") {
+      const hasBeenEmailed = p.sends.some((s) => s.status === "sent");
+      if (emailedFilter === "emailed" && !hasBeenEmailed) return false;
+      if (emailedFilter === "not_emailed" && hasBeenEmailed) return false;
     }
     return true;
   });
@@ -324,7 +331,7 @@ function ProspectListSection({
     setSelectedIds(next);
   };
 
-  const handleSelectAll = () => {
+  const handleSelectShown = () => {
     setSelectedIds(new Set(eligible.map((p) => p.id)));
   };
 
@@ -426,10 +433,19 @@ function ProspectListSection({
               <option value="pending">Pending</option>
               <option value="not_registered">Not Registered</option>
             </select>
+            <select
+              value={emailedFilter}
+              onChange={(e) => setEmailedFilter(e.target.value as EmailedFilter)}
+              style={filterSelectStyle}
+            >
+              <option value="all">All Emailed</option>
+              <option value="emailed">Previously Emailed</option>
+              <option value="not_emailed">Never Emailed</option>
+            </select>
 
             <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <button onClick={handleSelectAll} style={toolbarLinkStyle}>
-                Select all eligible
+              <button onClick={handleSelectShown} style={toolbarLinkStyle}>
+                Select shown ({eligible.length})
               </button>
               <span style={{ color: "#ddd" }}>|</span>
               <button onClick={handleDeselectAll} style={toolbarLinkStyle}>
