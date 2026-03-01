@@ -306,14 +306,28 @@ function ProspectListSection({
     color: sortKey === key ? "var(--gold)" : "var(--text-light)",
   });
 
+  const selectedCount = [...selectedIds].filter((id) => {
+    const p = prospects.find((pr) => pr.id === id);
+    return p && !p.unsubscribed && !p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent");
+  }).length;
+
   return (
     <div style={cardStyle}>
-      <h2 style={sectionHeadingStyle}>
-        Prospect List
-        <span style={{ fontWeight: 400, fontSize: "0.85rem", color: "var(--text-light)", marginLeft: "0.5rem" }}>
-          ({prospects.length} total, {filtered.length} shown, {eligible.length} eligible)
-        </span>
-      </h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+        <h2 style={{ ...sectionHeadingStyle, marginBottom: 0, borderBottom: "none", paddingBottom: 0 }}>
+          Prospect List
+        </h2>
+        <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", color: "var(--text-light)" }}>
+          <span><strong style={{ color: "var(--charcoal)" }}>{prospects.length}</strong> total</span>
+          {filtered.length !== prospects.length && (
+            <span><strong style={{ color: "var(--charcoal)" }}>{filtered.length}</strong> shown</span>
+          )}
+          <span><strong style={{ color: "var(--gold)" }}>{eligible.length}</strong> eligible</span>
+          {selectedCount > 0 && (
+            <span><strong style={{ color: "#1565c0" }}>{selectedCount}</strong> selected</span>
+          )}
+        </div>
+      </div>
 
       {prospects.length === 0 ? (
         <p style={{ fontSize: "0.85rem", color: "var(--text-light)", padding: "1rem 0" }}>
@@ -321,21 +335,28 @@ function ProspectListSection({
         </p>
       ) : (
         <>
-          {/* Filters */}
-          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+          {/* Toolbar: filters + actions in one row */}
+          <div style={{
+            display: "flex",
+            gap: "0.5rem",
+            marginBottom: "0.75rem",
+            flexWrap: "wrap",
+            alignItems: "center",
+            padding: "0.6rem 0.75rem",
+            background: "#fafafa",
+            border: "1px solid #eee",
+          }}>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name or email..."
+              placeholder="Search..."
               style={{
-                padding: "0.5rem 0.75rem",
+                padding: "0.4rem 0.6rem",
                 border: "1px solid #ddd",
-                fontSize: "0.85rem",
+                fontSize: "0.8rem",
                 fontFamily: "'Inter', sans-serif",
-                minWidth: "200px",
-                flex: "1 1 200px",
-                maxWidth: "300px",
+                width: "180px",
               }}
             />
             <select
@@ -357,29 +378,29 @@ function ProspectListSection({
               <option value="import">Import</option>
               <option value="manual">Manual</option>
             </select>
-          </div>
 
-          {/* Actions */}
-          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
-            <button onClick={handleSelectAll} style={smallBtnStyle}>
-              Select All Eligible ({eligible.length})
-            </button>
-            <button onClick={handleDeselectAll} style={smallBtnStyle}>
-              Deselect All
-            </button>
+            <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <button onClick={handleSelectAll} style={toolbarLinkStyle}>
+                Select all eligible
+              </button>
+              <span style={{ color: "#ddd" }}>|</span>
+              <button onClick={handleDeselectAll} style={toolbarLinkStyle}>
+                Clear
+              </button>
+            </div>
           </div>
 
           <div style={{ overflow: "auto", maxHeight: "400px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
               <thead>
-                <tr style={{ background: "var(--cream)", textAlign: "left", position: "sticky", top: 0 }}>
-                  <th style={prospectThStyle}></th>
+                <tr style={{ background: "var(--cream)", textAlign: "left", position: "sticky", top: 0, zIndex: 1 }}>
+                  <th style={{ ...prospectThStyle, width: "36px", paddingRight: 0 }}></th>
+                  <th style={{ ...sortableThStyle("email"), minWidth: "180px" }} onClick={() => handleSort("email")}>Email{sortArrow("email")}</th>
                   <th style={sortableThStyle("name")} onClick={() => handleSort("name")}>Name{sortArrow("name")}</th>
-                  <th style={sortableThStyle("email")} onClick={() => handleSort("email")}>Email{sortArrow("email")}</th>
-                  <th style={sortableThStyle("source")} onClick={() => handleSort("source")}>Source{sortArrow("source")}</th>
-                  <th style={sortableThStyle("created_at")} onClick={() => handleSort("created_at")}>Added{sortArrow("created_at")}</th>
-                  <th style={sortableThStyle("sends")} onClick={() => handleSort("sends")}>Sends{sortArrow("sends")}</th>
-                  <th style={sortableThStyle("status")} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
+                  <th style={{ ...sortableThStyle("source"), textAlign: "center" }} onClick={() => handleSort("source")}>Source{sortArrow("source")}</th>
+                  <th style={{ ...sortableThStyle("status"), textAlign: "center" }} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
+                  <th style={{ ...sortableThStyle("sends"), textAlign: "center" }} onClick={() => handleSort("sends")}>Sends{sortArrow("sends")}</th>
+                  <th style={{ ...sortableThStyle("created_at"), textAlign: "right" }} onClick={() => handleSort("created_at")}>Added{sortArrow("created_at")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,38 +414,43 @@ function ProspectListSection({
                   return (
                     <tr
                       key={p.id}
+                      onClick={() => isEligible && handleToggle(p.id)}
                       style={{
-                        borderBottom: "1px solid #eee",
-                        opacity: dimmed ? 0.5 : 1,
+                        borderBottom: "1px solid #f0f0f0",
+                        opacity: dimmed ? 0.45 : 1,
+                        cursor: isEligible ? "pointer" : "default",
+                        background: selectedIds.has(p.id) ? "rgba(21, 101, 192, 0.04)" : "transparent",
                       }}
                     >
-                      <td style={prospectTdStyle}>
+                      <td style={{ ...prospectTdStyle, paddingRight: 0 }}>
                         <input
                           type="checkbox"
                           checked={selectedIds.has(p.id)}
                           disabled={!isEligible}
                           onChange={() => handleToggle(p.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ cursor: isEligible ? "pointer" : "default" }}
                         />
                       </td>
-                      <td style={prospectTdStyle}>{p.name || "\u2014"}</td>
-                      <td style={prospectTdStyle}>{p.email}</td>
-                      <td style={prospectTdStyle}>
+                      <td style={{ ...prospectTdStyle, fontWeight: 500 }}>{p.email}</td>
+                      <td style={{ ...prospectTdStyle, color: p.name ? "var(--charcoal)" : "#ccc" }}>{p.name || "\u2014"}</td>
+                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>
                         <span style={badgeStyle(p.source === "import" ? "#e3f2fd" : "#f3e5f5", p.source === "import" ? "#1565c0" : "#7b1fa2")}>
                           {p.source}
                         </span>
                       </td>
-                      <td style={{ ...prospectTdStyle, whiteSpace: "nowrap" }}>
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </td>
-                      <td style={prospectTdStyle}>{p.sends.filter((s) => s.status === "sent").length}</td>
-                      <td style={prospectTdStyle}>
+                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>
                         {p.unsubscribed ? (
-                          <span style={badgeStyle("#ffebee", "#c62828")}>Unsubscribed</span>
+                          <span style={badgeStyle("#ffebee", "#c62828")}>Unsub</span>
                         ) : alreadySent ? (
                           <span style={badgeStyle("#e8f5e9", "#2e7d32")}>Sent</span>
                         ) : (
                           <span style={badgeStyle("#f5f5f5", "#616161")}>Ready</span>
                         )}
+                      </td>
+                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>{p.sends.filter((s) => s.status === "sent").length}</td>
+                      <td style={{ ...prospectTdStyle, textAlign: "right", whiteSpace: "nowrap", color: "var(--text-light)", fontSize: "0.78rem" }}>
+                        {new Date(p.created_at).toLocaleDateString()}
                       </td>
                     </tr>
                   );
@@ -894,11 +920,21 @@ const btnStyle = (disabled: boolean): React.CSSProperties => ({
 });
 
 const filterSelectStyle: React.CSSProperties = {
-  padding: "0.5rem 0.75rem",
+  padding: "0.4rem 0.6rem",
   border: "1px solid #ddd",
-  fontSize: "0.85rem",
+  fontSize: "0.8rem",
   fontFamily: "'Inter', sans-serif",
-  minWidth: "140px",
+};
+
+const toolbarLinkStyle: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  padding: 0,
+  fontSize: "0.75rem",
+  color: "#1565c0",
+  cursor: "pointer",
+  textDecoration: "none",
+  fontFamily: "'Inter', sans-serif",
 };
 
 const smallBtnStyle: React.CSSProperties = {
