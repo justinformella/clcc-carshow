@@ -41,8 +41,8 @@ export default function Header() {
           <Image
             src="/images/CLCC_Logo2026.png"
             alt="CLCC Logo"
-            width={120}
-            height={120}
+            width={60}
+            height={60}
             className="logo-mark"
             priority
           />

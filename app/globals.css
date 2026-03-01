@@ -176,7 +176,7 @@ header.scrolled .mobile-toggle span {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-top: 140px;
+    padding-top: 100px;
     padding-bottom: 40px;
     background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.5) 100%),
                 url('/images/PXL_20250831_172232318.jpg') center/cover no-repeat;
