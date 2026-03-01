@@ -469,7 +469,7 @@ function ProspectListSection({
                             {reg.payment_status}
                           </span>
                         ) : (
-                          <span style={{ color: "#ccc" }}>\u2014</span>
+                          <span style={{ color: "#ccc" }}>{"\u2014"}</span>
                         )}
                       </td>
                       <td style={{ ...prospectTdStyle, textAlign: "center" }}>
