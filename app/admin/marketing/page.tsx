@@ -219,11 +219,12 @@ function ImportSection({ onImported }: { onImported: () => void }) {
 
 // ─── Prospect List ───
 
-type SortKey = "name" | "email" | "source" | "created_at" | "sends" | "status";
+type SortKey = "name" | "email" | "source" | "created_at" | "sends" | "status" | "registered";
 type SortDir = "asc" | "desc";
 
 type StatusFilter = "all" | "ready" | "sent" | "unsubscribed";
 type SourceFilter = "all" | "import" | "manual";
+type RegisteredFilter = "all" | "paid" | "pending" | "not_registered";
 
 function ProspectListSection({
   prospects,
@@ -243,6 +244,7 @@ function ProspectListSection({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [registeredFilter, setRegisteredFilter] = useState<RegisteredFilter>("all");
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -259,6 +261,11 @@ function ProspectListSection({
     return "ready";
   };
 
+  const getRegStatus = (p: ProspectWithSends) => {
+    const reg = regMap.get(p.email.toLowerCase());
+    return reg ? reg.payment_status : null;
+  };
+
   const searchLower = search.toLowerCase();
   const filtered = prospects.filter((p) => {
     if (searchLower && !(p.email.toLowerCase().includes(searchLower) || (p.name || "").toLowerCase().includes(searchLower))) {
@@ -266,14 +273,25 @@ function ProspectListSection({
     }
     if (statusFilter !== "all" && getStatus(p) !== statusFilter) return false;
     if (sourceFilter !== "all" && p.source !== sourceFilter) return false;
+    if (registeredFilter !== "all") {
+      const regStatus = getRegStatus(p);
+      if (registeredFilter === "not_registered" && regStatus !== null) return false;
+      if (registeredFilter === "paid" && regStatus !== "paid") return false;
+      if (registeredFilter === "pending" && regStatus !== "pending") return false;
+    }
     return true;
   });
 
   const sorted = [...filtered].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
     switch (sortKey) {
-      case "name":
-        return dir * (a.name || "").localeCompare(b.name || "");
+      case "name": {
+        const regA = regMap.get(a.email.toLowerCase());
+        const regB = regMap.get(b.email.toLowerCase());
+        const nameA = a.name || (regA ? `${regA.first_name} ${regA.last_name}` : "");
+        const nameB = b.name || (regB ? `${regB.first_name} ${regB.last_name}` : "");
+        return dir * nameA.localeCompare(nameB);
+      }
       case "email":
         return dir * a.email.localeCompare(b.email);
       case "source":
@@ -285,6 +303,14 @@ function ProspectListSection({
       case "status": {
         const order = { ready: 0, sent: 1, unsubscribed: 2 };
         return dir * (order[getStatus(a)] - order[getStatus(b)]);
+      }
+      case "registered": {
+        const order: Record<string, number> = { paid: 0, pending: 1 };
+        const aVal = getRegStatus(a);
+        const bVal = getRegStatus(b);
+        const aOrder = aVal !== null ? (order[aVal] ?? 2) : 3;
+        const bOrder = bVal !== null ? (order[bVal] ?? 2) : 3;
+        return dir * (aOrder - bOrder);
       }
       default:
         return 0;
@@ -396,6 +422,16 @@ function ProspectListSection({
               <option value="import">Import</option>
               <option value="manual">Manual</option>
             </select>
+            <select
+              value={registeredFilter}
+              onChange={(e) => setRegisteredFilter(e.target.value as RegisteredFilter)}
+              style={filterSelectStyle}
+            >
+              <option value="all">All Registration</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="not_registered">Not Registered</option>
+            </select>
 
             <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <button onClick={handleSelectAll} style={toolbarLinkStyle}>
@@ -415,7 +451,7 @@ function ProspectListSection({
                   <th style={{ ...prospectThStyle, width: "36px", paddingRight: 0 }}></th>
                   <th style={{ ...sortableThStyle("email"), minWidth: "180px" }} onClick={() => handleSort("email")}>Email{sortArrow("email")}</th>
                   <th style={sortableThStyle("name")} onClick={() => handleSort("name")}>Name{sortArrow("name")}</th>
-                  <th style={{ ...prospectThStyle, textAlign: "center" }}>Registered</th>
+                  <th style={{ ...sortableThStyle("registered"), textAlign: "center" }} onClick={() => handleSort("registered")}>Registered{sortArrow("registered")}</th>
                   <th style={{ ...sortableThStyle("source"), textAlign: "center" }} onClick={() => handleSort("source")}>Source{sortArrow("source")}</th>
                   <th style={{ ...sortableThStyle("status"), textAlign: "center" }} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
                   <th style={{ ...sortableThStyle("sends"), textAlign: "center" }} onClick={() => handleSort("sends")}>Sends{sortArrow("sends")}</th>
