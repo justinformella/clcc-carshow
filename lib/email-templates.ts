@@ -1,6 +1,7 @@
 import type { Registration, Sponsor, HelpRequest } from "@/types/database";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
+// Always use production URL — emails should never link to localhost
+const SITE_URL = "https://crystallakecarshow.com";
 
 const GOOGLE_MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Grant+Brink+Williams+Streets+Crystal+Lake+IL";
