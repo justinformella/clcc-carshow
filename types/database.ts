@@ -165,7 +165,7 @@ export type StripePaymentDetails = {
   charge_id: string | null;
 };
 
-export type SponsorStatus = "prospect" | "inquired" | "engaged" | "paid";
+export type SponsorStatus = "prospect" | "inquired" | "engaged" | "paid" | "archived";
 
 export type Sponsor = {
   id: string;

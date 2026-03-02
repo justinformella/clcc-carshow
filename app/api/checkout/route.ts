@@ -89,13 +89,23 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient();
 
     // Check capacity
-    const { count } = await supabase
-      .from("registrations")
-      .select("*", { count: "exact", head: true })
-      .eq("payment_status", "paid");
+    const [countResult, settingResult] = await Promise.all([
+      supabase
+        .from("registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("payment_status", "paid"),
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "max_registrations")
+        .maybeSingle(),
+    ]);
 
-    const paidCount = count || 0;
-    const spotsRemaining = MAX_REGISTRATIONS - paidCount;
+    const paidCount = countResult.count || 0;
+    const maxRegs = settingResult.data?.value
+      ? parseInt(settingResult.data.value, 10) || MAX_REGISTRATIONS
+      : MAX_REGISTRATIONS;
+    const spotsRemaining = maxRegs - paidCount;
 
     if (spotsRemaining <= 0) {
       return NextResponse.json(

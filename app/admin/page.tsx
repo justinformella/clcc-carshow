@@ -3,23 +3,32 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import type { Registration, Sponsor, SponsorStatus, AdCampaign, Admin } from "@/types/database";
-import { MAX_REGISTRATIONS } from "@/types/database";
+import type { Registration, Sponsor, SponsorStatus, AdCampaign, Admin, HelpRequestPriority } from "@/types/database";
+import { MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
 
 export default function AdminDashboard() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [currentAdmin, setCurrentAdmin] = useState<Admin | null>(null);
-  const [openRequests, setOpenRequests] = useState(0);
-  const [unassignedRequests, setUnassignedRequests] = useState(0);
+  const [openTickets, setOpenTickets] = useState<{
+    id: string;
+    request_number: number;
+    subject: string;
+    email: string;
+    name: string;
+    priority: HelpRequestPriority;
+    status: string;
+    created_at: string;
+  }[]>([]);
+  const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS_DEFAULT);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
 
-      const [regResult, sponsorResult, campaignResult, helpResult] = await Promise.all([
+      const [regResult, sponsorResult, campaignResult, helpResult, settingResult] = await Promise.all([
         supabase
           .from("registrations")
           .select("*")
@@ -34,17 +43,26 @@ export default function AdminDashboard() {
           .select("*"),
         supabase
           .from("help_requests")
-          .select("id, status, assigned_to")
-          .in("status", ["open", "in_progress", "waiting_on_submitter"]),
+          .select("id, request_number, subject, email, name, priority, status, created_at")
+          .in("status", ["open", "in_progress", "waiting_on_submitter"])
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "max_registrations")
+          .maybeSingle(),
       ]);
 
       setRegistrations(regResult.data || []);
       setSponsors((sponsorResult.data as Sponsor[]) || []);
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
 
-      const helpRequests = helpResult.data || [];
-      setOpenRequests(helpRequests.length);
-      setUnassignedRequests(helpRequests.filter((r: { assigned_to: string | null }) => !r.assigned_to).length);
+      setOpenTickets(helpResult.data || []);
+
+      if (settingResult.data?.value) {
+        const val = parseInt(settingResult.data.value, 10);
+        if (!isNaN(val)) setMaxRegistrations(val);
+      }
 
       // Fetch current admin record
       const { data: { user } } = await supabase.auth.getUser();
@@ -81,11 +99,13 @@ export default function AdminDashboard() {
   today.setHours(0, 0, 0, 0);
   const daysUntilEvent = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-  const sponsorRevenue = sponsors
+  const activeSponsors = sponsors.filter((s) => s.status !== "archived");
+
+  const sponsorRevenue = activeSponsors
     .filter((s) => s.status === "paid")
     .reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
-  const openSponsors = sponsors.filter((s) => s.status === "prospect" || s.status === "inquired" || s.status === "engaged");
+  const openSponsors = activeSponsors.filter((s) => s.status === "prospect" || s.status === "inquired" || s.status === "engaged");
   const openPipeline = openSponsors.reduce((sum, s) => {
     const match = s.sponsorship_level.match(/\$([0-9,]+)/);
     return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
@@ -104,7 +124,7 @@ export default function AdminDashboard() {
   const totalAdSpend = campaigns.reduce((sum, c) => sum + (c.spent_cents || 0), 0);
 
   const mySponsors = currentAdmin
-    ? sponsors.filter((s) => s.assigned_to === currentAdmin.id)
+    ? activeSponsors.filter((s) => s.assigned_to === currentAdmin.id)
     : [];
 
   if (loading) {
@@ -193,6 +213,76 @@ export default function AdminDashboard() {
         </p>
       </div>
 
+      {/* ─── Open Tickets Bar ─── */}
+      {openTickets.length > 0 && (() => {
+        const accent = openTickets.length >= 5 ? "#dc2626" : openTickets.length >= 3 ? "#d97706" : "#3b82f6";
+        const bgTint = openTickets.length >= 5 ? "rgba(220,38,38,0.06)" : openTickets.length >= 3 ? "rgba(217,119,6,0.06)" : "rgba(59,130,246,0.06)";
+        return (
+          <Link
+            href="/admin/help-desk"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "1.25rem",
+              padding: "1.1rem 1.5rem",
+              marginBottom: "2rem",
+              background: bgTint,
+              border: `1px solid ${accent}`,
+              textDecoration: "none",
+              color: "inherit",
+              transition: "all 0.15s ease",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = `0 4px 16px ${accent}22`;
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                background: accent,
+                color: "#fff",
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                flexShrink: 0,
+                lineHeight: 1,
+              }}
+            >
+              {openTickets.length}
+            </span>
+            <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: 600, color: "var(--charcoal)" }}>
+              Open ticket{openTickets.length !== 1 ? "s" : ""} need{openTickets.length === 1 ? "s" : ""} attention
+            </span>
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: accent,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+              }}
+            >
+              Resolve
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </span>
+          </Link>
+        );
+      })()}
+
       {/* ─── Registrations ─── */}
       <SectionHeader title="Registrations" />
       <div
@@ -207,7 +297,7 @@ export default function AdminDashboard() {
           href="/admin/registrations"
           label="Registrations"
           value={`${registrations.length}`}
-          note={`of ${MAX_REGISTRATIONS} max`}
+          note={`of ${maxRegistrations} max`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
         />
         <DashboardCard
@@ -237,7 +327,7 @@ export default function AdminDashboard() {
         <DashboardCard
           href="/admin/registrations"
           label="Spots Remaining"
-          value={`${MAX_REGISTRATIONS - registrations.length}`}
+          value={`${maxRegistrations - registrations.length}`}
           note="available"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>}
         />
@@ -265,8 +355,8 @@ export default function AdminDashboard() {
             <DashboardCard
               href="/admin/sponsors"
               label="Sponsors"
-              value={`${sponsors.length}`}
-              note={`${sponsors.filter((s) => s.status === "paid").length} paid`}
+              value={`${activeSponsors.length}`}
+              note={`${activeSponsors.filter((s) => s.status === "paid").length} paid`}
               icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>}
             />
             <DashboardCard
@@ -312,25 +402,6 @@ export default function AdminDashboard() {
             />
           </div>
         </div>
-      </div>
-
-      {/* ─── Support ─── */}
-      <SectionHeader title="Support" />
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1.25rem",
-          marginBottom: "2.5rem",
-        }}
-      >
-        <DashboardCard
-          href="/admin/help-desk"
-          label="Open Requests"
-          value={`${openRequests}`}
-          note={unassignedRequests > 0 ? `${unassignedRequests} unassigned` : "all assigned"}
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
-        />
       </div>
 
       {/* ─── My Sponsors ─── */}
@@ -491,12 +562,61 @@ function DashboardCard({
   );
 }
 
+function TicketStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; bg: string; color: string }> = {
+    open: { label: "Open", bg: "#ffebee", color: "#c62828" },
+    in_progress: { label: "In Progress", bg: "#e3f2fd", color: "#1565c0" },
+    waiting_on_submitter: { label: "Waiting", bg: "#fff3e0", color: "#e65100" },
+  };
+  const { label, bg, color } = config[status] || config.open;
+  return (
+    <span style={{
+      display: "inline-block",
+      padding: "0.15rem 0.5rem",
+      fontSize: "0.65rem",
+      fontWeight: 600,
+      textTransform: "uppercase",
+      letterSpacing: "0.04em",
+      background: bg,
+      color,
+      flexShrink: 0,
+    }}>
+      {label}
+    </span>
+  );
+}
+
+function TicketPriorityBadge({ priority }: { priority: HelpRequestPriority }) {
+  if (priority === "normal") return null;
+  const config: Record<string, { label: string; bg: string; color: string }> = {
+    high: { label: "High", bg: "#ffebee", color: "#c62828" },
+    low: { label: "Low", bg: "#f5f5f5", color: "#757575" },
+  };
+  const { label, bg, color } = config[priority] || { label: priority, bg: "#f5f5f5", color: "#757575" };
+  return (
+    <span style={{
+      display: "inline-block",
+      padding: "0.15rem 0.5rem",
+      fontSize: "0.65rem",
+      fontWeight: 600,
+      textTransform: "uppercase",
+      letterSpacing: "0.04em",
+      background: bg,
+      color,
+      flexShrink: 0,
+    }}>
+      {label}
+    </span>
+  );
+}
+
 function SponsorStatusBadge({ status }: { status: SponsorStatus }) {
   const config: Record<SponsorStatus, { label: string; bg: string; color: string }> = {
     prospect: { label: "Prospect", bg: "#ede7f6", color: "#5e35b1" },
     inquired: { label: "Inquired", bg: "#e3f2fd", color: "#1565c0" },
     engaged: { label: "Engaged", bg: "#fff3e0", color: "#e65100" },
     paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },
+    archived: { label: "Archived", bg: "#f5f5f5", color: "#757575" },
   };
 
   const { label, bg, color } = config[status] || config.prospect;

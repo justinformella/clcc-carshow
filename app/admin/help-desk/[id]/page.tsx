@@ -33,6 +33,7 @@ export default function HelpRequestDetailPage() {
   const [isInternal, setIsInternal] = useState(false);
   const [replyStatus, setReplyStatus] = useState("");
   const [sending, setSending] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
 
   // Sidebar updates
   const [updating, setUpdating] = useState(false);
@@ -140,6 +141,23 @@ export default function HelpRequestDetailPage() {
       console.error("Update error:", err);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleSuggest = async () => {
+    setSuggesting(true);
+    try {
+      const res = await fetch(`/api/help-requests/${id}/suggest`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok && data.suggestion) {
+        setReplyBody(data.suggestion);
+      }
+    } catch (err) {
+      console.error("Suggest error:", err);
+    } finally {
+      setSuggesting(false);
     }
   };
 
@@ -316,12 +334,37 @@ export default function HelpRequestDetailPage() {
 
             {/* Reply form */}
             <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid #eee" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem" }}>
+                <button
+                  type="button"
+                  onClick={handleSuggest}
+                  disabled={suggesting}
+                  style={{
+                    padding: "0.4rem 1rem",
+                    background: "linear-gradient(135deg, #7c3aed, #6366f1)",
+                    border: "none",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    cursor: suggesting ? "not-allowed" : "pointer",
+                    color: "#fff",
+                    opacity: suggesting ? 0.6 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M10 2L10.0001 2C10 5.31371 12.6863 8 16 8C12.6863 8 10 10.6863 10 14C10 10.6863 7.31371 8 4 8C7.31371 8 10 5.31371 10 2Z"/><path d="M18 12C18 14.2091 19.7909 16 22 16C19.7909 16 18 17.7909 18 20C18 17.7909 16.2091 16 14 16C16.2091 16 18 14.2091 18 12Z"/></svg>
+                  {suggesting ? "Generating..." : "Suggest Reply"}
+                </button>
+              </div>
               <form onSubmit={handleReply}>
                 <textarea
                   value={replyBody}
                   onChange={(e) => setReplyBody(e.target.value)}
                   placeholder="Write a reply..."
-                  rows={3}
+                  rows={8}
                   style={{
                     width: "100%",
                     padding: "0.75rem",

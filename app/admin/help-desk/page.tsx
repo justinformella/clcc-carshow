@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { HelpRequest, HelpRequestStatus, Admin } from "@/types/database";
-import { HELP_REQUEST_STATUSES } from "@/types/database";
+import type { HelpRequest, HelpRequestStatus, HelpRequestCategory, HelpRequestPriority, Admin } from "@/types/database";
+import { HELP_REQUEST_STATUSES, HELP_REQUEST_CATEGORIES, HELP_REQUEST_PRIORITIES } from "@/types/database";
 
 export default function HelpDeskPage() {
   const router = useRouter();
@@ -14,6 +14,16 @@ export default function HelpDeskPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+    category: "general" as HelpRequestCategory,
+    priority: "normal" as HelpRequestPriority,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,6 +39,50 @@ export default function HelpDeskPage() {
     };
     fetchData();
   }, []);
+
+  const handleCreateTicket = async () => {
+    if (!newTicket.name || !newTicket.email || !newTicket.subject || !newTicket.message) return;
+    setCreating(true);
+    try {
+      const supabase = createClient();
+
+      // Insert help request directly — no API route, no emails
+      const { data: helpRequest, error: insertError } = await supabase
+        .from("help_requests")
+        .insert({
+          name: newTicket.name,
+          email: newTicket.email,
+          subject: newTicket.subject,
+          category: newTicket.category,
+          priority: newTicket.priority,
+        })
+        .select()
+        .single();
+
+      if (insertError || !helpRequest) {
+        console.error("Ticket insert error:", insertError);
+        alert(`Failed to create ticket: ${insertError?.message || "Unknown error"}`);
+        setCreating(false);
+        return;
+      }
+
+      // Insert initial message
+      await supabase.from("help_request_messages").insert({
+        help_request_id: helpRequest.id,
+        sender_type: "submitter",
+        sender_name: newTicket.name,
+        sender_email: newTicket.email,
+        body: newTicket.message,
+      });
+
+      // Add to list and navigate
+      router.push(`/admin/help-desk/${helpRequest.id}`);
+    } catch {
+      alert("Failed to create ticket.");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const filtered = requests.filter((r) => {
     const q = search.toLowerCase();
@@ -76,7 +130,168 @@ export default function HelpDeskPage() {
         >
           Help Desk ({filtered.length})
         </h1>
+        <button
+          onClick={() => setShowNewForm(true)}
+          style={{
+            padding: "0.6rem 1.5rem",
+            background: "var(--gold)",
+            color: "var(--charcoal)",
+            border: "none",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            cursor: "pointer",
+          }}
+        >
+          + New Ticket
+        </button>
       </div>
+
+      {/* New Ticket Modal */}
+      {showNewForm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowNewForm(false); }}
+        >
+          <div
+            style={{
+              background: "var(--white)",
+              width: "100%",
+              maxWidth: "520px",
+              padding: "2rem",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.4rem", fontWeight: 400 }}>
+                New Ticket
+              </h2>
+              <button
+                onClick={() => setShowNewForm(false)}
+                style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--text-light)", lineHeight: 1 }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Name *</label>
+                  <input
+                    type="text"
+                    value={newTicket.name}
+                    onChange={(e) => setNewTicket({ ...newTicket, name: e.target.value })}
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Email *</label>
+                  <input
+                    type="email"
+                    value={newTicket.email}
+                    onChange={(e) => setNewTicket({ ...newTicket, email: e.target.value })}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Subject *</label>
+                <input
+                  type="text"
+                  value={newTicket.subject}
+                  onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Category</label>
+                  <select
+                    value={newTicket.category}
+                    onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value as HelpRequestCategory })}
+                    style={inputStyle}
+                  >
+                    {HELP_REQUEST_CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Priority</label>
+                  <select
+                    value={newTicket.priority}
+                    onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value as HelpRequestPriority })}
+                    style={inputStyle}
+                  >
+                    {HELP_REQUEST_PRIORITIES.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Message *</label>
+                <textarea
+                  value={newTicket.message}
+                  onChange={(e) => setNewTicket({ ...newTicket, message: e.target.value })}
+                  rows={4}
+                  style={{ ...inputStyle, resize: "vertical" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+                <button
+                  onClick={() => setShowNewForm(false)}
+                  style={{
+                    padding: "0.6rem 1.25rem",
+                    background: "var(--white)",
+                    color: "var(--charcoal)",
+                    border: "1px solid #ddd",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateTicket}
+                  disabled={creating || !newTicket.name || !newTicket.email || !newTicket.subject || !newTicket.message}
+                  style={{
+                    padding: "0.6rem 1.25rem",
+                    background: creating ? "#ccc" : "var(--gold)",
+                    color: "var(--charcoal)",
+                    border: "none",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    cursor: creating ? "wait" : "pointer",
+                    opacity: (!newTicket.name || !newTicket.email || !newTicket.subject || !newTicket.message) ? 0.5 : 1,
+                  }}
+                >
+                  {creating ? "Creating..." : "Create Ticket"}
+                </button>
+              </div>
+
+              <p style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.25rem" }}>
+                No email notifications will be sent.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div
@@ -283,4 +498,22 @@ const thStyle: React.CSSProperties = {
 
 const tdStyle: React.CSSProperties = {
   padding: "0.8rem 1rem",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: "0.7rem",
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "var(--text-light)",
+  marginBottom: "0.3rem",
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "0.6rem 0.75rem",
+  border: "1px solid #ddd",
+  fontSize: "0.9rem",
+  fontFamily: "'Inter', sans-serif",
 };

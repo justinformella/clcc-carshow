@@ -24,7 +24,7 @@ type RegistrationMatch = {
 
 type ProspectWithSends = MarketingProspect & { sends: MarketingSend[] };
 
-type Tab = "email" | "ads";
+type Tab = "email" | "announcements" | "ads";
 
 export default function MarketingPage() {
   const [activeTab, setActiveTab] = useState<Tab>("email");
@@ -45,10 +45,13 @@ export default function MarketingPage() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 0, marginBottom: "1.5rem", borderBottom: "2px solid #eee" }}>
         <TabButton label="Email Outreach" active={activeTab === "email"} onClick={() => setActiveTab("email")} />
+        <TabButton label="Announcements" active={activeTab === "announcements"} onClick={() => setActiveTab("announcements")} />
         <TabButton label="Ad Campaigns" active={activeTab === "ads"} onClick={() => setActiveTab("ads")} />
       </div>
 
-      {activeTab === "email" ? <EmailOutreachTab /> : <AdCampaignsTab />}
+      {activeTab === "email" && <EmailOutreachTab />}
+      {activeTab === "announcements" && <AnnouncementsTab />}
+      {activeTab === "ads" && <AdCampaignsTab />}
     </>
   );
 }
@@ -685,6 +688,187 @@ function SendCampaignSection({
             {result.failed > 0 && ` | Failed: ${result.failed}`}
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
+// ANNOUNCEMENTS TAB
+// ════════════════════════════════════════════════════════════
+
+type Recipient = { id: string; first_name: string; last_name: string; email: string };
+
+function AnnouncementsTab() {
+  const [registrations, setRegistrations] = useState<Recipient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [sendToAll, setSendToAll] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("registrations")
+        .select("id, first_name, last_name, email")
+        .eq("payment_status", "paid")
+        .order("car_number", { ascending: true });
+      setRegistrations(data || []);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const handleToggleRecipient = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const handleSend = async () => {
+    if (!subject.trim() || !body.trim()) {
+      alert("Subject and body are required.");
+      return;
+    }
+
+    const recipientIds = sendToAll
+      ? registrations.map((r) => r.id)
+      : Array.from(selectedIds);
+
+    if (recipientIds.length === 0) {
+      alert("No recipients selected.");
+      return;
+    }
+
+    const confirmMsg = `Send announcement to ${recipientIds.length} recipient${recipientIds.length === 1 ? "" : "s"}?`;
+    if (!confirm(confirmMsg)) return;
+
+    setSending(true);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/email/send-announcement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: subject.trim(), body: body.trim(), recipientIds }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Failed to send");
+      } else {
+        setResult(data);
+      }
+    } catch {
+      alert("Failed to send announcement.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
+        Loading...
+      </p>
+    );
+  }
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={sectionHeadingStyle}>Send Announcement</h2>
+      <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
+        Send a freeform email to paid registrants. Uses the announcement email template.
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div>
+          <label style={labelStyle}>Subject</label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            style={inputStyle}
+            placeholder="Event update: parking info..."
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Body</label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={6}
+            style={{ ...inputStyle, resize: "vertical" }}
+            placeholder="Write your announcement message here..."
+          />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Recipients</label>
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
+              <input type="radio" checked={sendToAll} onChange={() => setSendToAll(true)} />
+              All paid registrants ({registrations.length})
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
+              <input type="radio" checked={!sendToAll} onChange={() => setSendToAll(false)} />
+              Select specific
+            </label>
+          </div>
+
+          {!sendToAll && (
+            <div style={{ maxHeight: "200px", overflow: "auto", border: "1px solid #ddd", padding: "0.5rem" }}>
+              {registrations.map((r) => (
+                <label
+                  key={r.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.35rem 0.5rem",
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(r.id)}
+                    onChange={() => handleToggleRecipient(r.id)}
+                  />
+                  {r.first_name} {r.last_name} — {r.email}
+                </label>
+              ))}
+              {registrations.length === 0 && (
+                <p style={{ color: "var(--text-light)", fontSize: "0.85rem", padding: "0.5rem" }}>
+                  No paid registrations yet.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+          <button
+            onClick={handleSend}
+            disabled={sending}
+            style={{
+              ...btnStyle(sending),
+              background: sending ? "#ccc" : "var(--gold)",
+            }}
+          >
+            {sending ? "Sending..." : "Send Announcement"}
+          </button>
+          {result && (
+            <span style={{ fontSize: "0.85rem", color: result.failed > 0 ? "#e65100" : "#2e7d32" }}>
+              Sent: {result.sent}{result.failed > 0 ? `, Failed: ${result.failed}` : ""}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

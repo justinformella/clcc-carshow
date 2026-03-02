@@ -358,6 +358,7 @@ export default function SponsorDetailPage() {
                   <option value="inquired">Inquired</option>
                   <option value="engaged">Engaged</option>
                   <option value="paid">Paid</option>
+                  <option value="archived">Archived</option>
                 </select>
               </div>
             </div>
@@ -558,6 +559,7 @@ function SponsorStatusBadge({ status }: { status: SponsorStatus }) {
     inquired: { label: "Inquired", bg: "#e3f2fd", color: "#1565c0" },
     engaged: { label: "Engaged", bg: "#fff3e0", color: "#e65100" },
     paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },
+    archived: { label: "Archived", bg: "#f5f5f5", color: "#757575" },
   };
 
   const { label, bg, color } = config[status] || config.prospect;

@@ -27,267 +27,268 @@ Font.register({
   ],
 });
 
-/* ── Colours ────────────────────────────────────────────────────── */
-const GOLD = "#D4A44A";
-const CHARCOAL = "#1C1C1C";
-const LIGHT = "#6B6B6B";
+/* ── Black & white palette ─────────────────────────────────────── */
+const BLACK = "#000000";
+const DARK = "#1C1C1C";
+const MID = "#555555";
+const RULE = "#999999";
 
 /* ── Styles ─────────────────────────────────────────────────────── */
 const s = StyleSheet.create({
   page: {
     width: "11in",
     height: "8.5in",
-    paddingTop: "0.5in",
-    paddingBottom: "0.5in",
-    paddingHorizontal: "0.65in",
     fontFamily: "Inter",
-    color: CHARCOAL,
+    color: DARK,
     display: "flex",
     flexDirection: "column",
   },
 
-  /* Header row: logo + event name | car number */
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  headerLeft: {
+  /* ── Header banner ─────────────────────────────── */
+  banner: {
+    backgroundColor: BLACK,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    gap: 14,
   },
   logo: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
-  eventText: {
+  bannerTextWrap: {
+    flex: 1,
     flexDirection: "column",
   },
-  eventName: {
-    fontFamily: "Playfair Display",
-    fontSize: 14,
-    color: CHARCOAL,
-  },
-  eventDate: {
-    fontSize: 8,
-    color: LIGHT,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginTop: 2,
-  },
-  carNumber: {
-    fontFamily: "Playfair Display",
-    fontSize: 64,
+  bannerTitle: {
+    fontFamily: "Inter",
     fontWeight: 700,
-    lineHeight: 1,
-    color: CHARCOAL,
+    fontSize: 14,
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  bannerSubtitle: {
+    fontFamily: "Inter",
+    fontWeight: 600,
+    fontSize: 9,
+    color: "#CCCCCC",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+    marginTop: 3,
   },
 
-  /* Gold rule */
-  goldRule: {
-    height: 3,
-    backgroundColor: GOLD,
+  /* ── Body (two columns) ────────────────────────── */
+  body: {
+    flex: 1,
+    flexDirection: "row",
+  },
+
+  /* Left column — vehicle info */
+  leftCol: {
+    width: "60%",
+    paddingTop: 28,
+    paddingLeft: 32,
+    paddingRight: 28,
+    paddingBottom: 24,
+    flexDirection: "column",
+  },
+
+  /* Right column — car number */
+  rightCol: {
+    width: "40%",
+    paddingTop: 28,
+    paddingHorizontal: 28,
+    paddingBottom: 24,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    borderLeftWidth: 1.5,
+    borderLeftColor: BLACK,
+  },
+
+  /* ── Field labels & values (no boxes) ──────────── */
+  fieldLabel: {
+    fontFamily: "Inter",
+    fontWeight: 700,
+    fontSize: 8,
+    color: MID,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  fieldValue: {
+    fontFamily: "Inter",
+    fontWeight: 600,
+    fontSize: 18,
+    color: DARK,
+    marginBottom: 6,
+  },
+  fieldRule: {
+    height: 1,
+    backgroundColor: RULE,
     marginBottom: 18,
   },
 
-  /* Vehicle title */
-  vehicle: {
-    fontFamily: "Playfair Display",
-    fontSize: 38,
-    lineHeight: 1.15,
-    color: CHARCOAL,
-    marginBottom: 6,
-  },
-
-  /* Owner */
-  ownerRow: {
+  /* Side-by-side row for year/make */
+  fieldRow: {
     flexDirection: "row",
-    alignItems: "baseline",
-    marginBottom: 14,
+    gap: 24,
   },
-  ownerName: {
-    fontSize: 16,
-    fontWeight: 600,
-    color: CHARCOAL,
+  fieldGroupNarrow: {
+    width: "28%",
+    flexDirection: "column",
   },
-  ownerHometown: {
-    fontSize: 14,
-    color: LIGHT,
-    marginLeft: 6,
-  },
-
-  /* Category badge */
-  categoryBadge: {
-    alignSelf: "flex-start",
-    borderWidth: 1.5,
-    borderColor: GOLD,
-    paddingVertical: 4,
-    paddingHorizontal: 14,
-    marginBottom: 16,
-  },
-  categoryText: {
-    fontSize: 9,
-    fontWeight: 700,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    color: GOLD,
-  },
-
-  /* Thin divider */
-  divider: {
-    height: 0.75,
-    backgroundColor: "#D0D0D0",
-    marginBottom: 16,
-  },
-
-  /* Details section */
-  detailsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 0,
-    marginBottom: 16,
-  },
-  detailItem: {
-    width: "33%",
-    marginBottom: 12,
-    paddingRight: 16,
-  },
-  detailLabel: {
-    fontSize: 7.5,
-    fontWeight: 700,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    color: LIGHT,
-    marginBottom: 3,
-  },
-  detailValue: {
-    fontSize: 12,
-    lineHeight: 1.5,
-    color: CHARCOAL,
-  },
-
-  /* Story — fills remaining space */
-  storyWrap: {
+  fieldGroupWide: {
     flex: 1,
-    justifyContent: "flex-start",
+    flexDirection: "column",
   },
+
+  /* Story section */
   storyLabel: {
-    fontSize: 7.5,
+    fontFamily: "Inter",
     fontWeight: 700,
-    letterSpacing: 1.5,
+    fontSize: 8,
+    color: MID,
+    letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: LIGHT,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   storyText: {
-    fontSize: 13,
-    lineHeight: 1.75,
-    color: CHARCOAL,
+    fontFamily: "Inter",
+    fontWeight: 400,
+    fontSize: 12,
+    color: DARK,
+    lineHeight: 1.7,
   },
 
-  /* Footer */
+  /* ── Car number (right col) ────────────────────── */
+  numberLabel: {
+    fontFamily: "Inter",
+    fontWeight: 700,
+    fontSize: 10,
+    color: MID,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  carNumber: {
+    fontFamily: "Playfair Display",
+    fontWeight: 700,
+    fontSize: 120,
+    color: BLACK,
+    textAlign: "center",
+    lineHeight: 1,
+  },
+
+  /* ── Footer ────────────────────────────────────── */
   footer: {
+    borderTopWidth: 1.5,
+    borderTopColor: BLACK,
+    paddingVertical: 8,
+    paddingHorizontal: 28,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
-    borderTopWidth: 0.75,
-    borderTopColor: "#D0D0D0",
-    paddingTop: 8,
-    marginTop: "auto",
   },
-  footerLeft: {
+  footerText: {
+    fontFamily: "Inter",
+    fontWeight: 600,
     fontSize: 7,
-    color: LIGHT,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  footerRight: {
-    fontSize: 7,
-    color: LIGHT,
+    color: MID,
     letterSpacing: 1,
     textTransform: "uppercase",
   },
 });
 
 /* ── Single placard page ────────────────────────────────────────── */
-function PlacardPage({ reg, logoUrl }: { reg: Registration; logoUrl: string }) {
-  const hometown = [reg.address_city, reg.address_state]
-    .filter(Boolean)
-    .join(", ");
-
-  const details: { label: string; value: string }[] = [];
-
+function PlacardPage({
+  reg,
+  logoUrl,
+}: {
+  reg: Registration;
+  logoUrl: string;
+}) {
   return (
     <Page size="LETTER" orientation="landscape" style={s.page}>
-      {/* Header */}
-      <View style={s.header}>
-        <View style={s.headerLeft}>
-          <Image src={logoUrl} style={s.logo} />
-          <View style={s.eventText}>
-            <Text style={s.eventName}>Crystal Lake Cars &amp; Caffeine</Text>
-            <Text style={s.eventDate}>May 17, 2026 &bull; Downtown Crystal Lake</Text>
-          </View>
+      {/* ── Header banner ──────────────────────────── */}
+      <View style={s.banner}>
+        <Image src={logoUrl} style={s.logo} />
+        <View style={s.bannerTextWrap}>
+          <Text style={s.bannerTitle}>Crystal Lake Cars &amp; Caffeine</Text>
+          <Text style={s.bannerSubtitle}>
+            All Entry Proceeds Benefit the Crystal Lake Food Pantry
+          </Text>
         </View>
-        <Text style={s.carNumber}>#{reg.car_number}</Text>
       </View>
 
-      {/* Gold accent rule */}
-      <View style={s.goldRule} />
+      {/* ── Two-column body ────────────────────────── */}
+      <View style={s.body}>
+        {/* Left column — vehicle details */}
+        <View style={s.leftCol}>
+          {/* OWNER */}
+          {!reg.hide_owner_details && (
+            <>
+              <Text style={s.fieldLabel}>Owner</Text>
+              <Text style={s.fieldValue}>
+                {reg.first_name} {reg.last_name}
+              </Text>
+              <View style={s.fieldRule} />
+            </>
+          )}
 
-      {/* Vehicle */}
-      <Text style={s.vehicle}>
-        {reg.vehicle_year} {reg.vehicle_make} {reg.vehicle_model}
-      </Text>
-
-      {/* Owner */}
-      {!reg.hide_owner_details && (
-        <View style={s.ownerRow}>
-          <Text style={s.ownerName}>
-            {reg.first_name} {reg.last_name}
-          </Text>
-          {hometown && <Text style={s.ownerHometown}>&mdash; {hometown}</Text>}
-        </View>
-      )}
-
-      {/* Category badge */}
-      {reg.award_category && (
-        <View style={s.categoryBadge}>
-          <Text style={s.categoryText}>{reg.award_category}</Text>
-        </View>
-      )}
-
-      {/* Divider */}
-      {details.length > 0 && <View style={s.divider} />}
-
-      {/* Details grid */}
-      {details.length > 0 && (
-        <View style={s.detailsGrid}>
-          {details.map((d) => (
-            <View key={d.label} style={s.detailItem}>
-              <Text style={s.detailLabel}>{d.label}</Text>
-              <Text style={s.detailValue}>{d.value}</Text>
+          {/* YEAR / MAKE — side by side */}
+          <View style={s.fieldRow}>
+            <View style={s.fieldGroupNarrow}>
+              <Text style={s.fieldLabel}>Year</Text>
+              <Text style={s.fieldValue}>{reg.vehicle_year}</Text>
+              <View style={s.fieldRule} />
             </View>
-          ))}
-        </View>
-      )}
+            <View style={s.fieldGroupWide}>
+              <Text style={s.fieldLabel}>Make</Text>
+              <Text style={s.fieldValue}>{reg.vehicle_make}</Text>
+              <View style={s.fieldRule} />
+            </View>
+          </View>
 
-      {/* Story */}
-      {reg.story && (
-        <View style={s.storyWrap}>
-          <Text style={s.storyLabel}>Owner&apos;s Story</Text>
-          <Text style={s.storyText}>{reg.story}</Text>
-        </View>
-      )}
+          {/* MODEL */}
+          <Text style={s.fieldLabel}>Model</Text>
+          <Text style={s.fieldValue}>{reg.vehicle_model}</Text>
+          <View style={s.fieldRule} />
 
-      {/* Footer */}
+          {/* COLOR */}
+          {reg.vehicle_color && (
+            <>
+              <Text style={s.fieldLabel}>Color</Text>
+              <Text style={s.fieldValue}>{reg.vehicle_color}</Text>
+              <View style={s.fieldRule} />
+            </>
+          )}
+
+          {/* STORY */}
+          {reg.story && (
+            <View style={{ flex: 1 }}>
+              <Text style={s.storyLabel}>About This Car</Text>
+              <Text style={s.storyText}>{reg.story}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Right column — car number */}
+        <View style={s.rightCol}>
+          <Text style={s.numberLabel}>Car No.</Text>
+          <Text style={s.carNumber}>{reg.car_number}</Text>
+        </View>
+      </View>
+
+      {/* ── Footer ─────────────────────────────────── */}
       <View style={s.footer}>
-        <Text style={s.footerLeft}>
+        <Text style={s.footerText}>
           All proceeds benefit the Crystal Lake Food Pantry
         </Text>
-        <Text style={s.footerRight}>crystallakecarshow.com</Text>
+        <Text style={s.footerText}>crystallakecarshow.com</Text>
       </View>
     </Page>
   );

@@ -1,20 +1,29 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
+import { MAX_REGISTRATIONS } from "@/types/database";
 
 export async function GET() {
   try {
     const supabase = createServerClient();
-    const { count, error } = await supabase
-      .from("registrations")
-      .select("*", { count: "exact", head: true })
-      .eq("payment_status", "paid");
+    const [countResult, settingResult] = await Promise.all([
+      supabase
+        .from("registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("payment_status", "paid"),
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "max_registrations")
+        .maybeSingle(),
+    ]);
 
-    if (error) {
-      return NextResponse.json({ count: 0 });
-    }
+    const count = countResult.count || 0;
+    const max = settingResult.data?.value
+      ? parseInt(settingResult.data.value, 10) || MAX_REGISTRATIONS
+      : MAX_REGISTRATIONS;
 
-    return NextResponse.json({ count: count || 0 });
+    return NextResponse.json({ count, max });
   } catch {
-    return NextResponse.json({ count: 0 });
+    return NextResponse.json({ count: 0, max: MAX_REGISTRATIONS });
   }
 }

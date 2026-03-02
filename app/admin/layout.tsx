@@ -17,7 +17,7 @@ const allNavItems = [
   { href: "/admin/placards", label: "Placards" },
   { href: "/admin/marketing", label: "Marketing" },
   { href: "/admin/finances", label: "Finances" },
-  { href: "/admin/emails", label: "Emails" },
+  { href: "/admin/settings", label: "Settings" },
   { href: "/admin/admins", label: "Users" },
 ];
 
@@ -201,7 +201,7 @@ export default function AdminLayout({
         {/* Nav links */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px", padding: "0.5rem 0" }}>
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"));
             return (
               <Link
                 key={item.href}

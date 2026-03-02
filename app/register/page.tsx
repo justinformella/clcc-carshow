@@ -11,6 +11,8 @@ import {
   DONATION_PRESETS,
 } from "@/types/database";
 
+type CountResponse = { count: number; max: number };
+
 type VehicleForm = {
   vehicle_year: string;
   vehicle_make: string;
@@ -36,6 +38,7 @@ function RegisterContent() {
   });
 
   const [spotsRemaining, setSpotsRemaining] = useState<number | null>(null);
+  const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,8 +62,10 @@ function RegisterContent() {
   useEffect(() => {
     fetch("/api/registrations/count")
       .then((res) => res.json())
-      .then((data) => {
-        setSpotsRemaining(MAX_REGISTRATIONS - (data.count || 0));
+      .then((data: CountResponse) => {
+        const max = data.max || MAX_REGISTRATIONS;
+        setMaxRegistrations(max);
+        setSpotsRemaining(max - (data.count || 0));
       })
       .catch(() => {
         setSpotsRemaining(MAX_REGISTRATIONS);
@@ -194,7 +199,7 @@ function RegisterContent() {
             </h1>
             <p style={{ color: "var(--text-light)", fontSize: "1.1rem" }}>
               {REGISTRATION_PRICE_DISPLAY} per vehicle &middot; Limited to{" "}
-              {MAX_REGISTRATIONS} vehicles
+              {maxRegistrations} vehicles
             </p>
             {spotsRemaining !== null && (
               <p
@@ -231,7 +236,7 @@ function RegisterContent() {
                 Registration Full
               </h2>
               <p style={{ color: "var(--text-light)" }}>
-                All {MAX_REGISTRATIONS} spots have been filled. Day-of
+                All {maxRegistrations} spots have been filled. Day-of
                 registration may be available if space opens up.
               </p>
             </div>
