@@ -22,7 +22,7 @@ export default function WeatherPolicy() {
             <h4>Severe Weather</h4>
             <p>
               If severe weather is forecasted, the event will be postponed to
-              our rain date: Sunday, May 24, 2026. Decision made by Friday, May 16 at 4:00 PM.
+              our rain date: Sunday, May 31, 2026. Decision made by Friday, May 16 at 4:00 PM.
             </p>
           </div>
           <div className="weather-card">

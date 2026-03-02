@@ -10,7 +10,7 @@ export default function CharitySection() {
           <div className="charity-main">
             <h3>Crystal Lake Food Pantry</h3>
             <p>
-              Every registration, every sponsorship, and every dollar raised goes
+              Every registration, every sponsorship&mdash;all net proceeds go
               directly to the Crystal Lake Food Pantry. Since 1983, they&apos;ve
               been the safety net for families facing food insecurity in McHenry
               County.

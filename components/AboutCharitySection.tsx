@@ -13,14 +13,15 @@ export default function AboutCharitySection() {
               Every May, three blocks of historic downtown Crystal Lake transform
               into an open-air showroom&mdash;gleaming hot rods, muscle cars,
               imports, and modern exotics line Grant, Brink, and Williams streets,
-              each one with a story under the hood.
+              each one with a story under the hood. This year&apos;s show is
+              Saturday, May 17, 2026, with a rain date of Sunday, May 31.
             </p>
             <p className="about-charity-text">
               Whether you&apos;re a lifelong gearhead, a family looking for a
               great day out, or someone who simply wants to support a good cause,
               this is your event. Grab a coffee, browse the downtown shops, and
-              soak in the small-town energy&mdash;all while every dollar raised
-              goes to the Crystal Lake Food Pantry.
+              soak in the small-town energy&mdash;all while all net proceeds go
+              to the Crystal Lake Food Pantry.
             </p>
             <div className="intro-stats">
               <div className="intro-stat">
@@ -46,7 +47,7 @@ export default function AboutCharitySection() {
               Crystal Lake Food Pantry
             </h3>
             <p className="about-charity-text">
-              Every registration, every sponsorship, and every dollar raised goes
+              Every registration, every sponsorship&mdash;all net proceeds go
               directly to the Crystal Lake Food Pantry. Since 1983, they&apos;ve
               been the safety net for families facing food insecurity in McHenry
               County.
