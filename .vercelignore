@@ -1,5 +1,5 @@
 # Duplicate images directory at root (not used by Next.js)
-images/
+/images
 
 # Playwright
 .playwright-mcp/
