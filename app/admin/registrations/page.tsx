@@ -566,7 +566,7 @@ export default function RegistrationsPage() {
               {/* Select checkbox */}
               {reg.payment_status !== "archived" && (
                 <div
-                  onClick={(e) => { e.stopPropagation(); toggleSelect(reg.id); }}
+                  onClick={(e) => e.stopPropagation()}
                   style={{
                     position: "absolute",
                     top: "0.5rem",
