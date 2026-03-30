@@ -11,6 +11,9 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -30,6 +33,26 @@ function LoginForm() {
       setError("Failed to start Google sign-in. Please try again.");
       setGoogleLoading(false);
     }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/admin/set-password`,
+    });
+    if (resetError) {
+      setError(resetError.message);
+    } else {
+      setResetSent(true);
+    }
+    setResetLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,38 +146,116 @@ function LoginForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              opacity: loading ? 0.7 : 1,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
+        {forgotMode ? (
+          resetSent ? (
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "0.9rem", color: "var(--charcoal)", marginBottom: "1rem" }}>
+                If an account exists for <strong>{email}</strong>, you&apos;ll receive a password reset link shortly.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setForgotMode(false); setResetSent(false); setError(null); }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--gold)",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                }}
+              >
+                Back to Sign In
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleResetPassword} className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={resetLoading}
+                style={{
+                  opacity: resetLoading ? 0.7 : 1,
+                  cursor: resetLoading ? "not-allowed" : "pointer",
+                }}
+              >
+                {resetLoading ? "Sending..." : "Send Reset Link"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setForgotMode(false); setError(null); }}
+                style={{
+                  display: "block",
+                  margin: "1rem auto 0",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-light)",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                }}
+              >
+                Back to Sign In
+              </button>
+            </form>
+          )
+        ) : (
+          <form onSubmit={handleSubmit} className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                opacity: loading ? 0.7 : 1,
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setForgotMode(true); setError(null); }}
+              style={{
+                display: "block",
+                margin: "1rem auto 0",
+                background: "transparent",
+                border: "none",
+                color: "var(--text-light)",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              Forgot password?
+            </button>
+          </form>
+        )}
 
         <div
           style={{
