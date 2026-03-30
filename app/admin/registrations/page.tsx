@@ -13,6 +13,8 @@ export default function RegistrationsPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [archiving, setArchiving] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "cards">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("registrations-view") as "table" | "cards") || "cards";
@@ -129,6 +131,49 @@ export default function RegistrationsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const archivable = filtered.filter((r) => r.payment_status !== "archived");
+    if (selected.size === archivable.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(archivable.map((r) => r.id)));
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Archive ${selected.size} registration${selected.size !== 1 ? "s" : ""}? They will be hidden from the default list.`)) return;
+    setArchiving(true);
+    const supabase = createClient();
+    await supabase
+      .from("registrations")
+      .update({ payment_status: "archived" })
+      .in("id", [...selected]);
+    setSelected(new Set());
+    // Re-fetch
+    let query = supabase
+      .from("registrations")
+      .select("*")
+      .order("car_number", { ascending: true });
+    if (showArchived) {
+      query = query.in("payment_status", ["paid", "pending", "archived"]);
+    } else {
+      query = query.in("payment_status", ["paid", "pending"]);
+    }
+    const { data } = await query;
+    setRegistrations(data || []);
+    setArchiving(false);
+  };
+
   if (loading) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
@@ -160,7 +205,27 @@ export default function RegistrationsPage() {
         >
           Registrations ({filtered.length})
         </h1>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {selected.size > 0 && (
+            <button
+              onClick={handleBulkArchive}
+              disabled={archiving}
+              style={{
+                padding: "0.6rem 1.5rem",
+                background: "#616161",
+                color: "#fff",
+                border: "none",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                cursor: archiving ? "not-allowed" : "pointer",
+                opacity: archiving ? 0.6 : 1,
+              }}
+            >
+              {archiving ? "Archiving..." : `Archive ${selected.size} Selected`}
+            </button>
+          )}
           <button
             onClick={() => router.push("/admin/registrations/new")}
             style={{
@@ -178,21 +243,21 @@ export default function RegistrationsPage() {
             Add Registration
           </button>
           <button
-          onClick={exportCSV}
-          style={{
-            padding: "0.6rem 1.5rem",
-            background: "var(--gold)",
-            color: "var(--charcoal)",
-            border: "none",
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            cursor: "pointer",
-          }}
-        >
-          Export CSV
-        </button>
+            onClick={exportCSV}
+            style={{
+              padding: "0.6rem 1.5rem",
+              background: "var(--gold)",
+              color: "var(--charcoal)",
+              border: "none",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              cursor: "pointer",
+            }}
+          >
+            Export CSV
+          </button>
         </div>
       </div>
 
@@ -359,6 +424,14 @@ export default function RegistrationsPage() {
           >
             <thead>
               <tr style={{ background: "var(--cream)", textAlign: "left" }}>
+                <th style={{ ...thStyle, width: "36px" }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.size > 0 && selected.size === filtered.filter((r) => r.payment_status !== "archived").length}
+                    onChange={toggleSelectAll}
+                    style={{ cursor: "pointer" }}
+                  />
+                </th>
                 <th style={thStyle}>#</th>
                 <th style={thStyle}>Name</th>
                 <th style={thStyle}>Email</th>
@@ -382,6 +455,16 @@ export default function RegistrationsPage() {
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--cream)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
+                  <td style={tdStyle} onClick={(e) => e.stopPropagation()}>
+                    {reg.payment_status !== "archived" && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(reg.id)}
+                        onChange={() => toggleSelect(reg.id)}
+                        style={{ cursor: "pointer" }}
+                      />
+                    )}
+                  </td>
                   <td style={tdStyle}>{reg.car_number}</td>
                   <td style={tdStyle}>
                     {reg.first_name} {reg.last_name}
@@ -441,7 +524,7 @@ export default function RegistrationsPage() {
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     style={{
                       ...tdStyle,
                       textAlign: "center",
@@ -469,6 +552,7 @@ export default function RegistrationsPage() {
               key={reg.id}
               onClick={() => router.push(`/admin/registrations/${reg.id}`)}
               style={{
+                position: "relative",
                 background: "var(--white)",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 cursor: "pointer",
@@ -479,6 +563,30 @@ export default function RegistrationsPage() {
               onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)")}
               onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)")}
             >
+              {/* Select checkbox */}
+              {reg.payment_status !== "archived" && (
+                <div
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(reg.id); }}
+                  style={{
+                    position: "absolute",
+                    top: "0.5rem",
+                    left: "0.5rem",
+                    zIndex: 1,
+                    background: "rgba(255,255,255,0.9)",
+                    borderRadius: "2px",
+                    padding: "0.15rem",
+                    lineHeight: 1,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(reg.id)}
+                    onChange={() => toggleSelect(reg.id)}
+                    style={{ cursor: "pointer" }}
+                  />
+                </div>
+              )}
+
               {/* Image */}
               {reg.ai_image_url ? (
                 <img
