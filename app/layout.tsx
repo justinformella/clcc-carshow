@@ -5,9 +5,31 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.crystallakecarshow.com"),
   title: "Crystal Lake Cars & Caffeine | May 17, 2026",
   description:
     "CLCC Annual Charity Car Show - May 17, 2026 in Downtown Crystal Lake. Register your vehicle, support the Crystal Lake Food Pantry.",
+  openGraph: {
+    title: "Crystal Lake Cars & Caffeine | May 17, 2026",
+    description:
+      "Annual Charity Car Show in Downtown Crystal Lake. 200+ vehicles, live awards, all net proceeds to the Crystal Lake Food Pantry.",
+    images: [
+      {
+        url: "/images/PXL_20250831_172232318.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Crystal Lake Cars & Caffeine car show in downtown Crystal Lake",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Crystal Lake Cars & Caffeine | May 17, 2026",
+    description:
+      "Annual Charity Car Show in Downtown Crystal Lake. 200+ vehicles, live awards, all net proceeds to the Crystal Lake Food Pantry.",
+    images: ["/images/PXL_20250831_172232318.jpg"],
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32", type: "image/png" },
