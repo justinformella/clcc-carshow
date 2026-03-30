@@ -33,6 +33,7 @@ export default function SponsorDetailPage() {
   const [auditLog, setAuditLog] = useState<SponsorAuditLogEntry[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [logoVisible, setLogoVisible] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const fetchSponsor = useCallback(async () => {
     const supabase = createClient();
@@ -144,6 +145,43 @@ export default function SponsorDetailPage() {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("logo", file);
+    try {
+      const res = await fetch(`/api/sponsors/${id}/logo`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        await fetchSponsor();
+        setLogoVisible(true);
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    if (!confirm("Remove sponsor logo?")) return;
+    setUploading(true);
+    try {
+      await fetch(`/api/sponsors/${id}/logo`, { method: "DELETE" });
+      await fetchSponsor();
+      setLogoVisible(true);
+    } catch (err) {
+      console.error("Remove failed:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
@@ -162,7 +200,8 @@ export default function SponsorDetailPage() {
 
   const s = sponsor;
   const logoDomain = s.website ? s.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : null;
-  const logoUrl = logoDomain ? `https://www.google.com/s2/favicons?domain=${logoDomain}&sz=128` : null;
+  const faviconUrl = logoDomain ? `https://www.google.com/s2/favicons?domain=${logoDomain}&sz=128` : null;
+  const logoUrl = s.logo_url || faviconUrl;
 
   return (
     <>
@@ -194,22 +233,82 @@ export default function SponsorDetailPage() {
         }}
       >
         <div style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
-          {logoUrl && logoVisible && (
-            <img
-              src={logoUrl}
-              alt={`${s.company} logo`}
-              width={56}
-              height={56}
-              onError={() => setLogoVisible(false)}
-              style={{
-                objectFit: "contain",
-                borderRadius: "8px",
-                border: "1px solid #eee",
-                background: "var(--white)",
-                padding: "4px",
-              }}
-            />
-          )}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            {logoUrl && logoVisible ? (
+              <img
+                src={logoUrl}
+                alt={`${s.company} logo`}
+                width={56}
+                height={56}
+                onError={() => setLogoVisible(false)}
+                style={{
+                  objectFit: "contain",
+                  borderRadius: "8px",
+                  border: "1px solid #eee",
+                  background: "var(--white)",
+                  padding: "4px",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "8px",
+                  border: "1px dashed #ccc",
+                  background: "#fafafa",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--text-light)",
+                  fontSize: "0.65rem",
+                  textAlign: "center",
+                  lineHeight: 1.2,
+                }}
+              >
+                No logo
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "0.25rem", marginTop: "0.35rem", justifyContent: "center" }}>
+              <label
+                style={{
+                  fontSize: "0.65rem",
+                  color: "#1565c0",
+                  cursor: uploading ? "not-allowed" : "pointer",
+                  opacity: uploading ? 0.5 : 1,
+                }}
+              >
+                {uploading ? "..." : "Upload"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={uploading}
+                  style={{ display: "none" }}
+                />
+              </label>
+              {s.logo_url && (
+                <>
+                  <span style={{ fontSize: "0.65rem", color: "var(--text-light)" }}>·</span>
+                  <button
+                    onClick={handleLogoRemove}
+                    disabled={uploading}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      fontSize: "0.65rem",
+                      color: "#c62828",
+                      cursor: uploading ? "not-allowed" : "pointer",
+                      opacity: uploading ? 0.5 : 1,
+                    }}
+                  >
+                    Remove
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
               <h1
