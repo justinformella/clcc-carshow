@@ -572,17 +572,24 @@ export default function RegistrationsPage() {
                     top: "0.5rem",
                     left: "0.5rem",
                     zIndex: 1,
-                    background: "rgba(255,255,255,0.9)",
-                    borderRadius: "2px",
-                    padding: "0.15rem",
+                    background: "rgba(255,255,255,0.95)",
+                    borderRadius: "4px",
+                    padding: "0.4rem",
                     lineHeight: 1,
+                    cursor: "pointer",
+                    minWidth: "32px",
+                    minHeight: "32px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(reg.id)}
                     onChange={() => toggleSelect(reg.id)}
-                    style={{ cursor: "pointer" }}
+                    style={{ cursor: "pointer", width: "18px", height: "18px" }}
                   />
                 </div>
               )}
