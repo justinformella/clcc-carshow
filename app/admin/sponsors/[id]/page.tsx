@@ -225,127 +225,133 @@ export default function SponsorDetailPage() {
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
+          gap: "1.5rem",
           marginBottom: "2rem",
           flexWrap: "wrap",
-          gap: "1rem",
         }}
       >
-        <div style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            {logoUrl && logoVisible ? (
-              <img
-                src={logoUrl}
-                alt={`${s.company} logo`}
-                width={56}
-                height={56}
-                onError={() => setLogoVisible(false)}
-                style={{
-                  objectFit: "contain",
-                  borderRadius: "8px",
-                  border: "1px solid #eee",
-                  background: "var(--white)",
-                  padding: "4px",
-                }}
+        {/* Logo area */}
+        <div
+          style={{
+            flexShrink: 0,
+            background: "var(--white)",
+            border: "1px solid #eee",
+            borderRadius: "8px",
+            padding: "0.75rem",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          {logoUrl && logoVisible ? (
+            <img
+              src={logoUrl}
+              alt={`${s.company} logo`}
+              onError={() => setLogoVisible(false)}
+              style={{
+                maxWidth: "120px",
+                maxHeight: "80px",
+                objectFit: "contain",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 120,
+                height: 80,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--text-light)",
+                fontSize: "0.75rem",
+              }}
+            >
+              No logo
+            </div>
+          )}
+          <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+            <label
+              style={{
+                fontSize: "0.7rem",
+                color: "#1565c0",
+                cursor: uploading ? "not-allowed" : "pointer",
+                opacity: uploading ? 0.5 : 1,
+              }}
+            >
+              {uploading ? "..." : "Upload"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploading}
+                style={{ display: "none" }}
               />
-            ) : (
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: "8px",
-                  border: "1px dashed #ccc",
-                  background: "#fafafa",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--text-light)",
-                  fontSize: "0.65rem",
-                  textAlign: "center",
-                  lineHeight: 1.2,
-                }}
-              >
-                No logo
-              </div>
-            )}
-            <div style={{ display: "flex", gap: "0.25rem", marginTop: "0.35rem", justifyContent: "center" }}>
-              <label
-                style={{
-                  fontSize: "0.65rem",
-                  color: "#1565c0",
-                  cursor: uploading ? "not-allowed" : "pointer",
-                  opacity: uploading ? 0.5 : 1,
-                }}
-              >
-                {uploading ? "..." : "Upload"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
+            </label>
+            {s.logo_url && (
+              <>
+                <span style={{ fontSize: "0.7rem", color: "var(--text-light)" }}>·</span>
+                <button
+                  onClick={handleLogoRemove}
                   disabled={uploading}
-                  style={{ display: "none" }}
-                />
-              </label>
-              {s.logo_url && (
-                <>
-                  <span style={{ fontSize: "0.65rem", color: "var(--text-light)" }}>·</span>
-                  <button
-                    onClick={handleLogoRemove}
-                    disabled={uploading}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      fontSize: "0.65rem",
-                      color: "#c62828",
-                      cursor: uploading ? "not-allowed" : "pointer",
-                      opacity: uploading ? 0.5 : 1,
-                    }}
-                  >
-                    Remove
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              <h1
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: "2rem",
-                  fontWeight: 400,
-                }}
-              >
-                {s.company}
-              </h1>
-              <SponsorStatusBadge status={s.status} />
-            </div>
-            <p style={{ color: "var(--text-light)", fontSize: "1.1rem", marginTop: "0.3rem" }}>
-              {s.name} &middot; {s.sponsorship_level}
-            </p>
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    fontSize: "0.7rem",
+                    color: "#c62828",
+                    cursor: uploading ? "not-allowed" : "pointer",
+                    opacity: uploading ? 0.5 : 1,
+                  }}
+                >
+                  Remove
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {!editing && (
-          <button
-            onClick={startEdit}
-            style={{
-              padding: "0.6rem 1.5rem",
-              background: "var(--white)",
-              color: "var(--charcoal)",
-              border: "1px solid #ddd",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              cursor: "pointer",
-            }}
-          >
-            Edit
-          </button>
-        )}
+        {/* Name / status / edit */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                <h1
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: "2rem",
+                    fontWeight: 400,
+                  }}
+                >
+                  {s.company}
+                </h1>
+                <SponsorStatusBadge status={s.status} />
+              </div>
+              <p style={{ color: "var(--text-light)", fontSize: "1.1rem", marginTop: "0.3rem" }}>
+                {s.name} &middot; {s.sponsorship_level}
+              </p>
+            </div>
+            {!editing && (
+              <button
+                onClick={startEdit}
+                style={{
+                  padding: "0.6rem 1.5rem",
+                  background: "var(--white)",
+                  color: "var(--charcoal)",
+                  border: "1px solid #ddd",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                Edit
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {editing && form ? (
