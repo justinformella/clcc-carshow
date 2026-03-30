@@ -21,8 +21,8 @@ export default function Home() {
       <SpectatorBanner />
       <WeatherPolicy />
       <FAQ />
-      <Gallery />
       <SponsorsSection />
+      <Gallery />
       <Footer />
     </>
   );
