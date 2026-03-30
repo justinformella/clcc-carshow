@@ -547,7 +547,7 @@ function RegisterContent() {
                       fontWeight: 600,
                     }}
                   >
-                    + Add Another Vehicle ({REGISTRATION_PRICE_DISPLAY})
+                    + Add Another Vehicle
                   </button>
                 )}
 
