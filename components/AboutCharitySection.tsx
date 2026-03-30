@@ -14,7 +14,7 @@ export default function AboutCharitySection() {
               into an open-air showroom&mdash;gleaming hot rods, muscle cars,
               imports, and modern exotics line Grant, Brink, and Williams streets,
               each one with a story under the hood. This year&apos;s show is
-              Saturday, May 17, 2026, with a rain date of Sunday, May 31.
+              Sunday, May 17, 2026, with a rain date of Sunday, May 31.
             </p>
             <p className="about-charity-text">
               Whether you&apos;re a lifelong gearhead, a family looking for a

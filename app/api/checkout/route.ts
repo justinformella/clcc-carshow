@@ -199,6 +199,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const connectedAccountId = process.env.STRIPE_CONNECTED_ACCOUNT_ID;
+
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
@@ -210,6 +212,14 @@ export async function POST(request: NextRequest) {
         registration_ids: registrations.map((r) => r.id).join(","),
         donation_cents: String(donationCents),
       },
+      ...(connectedAccountId && {
+        payment_intent_data: {
+          transfer_data: {
+            destination: connectedAccountId,
+          },
+        },
+        on_behalf_of: connectedAccountId,
+      }),
     });
 
     // Update all registration rows with the Stripe session ID
