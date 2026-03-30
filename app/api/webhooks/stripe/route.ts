@@ -34,9 +34,11 @@ export async function POST(request: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const registrationId = session.metadata?.registration_id;
+    const registrationIds = (
+      session.metadata?.registration_ids || session.metadata?.registration_id || ""
+    ).split(",").filter(Boolean);
 
-    if (registrationId) {
+    if (registrationIds.length > 0) {
       const supabase = createServerClient();
 
       const { error } = await supabase
@@ -46,28 +48,29 @@ export async function POST(request: NextRequest) {
           paid_at: new Date().toISOString(),
           stripe_payment_intent_id: session.payment_intent as string,
         })
-        .eq("id", registrationId);
+        .in("id", registrationIds);
 
       if (error) {
-        console.error("Failed to update registration:", error);
+        console.error("Failed to update registrations:", error);
         return NextResponse.json(
-          { error: "Failed to update registration" },
+          { error: "Failed to update registrations" },
           { status: 500 }
         );
       }
 
-      // Generate AI car image in the background (don't block webhook response)
-      generateCarImage(registrationId).catch((err) =>
-        console.error("Background image generation failed:", err)
-      );
+      // Generate AI car images and send emails for each registration
+      for (const regId of registrationIds) {
+        generateCarImage(regId).catch((err) =>
+          console.error(`Background image generation failed for ${regId}:`, err)
+        );
 
-      // Send confirmation email to registrant
-      sendConfirmation(registrationId).catch((err) =>
-        console.error("Confirmation email failed:", err)
-      );
+        sendConfirmation(regId).catch((err) =>
+          console.error(`Confirmation email failed for ${regId}:`, err)
+        );
+      }
 
-      // Notify admins of new registration
-      sendAdminNotification(registrationId).catch((err) =>
+      // Notify admins once (for the first registration)
+      sendAdminNotification(registrationIds[0]).catch((err) =>
         console.error("Admin notification email failed:", err)
       );
     }
