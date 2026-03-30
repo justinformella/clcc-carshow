@@ -563,37 +563,6 @@ export default function RegistrationsPage() {
               onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)")}
               onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)")}
             >
-              {/* Select checkbox */}
-              {reg.payment_status !== "archived" && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    position: "absolute",
-                    top: "0.5rem",
-                    left: "0.5rem",
-                    zIndex: 1,
-                    background: "rgba(255,255,255,0.95)",
-                    borderRadius: "4px",
-                    padding: "0.4rem",
-                    lineHeight: 1,
-                    cursor: "pointer",
-                    minWidth: "32px",
-                    minHeight: "32px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.has(reg.id)}
-                    onChange={() => toggleSelect(reg.id)}
-                    style={{ cursor: "pointer", width: "18px", height: "18px" }}
-                  />
-                </div>
-              )}
-
               {/* Image */}
               {reg.ai_image_url ? (
                 <img
