@@ -49,6 +49,42 @@ export default function Gallery() {
             alt="Classic car detail"
           />
         </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_160009467.jpg"
+            alt="Red Corvette C1 in front of Raue Center for the Arts"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_160629755.jpg"
+            alt="Orange Chevy Blazer convertible on Williams Street"
+          />
+        </div>
+        <div className="gallery-item large">
+          <img
+            src="/images/PXL_20250831_160733864.jpg"
+            alt="Crowds walking downtown Crystal Lake lined with show cars"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_155840683.jpg"
+            alt="Street view with cars and spectators on a sunny day"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_161859398.jpg"
+            alt="Blue Shelby GT350 Mustang on Brink Street"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_163121221.jpg"
+            alt="Classic car trunk filled with Hot Wheels collection"
+          />
+        </div>
       </div>
     </section>
   );
