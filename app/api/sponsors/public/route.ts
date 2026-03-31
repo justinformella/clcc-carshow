@@ -7,7 +7,7 @@ export async function GET() {
     const { data } = await supabase
       .from("sponsors")
       .select("company, sponsorship_level, logo_url, website")
-      .eq("status", "paid")
+      .in("status", ["paid", "engaged"])
       .order("company");
 
     const sponsors = data || [];

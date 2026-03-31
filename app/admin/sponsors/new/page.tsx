@@ -170,7 +170,7 @@ export default function NewSponsorPage() {
               <select id="status" name="status" value={form.status} onChange={handleChange}>
                 <option value="prospect">Prospect</option>
                 <option value="inquired">Inquired</option>
-                <option value="engaged">Engaged</option>
+                <option value="engaged">Committed</option>
                 <option value="paid">Paid</option>
               </select>
             </div>
