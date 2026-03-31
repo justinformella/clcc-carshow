@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase-server";
 import { generateCarImage } from "@/lib/generate-car-image";
@@ -58,21 +59,28 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate AI car images and send emails for each registration
-      for (const regId of registrationIds) {
-        generateCarImage(regId).catch((err) =>
-          console.error(`Background image generation failed for ${regId}:`, err)
-        );
+      // Run image generation and emails after response (keeps function alive)
+      after(async () => {
+        for (const regId of registrationIds) {
+          try {
+            await generateCarImage(regId);
+          } catch (err) {
+            console.error(`Background image generation failed for ${regId}:`, err);
+          }
 
-        sendConfirmation(regId).catch((err) =>
-          console.error(`Confirmation email failed for ${regId}:`, err)
-        );
-      }
+          try {
+            await sendConfirmation(regId);
+          } catch (err) {
+            console.error(`Confirmation email failed for ${regId}:`, err);
+          }
+        }
 
-      // Notify admins once (for the first registration)
-      sendAdminNotification(registrationIds[0]).catch((err) =>
-        console.error("Admin notification email failed:", err)
-      );
+        try {
+          await sendAdminNotification(registrationIds[0]);
+        } catch (err) {
+          console.error("Admin notification email failed:", err);
+        }
+      });
     }
   }
 
