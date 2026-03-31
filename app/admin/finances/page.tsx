@@ -96,12 +96,11 @@ export default function FinancesPage() {
   const donorCount = paidRegs.filter((r) => (r.donation_cents || 0) > 0).length;
   const refundedAmount = refundedRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
 
-  const paidSponsors = sponsors.filter((s) => s.status === "paid");
+  const paidSponsors = sponsors.filter((s) => s.status === "paid" || s.status === "engaged");
   const sponsorRevenue = paidSponsors.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
-  const pendingSponsorStatuses = ["engaged", "inquired"] as const;
   const pendingSponsors = sponsors.filter((s) =>
-    pendingSponsorStatuses.includes(s.status as "engaged" | "inquired")
+    s.status === "prospect" || s.status === "inquired"
   );
   const pendingSponsorValue = pendingSponsors.reduce((sum, s) => {
     const match = s.sponsorship_level.match(/\$([0-9,]+)/);
@@ -198,12 +197,12 @@ export default function FinancesPage() {
       type: "sponsorship" as const,
       description: `${s.company} — ${s.sponsorship_level}`,
       amountCents: s.amount_paid || 0,
-      feeCents: s.status === "paid" ? estimateStripeFee(s.amount_paid || 0) : 0,
+      feeCents: (s.status === "paid" || s.status === "engaged") ? estimateStripeFee(s.amount_paid || 0) : 0,
       netCents:
-        s.status === "paid"
+        (s.status === "paid" || s.status === "engaged")
           ? (s.amount_paid || 0) - estimateStripeFee(s.amount_paid || 0)
           : 0,
-      status: s.status === "paid" ? "paid" : s.status === "prospect" || s.status === "inquired" || s.status === "engaged" ? "pending" : s.status,
+      status: (s.status === "paid" || s.status === "engaged") ? "paid" : s.status === "prospect" || s.status === "inquired" ? "pending" : s.status,
       detailUrl: `/admin/sponsors/${s.id}`,
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -363,7 +362,7 @@ export default function FinancesPage() {
         <SummaryCard
           label="Sponsorship Revenue"
           value={fmtMoney(sponsorRevenue)}
-          note={`${paidSponsors.length} sponsors paid`}
+          note={`${paidSponsors.length} sponsor${paidSponsors.length !== 1 ? "s" : ""} confirmed`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>}
         />
         <SummaryCard
