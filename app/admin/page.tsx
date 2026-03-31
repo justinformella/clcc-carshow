@@ -80,7 +80,8 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const paidRegistrations = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
+  const confirmedRegistrations = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
+  const paidRegistrations = registrations.filter((r) => r.payment_status === "paid");
   const unpaidRegistrations = registrations.filter((r) => r.payment_status === "pending");
   const regRevenueCents = paidRegistrations.reduce(
     (sum, r) => sum + (r.amount_paid || 0),
