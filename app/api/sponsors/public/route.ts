@@ -12,15 +12,18 @@ export async function GET() {
 
     const sponsors = data || [];
 
-    const presenting = sponsors.filter((s) =>
-      s.sponsorship_level.toLowerCase().includes("presenting")
-    );
-    const premier = sponsors.filter((s) =>
-      s.sponsorship_level.toLowerCase().includes("premier")
-    );
-    const community = sponsors.filter((s) =>
-      s.sponsorship_level.toLowerCase().includes("community")
-    );
+    const presenting = sponsors.filter((s) => {
+      const level = s.sponsorship_level.toLowerCase();
+      return level.includes("presenting") || level.includes("platinum");
+    });
+    const premier = sponsors.filter((s) => {
+      const level = s.sponsorship_level.toLowerCase();
+      return level.includes("premier") || level.includes("gold");
+    });
+    const community = sponsors.filter((s) => {
+      const level = s.sponsorship_level.toLowerCase();
+      return level.includes("community") || level.includes("silver");
+    });
 
     return NextResponse.json({ presenting, premier, community });
   } catch {

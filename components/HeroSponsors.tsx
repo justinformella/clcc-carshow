@@ -83,8 +83,8 @@ function SponsorDisplay({ sponsor, large }: { sponsor: SponsorEntry; large?: boo
       src={sponsor.logo_url}
       alt={sponsor.company}
       style={{
-        maxHeight: large ? "40px" : "28px",
-        maxWidth: large ? "160px" : "100px",
+        maxHeight: large ? "50px" : "36px",
+        maxWidth: large ? "200px" : "140px",
         objectFit: "contain",
       }}
     />

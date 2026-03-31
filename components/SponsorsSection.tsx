@@ -246,20 +246,19 @@ export default function SponsorsSection() {
 
 function SponsorLogo({ sponsor }: { sponsor: SponsorEntry }) {
   const inner = (
-    <div className="sponsor-logo">
-      {sponsor.logo_url ? (
+    <div className="sponsor-logo" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+      {sponsor.logo_url && (
         <img
           src={sponsor.logo_url}
           alt={sponsor.company}
           style={{
-            maxHeight: "60px",
-            maxWidth: "180px",
+            maxHeight: "100px",
+            maxWidth: "240px",
             objectFit: "contain",
           }}
         />
-      ) : (
-        <h4>{sponsor.company}</h4>
       )}
+      <h4>{sponsor.company}</h4>
     </div>
   );
 
