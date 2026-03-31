@@ -36,9 +36,9 @@ export default function RegistrationsPage() {
         .order("car_number", { ascending: true });
 
       if (showArchived) {
-        query = query.in("payment_status", ["paid", "pending", "archived"]);
+        query = query.in("payment_status", ["paid", "comped", "pending", "archived"]);
       } else {
-        query = query.in("payment_status", ["paid", "pending"]);
+        query = query.in("payment_status", ["paid", "comped", "pending"]);
       }
 
       const { data } = await query;
@@ -165,9 +165,9 @@ export default function RegistrationsPage() {
       .select("*")
       .order("car_number", { ascending: true });
     if (showArchived) {
-      query = query.in("payment_status", ["paid", "pending", "archived"]);
+      query = query.in("payment_status", ["paid", "comped", "pending", "archived"]);
     } else {
-      query = query.in("payment_status", ["paid", "pending"]);
+      query = query.in("payment_status", ["paid", "comped", "pending"]);
     }
     const { data } = await query;
     setRegistrations(data || []);
@@ -654,6 +654,10 @@ function StatusBadge({ reg }: { reg: Registration }) {
     label = "Archived";
     bg = "#f5f5f5";
     color = "#616161";
+  } else if (reg.payment_status === "comped") {
+    label = "Comped";
+    bg = "#ede7f6";
+    color = "#5e35b1";
   } else if (reg.payment_status === "pending") {
     label = "Unpaid";
     bg = "#fff3e0";

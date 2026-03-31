@@ -257,8 +257,8 @@ export default function RegistrationDetailPage() {
     }
 
     // Determine paid_at value based on payment status transition
-    const wasPaid = registration.payment_status === "paid";
-    const nowPaid = form.payment_status === "paid";
+    const wasPaid = registration.payment_status === "paid" || registration.payment_status === "comped";
+    const nowPaid = form.payment_status === "paid" || form.payment_status === "comped";
     let paidAtUpdate: Record<string, string | null> = {};
     if (nowPaid && !wasPaid) {
       paidAtUpdate = { paid_at: new Date().toISOString() };
@@ -404,6 +404,8 @@ export default function RegistrationDetailPage() {
                 <StatusBadge label="Archived" bg="#f5f5f5" textColor="#616161" />
               ) : r.payment_status === "refunded" ? (
                 <StatusBadge label="Refunded" bg="#fce4ec" textColor="#b71c1c" />
+              ) : r.payment_status === "comped" ? (
+                <StatusBadge label="Comped" bg="#ede7f6" textColor="#5e35b1" />
               ) : r.payment_status === "pending" ? (
                 <StatusBadge label="Unpaid" bg="#fff3e0" textColor="#e65100" />
               ) : r.checked_in ? (
@@ -635,6 +637,7 @@ export default function RegistrationDetailPage() {
                 <select id="payment_status" name="payment_status" value={form.payment_status} onChange={handleFormChange}>
                   <option value="pending">Pending</option>
                   <option value="paid">Paid</option>
+                  <option value="comped">Comped</option>
                   <option value="refunded">Refunded</option>
                   <option value="archived">Archived</option>
                 </select>

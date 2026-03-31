@@ -39,6 +39,7 @@ export default function NewRegistrationPage() {
   });
 
   const [vehicles, setVehicles] = useState<VehicleForm[]>([emptyVehicle()]);
+  const [isComped, setIsComped] = useState(false);
 
   const handleOwnerChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -87,8 +88,9 @@ export default function NewRegistrationPage() {
       vehicle_model: v.vehicle_model,
       vehicle_color: v.vehicle_color || null,
       story: v.story || null,
-      payment_status: "pending",
+      payment_status: isComped ? "comped" : "pending",
       amount_paid: 0,
+      paid_at: isComped ? new Date().toISOString() : null,
     }));
 
     const supabase = createClient();
@@ -326,6 +328,37 @@ export default function NewRegistrationPage() {
               + Add Another Vehicle
             </button>
           )}
+        </div>
+
+        <div
+          style={{
+            marginTop: "1.5rem",
+            padding: "1rem 1.25rem",
+            background: isComped ? "#ede7f6" : "var(--cream)",
+            border: "1px solid rgba(0,0,0,0.08)",
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              fontSize: "0.9rem",
+              color: "var(--charcoal)",
+              cursor: "pointer",
+              textTransform: "none",
+              letterSpacing: "0",
+              fontWeight: 400,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isComped}
+              onChange={(e) => setIsComped(e.target.checked)}
+              style={{ width: "auto", margin: 0 }}
+            />
+            Complimentary entry (no payment required)
+          </label>
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "2rem" }}>

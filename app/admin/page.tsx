@@ -32,7 +32,7 @@ export default function AdminDashboard() {
         supabase
           .from("registrations")
           .select("*")
-          .in("payment_status", ["paid", "pending"])
+          .in("payment_status", ["paid", "comped", "pending"])
           .order("created_at", { ascending: false }),
         supabase
           .from("sponsors")
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const paidRegistrations = registrations.filter((r) => r.payment_status === "paid");
+  const paidRegistrations = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
   const unpaidRegistrations = registrations.filter((r) => r.payment_status === "pending");
   const regRevenueCents = paidRegistrations.reduce(
     (sum, r) => sum + (r.amount_paid || 0),

@@ -341,9 +341,7 @@ function StandardSponsorTier({ tier }: { tier: SponsorTier }) {
                   border: "1px solid rgba(0,0,0,0.08)",
                   padding: "2.5rem 3rem",
                   textAlign: "center",
-                  minWidth: "260px",
-                  maxWidth: "360px",
-                  flex: "1 1 260px",
+                  width: "320px",
                   transition: "transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease",
                   cursor: s.website ? "pointer" : "default",
                 }}

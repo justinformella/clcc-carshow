@@ -51,11 +51,11 @@ export async function GET() {
       grouped[s.sponsorship_level].push(s);
     }
 
-    // Build ordered tiers
+    // Build ordered tiers — strip price from label for public display
     const tiers: SponsorTier[] = Object.keys(grouped)
       .sort(tierSort)
       .map((level) => ({
-        label: level,
+        label: level.replace(/\s*\(\$[\d,]+\)\s*$/, ""),
         sponsors: grouped[level],
         isPresenting: isPresenting(level),
       }));

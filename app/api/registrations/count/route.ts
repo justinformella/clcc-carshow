@@ -9,7 +9,7 @@ export async function GET() {
       supabase
         .from("registrations")
         .select("*", { count: "exact", head: true })
-        .eq("payment_status", "paid"),
+        .in("payment_status", ["paid", "comped"]),
       supabase
         .from("app_settings")
         .select("value")

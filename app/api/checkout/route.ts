@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       supabase
         .from("registrations")
         .select("*", { count: "exact", head: true })
-        .eq("payment_status", "paid"),
+        .in("payment_status", ["paid", "comped"]),
       supabase
         .from("app_settings")
         .select("value")
