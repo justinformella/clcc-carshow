@@ -1,11 +1,27 @@
 "use client";
 
-import { useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useState, useEffect } from "react";
+
+type SponsorEntry = {
+  company: string;
+  sponsorship_level: string;
+  logo_url: string | null;
+  website: string | null;
+};
 
 export default function SponsorsSection() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sponsors, setSponsors] = useState<{ presenting: SponsorEntry[]; premier: SponsorEntry[]; community: SponsorEntry[] } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/sponsors/public")
+      .then((res) => res.json())
+      .then(setSponsors)
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -57,32 +73,38 @@ export default function SponsorsSection() {
           </p>
         </div>
 
-        <div className="sponsor-tier title">
-          <p className="sponsor-tier-label">Presenting Sponsor — $2,500</p>
-          <div className="sponsor-grid">
-            <div className="sponsor-logo">
-              <h4>Home State Bank</h4>
+        {sponsors?.presenting && sponsors.presenting.length > 0 && (
+          <div className="sponsor-tier title">
+            <p className="sponsor-tier-label">Presenting Sponsor — $2,500</p>
+            <div className="sponsor-grid">
+              {sponsors.presenting.map((s) => (
+                <SponsorLogo key={s.company} sponsor={s} />
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="sponsor-tier">
-          <p className="sponsor-tier-label">Premier Sponsors — $1,000</p>
-          <div className="sponsor-grid">
-            <div className="sponsor-logo">
-              <h4>Your Business Here</h4>
+        {sponsors?.premier && sponsors.premier.length > 0 && (
+          <div className="sponsor-tier">
+            <p className="sponsor-tier-label">Premier Sponsors — $1,000</p>
+            <div className="sponsor-grid">
+              {sponsors.premier.map((s) => (
+                <SponsorLogo key={s.company} sponsor={s} />
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="sponsor-tier">
-          <p className="sponsor-tier-label">Community Sponsors — $500</p>
-          <div className="sponsor-grid">
-            <div className="sponsor-logo">
-              <h4>Your Business Here</h4>
+        {sponsors?.community && sponsors.community.length > 0 && (
+          <div className="sponsor-tier">
+            <p className="sponsor-tier-label">Community Sponsors — $500</p>
+            <div className="sponsor-grid">
+              {sponsors.community.map((s) => (
+                <SponsorLogo key={s.company} sponsor={s} />
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Why Sponsor */}
         <div className="sponsor-why">
@@ -220,4 +242,39 @@ export default function SponsorsSection() {
       </div>
     </section>
   );
+}
+
+function SponsorLogo({ sponsor }: { sponsor: SponsorEntry }) {
+  const inner = (
+    <div className="sponsor-logo">
+      {sponsor.logo_url ? (
+        <img
+          src={sponsor.logo_url}
+          alt={sponsor.company}
+          style={{
+            maxHeight: "60px",
+            maxWidth: "180px",
+            objectFit: "contain",
+          }}
+        />
+      ) : (
+        <h4>{sponsor.company}</h4>
+      )}
+    </div>
+  );
+
+  if (sponsor.website) {
+    return (
+      <a
+        href={sponsor.website.startsWith("http") ? sponsor.website : `https://${sponsor.website}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
+        {inner}
+      </a>
+    );
+  }
+
+  return inner;
 }
