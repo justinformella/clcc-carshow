@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
+import { useState } from "react";
 
 type MapPin = {
   lat: number;
@@ -10,64 +9,10 @@ type MapPin = {
   label: string;
 };
 
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
 export default function RegistrantMap({ pins }: { pins: MapPin[] }) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-
-  useEffect(() => {
-    if (!mapRef.current || pins.length === 0) return;
-
-    // Clean up previous map
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-      mapInstanceRef.current = null;
-    }
-
-    const map = L.map(mapRef.current);
-    mapInstanceRef.current = map;
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 18,
-    }).addTo(map);
-
-    // Gold map pin marker
-    const icon = L.divIcon({
-      className: "",
-      html: `<div style="position:relative;width:30px;height:42px;">
-        <svg width="30" height="42" viewBox="0 0 30 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z" fill="#c9a84c"/>
-          <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z" fill="url(#grad)"/>
-          <circle cx="15" cy="14" r="6" fill="#2c2c2c"/>
-          <circle cx="15" cy="14" r="4" fill="#c9a84c"/>
-          <defs><linearGradient id="grad" x1="15" y1="0" x2="15" y2="42"><stop offset="0" stop-color="#fff" stop-opacity="0.25"/><stop offset="1" stop-color="#000" stop-opacity="0.15"/></linearGradient></defs>
-        </svg>
-        <div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);width:14px;height:4px;background:rgba(0,0,0,0.2);border-radius:50%;filter:blur(2px);"></div>
-      </div>`,
-      iconSize: [30, 46],
-      iconAnchor: [15, 42],
-      popupAnchor: [0, -36],
-    });
-
-    const markers = pins.map((pin) =>
-      L.marker([pin.lat, pin.lng], { icon }).addTo(map).bindPopup(
-        `<div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;">${pin.label}</div>`
-      )
-    );
-
-    // Fit bounds to show all markers
-    if (markers.length === 1) {
-      map.setView([pins[0].lat, pins[0].lng], 11);
-    } else {
-      const group = L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.15));
-    }
-
-    return () => {
-      map.remove();
-      mapInstanceRef.current = null;
-    };
-  }, [pins]);
+  const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
 
   if (pins.length === 0) {
     return (
@@ -85,14 +30,50 @@ export default function RegistrantMap({ pins }: { pins: MapPin[] }) {
     );
   }
 
+  // Calculate center and bounds
+  const avgLat = pins.reduce((s, p) => s + p.lat, 0) / pins.length;
+  const avgLng = pins.reduce((s, p) => s + p.lng, 0) / pins.length;
+
   return (
-    <div
-      ref={mapRef}
-      style={{
-        width: "100%",
-        height: "450px",
-        border: "1px solid rgba(0,0,0,0.08)",
-      }}
-    />
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+      <Map
+        defaultCenter={{ lat: avgLat, lng: avgLng }}
+        defaultZoom={pins.length === 1 ? 12 : 10}
+        style={{ width: "100%", height: "450px" }}
+        mapId="registrant-map"
+        gestureHandling="cooperative"
+      >
+        {pins.map((pin, i) => (
+          <AdvancedMarker
+            key={i}
+            position={{ lat: pin.lat, lng: pin.lng }}
+            onClick={() => setSelectedPin(pin)}
+          >
+            <div
+              style={{
+                width: "20px",
+                height: "20px",
+                background: "#c9a84c",
+                border: "3px solid #2c2c2c",
+                borderRadius: "50%",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                cursor: "pointer",
+              }}
+            />
+          </AdvancedMarker>
+        ))}
+        {selectedPin && (
+          <InfoWindow
+            position={{ lat: selectedPin.lat, lng: selectedPin.lng }}
+            onCloseClick={() => setSelectedPin(null)}
+            pixelOffset={[0, -14]}
+          >
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", fontWeight: 500, padding: "2px 4px" }}>
+              {selectedPin.label}
+            </div>
+          </InfoWindow>
+        )}
+      </Map>
+    </APIProvider>
   );
 }
