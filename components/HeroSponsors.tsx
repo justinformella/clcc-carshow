@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react";
 
 type SponsorEntry = {
@@ -9,89 +10,85 @@ type SponsorEntry = {
   website: string | null;
 };
 
-type SponsorData = {
-  presenting: SponsorEntry[];
-  premier: SponsorEntry[];
-  community: SponsorEntry[];
+type SponsorTier = {
+  label: string;
+  sponsors: SponsorEntry[];
+  isPresenting: boolean;
 };
 
 export default function HeroSponsors() {
-  const [data, setData] = useState<SponsorData | null>(null);
+  const [tiers, setTiers] = useState<SponsorTier[]>([]);
 
   useEffect(() => {
     fetch("/api/sponsors/public")
       .then((res) => res.json())
-      .then(setData)
+      .then((data) => setTiers(data.tiers || []))
       .catch(() => {});
   }, []);
 
-  if (!data) return null;
-
-  const { presenting, premier, community } = data;
-  const hasAny = presenting.length > 0 || premier.length > 0 || community.length > 0;
-  if (!hasAny) return null;
+  if (tiers.length === 0) return null;
 
   return (
     <section className="hero-sponsors-bar">
       <div className="hero-sponsors-bar-inner">
-        {presenting.length > 0 && (
-          <div className="hero-sponsors-bar-presenting">
-            <span className="hero-sponsors-bar-label">Presented by</span>
-            {presenting.map((s) => (
-              <SponsorDisplay key={s.company} sponsor={s} large />
-            ))}
-          </div>
-        )}
-
-        {premier.length > 0 && (
-          <>
-            {presenting.length > 0 && <div className="hero-sponsors-bar-divider" />}
-            <div className="hero-sponsors-bar-tier">
-              <span className="hero-sponsors-bar-label">Premier Sponsors</span>
-              <div className="hero-sponsors-bar-logos">
-                {premier.map((s) => (
-                  <SponsorDisplay key={s.company} sponsor={s} />
+        {tiers.map((tier, i) => (
+          <div key={tier.label} style={{ display: "contents" }}>
+            {i > 0 && <div className="hero-sponsors-bar-divider" />}
+            {tier.isPresenting ? (
+              <div className="hero-sponsors-bar-presenting">
+                <span className="hero-sponsors-bar-label">Presented by</span>
+                {tier.sponsors.map((s) => (
+                  <SponsorLink key={s.company} sponsor={s}>
+                    {getLogoSrc(s) ? (
+                      <img
+                        src={getLogoSrc(s)!}
+                        alt={s.company}
+                        style={{ maxHeight: "50px", maxWidth: "200px", objectFit: "contain" }}
+                      />
+                    ) : (
+                      <span className="hero-sponsors-bar-name">{s.company}</span>
+                    )}
+                  </SponsorLink>
                 ))}
               </div>
-            </div>
-          </>
-        )}
-
-        {community.length > 0 && (
-          <>
-            {(presenting.length > 0 || premier.length > 0) && (
-              <div className="hero-sponsors-bar-divider" />
+            ) : (
+              <div className="hero-sponsors-bar-tier">
+                <span className="hero-sponsors-bar-label">{tier.label}</span>
+                <div className="hero-sponsors-bar-logos">
+                  {tier.sponsors.map((s) => (
+                    <SponsorLink key={s.company} sponsor={s}>
+                      <div className="hero-sponsors-bar-logo" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+                        {getLogoSrc(s) && (
+                          <img
+                            src={getLogoSrc(s)!}
+                            alt={s.company}
+                            style={{ maxHeight: "36px", maxWidth: "140px", objectFit: "contain" }}
+                          />
+                        )}
+                        <span>{s.company}</span>
+                      </div>
+                    </SponsorLink>
+                  ))}
+                </div>
+              </div>
             )}
-            <div className="hero-sponsors-bar-tier">
-              <span className="hero-sponsors-bar-label">Community Sponsors</span>
-              <div className="hero-sponsors-bar-logos">
-                {community.map((s) => (
-                  <SponsorDisplay key={s.company} sponsor={s} />
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
-function SponsorDisplay({ sponsor, large }: { sponsor: SponsorEntry; large?: boolean }) {
-  const content = sponsor.logo_url ? (
-    <img
-      src={sponsor.logo_url}
-      alt={sponsor.company}
-      style={{
-        maxHeight: large ? "50px" : "36px",
-        maxWidth: large ? "200px" : "140px",
-        objectFit: "contain",
-      }}
-    />
-  ) : (
-    <span className="hero-sponsors-bar-name">{sponsor.company}</span>
-  );
+function getLogoSrc(sponsor: SponsorEntry): string | null {
+  if (sponsor.logo_url) return sponsor.logo_url;
+  if (sponsor.website) {
+    const domain = sponsor.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  }
+  return null;
+}
 
+function SponsorLink({ sponsor, children }: { sponsor: SponsorEntry; children: React.ReactNode }) {
   if (sponsor.website) {
     return (
       <a
@@ -100,10 +97,9 @@ function SponsorDisplay({ sponsor, large }: { sponsor: SponsorEntry; large?: boo
         rel="noopener noreferrer"
         style={{ textDecoration: "none", color: "inherit" }}
       >
-        {content}
+        {children}
       </a>
     );
   }
-
-  return <>{content}</>;
+  return <>{children}</>;
 }

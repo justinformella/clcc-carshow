@@ -10,16 +10,22 @@ type SponsorEntry = {
   website: string | null;
 };
 
+type SponsorTier = {
+  label: string;
+  sponsors: SponsorEntry[];
+  isPresenting: boolean;
+};
+
 export default function SponsorsSection() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sponsors, setSponsors] = useState<{ presenting: SponsorEntry[]; premier: SponsorEntry[]; community: SponsorEntry[] } | null>(null);
+  const [tiers, setTiers] = useState<SponsorTier[]>([]);
 
   useEffect(() => {
     fetch("/api/sponsors/public")
       .then((res) => res.json())
-      .then(setSponsors)
+      .then((data) => setTiers(data.tiers || []))
       .catch(() => {});
   }, []);
 
@@ -73,38 +79,16 @@ export default function SponsorsSection() {
           </p>
         </div>
 
-        {sponsors?.presenting && sponsors.presenting.length > 0 && (
-          <div className="sponsor-tier title">
-            <p className="sponsor-tier-label">Presenting Sponsor — $2,500</p>
+        {tiers.map((tier) => (
+          <div key={tier.label} className={`sponsor-tier${tier.isPresenting ? " title" : ""}`}>
+            <p className="sponsor-tier-label">{tier.label}</p>
             <div className="sponsor-grid">
-              {sponsors.presenting.map((s) => (
+              {tier.sponsors.map((s) => (
                 <SponsorLogo key={s.company} sponsor={s} />
               ))}
             </div>
           </div>
-        )}
-
-        {sponsors?.premier && sponsors.premier.length > 0 && (
-          <div className="sponsor-tier">
-            <p className="sponsor-tier-label">Premier Sponsors — $1,000</p>
-            <div className="sponsor-grid">
-              {sponsors.premier.map((s) => (
-                <SponsorLogo key={s.company} sponsor={s} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {sponsors?.community && sponsors.community.length > 0 && (
-          <div className="sponsor-tier">
-            <p className="sponsor-tier-label">Community Sponsors — $500</p>
-            <div className="sponsor-grid">
-              {sponsors.community.map((s) => (
-                <SponsorLogo key={s.company} sponsor={s} />
-              ))}
-            </div>
-          </div>
-        )}
+        ))}
 
         {/* Why Sponsor */}
         <div className="sponsor-why">
@@ -244,12 +228,22 @@ export default function SponsorsSection() {
   );
 }
 
+function getLogoSrc(sponsor: SponsorEntry): string | null {
+  if (sponsor.logo_url) return sponsor.logo_url;
+  if (sponsor.website) {
+    const domain = sponsor.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  }
+  return null;
+}
+
 function SponsorLogo({ sponsor }: { sponsor: SponsorEntry }) {
+  const logoSrc = getLogoSrc(sponsor);
   const inner = (
-    <div className="sponsor-logo" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-      {sponsor.logo_url && (
+    <div className="sponsor-logo" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+      {logoSrc && (
         <img
-          src={sponsor.logo_url}
+          src={logoSrc}
           alt={sponsor.company}
           style={{
             maxHeight: "100px",
