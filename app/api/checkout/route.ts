@@ -163,6 +163,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Geocode address in the background (non-blocking)
+    if (address_street || address_city) {
+      const addrStr = [address_street, address_city, address_state, address_zip].filter(Boolean).join(", ");
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addrStr)}`, {
+        headers: { "User-Agent": "clcc-carshow/1.0" },
+      })
+        .then((res) => res.json())
+        .then(async (results) => {
+          if (results?.[0]?.lat && results?.[0]?.lon) {
+            const regIds = registrations.map((r) => r.id);
+            await supabase
+              .from("registrations")
+              .update({ lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) })
+              .in("id", regIds);
+          }
+        })
+        .catch(() => {});
+    }
+
     // Create Stripe Checkout Session with one line item per vehicle
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 

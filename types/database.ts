@@ -31,6 +31,9 @@ export type Registration = {
   checked_in_at: string | null;
   // AI image
   ai_image_url: string | null;
+  // Geocoded location
+  lat: number | null;
+  lng: number | null;
   // UTM attribution
   utm_source: string | null;
   utm_medium: string | null;

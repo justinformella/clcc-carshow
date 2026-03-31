@@ -704,6 +704,27 @@ export default function RegistrationDetailPage() {
                 />
               </DetailSection>
 
+              {/* Map */}
+              {(r.address_street || r.address_city) && (() => {
+                const addressParts = [r.address_street, r.address_city, r.address_state, r.address_zip].filter(Boolean).join(", ");
+                const mapQuery = encodeURIComponent(addressParts);
+                return (
+                  <DetailSection title="Location">
+                    <iframe
+                      src={`https://maps.google.com/maps?q=${mapQuery}&output=embed&z=13`}
+                      style={{
+                        width: "100%",
+                        height: "250px",
+                        border: "1px solid #eee",
+                      }}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="Registrant location"
+                    />
+                  </DetailSection>
+                );
+              })()}
+
               <DetailSection title="Vehicle Details">
                 <DetailRow label="Year" value={String(r.vehicle_year)} />
                 <DetailRow label="Make" value={r.vehicle_make} />
