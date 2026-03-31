@@ -73,12 +73,13 @@ function LoginForm() {
       return;
     }
 
-    // Track last login time — use ilike for case-insensitive match
+    // Track last login time via server route (bypasses RLS)
     const userEmail = authData.user?.email ?? email;
-    await supabase
-      .from("admins")
-      .update({ last_login_at: new Date().toISOString() })
-      .ilike("email", userEmail);
+    fetch("/api/admin/track-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail }),
+    }).catch(() => {});
 
     const redirect = searchParams.get("redirect") || "/admin";
     // Hard navigate so the browser sends the updated auth cookie to middleware

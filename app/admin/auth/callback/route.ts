@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createServerClient as createServiceClient } from "@/lib/supabase-server";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -61,8 +62,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Update last login time
-  await supabase
+  // Update last login time (use service role to bypass RLS)
+  const serviceClient = createServiceClient();
+  await serviceClient
     .from("admins")
     .update({ last_login_at: new Date().toISOString() })
     .ilike("email", user.email);

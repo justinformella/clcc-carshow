@@ -250,16 +250,16 @@ export default function SponsorDetailPage() {
               alt={`${s.company} logo`}
               onError={() => setLogoVisible(false)}
               style={{
-                maxWidth: "120px",
-                maxHeight: "80px",
+                maxWidth: "200px",
+                maxHeight: "120px",
                 objectFit: "contain",
               }}
             />
           ) : (
             <div
               style={{
-                width: 120,
-                height: 80,
+                width: 200,
+                height: 120,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
