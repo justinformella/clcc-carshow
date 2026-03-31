@@ -31,19 +31,22 @@ export default function RegistrantMap({ pins }: { pins: MapPin[] }) {
       maxZoom: 18,
     }).addTo(map);
 
-    // Gold marker icon
+    // Gold map pin marker
     const icon = L.divIcon({
       className: "",
-      html: `<div style="
-        width: 12px;
-        height: 12px;
-        background: #c9a84c;
-        border: 2px solid #2c2c2c;
-        border-radius: 50%;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      "></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
+      html: `<div style="position:relative;width:30px;height:42px;">
+        <svg width="30" height="42" viewBox="0 0 30 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z" fill="#c9a84c"/>
+          <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.716 23.284 0 15 0z" fill="url(#grad)"/>
+          <circle cx="15" cy="14" r="6" fill="#2c2c2c"/>
+          <circle cx="15" cy="14" r="4" fill="#c9a84c"/>
+          <defs><linearGradient id="grad" x1="15" y1="0" x2="15" y2="42"><stop offset="0" stop-color="#fff" stop-opacity="0.25"/><stop offset="1" stop-color="#000" stop-opacity="0.15"/></linearGradient></defs>
+        </svg>
+        <div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);width:14px;height:4px;background:rgba(0,0,0,0.2);border-radius:50%;filter:blur(2px);"></div>
+      </div>`,
+      iconSize: [30, 46],
+      iconAnchor: [15, 42],
+      popupAnchor: [0, -36],
     });
 
     const markers = pins.map((pin) =>
