@@ -79,16 +79,13 @@ export default function SponsorsSection() {
           </p>
         </div>
 
-        {tiers.map((tier) => (
-          <div key={tier.label} className={`sponsor-tier${tier.isPresenting ? " title" : ""}`}>
-            <p className="sponsor-tier-label">{tier.label}</p>
-            <div className="sponsor-grid">
-              {tier.sponsors.map((s) => (
-                <SponsorLogo key={s.company} sponsor={s} />
-              ))}
-            </div>
-          </div>
-        ))}
+        {tiers.map((tier) =>
+          tier.isPresenting ? (
+            <PresentingSponsorTier key={tier.label} tier={tier} />
+          ) : (
+            <StandardSponsorTier key={tier.label} tier={tier} />
+          )
+        )}
 
         {/* Why Sponsor */}
         <div className="sponsor-why">
@@ -237,25 +234,7 @@ function getLogoSrc(sponsor: SponsorEntry): string | null {
   return null;
 }
 
-function SponsorLogo({ sponsor }: { sponsor: SponsorEntry }) {
-  const logoSrc = getLogoSrc(sponsor);
-  const inner = (
-    <div className="sponsor-logo" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-      {logoSrc && (
-        <img
-          src={logoSrc}
-          alt={sponsor.company}
-          style={{
-            maxHeight: "100px",
-            maxWidth: "240px",
-            objectFit: "contain",
-          }}
-        />
-      )}
-      <h4>{sponsor.company}</h4>
-    </div>
-  );
-
+function SponsorLink({ sponsor, children }: { sponsor: SponsorEntry; children: React.ReactNode }) {
   if (sponsor.website) {
     return (
       <a
@@ -264,10 +243,149 @@ function SponsorLogo({ sponsor }: { sponsor: SponsorEntry }) {
         rel="noopener noreferrer"
         style={{ textDecoration: "none", color: "inherit" }}
       >
-        {inner}
+        {children}
       </a>
     );
   }
+  return <>{children}</>;
+}
 
-  return inner;
+/* ─── Presenting Sponsor: Hero-level treatment ─── */
+function PresentingSponsorTier({ tier }: { tier: SponsorTier }) {
+  return (
+    <div style={{ marginBottom: "4rem" }}>
+      <p className="sponsor-tier-label" style={{ color: "var(--gold)" }}>
+        Presented by
+      </p>
+      {tier.sponsors.map((s) => {
+        const logoSrc = getLogoSrc(s);
+        return (
+          <SponsorLink key={s.company} sponsor={s}>
+            <div
+              style={{
+                background: "var(--white)",
+                border: "2px solid var(--gold)",
+                padding: "3rem 4rem",
+                textAlign: "center",
+                maxWidth: "600px",
+                margin: "0 auto",
+                position: "relative",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 16px 48px rgba(201,168,76,0.15)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              {/* Gold corner accents */}
+              <div style={{ position: "absolute", top: "-1px", left: "-1px", width: "24px", height: "24px", borderTop: "3px solid var(--gold)", borderLeft: "3px solid var(--gold)" }} />
+              <div style={{ position: "absolute", top: "-1px", right: "-1px", width: "24px", height: "24px", borderTop: "3px solid var(--gold)", borderRight: "3px solid var(--gold)" }} />
+              <div style={{ position: "absolute", bottom: "-1px", left: "-1px", width: "24px", height: "24px", borderBottom: "3px solid var(--gold)", borderLeft: "3px solid var(--gold)" }} />
+              <div style={{ position: "absolute", bottom: "-1px", right: "-1px", width: "24px", height: "24px", borderBottom: "3px solid var(--gold)", borderRight: "3px solid var(--gold)" }} />
+
+              {logoSrc && (
+                <img
+                  src={logoSrc}
+                  alt={s.company}
+                  style={{
+                    maxHeight: "120px",
+                    maxWidth: "320px",
+                    objectFit: "contain",
+                    marginBottom: "1.5rem",
+                  }}
+                />
+              )}
+              <h3
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: "1.8rem",
+                  fontWeight: 400,
+                  color: "var(--charcoal)",
+                  margin: 0,
+                }}
+              >
+                {s.company}
+              </h3>
+            </div>
+          </SponsorLink>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Standard tiers: Premier, Gold, Community ─── */
+function StandardSponsorTier({ tier }: { tier: SponsorTier }) {
+  return (
+    <div style={{ marginBottom: "3.5rem" }}>
+      <p className="sponsor-tier-label">{tier.label}</p>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: "2rem",
+        }}
+      >
+        {tier.sponsors.map((s) => {
+          const logoSrc = getLogoSrc(s);
+          return (
+            <SponsorLink key={s.company} sponsor={s}>
+              <div
+                style={{
+                  background: "var(--white)",
+                  border: "1px solid rgba(0,0,0,0.08)",
+                  padding: "2.5rem 3rem",
+                  textAlign: "center",
+                  minWidth: "260px",
+                  maxWidth: "360px",
+                  flex: "1 1 260px",
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease",
+                  cursor: s.website ? "pointer" : "default",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-4px)";
+                  e.currentTarget.style.boxShadow = "0 12px 36px rgba(0,0,0,0.08)";
+                  e.currentTarget.style.borderColor = "var(--gold)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
+                }}
+              >
+                {logoSrc && (
+                  <img
+                    src={logoSrc}
+                    alt={s.company}
+                    style={{
+                      maxHeight: "80px",
+                      maxWidth: "240px",
+                      objectFit: "contain",
+                      marginBottom: "1.25rem",
+                    }}
+                  />
+                )}
+                <h4
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: "1.25rem",
+                    fontWeight: 400,
+                    color: "var(--charcoal)",
+                    margin: 0,
+                  }}
+                >
+                  {s.company}
+                </h4>
+              </div>
+            </SponsorLink>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
