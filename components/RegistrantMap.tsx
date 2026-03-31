@@ -42,6 +42,10 @@ export default function RegistrantMap({ pins }: { pins: MapPin[] }) {
         style={{ width: "100%", height: "450px" }}
         mapId="registrant-map"
         gestureHandling="cooperative"
+        zoomControl={true}
+        mapTypeControl={false}
+        streetViewControl={false}
+        fullscreenControl={true}
       >
         {pins.map((pin, i) => (
           <AdvancedMarker
@@ -51,10 +55,10 @@ export default function RegistrantMap({ pins }: { pins: MapPin[] }) {
           >
             <div
               style={{
-                width: "20px",
-                height: "20px",
-                background: "#c9a84c",
-                border: "3px solid #2c2c2c",
+                width: "22px",
+                height: "22px",
+                background: "#dc2626",
+                border: "3px solid #fff",
                 borderRadius: "50%",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
                 cursor: "pointer",
