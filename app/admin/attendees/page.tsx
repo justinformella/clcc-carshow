@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
+
+const RegistrantMap = dynamic(() => import("@/components/RegistrantMap"), { ssr: false });
 
 async function sha256(str: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str.trim().toLowerCase()));
@@ -62,7 +65,7 @@ export default function AttendeesPage() {
       const { data } = await supabase
         .from("registrations")
         .select("*")
-        .in("payment_status", ["paid", "pending"])
+        .in("payment_status", ["paid", "comped", "pending"])
         .order("created_at", { ascending: true });
       setRegistrations(data || []);
       setLoading(false);
@@ -93,6 +96,25 @@ export default function AttendeesPage() {
   const fullyCheckedIn = attendees.filter(
     (a) => a.checkedInCount === a.vehicles.length
   ).length;
+
+  const mapPins = useMemo(() => {
+    const seen = new Set<string>();
+    return registrations
+      .filter((r) => r.lat && r.lng)
+      .filter((r) => {
+        const key = r.email.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map((r) => ({
+        lat: r.lat!,
+        lng: r.lng!,
+        label: `${r.first_name} ${r.last_name} — ${[r.address_city, r.address_state].filter(Boolean).join(", ")}`,
+      }));
+  }, [registrations]);
+
+  const [showMap, setShowMap] = useState(true);
 
   if (loading) {
     return (
@@ -137,6 +159,60 @@ export default function AttendeesPage() {
           value={`${fullyCheckedIn}`}
           note={`of ${attendees.length}`}
         />
+      </div>
+
+      {/* Map */}
+      <div
+        style={{
+          background: "var(--white)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          marginBottom: "1.5rem",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0.75rem 1.25rem",
+            borderBottom: showMap ? "1px solid #eee" : "none",
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: "1rem",
+              margin: 0,
+            }}
+          >
+            Registrant Locations
+            {mapPins.length > 0 && (
+              <span style={{ fontSize: "0.8rem", color: "var(--text-light)", fontFamily: "'Inter', sans-serif", fontWeight: 400, marginLeft: "0.5rem" }}>
+                ({mapPins.length} mapped)
+              </span>
+            )}
+          </h3>
+          <button
+            onClick={() => setShowMap(!showMap)}
+            style={{
+              background: "transparent",
+              border: "1px solid #ddd",
+              padding: "0.3rem 0.8rem",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              cursor: "pointer",
+              color: "var(--charcoal)",
+            }}
+          >
+            {showMap ? "Hide Map" : "Show Map"}
+          </button>
+        </div>
+        {showMap && (
+          <RegistrantMap pins={mapPins} />
+        )}
       </div>
 
       {/* Search */}
