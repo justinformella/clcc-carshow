@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import type { Registration } from "@/types/database";
+import type { Registration, HelpRequest, EmailLog } from "@/types/database";
 
 type GravatarProfile = {
   hash: string;
@@ -49,16 +49,32 @@ export default function AttendeeDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [form, setForm] = useState<EditForm | null>(null);
+  const [tickets, setTickets] = useState<HelpRequest[]>([]);
+  const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
 
   const fetchData = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase
-      .from("registrations")
-      .select("*")
-      .ilike("email", email)
-      .in("payment_status", ["paid", "comped", "pending"])
-      .order("car_number", { ascending: true });
-    setRegistrations(data || []);
+    const [regRes, ticketRes, emailRes] = await Promise.all([
+      supabase
+        .from("registrations")
+        .select("*")
+        .ilike("email", email)
+        .in("payment_status", ["paid", "comped", "pending"])
+        .order("car_number", { ascending: true }),
+      supabase
+        .from("help_requests")
+        .select("*")
+        .ilike("email", email)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("email_log")
+        .select("*")
+        .ilike("recipient_email", email)
+        .order("sent_at", { ascending: false }),
+    ]);
+    setRegistrations(regRes.data || []);
+    setTickets((ticketRes.data as HelpRequest[]) || []);
+    setEmailLogs((emailRes.data as EmailLog[]) || []);
     setLoading(false);
   }, [email]);
 
@@ -518,6 +534,108 @@ export default function AttendeeDetailPage() {
                 </SidebarCard>
               );
             })()}
+
+            {/* Tickets */}
+            <SidebarCard title={`Tickets (${tickets.length})`}>
+              {tickets.length === 0 ? (
+                <p style={{ fontSize: "0.8rem", color: "var(--text-light)", margin: 0 }}>No tickets</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {tickets.map((t) => (
+                    <Link
+                      key={t.id}
+                      href={`/admin/help-desk/${t.id}`}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.4rem 0",
+                        borderBottom: "1px solid rgba(0,0,0,0.04)",
+                        textDecoration: "none",
+                        color: "inherit",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <span style={{ color: "var(--gold)", fontWeight: 500 }}>#{t.request_number}</span>{" "}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.subject}</span>
+                      </div>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "0.1rem 0.4rem",
+                          fontSize: "0.6rem",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          flexShrink: 0,
+                          marginLeft: "0.5rem",
+                          background: t.status === "open" || t.status === "in_progress" ? "#fff3e0" : "#f5f5f5",
+                          color: t.status === "open" || t.status === "in_progress" ? "#e65100" : "#616161",
+                        }}
+                      >
+                        {t.status === "in_progress" ? "Active" : t.status === "waiting_on_submitter" ? "Waiting" : t.status}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </SidebarCard>
+
+            {/* Email Log */}
+            <SidebarCard title={`Emails (${emailLogs.length})`}>
+              {emailLogs.length === 0 ? (
+                <p style={{ fontSize: "0.8rem", color: "var(--text-light)", margin: 0 }}>No emails sent</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                  {emailLogs.slice(0, 10).map((log) => {
+                    const typeLabels: Record<string, string> = {
+                      confirmation: "Confirmation",
+                      admin_notification: "Admin",
+                      announcement: "Announcement",
+                      help_request_reply: "Help Reply",
+                      help_request_confirmation: "Help Confirm",
+                      email_reply: "Inbound",
+                    };
+                    return (
+                      <div
+                        key={log.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.35rem 0",
+                          borderBottom: "1px solid rgba(0,0,0,0.04)",
+                          fontSize: "0.78rem",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "0.1rem 0.4rem",
+                            fontSize: "0.6rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            background: "#e3f2fd",
+                            color: "#1565c0",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {typeLabels[log.email_type] || log.email_type}
+                        </span>
+                        <span style={{ color: "var(--text-light)", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                          {new Date(log.sent_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {emailLogs.length > 10 && (
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.25rem" }}>
+                      +{emailLogs.length - 10} more
+                    </p>
+                  )}
+                </div>
+              )}
+            </SidebarCard>
           </div>
         </div>
       )}
