@@ -3,6 +3,16 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 import { AWARD_CATEGORIES } from "@/types/database";
 
+type Recommendation = {
+  category: string;
+  car_number: number;
+  justification: string;
+  registration_id?: string;
+  vehicle: string;
+  color: string | null;
+  owner: string;
+};
+
 export async function POST() {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -111,6 +121,22 @@ Return JSON with this structure:
         owner: reg ? `${reg.first_name} ${reg.last_name}` : "Unknown",
       };
     });
+
+    // Save to DB — clear old recommendations first
+    await supabase.from("award_recommendations").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    if (enriched.length > 0) {
+      await supabase.from("award_recommendations").insert(
+        enriched.map((r: Recommendation) => ({
+          category: r.category,
+          car_number: r.car_number,
+          registration_id: r.registration_id || null,
+          vehicle: r.vehicle,
+          color: r.color || null,
+          owner: r.owner,
+          justification: r.justification,
+        }))
+      );
+    }
 
     return NextResponse.json({ recommendations: enriched });
   } catch (err) {
