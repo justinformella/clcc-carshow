@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration, Sponsor, AdCampaign } from "@/types/database";
+import { REGISTRATION_PRICE_CENTS, MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
 import {
   AreaChart,
   Area,
@@ -54,6 +55,7 @@ export default function FinancesPage() {
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailModal, setDetailModal] = useState<"registration" | "sponsorship" | "donation" | null>(null);
+  const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS_DEFAULT);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -64,7 +66,7 @@ export default function FinancesPage() {
     const fetchData = async () => {
       const supabase = createClient();
 
-      const [regResult, sponsorResult, campaignResult] = await Promise.all([
+      const [regResult, sponsorResult, campaignResult, settingResult] = await Promise.all([
         supabase
           .from("registrations")
           .select("*")
@@ -76,11 +78,20 @@ export default function FinancesPage() {
         supabase
           .from("ad_campaigns")
           .select("*"),
+        supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "max_registrations")
+          .maybeSingle(),
       ]);
 
       setRegistrations(regResult.data || []);
       setSponsors((sponsorResult.data as Sponsor[]) || []);
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
+      if (settingResult.data?.value) {
+        const v = parseInt(settingResult.data.value, 10);
+        if (!isNaN(v)) setMaxRegistrations(v);
+      }
       setLoading(false);
     };
     fetchData();
@@ -125,6 +136,12 @@ export default function FinancesPage() {
     return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
   }, 0);
   const projectedTotal = totalRevenue + committedProjected;
+
+  // Full capacity estimate: max registrations × $30 + avg donation rate + committed sponsors
+  const avgDonationPerReg = paidRegs.length > 0 ? donationRevenue / paidRegs.length : 0;
+  const fullCapacityReg = maxRegistrations * REGISTRATION_PRICE_CENTS;
+  const fullCapacityDonations = Math.round(avgDonationPerReg * maxRegistrations);
+  const fullCapacityTotal = fullCapacityReg + fullCapacityDonations + sponsorRevenue + committedProjected;
 
   const totalAdSpend = campaigns.reduce((sum, c) => sum + (c.spent_cents || 0), 0);
 
@@ -403,6 +420,12 @@ export default function FinancesPage() {
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>}
           />
         )}
+        <SummaryCard
+          label="Full Capacity Potential"
+          value={fmtMoney(fullCapacityTotal)}
+          note={`${maxRegistrations} vehicles × $${REGISTRATION_PRICE_CENTS / 100}${fullCapacityDonations > 0 ? ` + ${fmtMoney(fullCapacityDonations)} est. donations` : ""}`}
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>}
+        />
       </div>
 
       {/* ── 3. Two-column chart row ── */}
