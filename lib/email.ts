@@ -19,11 +19,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function sendWithRetry(
-  params: { from: string; to: string; subject: string; html: string; reply_to?: string },
+  params: { from: string; to: string; subject: string; html: string; replyTo?: string },
   retries = 3
 ): Promise<{ id?: string }> {
   const resend = getResend();
-  const sendParams = { reply_to: REPLY_TO, ...params };
+  const sendParams = { replyTo: REPLY_TO, ...params };
   for (let attempt = 0; attempt < retries; attempt++) {
     const { data, error } = await resend.emails.send(sendParams);
     if (!error) return { id: data?.id ?? undefined };
