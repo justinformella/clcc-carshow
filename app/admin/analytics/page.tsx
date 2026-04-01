@@ -44,6 +44,65 @@ const TEXT = "#d4d4d8";
 const TEXT_MUTED = "#52525b";
 const ACCENT_COLORS = [GOLD, "#e8845c", CYAN, GREEN, PURPLE, "#f472b6", ORANGE, "#38bdf8", "#fbbf24", "#a78bfa"];
 
+// Normalize fancy color names to base colors
+function normalizeColor(raw: string | null | undefined): string {
+  if (!raw) return "Unknown";
+  const c = raw.trim().toLowerCase();
+  const map: Record<string, string> = {
+    // Reds
+    "rossa corsa": "Red", "rosso corsa": "Red", "guards red": "Red", "torch red": "Red",
+    "candy apple red": "Red", "infrared": "Red", "rally red": "Red", "redline": "Red",
+    "burgundy": "Red", "maroon": "Red", "crimson": "Red", "cherry": "Red", "wine": "Red",
+    // Blues
+    "le mans blue": "Blue", "laguna seca blue": "Blue", "grabber blue": "Blue",
+    "velocity blue": "Blue", "rapid blue": "Blue", "sonic blue": "Blue",
+    "navy": "Blue", "cobalt": "Blue", "azure": "Blue", "sapphire": "Blue", "royal blue": "Blue",
+    // Greens
+    "british racing green": "Green", "highland green": "Green", "lime green": "Green",
+    "verde mantis": "Green", "emerald": "Green", "forest green": "Green", "olive": "Green",
+    // Silvers/Grays
+    "avus silver": "Silver", "nardo gray": "Silver", "nardo grey": "Silver",
+    "gunmetal": "Silver", "cement": "Gray", "charcoal": "Gray", "slate": "Gray",
+    "space gray": "Gray", "space grey": "Gray", "titanium": "Gray", "graphite": "Gray",
+    "pewter": "Gray", "anthracite": "Gray",
+    // Whites
+    "alpine white": "White", "arctic white": "White", "summit white": "White",
+    "oxford white": "White", "pearl white": "White", "ivory": "White", "cream": "White",
+    // Blacks
+    "jet black": "Black", "triple black": "Black", "obsidian": "Black",
+    "onyx": "Black", "midnight": "Black", "raven": "Black",
+    // Yellows
+    "velocity yellow": "Yellow", "racing yellow": "Yellow", "giallo": "Yellow",
+    "canary": "Yellow", "sunflower": "Yellow", "school bus yellow": "Yellow",
+    // Oranges
+    "arancio borealis": "Orange", "competition orange": "Orange", "fury orange": "Orange",
+    "tangelo": "Orange", "tangerine": "Orange",
+    // Golds
+    "champagne": "Gold", "bronze": "Gold",
+    // Browns
+    "saddle brown": "Brown", "espresso": "Brown", "mocha": "Brown", "tan": "Brown", "beige": "Brown",
+    // Purples
+    "plum crazy": "Purple", "violet": "Purple", "plum": "Purple", "amethyst": "Purple",
+  };
+
+  // Check exact match first
+  if (map[c]) return map[c];
+
+  // Check if any key is contained in the color
+  for (const [key, val] of Object.entries(map)) {
+    if (c.includes(key)) return val;
+  }
+
+  // Check base color words
+  const bases = ["Red", "Blue", "Green", "Black", "White", "Silver", "Gray", "Grey", "Yellow", "Orange", "Gold", "Brown", "Purple", "Pink", "Beige"];
+  for (const base of bases) {
+    if (c.includes(base.toLowerCase())) return base === "Grey" ? "Gray" : base;
+  }
+
+  // Title case whatever it is
+  return raw.trim().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
 function countBy<T>(items: T[], fn: (item: T) => string | null | undefined): { id: string; value: number }[] {
   const map: Record<string, number> = {};
   for (const item of items) {
@@ -56,7 +115,7 @@ function countBy<T>(items: T[], fn: (item: T) => string | null | undefined): { i
 }
 
 // ─── Animated counter ───
-function AnimNum({ target, duration = 1400, prefix = "", suffix = "" }: { target: number; duration?: number; prefix?: string; suffix?: string }) {
+function AnimNum({ target, duration = 1400, prefix = "", suffix = "", raw = false }: { target: number; duration?: number; prefix?: string; suffix?: string; raw?: boolean }) {
   const [current, setCurrent] = useState(0);
   const ref = useRef<number>(0);
   useEffect(() => {
@@ -69,7 +128,7 @@ function AnimNum({ target, duration = 1400, prefix = "", suffix = "" }: { target
     ref.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(ref.current);
   }, [target, duration]);
-  return <>{prefix}{current.toLocaleString()}{suffix}</>;
+  return <>{prefix}{raw ? current : current.toLocaleString()}{suffix}</>;
 }
 
 // ─── Tachometer Gauge ───
@@ -196,7 +255,7 @@ export default function AnalyticsPage() {
   // Charts
   const byMake = countBy(registrations, (r) => r.vehicle_make?.trim());
   const byDecade = countBy(registrations, (r) => `${Math.floor(r.vehicle_year / 10) * 10}s`).sort((a, b) => a.id.localeCompare(b.id));
-  const byColor = countBy(registrations, (r) => r.vehicle_color?.trim() || null);
+  const byColor = countBy(registrations, (r) => normalizeColor(r.vehicle_color));
   const byCountry = countBy(specs, (s) => s.country_of_origin);
   const byCategory = countBy(specs, (s) => s.category);
   const byEra = countBy(specs, (s) => s.era);
@@ -305,22 +364,20 @@ export default function AnalyticsPage() {
           </GlassCard>
 
           {/* Stat grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1px", background: SURFACE_BORDER, borderRadius: "4px", overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: SURFACE_BORDER, borderRadius: "4px", overflow: "hidden" }}>
             {[
-              { label: "Vehicles", val: registrations.length, glow: CYAN },
-              { label: "Makes", val: uniqueMakes, glow: PURPLE },
-              { label: "Combined HP", val: totalHp, glow: RED },
-              { label: "Days to Show", val: daysUntil, glow: GOLD },
-              { label: "Avg Year", val: Math.round(registrations.reduce((s, r) => s + r.vehicle_year, 0) / (registrations.length || 1)), glow: GREEN },
-              { label: "Tonnage", val: Math.round(totalWeight / 2000 * 10) / 10, suffix: "t", glow: ORANGE },
-              { label: "Sticker Total", val: totalMsrp, prefix: "$", glow: GOLD },
-              { label: "Enriched", val: specs.length, suffix: `/${registrations.length}`, glow: PURPLE },
-            ].map((m, i) => (
+              { label: "Vehicles", val: registrations.length, glow: CYAN, raw: false },
+              { label: "Makes", val: uniqueMakes, glow: PURPLE, raw: false },
+              { label: "Combined HP", val: totalHp, glow: RED, raw: false },
+              { label: "Avg Year", val: Math.round(registrations.reduce((s, r) => s + r.vehicle_year, 0) / (registrations.length || 1)), glow: GREEN, raw: true },
+              { label: "Tonnage", val: Math.round(totalWeight / 2000 * 10) / 10, suffix: "t", glow: ORANGE, raw: false },
+              { label: "Sticker Total", val: totalMsrp, prefix: "$", glow: GOLD, raw: false },
+            ].map((m) => (
               <div key={m.label} style={{ background: BG, padding: "1.2rem 1rem", position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: `linear-gradient(to right, transparent, ${m.glow}30, transparent)` }} />
                 <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.2em", color: TEXT_MUTED, marginBottom: "0.4rem" }}>{m.label}</p>
                 <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.8rem", fontWeight: 600, color: "#fff", lineHeight: 1, fontVariantNumeric: "tabular-nums", textShadow: `0 0 20px ${m.glow}40` }}>
-                  <AnimNum target={typeof m.val === "number" ? m.val : 0} prefix={m.prefix || ""} suffix={m.suffix || ""} />
+                  <AnimNum target={typeof m.val === "number" ? m.val : 0} prefix={m.prefix || ""} suffix={m.suffix || ""} raw={m.raw} />
                 </p>
               </div>
             ))}
@@ -362,7 +419,27 @@ export default function AnalyticsPage() {
           </GlassCard>
           <GlassCard title="Colors">
             <div style={{ height: 300 }}>
-              <ResponsivePie data={byColor.slice(0, 8)} theme={nivoTheme} colors={ACCENT_COLORS} innerRadius={0.6} padAngle={2} cornerRadius={3} margin={{ top: 15, right: 60, bottom: 15, left: 60 }} arcLinkLabelsColor={{ from: "color" }} arcLinkLabelsTextColor={TEXT} arcLinkLabelsThickness={1.5} arcLabelsTextColor="#fff" enableArcLabels={false} animate motionConfig="gentle" />
+              <ResponsivePie
+                data={byColor.slice(0, 10)}
+                theme={nivoTheme}
+                colors={(d) => {
+                  const colorMap: Record<string, string> = {
+                    Red: "#dc2626", Blue: "#2563eb", Green: "#16a34a", Black: "#27272a",
+                    White: "#d4d4d8", Silver: "#94a3b8", Gray: "#6b7280", Yellow: "#eab308",
+                    Orange: "#ea580c", Gold: "#c9a84c", Brown: "#92400e", Purple: "#7c3aed",
+                    Pink: "#ec4899", Beige: "#d4a574", Unknown: "#525252",
+                  };
+                  return colorMap[d.id] || "#525252";
+                }}
+                innerRadius={0.6} padAngle={2} cornerRadius={3}
+                margin={{ top: 15, right: 60, bottom: 15, left: 60 }}
+                arcLinkLabelsColor={{ from: "color" }}
+                arcLinkLabelsTextColor={TEXT}
+                arcLinkLabelsThickness={1.5}
+                arcLabelsTextColor="#fff"
+                enableArcLabels={false}
+                animate motionConfig="gentle"
+              />
             </div>
           </GlassCard>
         </div>
