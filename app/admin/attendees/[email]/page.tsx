@@ -419,13 +419,28 @@ export default function AttendeeDetailPage() {
               }}
             >
               {registrations.map((reg) => (
-                <div
+                <Link
                   key={reg.id}
+                  href={`/admin/registrations/${reg.id}`}
                   style={{
                     background: "var(--white)",
                     border: "1px solid rgba(0,0,0,0.08)",
                     boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                     overflow: "hidden",
+                    textDecoration: "none",
+                    color: "inherit",
+                    display: "block",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--gold)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
+                    e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
+                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
                   {reg.ai_image_url ? (
@@ -456,14 +471,8 @@ export default function AttendeeDetailPage() {
                         {reg.checked_in ? "Checked In" : "Not Checked In"}
                       </span>
                     </div>
-                    <Link
-                      href={`/admin/registrations/${reg.id}`}
-                      style={{ fontSize: "0.8rem", color: "var(--gold)", textDecoration: "none", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}
-                    >
-                      View Details &rarr;
-                    </Link>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
