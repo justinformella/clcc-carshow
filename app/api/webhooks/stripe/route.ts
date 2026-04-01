@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     if (registrationIds.length > 0) {
       const supabase = createServerClient();
 
+      // Only update registrations that are still pending — don't overwrite archived/refunded/comped
       const { error } = await supabase
         .from("registrations")
         .update({
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
           paid_at: new Date().toISOString(),
           stripe_payment_intent_id: session.payment_intent as string,
         })
-        .in("id", registrationIds);
+        .in("id", registrationIds)
+        .eq("payment_status", "pending");
 
       if (error) {
         console.error("Failed to update registrations:", error);
