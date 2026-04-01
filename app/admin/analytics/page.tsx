@@ -248,6 +248,7 @@ export default function AnalyticsPage() {
   const totalHp = specs.reduce((s, sp) => s + (sp.horsepower || 0), 0);
   const totalWeight = specs.reduce((s, sp) => s + (sp.weight_lbs || 0), 0);
   const totalMsrp = specs.reduce((s, sp) => s + (sp.original_msrp || 0), 0);
+  const totalMsrpAdjusted = specs.reduce((s, sp) => s + ((sp as Record<string, unknown>).msrp_adjusted as number || 0), 0);
   const eventDate = new Date("2026-05-17T00:00:00");
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const daysUntil = Math.max(0, Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
@@ -364,14 +365,15 @@ export default function AnalyticsPage() {
           </GlassCard>
 
           {/* Stat grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: SURFACE_BORDER, borderRadius: "4px", overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1px", background: SURFACE_BORDER, borderRadius: "4px", overflow: "hidden" }}>
             {[
               { label: "Vehicles", val: registrations.length, glow: CYAN, raw: false },
               { label: "Makes", val: uniqueMakes, glow: PURPLE, raw: false },
               { label: "Combined HP", val: totalHp, glow: RED, raw: false },
               { label: "Avg Year", val: Math.round(registrations.reduce((s, r) => s + r.vehicle_year, 0) / (registrations.length || 1)), glow: GREEN, raw: true },
               { label: "Tonnage", val: Math.round(totalWeight / 2000 * 10) / 10, suffix: "t", glow: ORANGE, raw: false },
-              { label: "Sticker Total", val: totalMsrp, prefix: "$", glow: GOLD, raw: false },
+              { label: "Original Sticker", val: totalMsrp, prefix: "$", glow: GOLD, raw: false },
+              { label: "In 2026 Dollars", val: totalMsrpAdjusted, prefix: "$", glow: ORANGE, raw: false },
             ].map((m) => (
               <div key={m.label} style={{ background: BG, padding: "1.2rem 1rem", position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: `linear-gradient(to right, transparent, ${m.glow}30, transparent)` }} />
