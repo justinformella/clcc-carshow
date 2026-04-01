@@ -775,7 +775,7 @@ export default function RegistrationDetailPage() {
                 return (
                   <DetailSection title="Location">
                     <iframe
-                      src={`https://maps.google.com/maps?q=${mapQuery}&output=embed&z=13`}
+                      src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${mapQuery}&zoom=11`}
                       style={{
                         width: "100%",
                         height: "250px",

@@ -373,310 +373,177 @@ export default function AttendeeDetailPage() {
         )}
       </div>
 
-      {/* Two-column layout */}
+      {/* Full-width stacked layout */}
       {!editing && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 340px",
-            gap: "1.5rem",
-            alignItems: "start",
-          }}
-        >
-          {/* Left column */}
-          <div>
-            {/* Contact Info */}
-            <SidebarCard title="Contact">
-              <InfoItem label="Email" value={email} />
-              <InfoItem label="Phone" value={first.phone || "\u2014"} />
-              <InfoItem label="Address" value={
-                [first.address_street, [first.address_city, first.address_state].filter(Boolean).join(", "), first.address_zip].filter(Boolean).join(", ") || "\u2014"
-              } />
-            </SidebarCard>
-
-            {/* Gravatar profile */}
-            {!gravatarLoading && gravatar && (
-              <SidebarCard title="Profile">
-                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                  {gravatar.avatar_url && (
-                    <img src={gravatar.avatar_url} alt={gravatar.display_name} style={{ width: "56px", height: "56px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-                  )}
-                  <div>
-                    {gravatar.display_name && <p style={{ fontWeight: 600, fontSize: "0.95rem" }}>{gravatar.display_name}</p>}
-                    {(gravatar.job_title || gravatar.company) && (
-                      <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
-                        {gravatar.job_title}{gravatar.job_title && gravatar.company && " at "}{gravatar.company}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </SidebarCard>
-            )}
-
-            {/* Vehicles */}
-            <h2
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "1.25rem",
-                fontWeight: 400,
-                paddingBottom: "0.5rem",
-                borderBottom: "1px solid rgba(0,0,0,0.1)",
-                marginBottom: "1.25rem",
-              }}
-            >
-              Vehicles ({registrations.length})
-            </h2>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "1.25rem",
-              }}
-            >
-              {registrations.map((reg) => (
-                <Link
-                  key={reg.id}
-                  href={`/admin/registrations/${reg.id}`}
-                  style={{
-                    background: "var(--white)",
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                    overflow: "hidden",
-                    textDecoration: "none",
-                    color: "inherit",
-                    display: "block",
-                    transition: "all 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "var(--gold)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
-                    e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
-                    e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
-                  {reg.ai_image_url ? (
-                    <img
-                      src={reg.ai_image_url}
-                      alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
-                      style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }}
-                    />
-                  ) : (
-                    <div style={{ width: "100%", height: "180px", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-light)", fontSize: "0.8rem" }}>
-                      No image
-                    </div>
-                  )}
-                  <div style={{ padding: "1rem 1.25rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.3rem" }}>
-                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem" }}>
-                        <span style={{ color: "var(--gold)" }}>#{reg.car_number}</span>{" "}
-                        {reg.vehicle_year} {reg.vehicle_make} {reg.vehicle_model}
-                        {reg.vehicle_color ? ` \u2014 ${reg.vehicle_color}` : ""}
-                      </span>
-                      <PaymentBadge status={reg.payment_status} />
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                      <span style={{
-                        display: "inline-block", padding: "0.2rem 0.6rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase",
-                        background: reg.checked_in ? "#e8f5e9" : "#f5f5f5", color: reg.checked_in ? "#2e7d32" : "#616161",
-                      }}>
-                        {reg.checked_in ? "Checked In" : "Not Checked In"}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+        <>
+          {/* Stats bar */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              gap: "1rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <StatCard label="Vehicles" value={`${registrations.length}`} />
+            <StatCard label="Registration" value={`$${(totalPaid / 100).toLocaleString()}`} />
+            <StatCard label="Donations" value={totalDonated > 0 ? `$${(totalDonated / 100).toLocaleString()}` : "$0"} />
+            <StatCard label="Total" value={`$${((totalPaid + totalDonated) / 100).toLocaleString()}`} highlight />
+            <StatCard
+              label="Check-In"
+              value={`${checkedInCount}/${registrations.length}`}
+              highlight={checkedInCount === registrations.length}
+            />
           </div>
 
-          {/* Right sidebar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            {/* Financials */}
-            <SidebarCard title="Financials">
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <FinancialRow label="Registration Fees" value={`$${(totalPaid / 100).toLocaleString()}`} />
-                <FinancialRow label="Donations" value={totalDonated > 0 ? `$${(totalDonated / 100).toLocaleString()}` : "$0"} />
-                <div style={{ borderTop: "2px solid #ddd", paddingTop: "0.5rem", marginTop: "0.25rem" }}>
-                  <FinancialRow label="Total" value={`$${((totalPaid + totalDonated) / 100).toLocaleString()}`} bold />
+          {/* Contact + Map row */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: (first.address_street || first.address_city) ? "1fr 1fr" : "1fr",
+              gap: "1.5rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <div style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", padding: "1.25rem 1.5rem" }}>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px solid #eee" }}>Contact</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <InfoItem label="Email" value={email} />
+                <InfoItem label="Phone" value={first.phone || "\u2014"} />
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <InfoItem label="Address" value={
+                    [first.address_street, [first.address_city, first.address_state].filter(Boolean).join(", "), first.address_zip].filter(Boolean).join(", ") || "\u2014"
+                  } />
                 </div>
               </div>
-            </SidebarCard>
+              {!gravatarLoading && gravatar && (gravatar.job_title || gravatar.company) && (
+                <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #eee", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  {gravatar.avatar_url && (
+                    <img src={gravatar.avatar_url} alt={gravatar.display_name} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }} />
+                  )}
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
+                    {gravatar.job_title}{gravatar.job_title && gravatar.company && " at "}{gravatar.company && <strong>{gravatar.company}</strong>}
+                  </span>
+                </div>
+              )}
+            </div>
 
-            {/* Check-In Status */}
-            <SidebarCard title="Check-In">
-              <div style={{ textAlign: "center", padding: "0.5rem 0" }}>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: checkedInCount === registrations.length ? "#2e7d32" : "var(--charcoal)" }}>
-                  {checkedInCount}/{registrations.length}
-                </p>
-                <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
-                  {checkedInCount === registrations.length ? "All checked in" : "vehicles checked in"}
-                </p>
-              </div>
-            </SidebarCard>
-
-            {/* Map */}
             {(first.address_street || first.address_city) && (() => {
               const addressParts = [first.address_street, first.address_city, first.address_state, first.address_zip].filter(Boolean).join(", ");
               const mapQuery = encodeURIComponent(addressParts);
               return (
-                <SidebarCard title="Location">
+                <div style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", overflow: "hidden" }}>
                   <iframe
-                    src={`https://maps.google.com/maps?q=${mapQuery}&output=embed&z=13`}
-                    style={{ width: "100%", height: "200px", border: "none" }}
+                    src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${mapQuery}&zoom=11`}
+                    style={{ width: "100%", height: "100%", minHeight: "220px", border: "none", display: "block" }}
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     title="Attendee location"
                   />
-                </SidebarCard>
+                </div>
               );
             })()}
+          </div>
 
+          {/* Vehicles */}
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.25rem", fontWeight: 400, paddingBottom: "0.5rem", borderBottom: "1px solid rgba(0,0,0,0.1)", marginBottom: "1.25rem" }}>
+            Vehicles ({registrations.length})
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "1.5rem" }}>
+            {registrations.map((reg) => (
+              <Link
+                key={reg.id}
+                href={`/admin/registrations/${reg.id}`}
+                style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", overflow: "hidden", textDecoration: "none", color: "inherit", display: "block", transition: "all 0.15s ease" }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)"; e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                {reg.ai_image_url ? (
+                  <img src={reg.ai_image_url} alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`} style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "160px", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-light)", fontSize: "0.8rem" }}>No image</div>
+                )}
+                <div style={{ padding: "0.75rem 1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.3rem" }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.95rem" }}>
+                      <span style={{ color: "var(--gold)" }}>#{reg.car_number}</span> {reg.vehicle_year} {reg.vehicle_make} {reg.vehicle_model}
+                      {reg.vehicle_color ? ` \u2014 ${reg.vehicle_color}` : ""}
+                    </span>
+                    <PaymentBadge status={reg.payment_status} />
+                  </div>
+                  <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", background: reg.checked_in ? "#e8f5e9" : "#f5f5f5", color: reg.checked_in ? "#2e7d32" : "#616161" }}>
+                    {reg.checked_in ? "Checked In" : "Not Checked In"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Activity row: Tickets + Emails side by side */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
             {/* Tickets */}
-            <SidebarCard title={`Tickets (${tickets.length})`}>
-              {tickets.length === 0 ? (
-                <p style={{ fontSize: "0.8rem", color: "var(--text-light)", margin: 0 }}>No tickets</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {tickets.map((t) => (
-                    <Link
-                      key={t.id}
-                      href={`/admin/help-desk/${t.id}`}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "0.4rem 0",
-                        borderBottom: "1px solid rgba(0,0,0,0.04)",
-                        textDecoration: "none",
-                        color: "inherit",
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      <div style={{ minWidth: 0 }}>
-                        <span style={{ color: "var(--gold)", fontWeight: 500 }}>#{t.request_number}</span>{" "}
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.subject}</span>
-                      </div>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          padding: "0.1rem 0.4rem",
-                          fontSize: "0.6rem",
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          flexShrink: 0,
-                          marginLeft: "0.5rem",
-                          background: t.status === "open" || t.status === "in_progress" ? "#fff3e0" : "#f5f5f5",
-                          color: t.status === "open" || t.status === "in_progress" ? "#e65100" : "#616161",
-                        }}
-                      >
+            <div style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              <div style={{ padding: "0.75rem 1.25rem", borderBottom: "1px solid #eee" }}>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", margin: 0 }}>Tickets ({tickets.length})</h3>
+              </div>
+              <div style={{ padding: "0.75rem 1.25rem" }}>
+                {tickets.length === 0 ? (
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-light)", margin: 0 }}>No tickets</p>
+                ) : (
+                  tickets.map((t) => (
+                    <Link key={t.id} href={`/admin/help-desk/${t.id}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0", borderBottom: "1px solid rgba(0,0,0,0.04)", textDecoration: "none", color: "inherit", fontSize: "0.85rem" }}>
+                      <span><span style={{ color: "var(--gold)", fontWeight: 500 }}>#{t.request_number}</span> {t.subject}</span>
+                      <span style={{ display: "inline-block", padding: "0.1rem 0.4rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", flexShrink: 0, marginLeft: "0.5rem", background: t.status === "open" || t.status === "in_progress" ? "#fff3e0" : "#f5f5f5", color: t.status === "open" || t.status === "in_progress" ? "#e65100" : "#616161" }}>
                         {t.status === "in_progress" ? "Active" : t.status === "waiting_on_submitter" ? "Waiting" : t.status}
                       </span>
                     </Link>
-                  ))}
-                </div>
-              )}
-            </SidebarCard>
+                  ))
+                )}
+              </div>
+            </div>
 
             {/* Email Log */}
-            <SidebarCard title={`Emails (${emailLogs.length})`}>
-              {emailLogs.length === 0 ? (
-                <p style={{ fontSize: "0.8rem", color: "var(--text-light)", margin: 0 }}>No emails sent</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                  {emailLogs.slice(0, 10).map((log) => {
-                    const typeLabels: Record<string, string> = {
-                      confirmation: "Confirmation",
-                      admin_notification: "Admin",
-                      announcement: "Announcement",
-                      help_request_reply: "Help Reply",
-                      help_request_confirmation: "Help Confirm",
-                      email_reply: "Inbound",
-                    };
+            <div style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+              <div style={{ padding: "0.75rem 1.25rem", borderBottom: "1px solid #eee" }}>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", margin: 0 }}>Emails ({emailLogs.length})</h3>
+              </div>
+              <div style={{ padding: "0.75rem 1.25rem" }}>
+                {emailLogs.length === 0 ? (
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-light)", margin: 0 }}>No emails sent</p>
+                ) : (
+                  emailLogs.slice(0, 10).map((log) => {
+                    const typeLabels: Record<string, string> = { confirmation: "Confirmation", admin_notification: "Admin", announcement: "Announcement", help_request_reply: "Help Reply", help_request_confirmation: "Help Confirm", email_reply: "Inbound" };
                     return (
-                      <div
-                        key={log.id}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "0.35rem 0",
-                          borderBottom: "1px solid rgba(0,0,0,0.04)",
-                          fontSize: "0.78rem",
-                        }}
-                      >
-                        <span
-                          style={{
-                            display: "inline-block",
-                            padding: "0.1rem 0.4rem",
-                            fontSize: "0.6rem",
-                            fontWeight: 600,
-                            textTransform: "uppercase",
-                            background: "#e3f2fd",
-                            color: "#1565c0",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {typeLabels[log.email_type] || log.email_type}
-                        </span>
-                        <span style={{ color: "var(--text-light)", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                          {new Date(log.sent_at).toLocaleDateString()}
-                        </span>
+                      <div key={log.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0", borderBottom: "1px solid rgba(0,0,0,0.04)", fontSize: "0.8rem" }}>
+                        <span style={{ display: "inline-block", padding: "0.1rem 0.4rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", background: "#e3f2fd", color: "#1565c0" }}>{typeLabels[log.email_type] || log.email_type}</span>
+                        <span style={{ color: "var(--text-light)", fontSize: "0.75rem" }}>{new Date(log.sent_at).toLocaleString()}</span>
                       </div>
                     );
-                  })}
-                  {emailLogs.length > 10 && (
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.25rem" }}>
-                      +{emailLogs.length - 10} more
-                    </p>
-                  )}
-                </div>
-              )}
-            </SidebarCard>
+                  })
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Responsive mobile override */}
-      <style>{`
-        @media (max-width: 899px) {
-          [style*="grid-template-columns: 1fr 340px"] {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
+          {/* Responsive */}
+          <style>{`
+            @media (max-width: 768px) {
+              [style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+              }
+            }
+          `}</style>
+        </>
+      )}
     </>
   );
 }
 
-function SidebarCard({ title, children }: { title: string; children: React.ReactNode }) {
+function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div
-      style={{
-        background: "var(--white)",
-        border: "1px solid rgba(0,0,0,0.08)",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        marginBottom: "1.5rem",
-      }}
-    >
-      <div style={{ padding: "0.75rem 1.25rem", borderBottom: "1px solid #eee" }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", margin: 0 }}>
-          {title}
-        </h3>
-      </div>
-      <div style={{ padding: "1rem 1.25rem" }}>{children}</div>
-    </div>
-  );
-}
-
-function FinancialRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span style={{ fontSize: "0.85rem", color: bold ? "var(--charcoal)" : "var(--text-light)", fontWeight: bold ? 600 : 400 }}>{label}</span>
-      <span style={{ fontSize: bold ? "1.1rem" : "0.9rem", fontWeight: bold ? 700 : 500, color: "var(--charcoal)", fontFamily: bold ? "'Playfair Display', serif" : "inherit" }}>{value}</span>
+    <div style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", padding: "1rem 1.25rem" }}>
+      <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-light)", marginBottom: "0.25rem" }}>{label}</p>
+      <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", color: highlight ? "#2e7d32" : "var(--charcoal)" }}>{value}</p>
     </div>
   );
 }
