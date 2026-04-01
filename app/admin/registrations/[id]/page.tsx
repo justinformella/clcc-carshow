@@ -51,6 +51,7 @@ export default function RegistrationDetailPage() {
   const [contactMessage, setContactMessage] = useState("");
   const [contactSending, setContactSending] = useState(false);
   const [siblingRegs, setSiblingRegs] = useState<Registration[]>([]);
+  const [vehicleSpec, setVehicleSpec] = useState<Record<string, string | number | null> | null>(null);
 
   const fetchRegistration = useCallback(async () => {
     const supabase = createClient();
@@ -74,6 +75,14 @@ export default function RegistrationDetailPage() {
     } else {
       setSiblingRegs([]);
     }
+
+    // Fetch vehicle specs
+    const { data: specData } = await supabase
+      .from("vehicle_specs")
+      .select("*")
+      .eq("registration_id", id)
+      .maybeSingle();
+    setVehicleSpec(specData);
 
     setLoading(false);
   }, [id]);
@@ -795,6 +804,38 @@ export default function RegistrationDetailPage() {
                 <DetailRow label="Model" value={r.vehicle_model} />
                 <DetailRow label="Color" value={r.vehicle_color || "—"} />
               </DetailSection>
+
+              {/* Vehicle Specs (enriched) */}
+              {vehicleSpec && (
+                <DetailSection title="Vehicle Intelligence">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0" }}>
+                    {vehicleSpec.category && <DetailRow label="Category" value={String(vehicleSpec.category)} />}
+                    {vehicleSpec.body_style && <DetailRow label="Body Style" value={String(vehicleSpec.body_style)} />}
+                    {vehicleSpec.country_of_origin && <DetailRow label="Origin" value={String(vehicleSpec.country_of_origin)} />}
+                    {vehicleSpec.era && <DetailRow label="Era" value={String(vehicleSpec.era)} />}
+                    {vehicleSpec.engine_type && <DetailRow label="Engine" value={String(vehicleSpec.engine_type)} />}
+                    {vehicleSpec.cylinders != null && <DetailRow label="Cylinders" value={String(vehicleSpec.cylinders)} />}
+                    {vehicleSpec.displacement_liters != null && <DetailRow label="Displacement" value={`${vehicleSpec.displacement_liters}L`} />}
+                    {vehicleSpec.horsepower != null && <DetailRow label="Horsepower" value={`${vehicleSpec.horsepower} HP`} />}
+                    {vehicleSpec.drive_type && <DetailRow label="Drive" value={String(vehicleSpec.drive_type)} />}
+                    {vehicleSpec.weight_lbs != null && <DetailRow label="Weight" value={`${Number(vehicleSpec.weight_lbs).toLocaleString()} lbs`} />}
+                    {vehicleSpec.original_msrp != null && Number(vehicleSpec.original_msrp) > 0 && <DetailRow label="Original MSRP" value={`$${Number(vehicleSpec.original_msrp).toLocaleString()}`} />}
+                    {vehicleSpec.production_numbers != null && Number(vehicleSpec.production_numbers) > 0 && <DetailRow label="Production" value={`${Number(vehicleSpec.production_numbers).toLocaleString()} units`} />}
+                  </div>
+                  {vehicleSpec.notable_features && (
+                    <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #f0f0f0" }}>
+                      <p style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", marginBottom: "0.4rem" }}>Notable Features</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                        {String(vehicleSpec.notable_features).split(",").map((f, i) => (
+                          <span key={i} style={{ display: "inline-block", padding: "0.2rem 0.6rem", fontSize: "0.75rem", background: "var(--cream)", color: "var(--charcoal)", fontWeight: 500 }}>
+                            {f.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </DetailSection>
+              )}
 
               <DetailSection title="Car's Story">
                 {r.story ? (
