@@ -69,7 +69,7 @@ export type Admin = {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "organizer";
+  role: "admin" | "organizer" | "viewer";
   created_at: string;
   last_login_at: string | null;
 };

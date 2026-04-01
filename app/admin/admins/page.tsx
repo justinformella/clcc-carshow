@@ -214,6 +214,7 @@ export default function AdminsPage() {
                 style={inputStyle}
               >
                 <option value="organizer">Organizer</option>
+                <option value="viewer">Viewer (Read Only)</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
@@ -278,8 +279,8 @@ export default function AdminsPage() {
                       fontSize: "0.7rem",
                       fontWeight: 600,
                       textTransform: "uppercase",
-                      background: admin.role === "admin" ? "#fff3e0" : "#e3f2fd",
-                      color: admin.role === "admin" ? "#e65100" : "#1565c0",
+                      background: admin.role === "admin" ? "#fff3e0" : admin.role === "viewer" ? "#f5f5f5" : "#e3f2fd",
+                      color: admin.role === "admin" ? "#e65100" : admin.role === "viewer" ? "#616161" : "#1565c0",
                     }}
                   >
                     {admin.role}
