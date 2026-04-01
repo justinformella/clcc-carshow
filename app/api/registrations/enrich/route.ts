@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       // Batch mode: enrich all registrations that don't have specs yet
       const { data } = await supabase
         .from("registrations")
-        .select("id, vehicle_year, vehicle_make, vehicle_model")
+        .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_color")
         .in("payment_status", ["paid", "comped"])
         .order("car_number", { ascending: true });
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     } else if (registration_id) {
       const { data } = await supabase
         .from("registrations")
-        .select("id, vehicle_year, vehicle_make, vehicle_model")
+        .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_color")
         .eq("id", registration_id)
         .single();
 
@@ -74,21 +74,23 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "system",
-              content: `You are an authoritative automotive encyclopedia. Given a vehicle year, make, and model, return a JSON object with factory specs for the most common variant.
+              content: `You are an authoritative automotive encyclopedia. Given a vehicle year, make, and model (which may include a trim level like GT, SS, Z28, TRD, etc.), return a JSON object with factory specs.
 
 CRITICAL RULES:
+- Pay close attention to the FULL model name including any trim/package designation. A "Mustang GT" is NOT the same as a base "Mustang" — the GT has a V8, more horsepower, etc. Always match specs to the specific trim provided.
 - All string values must be in Title Case (e.g., "Pony Car" not "pony car", "Coupe" not "coupe")
 - The "era" field must be chosen based on the VEHICLE YEAR, not subjective opinion
-- The "production_numbers" field must be the TOTAL for that model name in that year across ALL trims (e.g., total 1966 Mustangs, not just GTs)
-- The "notable_features" must only include features that were FACTORY STANDARD on this model — do not guess aftermarket modifications
+- The "production_numbers" field must be the TOTAL for that model name in that year across ALL trims (e.g., total 1966 Mustangs, not just GTs). This is typically tens or hundreds of thousands for popular cars.
+- The "notable_features" must only include features that were FACTORY STANDARD on this specific model/trim — do not guess aftermarket modifications
 - Use 0 for production_numbers only if the data is truly unknown
+- For horsepower, displacement, cylinders, and engine_type: use the specs for the SPECIFIC trim/variant named, not the base model
 
 Return ONLY valid JSON with these fields:
 ${Object.entries(SPEC_SCHEMA).map(([k, v]) => `  "${k}": ${v}`).join("\n")}`,
             },
             {
               role: "user",
-              content: `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`,
+              content: `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}${reg.vehicle_color ? ` (${reg.vehicle_color})` : ""}`,
             },
           ],
         });
