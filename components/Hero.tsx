@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CountdownTimer from "./CountdownTimer";
 
 export default function Hero() {
   return (
@@ -14,6 +15,7 @@ export default function Hero() {
         <p className="hero-location">
           Grant, Brink &amp; Williams Streets &middot; Downtown Crystal Lake
         </p>
+        <CountdownTimer />
         <div className="hero-buttons">
           <Link href="/register" className="hero-cta">
             Register Your Vehicle

@@ -1643,3 +1643,124 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+
+/* ─── Countdown Timer ─── */
+.countdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1.25rem 0 1.5rem;
+}
+
+.countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 52px;
+}
+
+.countdown-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.countdown-label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 0.25rem;
+}
+
+.countdown-sep {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-top: -0.6rem;
+    opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+    .countdown-number {
+        font-size: 1.5rem;
+    }
+    .countdown-unit {
+        min-width: 40px;
+    }
+}
+
+/* ─── Sticky Register Bar ─── */
+.sticky-register-bar {
+    background: var(--charcoal);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.sticky-register-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.75rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.sticky-register-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.sticky-register-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    font-weight: 400;
+}
+
+.sticky-register-subtitle {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.02em;
+}
+
+.sticky-register-btn {
+    display: inline-block;
+    padding: 0.7rem 2rem;
+    background: var(--gold);
+    color: var(--charcoal);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.sticky-register-btn:hover {
+    background: #e0b968;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+    .sticky-register-inner {
+        padding: 0.6rem 1rem;
+    }
+    .sticky-register-title {
+        font-size: 0.85rem;
+    }
+    .sticky-register-subtitle {
+        font-size: 0.65rem;
+    }
+    .sticky-register-btn {
+        padding: 0.6rem 1.25rem;
+        font-size: 0.75rem;
+    }
+}
