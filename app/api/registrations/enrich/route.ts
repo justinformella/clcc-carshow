@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 
+// US CPI-U annual averages (Bureau of Labor Statistics). 2026 estimated.
+const CPI: Record<number, number> = {
+  1920: 20.0, 1925: 17.5, 1930: 16.7, 1935: 13.7, 1940: 14.0, 1941: 14.7, 1942: 16.3, 1943: 17.3,
+  1944: 17.6, 1945: 18.0, 1946: 19.5, 1947: 22.3, 1948: 24.1, 1949: 23.8, 1950: 24.1, 1951: 26.0,
+  1952: 26.5, 1953: 26.7, 1954: 26.9, 1955: 26.8, 1956: 27.2, 1957: 28.1, 1958: 28.9, 1959: 29.1,
+  1960: 29.6, 1961: 29.9, 1962: 30.2, 1963: 30.6, 1964: 31.0, 1965: 31.5, 1966: 32.4, 1967: 33.4,
+  1968: 34.8, 1969: 36.7, 1970: 38.8, 1971: 40.5, 1972: 41.8, 1973: 44.4, 1974: 49.3, 1975: 53.8,
+  1976: 56.9, 1977: 60.6, 1978: 65.2, 1979: 72.6, 1980: 82.4, 1981: 90.9, 1982: 96.5, 1983: 99.6,
+  1984: 103.9, 1985: 107.6, 1986: 109.6, 1987: 113.6, 1988: 118.3, 1989: 124.0, 1990: 130.7,
+  1991: 136.2, 1992: 140.3, 1993: 144.5, 1994: 148.2, 1995: 152.4, 1996: 156.9, 1997: 160.5,
+  1998: 163.0, 1999: 166.6, 2000: 172.2, 2001: 177.1, 2002: 179.9, 2003: 184.0, 2004: 188.9,
+  2005: 195.3, 2006: 201.6, 2007: 207.3, 2008: 215.3, 2009: 214.5, 2010: 218.1, 2011: 224.9,
+  2012: 229.6, 2013: 233.0, 2014: 236.7, 2015: 237.0, 2016: 240.0, 2017: 245.1, 2018: 251.1,
+  2019: 255.7, 2020: 258.8, 2021: 271.0, 2022: 292.7, 2023: 304.7, 2024: 313.0, 2025: 319.0,
+  2026: 325.0,
+};
+
+function adjustForInflation(originalMsrp: number, year: number): number {
+  const yearCpi = CPI[year] || CPI[Math.min(...Object.keys(CPI).map(Number).filter((y) => y >= year))] || CPI[2026];
+  const currentCpi = CPI[2026];
+  return Math.round(originalMsrp * (currentCpi / yearCpi));
+}
+
 const SPEC_SCHEMA = {
   body_style: "Title Case. One of: Coupe, Sedan, Convertible, Truck, SUV, Wagon, Hatchback, Roadster, Van, or Other",
   country_of_origin: "Title Case. One of: American, Japanese, German, Italian, British, Korean, Swedish, French, or Other",
@@ -13,7 +36,6 @@ const SPEC_SCHEMA = {
   engine_type: "Title Case. One of: V8, V6, V10, V12, Inline-4, Inline-6, Flat-4, Flat-6, Rotary, Electric, or Other",
   weight_lbs: "approximate curb weight in pounds (integer)",
   original_msrp: "original base MSRP in USD when new (integer). Use the actual sticker price from that year, NOT inflation-adjusted",
-  msrp_adjusted: "the original_msrp adjusted for inflation to 2026 US dollars (integer). Use standard CPI inflation data to calculate this.",
   production_numbers: "TOTAL production numbers for this model name in this model year across ALL trims and variants. For example, ALL 1966 Mustangs made that year, not just the GT trim. Use 0 if truly unknown. This should typically be in the tens of thousands or hundreds of thousands for popular cars.",
   era: "One of: Pre-War (before 1946), Post-War (1946-1959), Muscle Era (1960-1973), Malaise Era (1974-1989), Modern Classic (1990-2009), Contemporary (2010+). Choose based on the vehicle year.",
   notable_features: "Title Case. Comma-separated list of 2-3 features that are FACTORY STANDARD for this model — things that defined this car when it was sold new. Examples: Dual Exhaust, Pop-Up Headlights, T-Tops, Gullwing Doors, Fastback Design. Do NOT guess features that vary by individual car.",
@@ -116,7 +138,9 @@ ${Object.entries(SPEC_SCHEMA).map(([k, v]) => `  "${k}": ${v}`).join("\n")}`,
           engine_type: specs.engine_type || null,
           weight_lbs: specs.weight_lbs != null ? Number(specs.weight_lbs) : null,
           original_msrp: specs.original_msrp != null ? Number(specs.original_msrp) : null,
-          msrp_adjusted: specs.msrp_adjusted != null ? Number(specs.msrp_adjusted) : null,
+          msrp_adjusted: specs.original_msrp != null && Number(specs.original_msrp) > 0
+            ? adjustForInflation(Number(specs.original_msrp), reg.vehicle_year)
+            : null,
           production_numbers: specs.production_numbers != null ? Number(specs.production_numbers) : null,
           era: specs.era || null,
           notable_features: specs.notable_features || null,
