@@ -56,7 +56,7 @@ export default function AttendeeDetailPage() {
       .from("registrations")
       .select("*")
       .ilike("email", email)
-      .in("payment_status", ["paid", "pending"])
+      .in("payment_status", ["paid", "comped", "pending"])
       .order("car_number", { ascending: true });
     setRegistrations(data || []);
     setLoading(false);
@@ -692,6 +692,7 @@ function PaymentBadge({
     { label: string; bg: string; color: string }
   > = {
     paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },
+    comped: { label: "Comped", bg: "#ede7f6", color: "#5e35b1" },
     pending: { label: "Unpaid", bg: "#fff3e0", color: "#e65100" },
     refunded: { label: "Refunded", bg: "#fce4ec", color: "#c62828" },
     archived: { label: "Archived", bg: "#f5f5f5", color: "#616161" },
