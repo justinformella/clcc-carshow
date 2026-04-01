@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 
 export async function generateCarImage(registrationId: string): Promise<string> {
@@ -15,7 +14,7 @@ export async function generateCarImage(registrationId: string): Promise<string> 
     throw new Error("Registration not found");
   }
 
-  // Build a descriptive prompt from the registration data
+  // Build a descriptive prompt
   const parts = [
     `A photorealistic photograph of a ${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`,
   ];
@@ -31,24 +30,16 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
   const prompt = parts.join(" ");
 
-  // Call OpenAI image generation
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  // Generate image — try Imagen 3 first, fall back to OpenAI
+  let buffer: Buffer;
+  const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
-  const response = await openai.images.generate({
-    model: "gpt-image-1",
-    prompt,
-    n: 1,
-    size: "1536x1024",
-    quality: "high",
-  });
-
-  const imageData = response.data?.[0];
-  if (!imageData?.b64_json) {
-    throw new Error("No image generated");
+  if (geminiKey) {
+    buffer = await generateWithImagen(geminiKey, prompt);
+  } else {
+    buffer = await generateWithOpenAI(prompt);
   }
 
-  // Decode base64 to buffer for storage upload
-  const buffer = Buffer.from(imageData.b64_json, "base64");
   const fileName = `${registrationId}.png`;
 
   // Ensure the storage bucket exists (idempotent)
@@ -76,7 +67,7 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
   const imageUrl = `${urlData.publicUrl}?v=${Date.now()}`;
 
-  // Save the URL to the registration record (with cache-buster)
+  // Save the URL to the registration record
   const { error: updateError } = await supabase
     .from("registrations")
     .update({ ai_image_url: imageUrl })
@@ -87,4 +78,57 @@ export async function generateCarImage(registrationId: string): Promise<string> 
   }
 
   return imageUrl;
+}
+
+async function generateWithImagen(apiKey: string, prompt: string): Promise<Buffer> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: "3:2",
+        },
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("Imagen API error:", err);
+    // Fall back to OpenAI
+    return generateWithOpenAI(prompt);
+  }
+
+  const data = await res.json();
+  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+  if (!b64) {
+    console.error("Imagen returned no image, falling back to OpenAI");
+    return generateWithOpenAI(prompt);
+  }
+
+  return Buffer.from(b64, "base64");
+}
+
+async function generateWithOpenAI(prompt: string): Promise<Buffer> {
+  const OpenAI = (await import("openai")).default;
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const response = await openai.images.generate({
+    model: "gpt-image-1",
+    prompt,
+    n: 1,
+    size: "1536x1024",
+    quality: "high",
+  });
+
+  const imageData = response.data?.[0];
+  if (!imageData?.b64_json) {
+    throw new Error("No image generated");
+  }
+
+  return Buffer.from(imageData.b64_json, "base64");
 }
