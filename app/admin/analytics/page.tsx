@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div style={{ background: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", margin: "-2rem", padding: "2rem" }}>
+      <div style={{ background: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", margin: "-2rem", padding: "2rem", width: "calc(100% + 4rem)" }}>
         <p style={{ color: TEXT_DIM, fontSize: "1rem" }}>Loading analytics...</p>
       </div>
     );
@@ -195,7 +195,7 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div style={{ background: BG, margin: "-2rem", padding: "2rem", minHeight: "calc(100vh - 0px)" }}>
+    <div style={{ background: BG, margin: "-2rem", padding: "2rem", minHeight: "100vh", width: "calc(100% + 4rem)" }}>
       {/* ─── Header ─── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <div>
@@ -583,8 +583,11 @@ export default function AnalyticsPage() {
         </>
       )}
 
-      {/* Responsive */}
+      {/* Full bleed + Responsive */}
       <style>{`
+        .admin-content > div {
+          max-width: none !important;
+        }
         @media (max-width: 1100px) {
           [style*="grid-template-columns: 3fr 2fr"],
           [style*="grid-template-columns: 1fr 1fr 1fr"] {
