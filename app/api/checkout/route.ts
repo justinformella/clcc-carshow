@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
     // Geocode address in the background (non-blocking)
     if (address_street || address_city) {
       const addrStr = [address_street, address_city, address_state, address_zip].filter(Boolean).join(", ");
-      const gMapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      const gMapsKey = process.env.GOOGLE_GEOCODING_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
       const geocodeUrl = gMapsKey
         ? `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addrStr)}&key=${gMapsKey}`
