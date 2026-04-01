@@ -3,7 +3,6 @@ import { createServerClient } from "@/lib/supabase-server";
 export async function generateCarImage(registrationId: string): Promise<string> {
   const supabase = createServerClient();
 
-  // Fetch the registration
   const { data: reg, error: fetchError } = await supabase
     .from("registrations")
     .select("*")
@@ -14,7 +13,6 @@ export async function generateCarImage(registrationId: string): Promise<string> 
     throw new Error("Registration not found");
   }
 
-  // Build a descriptive prompt
   const parts = [
     `A photorealistic photograph of a ${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`,
   ];
@@ -30,25 +28,28 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
   const prompt = parts.join(" ");
 
-  // Generate image — try Imagen 3 first, fall back to OpenAI
+  // Generate image — Imagen 4.0 first, fall back to OpenAI
   let buffer: Buffer;
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
   if (geminiKey) {
-    buffer = await generateWithImagen(geminiKey, prompt);
+    try {
+      buffer = await generateWithImagen(geminiKey, prompt);
+    } catch (err) {
+      console.error("Imagen failed, falling back to OpenAI:", err);
+      buffer = await generateWithOpenAI(prompt);
+    }
   } else {
     buffer = await generateWithOpenAI(prompt);
   }
 
   const fileName = `${registrationId}.png`;
 
-  // Ensure the storage bucket exists (idempotent)
   await supabase.storage.createBucket("car-images", {
     public: true,
     allowedMimeTypes: ["image/png"],
   });
 
-  // Upload to Supabase Storage (upsert to allow regeneration)
   const { error: uploadError } = await supabase.storage
     .from("car-images")
     .upload(fileName, buffer, {
@@ -60,14 +61,12 @@ export async function generateCarImage(registrationId: string): Promise<string> 
     throw new Error(`Failed to upload image: ${uploadError.message}`);
   }
 
-  // Get the public URL
   const { data: urlData } = supabase.storage
     .from("car-images")
     .getPublicUrl(fileName);
 
   const imageUrl = `${urlData.publicUrl}?v=${Date.now()}`;
 
-  // Save the URL to the registration record
   const { error: updateError } = await supabase
     .from("registrations")
     .update({ ai_image_url: imageUrl })
@@ -82,7 +81,7 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
 async function generateWithImagen(apiKey: string, prompt: string): Promise<Buffer> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -90,7 +89,7 @@ async function generateWithImagen(apiKey: string, prompt: string): Promise<Buffe
         instances: [{ prompt }],
         parameters: {
           sampleCount: 1,
-          aspectRatio: "3:2",
+          aspectRatio: "16:9",
         },
       }),
     }
@@ -98,16 +97,13 @@ async function generateWithImagen(apiKey: string, prompt: string): Promise<Buffe
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("Imagen API error:", err);
-    // Fall back to OpenAI
-    return generateWithOpenAI(prompt);
+    throw new Error(`Imagen API error: ${err}`);
   }
 
   const data = await res.json();
   const b64 = data.predictions?.[0]?.bytesBase64Encoded;
   if (!b64) {
-    console.error("Imagen returned no image, falling back to OpenAI");
-    return generateWithOpenAI(prompt);
+    throw new Error("Imagen returned no image data");
   }
 
   return Buffer.from(b64, "base64");
