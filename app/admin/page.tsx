@@ -120,6 +120,10 @@ export default function AdminDashboard() {
   }, 0);
 
   const projectedTotal = totalRevenue + sponsorRevenue + committedProjected;
+  const fullCapacityReg = maxRegistrations * 3000; // $30 per vehicle
+  const avgDonationPerReg = paidRegistrations.length > 0 ? donationRevenueCents / paidRegistrations.length : 0;
+  const fullCapacityDonations = Math.round(avgDonationPerReg * maxRegistrations);
+  const fullCapacityTotal = fullCapacityReg + fullCapacityDonations + sponsorRevenue + committedProjected;
 
   const adRegistrations = registrations.filter((r) => r.utm_source);
   const adSourceCounts: Record<string, number> = {};
@@ -341,15 +345,13 @@ export default function AdminDashboard() {
           note="available"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>}
         />
-        {committedProjected > 0 && (
-          <DashboardCard
-            href="/admin/finances"
-            label="Projected Income"
-            value={`$${(projectedTotal / 100).toLocaleString()}`}
-            note={`incl. $${(committedProjected / 100).toLocaleString()} committed sponsors`}
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
-          />
-        )}
+        <DashboardCard
+          href="/admin/finances"
+          label="Full Capacity Forecast"
+          value={`$${(fullCapacityTotal / 100).toLocaleString()}`}
+          note={`if all ${maxRegistrations} spots fill`}
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
+        />
       </div>
 
       {/* ─── Sponsors & Revenue | Marketing ─── */}

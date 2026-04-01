@@ -412,20 +412,76 @@ export default function FinancesPage() {
           note="after Stripe processing"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
         />
-        {committedProjected > 0 && (
-          <SummaryCard
-            label="Projected Income"
-            value={fmtMoney(projectedTotal)}
-            note={`incl. ${fmtMoney(committedProjected)} committed sponsors`}
-            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>}
-          />
-        )}
-        <SummaryCard
-          label="Full Capacity Potential"
-          value={fmtMoney(fullCapacityTotal)}
-          note={`${maxRegistrations} vehicles × $${REGISTRATION_PRICE_CENTS / 100}${fullCapacityDonations > 0 ? ` + ${fmtMoney(fullCapacityDonations)} est. donations` : ""}`}
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>}
-        />
+      </div>
+
+      {/* ── Forecast Section ── */}
+      <div
+        style={{
+          background: "var(--charcoal)",
+          padding: "2rem",
+          marginBottom: "3rem",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ position: "absolute", top: "-80px", right: "-40px", width: "300px", height: "300px", borderRadius: "50%", background: "rgba(201,168,76,0.06)", pointerEvents: "none" }} />
+        <div style={{ position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.4rem", fontWeight: 400, color: "#fff", margin: 0 }}>
+              Full Capacity Forecast
+            </h2>
+            <span style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "rgba(255,255,255,0.35)", marginLeft: "0.5rem" }}>
+              {maxRegistrations} vehicles at ${REGISTRATION_PRICE_CENTS / 100}/each
+            </span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1px", background: "rgba(255,255,255,0.08)", marginBottom: "1.5rem" }}>
+            {[
+              { label: "Registration Revenue", value: fmtMoney(fullCapacityReg), detail: `${maxRegistrations} × $${REGISTRATION_PRICE_CENTS / 100}` },
+              { label: "Est. Donations", value: fmtMoney(fullCapacityDonations), detail: paidRegs.length > 0 ? `${fmtMoney(Math.round(avgDonationPerReg))} avg/registrant` : "no donation data yet" },
+              { label: "Sponsor Revenue", value: fmtMoney(sponsorRevenue + committedProjected), detail: `${paidSponsors.length} confirmed${committedUnpaid.length > 0 ? ` + ${committedUnpaid.length} committed` : ""}` },
+              { label: "Gross Revenue", value: fmtMoney(fullCapacityTotal), highlight: true, detail: "total before fees" },
+              { label: "Est. Stripe Fees", value: `- ${fmtMoney(Math.round(estimateStripeFee(REGISTRATION_PRICE_CENTS) * maxRegistrations + (fullCapacityDonations > 0 ? estimateStripeFee(Math.round(avgDonationPerReg)) * maxRegistrations : 0)))}`, detail: "~2.9% + $0.30/txn" },
+              { label: "Net to Charity", value: fmtMoney(fullCapacityTotal - Math.round(estimateStripeFee(REGISTRATION_PRICE_CENTS) * maxRegistrations + (fullCapacityDonations > 0 ? estimateStripeFee(Math.round(avgDonationPerReg)) * maxRegistrations : 0)) - totalAdSpend), highlight: true, detail: "after fees & ad spend", gold: true },
+            ].map((item) => (
+              <div key={item.label} style={{ background: "var(--charcoal)", padding: "1.25rem 1rem" }}>
+                <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "rgba(255,255,255,0.35)", marginBottom: "0.4rem" }}>{item.label}</p>
+                <p style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: item.highlight ? "1.6rem" : "1.3rem",
+                  color: (item as { gold?: boolean }).gold ? "#c9a84c" : "#fff",
+                  lineHeight: 1,
+                  marginBottom: "0.3rem",
+                }}>
+                  {item.value}
+                </p>
+                <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.3)" }}>{item.detail}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress toward capacity */}
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+              <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.5)" }}>
+                {paidRegs.length} of {maxRegistrations} spots filled
+              </span>
+              <span style={{ fontSize: "0.7rem", color: "#c9a84c", fontWeight: 600 }}>
+                {Math.round((paidRegs.length / maxRegistrations) * 100)}%
+              </span>
+            </div>
+            <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                width: `${Math.min((paidRegs.length / maxRegistrations) * 100, 100)}%`,
+                background: "linear-gradient(to right, #c9a84c, #e8c860)",
+                borderRadius: "3px",
+                transition: "width 1s ease",
+              }} />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── 3. Two-column chart row ── */}
