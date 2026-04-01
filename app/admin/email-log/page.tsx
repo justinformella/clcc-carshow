@@ -25,7 +25,7 @@ export default function EmailLogPage() {
     const fetchLogs = async () => {
       const supabase = createClient();
       const { data } = await supabase
-        .from("email_logs")
+        .from("email_log")
         .select("*")
         .order("sent_at", { ascending: false })
         .limit(500);
