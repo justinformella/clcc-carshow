@@ -25,6 +25,7 @@ type VehicleSpec = {
   production_numbers: number | null;
   era: string | null;
   notable_features: string | null;
+  msrp_adjusted: number | null;
 };
 
 type RegWithSpec = Registration & { spec?: VehicleSpec };
@@ -248,7 +249,7 @@ export default function AnalyticsPage() {
   const totalHp = specs.reduce((s, sp) => s + (sp.horsepower || 0), 0);
   const totalWeight = specs.reduce((s, sp) => s + (sp.weight_lbs || 0), 0);
   const totalMsrp = specs.reduce((s, sp) => s + (sp.original_msrp || 0), 0);
-  const totalMsrpAdjusted = specs.reduce((s, sp) => s + ((sp as Record<string, unknown>).msrp_adjusted as number || 0), 0);
+  const totalMsrpAdjusted = specs.reduce((s, sp) => s + (sp.msrp_adjusted || 0), 0);
   const eventDate = new Date("2026-05-17T00:00:00");
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const daysUntil = Math.max(0, Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
@@ -286,7 +287,7 @@ export default function AnalyticsPage() {
     { stat: "Weight", value: Math.round(specsWithData.reduce((s, sp) => s + (sp.weight_lbs || 0), 0) / specsWithData.length / 50) },
     { stat: "Displ.", value: Math.round(specs.filter((s) => s.displacement_liters).reduce((s, sp) => s + (Number(sp.displacement_liters) || 0), 0) / (specs.filter((s) => s.displacement_liters).length || 1) * 10) },
     { stat: "Rarity", value: Math.min(100, Math.round(100 - (specs.filter((s) => s.production_numbers).reduce((s, sp) => s + Math.min(sp.production_numbers || 100000, 100000), 0) / (specs.filter((s) => s.production_numbers).length || 1)) / 1000)) },
-    { stat: "Value", value: Math.round(specs.filter((s) => s.original_msrp).reduce((s, sp) => s + (sp.original_msrp || 0), 0) / (specs.filter((s) => s.original_msrp).length || 1) / 500) },
+    { stat: "Price", value: Math.round(specs.filter((s) => s.msrp_adjusted || s.original_msrp).reduce((s, sp) => s + (sp.msrp_adjusted || sp.original_msrp || 0), 0) / (specs.filter((s) => s.msrp_adjusted || s.original_msrp).length || 1) / 500) },
   ] : [];
 
   // Leaderboard
@@ -294,7 +295,7 @@ export default function AnalyticsPage() {
     const items = regsWithSpecs.filter((r) => r.spec);
     if (leaderboard === "hp") return items.sort((a, b) => (b.spec?.horsepower || 0) - (a.spec?.horsepower || 0));
     if (leaderboard === "rare") return items.filter((r) => r.spec?.production_numbers && r.spec.production_numbers > 0).sort((a, b) => (a.spec?.production_numbers || Infinity) - (b.spec?.production_numbers || Infinity));
-    return items.filter((r) => r.spec?.original_msrp && r.spec.original_msrp > 0).sort((a, b) => (b.spec?.original_msrp || 0) - (a.spec?.original_msrp || 0));
+    return items.filter((r) => r.spec?.msrp_adjusted || r.spec?.original_msrp).sort((a, b) => (b.spec?.msrp_adjusted || b.spec?.original_msrp || 0) - (a.spec?.msrp_adjusted || a.spec?.original_msrp || 0));
   })().slice(0, 8);
 
   const nivoTheme = {
@@ -503,7 +504,7 @@ export default function AnalyticsPage() {
             <SectionDivider label="Leaderboard" />
             <GlassCard headerRight={
               <div style={{ display: "flex", gap: "2px", borderRadius: "2px", overflow: "hidden" }}>
-                {([["hp", "Power"], ["rare", "Rarest"], ["value", "Value"]] as const).map(([key, label]) => (
+                {([["hp", "Power"], ["rare", "Rarest"], ["value", "Original Price"]] as const).map(([key, label]) => (
                   <button key={key} onClick={() => setLeaderboard(key)} style={{ padding: "0.3rem 0.7rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", border: "none", cursor: "pointer", background: leaderboard === key ? GOLD : "rgba(255,255,255,0.06)", color: leaderboard === key ? BG : TEXT_MUTED, transition: "all 0.2s" }}>
                     {label}
                   </button>
@@ -516,7 +517,7 @@ export default function AnalyticsPage() {
                     <th style={thDark}></th>
                     <th style={thDark}>Vehicle</th>
                     <th style={thDark}>Category</th>
-                    <th style={{ ...thDark, textAlign: "right" }}>{leaderboard === "hp" ? "HP" : leaderboard === "rare" ? "Production" : "MSRP"}</th>
+                    <th style={{ ...thDark, textAlign: "right" }}>{leaderboard === "hp" ? "HP" : leaderboard === "rare" ? "Production" : "2026 Dollars"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -534,7 +535,7 @@ export default function AnalyticsPage() {
                       <td style={{ ...tdDark, textAlign: "right", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.1rem", fontWeight: 600, color: "#fff", fontVariantNumeric: "tabular-nums" }}>
                         {leaderboard === "hp" ? `${r.spec?.horsepower?.toLocaleString() || "—"}` :
                          leaderboard === "rare" ? `${r.spec?.production_numbers?.toLocaleString() || "—"}` :
-                         r.spec?.original_msrp ? `$${r.spec.original_msrp.toLocaleString()}` : "—"}
+                         r.spec?.msrp_adjusted ? `$${r.spec.msrp_adjusted.toLocaleString()}` : r.spec?.original_msrp ? `$${r.spec.original_msrp.toLocaleString()}` : "—"}
                       </td>
                     </tr>
                   ))}
