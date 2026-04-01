@@ -20,10 +20,10 @@ export async function generateCarImage(registrationId: string): Promise<string> 
     parts[0] += ` in ${reg.vehicle_color}`;
   }
   parts.push(
-    "parked on a quiet small-town main street in the early morning golden hour. Historic brick storefronts line the street, no people or other cars visible. Warm sunlight casting long shadows."
+    "in a professional photography studio with a clean white-to-light-gray gradient backdrop. Soft studio lighting from above and sides creating beautiful reflections on the paint and chrome."
   );
   parts.push(
-    "Three-quarter front view facing left. Wide landscape composition with the full car visible and generous space on the sides. Professional automotive photography, shallow depth of field, the background buildings softly out of focus."
+    "Three-quarter front view facing left. Wide landscape composition with the full car visible and generous space on all sides. Car magazine cover quality, crisp detail, no distractions, the car is the entire focus."
   );
 
   const prompt = parts.join(" ");
