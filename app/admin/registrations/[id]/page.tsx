@@ -46,6 +46,10 @@ export default function RegistrationDetailPage() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [showContact, setShowContact] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactSending, setContactSending] = useState(false);
 
   const fetchRegistration = useCallback(async () => {
     const supabase = createClient();
@@ -189,6 +193,47 @@ export default function RegistrationDetailPage() {
 
     if (!error) {
       router.push("/admin/registrations");
+    }
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registration || !contactSubject.trim() || !contactMessage.trim()) return;
+    setContactSending(true);
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: admin } = user?.email
+        ? await supabase.from("admins").select("*").ilike("email", user.email).single()
+        : { data: null };
+
+      // Create help desk ticket via service client
+      const res = await fetch("/api/help-requests/create-from-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          registration_id: registration.id,
+          name: `${registration.first_name} ${registration.last_name}`,
+          email: registration.email,
+          subject: contactSubject,
+          message: contactMessage,
+          admin_name: admin?.name || "Admin",
+          admin_email: admin?.email || user?.email || "",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setShowContact(false);
+        setContactSubject("");
+        setContactMessage("");
+        router.push(`/admin/help-desk/${data.help_request_id}`);
+      }
+    } catch (err) {
+      console.error("Contact error:", err);
+    } finally {
+      setContactSending(false);
     }
   };
 
@@ -479,6 +524,10 @@ export default function RegistrationDetailPage() {
                   <DropdownItem
                     label="Print Placard"
                     onClick={() => { handlePrint(); setMenuOpen(false); }}
+                  />
+                  <DropdownItem
+                    label="Contact Registrant"
+                    onClick={() => { setShowContact(true); setMenuOpen(false); }}
                   />
                   {/* Divider */}
                   <div style={{ borderTop: "1px solid #eee", margin: "0.25rem 0" }} />
@@ -1223,6 +1272,110 @@ export default function RegistrationDetailPage() {
               }
             }
           `}</style>
+        </>
+      )}
+
+      {/* Contact Registrant Modal */}
+      {showContact && (
+        <>
+          <div
+            onClick={() => setShowContact(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 999,
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "var(--white)",
+              padding: "2rem",
+              width: "100%",
+              maxWidth: "520px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              zIndex: 1000,
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "1.4rem",
+                fontWeight: 400,
+                marginBottom: "0.5rem",
+              }}
+            >
+              Contact {r.first_name} {r.last_name}
+            </h2>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1.5rem" }}>
+              Sends an email and creates a help desk ticket for tracking.
+            </p>
+            <form onSubmit={handleContactSubmit} className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
+              <div className="form-group">
+                <label htmlFor="contact-subject">Subject</label>
+                <input
+                  type="text"
+                  id="contact-subject"
+                  value={contactSubject}
+                  onChange={(e) => setContactSubject(e.target.value)}
+                  required
+                  placeholder="e.g. Regarding your registration"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="contact-message">Message</label>
+                <textarea
+                  id="contact-message"
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  required
+                  rows={6}
+                  placeholder="Write your message..."
+                />
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowContact(false)}
+                  style={{
+                    padding: "0.6rem 1.5rem",
+                    background: "var(--white)",
+                    color: "var(--charcoal)",
+                    border: "1px solid #ddd",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={contactSending || !contactSubject.trim() || !contactMessage.trim()}
+                  style={{
+                    padding: "0.6rem 1.5rem",
+                    background: "var(--gold)",
+                    color: "var(--charcoal)",
+                    border: "none",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    cursor: contactSending ? "not-allowed" : "pointer",
+                    opacity: contactSending ? 0.6 : 1,
+                  }}
+                >
+                  {contactSending ? "Sending..." : "Send & Create Ticket"}
+                </button>
+              </div>
+            </form>
+          </div>
         </>
       )}
     </div>

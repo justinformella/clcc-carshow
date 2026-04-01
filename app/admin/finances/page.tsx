@@ -141,7 +141,7 @@ export default function FinancesPage() {
       dayMap[day].reg += r.amount_paid || 0;
       dayMap[day].donation += r.donation_cents || 0;
     });
-    paidSponsors.forEach((s) => {
+    sponsors.filter((s) => s.status === "paid").forEach((s) => {
       const day = (s.paid_at || s.created_at).slice(0, 10);
       if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0, donation: 0 };
       dayMap[day].sponsor += s.amount_paid || 0;
