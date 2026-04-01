@@ -105,21 +105,29 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [adminNotifs, setAdminNotifs] = useState(true);
+  const [togglingNotifs, setTogglingNotifs] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
       const supabase = createClient();
       const { data } = await supabase
         .from("app_settings")
-        .select("value")
-        .eq("key", "max_registrations")
-        .maybeSingle();
+        .select("key, value")
+        .in("key", ["max_registrations", "admin_notification_emails"]);
 
-      if (data?.value) {
-        const val = parseInt(data.value, 10);
-        if (!isNaN(val)) {
-          setMaxRegs(val);
-          setSavedMax(val);
+      if (data) {
+        for (const row of data) {
+          if (row.key === "max_registrations") {
+            const val = parseInt(row.value, 10);
+            if (!isNaN(val)) {
+              setMaxRegs(val);
+              setSavedMax(val);
+            }
+          }
+          if (row.key === "admin_notification_emails") {
+            setAdminNotifs(row.value === "true");
+          }
         }
       }
       setLoading(false);
@@ -304,6 +312,71 @@ export default function SettingsPage() {
           >
             Controls the cap shown on the registration page and enforced at checkout.
           </p>
+
+          <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", marginTop: "1.5rem", paddingTop: "1.5rem" }}>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "1.1rem",
+                fontWeight: 400,
+                marginBottom: "1.25rem",
+                paddingBottom: "0.5rem",
+                borderBottom: "1px solid rgba(0,0,0,0.08)",
+                color: "var(--charcoal)",
+              }}
+            >
+              Notifications
+            </h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--charcoal)", marginBottom: "0.25rem" }}>
+                  Admin registration emails
+                </p>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
+                  Email all admins when a new registration comes in
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  setTogglingNotifs(true);
+                  const newVal = !adminNotifs;
+                  const supabase = createClient();
+                  await supabase
+                    .from("app_settings")
+                    .update({ value: String(newVal), updated_at: new Date().toISOString() })
+                    .eq("key", "admin_notification_emails");
+                  setAdminNotifs(newVal);
+                  setTogglingNotifs(false);
+                }}
+                disabled={togglingNotifs}
+                style={{
+                  position: "relative",
+                  width: "48px",
+                  height: "26px",
+                  borderRadius: "13px",
+                  border: "none",
+                  background: adminNotifs ? "var(--gold)" : "#ccc",
+                  cursor: togglingNotifs ? "not-allowed" : "pointer",
+                  transition: "background 0.2s",
+                  flexShrink: 0,
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "3px",
+                    left: adminNotifs ? "25px" : "3px",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    background: "#fff",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    transition: "left 0.2s",
+                  }}
+                />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

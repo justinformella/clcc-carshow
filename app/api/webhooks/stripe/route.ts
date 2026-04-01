@@ -77,10 +77,19 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        try {
-          await sendAdminNotification(registrationIds[0]);
-        } catch (err) {
-          console.error("Admin notification email failed:", err);
+        // Check if admin notifications are enabled
+        const { data: notifSetting } = await supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "admin_notification_emails")
+          .maybeSingle();
+
+        if (notifSetting?.value !== "false") {
+          try {
+            await sendAdminNotification(registrationIds[0]);
+          } catch (err) {
+            console.error("Admin notification email failed:", err);
+          }
         }
       });
     }
