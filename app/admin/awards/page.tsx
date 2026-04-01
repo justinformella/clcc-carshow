@@ -196,7 +196,10 @@ export default function AwardsPage() {
                           {rec.vehicle}
                           {rec.color ? ` — ${rec.color}` : ""}
                         </p>
-                        <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>{rec.owner}</p>
+                        <p style={{ fontSize: "0.8rem", color: "var(--text-light)", marginBottom: "0.3rem" }}>{rec.owner}</p>
+                        <p style={{ fontSize: "0.8rem", color: "var(--text-light)", fontStyle: "italic", margin: 0 }}>
+                          {rec.justification}
+                        </p>
                       </div>
                       </div>
                       <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0, marginLeft: "1rem" }}>
@@ -229,9 +232,6 @@ export default function AwardsPage() {
                         </button>
                       </div>
                     </div>
-                    <p style={{ fontSize: "0.8rem", color: "var(--text-light)", fontStyle: "italic", margin: 0 }}>
-                      {rec.justification}
-                    </p>
                   </div>
                 );
               })}
