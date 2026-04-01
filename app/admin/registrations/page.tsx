@@ -570,7 +570,7 @@ export default function RegistrationsPage() {
                   alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
                   style={{
                     width: "100%",
-                    height: "200px",
+                    aspectRatio: "16/9",
                     objectFit: "cover",
                     display: "block",
                   }}
@@ -579,7 +579,7 @@ export default function RegistrationsPage() {
                 <div
                   style={{
                     width: "100%",
-                    height: "200px",
+                    aspectRatio: "16/9",
                     background: "var(--cream)",
                     display: "flex",
                     alignItems: "center",
