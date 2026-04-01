@@ -473,7 +473,6 @@ export default function FinancesPage() {
                 <Area
                   type="monotone"
                   dataKey="registrations"
-                  stackId="1"
                   stroke={COLORS.reg}
                   strokeWidth={2}
                   fill="url(#gradReg)"
@@ -481,7 +480,6 @@ export default function FinancesPage() {
                 <Area
                   type="monotone"
                   dataKey="sponsorships"
-                  stackId="1"
                   stroke={COLORS.sponsor}
                   strokeWidth={2}
                   fill="url(#gradSponsor)"
@@ -489,7 +487,6 @@ export default function FinancesPage() {
                 <Area
                   type="monotone"
                   dataKey="donations"
-                  stackId="1"
                   stroke={COLORS.green}
                   strokeWidth={2}
                   fill="url(#gradDonation)"

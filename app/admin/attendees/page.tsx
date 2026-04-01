@@ -22,6 +22,8 @@ type Attendee = {
   addressState: string | null;
   vehicles: Registration[];
   totalPaid: number;
+  totalRegistration: number;
+  totalDonation: number;
   checkedInCount: number;
 };
 
@@ -45,6 +47,8 @@ function groupByEmail(registrations: Registration[]): Attendee[] {
       addressState: first.address_state,
       vehicles,
       totalPaid: vehicles.reduce((sum, v) => sum + (v.amount_paid || 0) + (v.donation_cents || 0), 0),
+      totalRegistration: vehicles.reduce((sum, v) => sum + (v.amount_paid || 0), 0),
+      totalDonation: vehicles.reduce((sum, v) => sum + (v.donation_cents || 0), 0),
       checkedInCount: vehicles.filter((v) => v.checked_in).length,
     };
   });
@@ -253,7 +257,8 @@ export default function AttendeesPage() {
               <th style={thStyle}>Name</th>
               <th style={thStyle}>Email</th>
               <th style={thStyle}>Vehicles</th>
-              <th style={thStyle}>Total Paid</th>
+              <th style={thStyle}>Registration</th>
+              <th style={thStyle}>Donation</th>
               <th style={thStyle}>Check-In</th>
             </tr>
           </thead>
@@ -299,7 +304,10 @@ export default function AttendeesPage() {
                   </span>
                 </td>
                 <td style={tdStyle}>
-                  ${(a.totalPaid / 100).toLocaleString()}
+                  ${(a.totalRegistration / 100).toLocaleString()}
+                </td>
+                <td style={tdStyle}>
+                  {a.totalDonation > 0 ? `$${(a.totalDonation / 100).toLocaleString()}` : "—"}
                 </td>
                 <td style={tdStyle}>
                   <CheckInBadge
