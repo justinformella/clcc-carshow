@@ -39,7 +39,7 @@ export async function generateCarImage(registrationId: string): Promise<string> 
     prompt,
     n: 1,
     size: "1536x1024",
-    quality: "low",
+    quality: "high",
   });
 
   const imageData = response.data?.[0];
