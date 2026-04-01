@@ -553,6 +553,18 @@ export default function RegistrationDetailPage() {
                     label="Contact Registrant"
                     onClick={() => { setShowContact(true); setMenuOpen(false); }}
                   />
+                  <DropdownItem
+                    label={vehicleSpec ? "Re-enrich Specs" : "Enrich Specs"}
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      await fetch("/api/registrations/enrich", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ registration_id: id }),
+                      });
+                      fetchRegistration();
+                    }}
+                  />
                   {/* Divider */}
                   <div style={{ borderTop: "1px solid #eee", margin: "0.25rem 0" }} />
                   {r.payment_status !== "archived" && (

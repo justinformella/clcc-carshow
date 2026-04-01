@@ -15,6 +15,7 @@ export default function RegistrationsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [archiving, setArchiving] = useState(false);
+  const [sortBy, setSortBy] = useState<"car_number" | "name" | "date" | "vehicle" | "city">("car_number");
   const [viewMode, setViewMode] = useState<"table" | "cards">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("registrations-view") as "table" | "cards") || "cards";
@@ -67,6 +68,14 @@ export default function RegistrationsPage() {
       (statusFilter === "not_checked_in" && !r.checked_in);
 
     return matchesSearch && matchesCategory && matchesStatus;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case "name": return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+      case "date": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case "vehicle": return `${a.vehicle_make} ${a.vehicle_model}`.localeCompare(`${b.vehicle_make} ${b.vehicle_model}`);
+      case "city": return (a.address_city || "").localeCompare(b.address_city || "");
+      default: return (a.car_number || 0) - (b.car_number || 0);
+    }
   });
 
   const exportCSV = () => {
@@ -315,6 +324,22 @@ export default function RegistrationsPage() {
           <option value="">All Status</option>
           <option value="checked_in">Checked In</option>
           <option value="not_checked_in">Not Checked In</option>
+        </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+          style={{
+            padding: "0.6rem 1rem",
+            border: "1px solid #ddd",
+            fontSize: "0.9rem",
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          <option value="car_number">Sort: Car #</option>
+          <option value="name">Sort: Name</option>
+          <option value="date">Sort: Newest First</option>
+          <option value="vehicle">Sort: Vehicle</option>
+          <option value="city">Sort: City</option>
         </select>
         <label
           style={{

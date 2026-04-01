@@ -107,6 +107,12 @@ export default function NewRegistrationPage() {
         setError(insertError?.message || "Failed to create registration");
         return;
       }
+      // Enrich vehicle specs in background
+      fetch("/api/registrations/enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration_id: data.id }),
+      }).catch(() => {});
       router.push(`/admin/registrations/${data.id}`);
     } else {
       const { error: insertError } = await supabase
@@ -118,6 +124,12 @@ export default function NewRegistrationPage() {
         setError(insertError.message || "Failed to create registrations");
         return;
       }
+      // Enrich all new vehicles in background
+      fetch("/api/registrations/enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch: true }),
+      }).catch(() => {});
       router.push("/admin/registrations");
     }
   };
