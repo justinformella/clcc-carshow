@@ -332,6 +332,11 @@ export const MARKETING_TEMPLATES = [
     label: "Save the Date — May 17, 2026",
     subject: "Save the Date: Crystal Lake Cars & Caffeine — May 17, 2026",
   },
+  {
+    key: "register_now_2026",
+    label: "Register Now — May 17, 2026",
+    subject: "Registration Is Open: Crystal Lake Cars & Caffeine — May 17, 2026",
+  },
 ] as const;
 
 export type MarketingTemplateKey = (typeof MARKETING_TEMPLATES)[number]["key"];

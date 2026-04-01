@@ -168,6 +168,129 @@ function saveTheDateHtml(unsubscribeUrl: string): string {
   return marketingHtmlShell(content, unsubscribeUrl);
 }
 
+function registerNowHtml(unsubscribeUrl: string): string {
+  const content = `
+    <!-- Gold accent line -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr><td style="border-top:3px solid #c9a84c; font-size:0; line-height:0;">&nbsp;</td></tr>
+    </table>
+
+    <!-- Heading -->
+    <h1 style="margin:0 0 8px; font-size:14px; color:#c9a84c; text-transform:uppercase; letter-spacing:0.12em; text-align:center; font-weight:700;">
+      Registration Is Open
+    </h1>
+    <h2 style="margin:0 0 8px; font-size:28px; color:#2c2c2c; text-align:center; font-weight:700; line-height:1.2;">
+      Crystal Lake Cars &amp; Caffeine
+    </h2>
+    <p style="margin:0 0 24px; font-size:13px; color:#888; text-align:center; text-transform:uppercase; letter-spacing:0.08em;">
+      4th Annual Charity Car Show
+    </p>
+
+    <!-- Greeting -->
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.7;">
+      Hi Car Enthusiasts,
+    </p>
+
+    <!-- Main message -->
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.7;">
+      Great news &mdash; <strong>registration is officially open</strong> for the 4th Annual Crystal Lake Cars &amp; Caffeine charity car show! Spots are limited to 200 vehicles and they go fast, so don&rsquo;t wait.
+    </p>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.7;">
+      Whether you&rsquo;re bringing a classic, a modern exotic, a muscle car, or your daily driver with a story &mdash; we want to see it on the streets of downtown Crystal Lake.
+    </p>
+
+    <!-- Registration details -->
+    <h3 style="margin:0 0 12px; font-size:18px; color:#2c2c2c; font-weight:700;">
+      How to Register
+    </h3>
+    <p style="margin:0 0 24px; font-size:15px; color:#333; line-height:1.7;">
+      Registration is <strong>$30 per vehicle</strong> and takes just a few minutes. 100% of net proceeds benefit the <strong>Crystal Lake Food Pantry</strong>. You can register multiple vehicles in a single checkout.
+    </p>
+
+    <!-- CTA button -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr><td align="center">
+        <a href="${SITE_URL}/register" style="display:inline-block; padding:16px 40px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:16px; border-radius:6px; letter-spacing:0.04em;">
+          Register Your Vehicle
+        </a>
+      </td></tr>
+    </table>
+
+    <!-- Date badge -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr><td align="center">
+        <table cellpadding="0" cellspacing="0" style="border:2px solid #c9a84c; border-radius:8px; padding:20px 36px; text-align:center;">
+          <tr>
+            <td>
+              <span style="font-size:26px; font-weight:700; color:#2c2c2c; letter-spacing:0.02em;">Sunday, May 17, 2026</span><br/>
+              <span style="font-size:14px; color:#555; margin-top:4px; display:inline-block;">
+                Grant, Brink &amp; Williams Streets &middot; Downtown Crystal Lake, IL
+              </span>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+
+    <!-- Event Details -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px; background:#f8f5f0; border-radius:8px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 12px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#888; width:110px; vertical-align:top;">Registration</td>
+              <td style="padding:6px 0; font-size:14px; color:#333; font-weight:600;">$30 per vehicle</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#888; vertical-align:top;">Check-in</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">7:30 AM</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#888; vertical-align:top;">Show Time</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">10:00 AM &ndash; 2:00 PM</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#888; vertical-align:top;">Awards</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">12:30 PM</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#888; vertical-align:top;">Where</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Downtown Crystal Lake (Grant, Brink &amp; Williams Streets)</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#888; vertical-align:top;">Rain Date</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Sunday, May 31, 2026</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0; font-size:14px; color:#888; vertical-align:top;">Charity</td>
+              <td style="padding:6px 0; font-size:14px; color:#333;">Crystal Lake Food Pantry</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Location link -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr><td align="center">
+        <a href="${GOOGLE_MAPS_URL}" style="font-size:14px; color:#c9a84c; text-decoration:none; font-weight:600;">View Location on Google Maps &rarr;</a>
+      </td></tr>
+    </table>
+
+    <!-- Closing -->
+    <p style="margin:0 0 8px; font-size:15px; color:#333; line-height:1.7;">
+      Don&rsquo;t miss your chance to be part of downtown Crystal Lake&rsquo;s biggest car event of the year. Grab your spot before we fill up!
+    </p>
+    <p style="margin:24px 0 0; font-size:14px; color:#888;">
+      See you on May 17th,<br/>
+      The Crystal Lake Cars &amp; Caffeine Team
+    </p>
+  `;
+
+  return marketingHtmlShell(content, unsubscribeUrl);
+}
+
 export function getMarketingEmailHtml(
   templateKey: MarketingTemplateKey,
   unsubscribeUrl: string
@@ -175,6 +298,8 @@ export function getMarketingEmailHtml(
   switch (templateKey) {
     case "save_the_date_2026":
       return saveTheDateHtml(unsubscribeUrl);
+    case "register_now_2026":
+      return registerNowHtml(unsubscribeUrl);
     default:
       throw new Error(`Unknown marketing template: ${templateKey}`);
   }
