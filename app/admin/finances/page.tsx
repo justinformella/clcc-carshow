@@ -53,6 +53,7 @@ export default function FinancesPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailModal, setDetailModal] = useState<"registration" | "sponsorship" | "donation" | null>(null);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -358,18 +359,21 @@ export default function FinancesPage() {
           value={fmtMoney(regRevenue)}
           note={`${paidRegs.length} of ${registrations.length} registrations paid`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+          onClick={() => setDetailModal("registration")}
         />
         <SummaryCard
           label="Sponsorship Revenue"
           value={fmtMoney(sponsorRevenue)}
           note={`${paidSponsors.length} sponsor${paidSponsors.length !== 1 ? "s" : ""} confirmed`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>}
+          onClick={() => setDetailModal("sponsorship")}
         />
         <SummaryCard
           label="Donation Revenue"
           value={fmtMoney(donationRevenue)}
           note={`${donorCount} donor${donorCount !== 1 ? "s" : ""}`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>}
+          onClick={() => setDetailModal("donation")}
         />
         <SummaryCard
           label="Pending"
@@ -808,9 +812,163 @@ export default function FinancesPage() {
           }
         }
       `}</style>
+
+      {/* Detail Modal */}
+      {detailModal && (
+        <>
+          <div
+            onClick={() => setDetailModal(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 999,
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "var(--white)",
+              padding: "2rem",
+              width: "100%",
+              maxWidth: "700px",
+              maxHeight: "80vh",
+              overflow: "auto",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              zIndex: 1000,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.4rem", fontWeight: 400, margin: 0 }}>
+                {detailModal === "registration" ? "Registration Revenue" : detailModal === "sponsorship" ? "Sponsorship Revenue" : "Donation Revenue"}
+              </h2>
+              <button
+                onClick={() => setDetailModal(null)}
+                style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "var(--text-light)", padding: "0.25rem" }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {detailModal === "registration" && (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                <thead>
+                  <tr style={{ background: "var(--cream)", textAlign: "left" }}>
+                    <th style={modalThStyle}>Name</th>
+                    <th style={modalThStyle}>Vehicle</th>
+                    <th style={modalThStyle}>Amount</th>
+                    <th style={modalThStyle}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paidRegs.map((r) => (
+                    <tr key={r.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <td style={modalTdStyle}>{r.first_name} {r.last_name}</td>
+                      <td style={modalTdStyle}>{r.vehicle_year} {r.vehicle_make} {r.vehicle_model}</td>
+                      <td style={modalTdStyle}>{fmtMoney(r.amount_paid || 0)}</td>
+                      <td style={modalTdStyle}>{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : "—"}</td>
+                    </tr>
+                  ))}
+                  {paidRegs.length === 0 && (
+                    <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No paid registrations yet</td></tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: 600, borderTop: "2px solid #ddd" }}>
+                    <td colSpan={2} style={modalTdStyle}>Total</td>
+                    <td style={modalTdStyle}>{fmtMoney(regRevenue)}</td>
+                    <td style={modalTdStyle}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            )}
+
+            {detailModal === "sponsorship" && (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                <thead>
+                  <tr style={{ background: "var(--cream)", textAlign: "left" }}>
+                    <th style={modalThStyle}>Company</th>
+                    <th style={modalThStyle}>Level</th>
+                    <th style={modalThStyle}>Status</th>
+                    <th style={modalThStyle}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paidSponsors.map((s) => (
+                    <tr key={s.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <td style={modalTdStyle}>{s.company}</td>
+                      <td style={modalTdStyle}>{s.sponsorship_level}</td>
+                      <td style={modalTdStyle}>{s.status === "engaged" ? "Committed" : "Paid"}</td>
+                      <td style={modalTdStyle}>{fmtMoney(s.amount_paid || 0)}</td>
+                    </tr>
+                  ))}
+                  {paidSponsors.length === 0 && (
+                    <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No confirmed sponsors yet</td></tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: 600, borderTop: "2px solid #ddd" }}>
+                    <td colSpan={3} style={modalTdStyle}>Total</td>
+                    <td style={modalTdStyle}>{fmtMoney(sponsorRevenue)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            )}
+
+            {detailModal === "donation" && (
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                <thead>
+                  <tr style={{ background: "var(--cream)", textAlign: "left" }}>
+                    <th style={modalThStyle}>Name</th>
+                    <th style={modalThStyle}>Email</th>
+                    <th style={modalThStyle}>Donation</th>
+                    <th style={modalThStyle}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {registrations.filter((r) => (r.donation_cents || 0) > 0 && r.payment_status === "paid").map((r) => (
+                    <tr key={r.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <td style={modalTdStyle}>{r.first_name} {r.last_name}</td>
+                      <td style={modalTdStyle}>{r.email}</td>
+                      <td style={modalTdStyle}>{fmtMoney(r.donation_cents || 0)}</td>
+                      <td style={modalTdStyle}>{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : "—"}</td>
+                    </tr>
+                  ))}
+                  {registrations.filter((r) => (r.donation_cents || 0) > 0 && r.payment_status === "paid").length === 0 && (
+                    <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No donations yet</td></tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: 600, borderTop: "2px solid #ddd" }}>
+                    <td colSpan={2} style={modalTdStyle}>Total</td>
+                    <td style={modalTdStyle}>{fmtMoney(donationRevenue)}</td>
+                    <td style={modalTdStyle}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            )}
+          </div>
+        </>
+      )}
     </>
   );
 }
+
+const modalThStyle: React.CSSProperties = {
+  padding: "0.6rem 0.75rem",
+  fontWeight: 600,
+  fontSize: "0.7rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "var(--text-light)",
+};
+
+const modalTdStyle: React.CSSProperties = {
+  padding: "0.6rem 0.75rem",
+};
 
 // ── Components ──
 
@@ -819,18 +977,37 @@ function SummaryCard({
   value,
   note,
   icon,
+  onClick,
 }: {
   label: string;
   value: string;
   note: string;
   icon?: React.ReactNode;
+  onClick?: () => void;
 }) {
   return (
     <div
+      onClick={onClick}
       style={{
         background: "var(--white)",
         padding: "1.5rem",
         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        cursor: onClick ? "pointer" : "default",
+        transition: "all 0.15s ease",
+      }}
+      onMouseEnter={(e) => {
+        if (onClick) {
+          e.currentTarget.style.borderColor = "var(--gold)";
+          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+          e.currentTarget.style.transform = "translateY(-2px)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (onClick) {
+          e.currentTarget.style.borderColor = "transparent";
+          e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+          e.currentTarget.style.transform = "translateY(0)";
+        }
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
