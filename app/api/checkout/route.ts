@@ -166,16 +166,31 @@ export async function POST(request: NextRequest) {
     // Geocode address in the background (non-blocking)
     if (address_street || address_city) {
       const addrStr = [address_street, address_city, address_state, address_zip].filter(Boolean).join(", ");
-      fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addrStr)}`, {
-        headers: { "User-Agent": "clcc-carshow/1.0" },
-      })
+      const gMapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+      const geocodeUrl = gMapsKey
+        ? `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addrStr)}&key=${gMapsKey}`
+        : `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addrStr)}`;
+
+      fetch(geocodeUrl, gMapsKey ? {} : { headers: { "User-Agent": "clcc-carshow/1.0" } })
         .then((res) => res.json())
-        .then(async (results) => {
-          if (results?.[0]?.lat && results?.[0]?.lon) {
+        .then(async (data) => {
+          let lat: number | null = null;
+          let lng: number | null = null;
+
+          if (gMapsKey && data.results?.[0]?.geometry?.location) {
+            lat = data.results[0].geometry.location.lat;
+            lng = data.results[0].geometry.location.lng;
+          } else if (!gMapsKey && data?.[0]?.lat && data?.[0]?.lon) {
+            lat = parseFloat(data[0].lat);
+            lng = parseFloat(data[0].lon);
+          }
+
+          if (lat && lng) {
             const regIds = registrations.map((r) => r.id);
             await supabase
               .from("registrations")
-              .update({ lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) })
+              .update({ lat, lng })
               .in("id", regIds);
           }
         })
