@@ -16,7 +16,7 @@ export default function CheckInPage() {
     const { data } = await supabase
       .from("registrations")
       .select("*")
-      .in("payment_status", ["paid", "pending"])
+      .in("payment_status", ["paid", "comped", "pending"])
       .order("car_number", { ascending: true });
 
     setRegistrations(data || []);

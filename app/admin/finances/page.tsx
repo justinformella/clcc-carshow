@@ -424,7 +424,6 @@ export default function FinancesPage() {
           overflow: "hidden",
         }}
       >
-        <div style={{ position: "absolute", top: "-80px", right: "-40px", width: "300px", height: "300px", borderRadius: "50%", background: "rgba(201,168,76,0.06)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
