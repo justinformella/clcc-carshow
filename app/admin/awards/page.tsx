@@ -178,7 +178,16 @@ export default function AwardsPage() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                      <div>
+                      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                        <div style={{
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
+                          background: isAssigned?.id === rec.registration_id ? "linear-gradient(135deg, #2e7d32, #4caf50)" : "linear-gradient(135deg, #c9a84c, #e8c860)",
+                          fontSize: "1.1rem", marginTop: "0.15rem",
+                        }}>
+                          🏆
+                        </div>
+                        <div>
                         <p style={{ fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--gold)", marginBottom: "0.3rem" }}>
                           {rec.category}
                         </p>
@@ -188,6 +197,7 @@ export default function AwardsPage() {
                           {rec.color ? ` — ${rec.color}` : ""}
                         </p>
                         <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>{rec.owner}</p>
+                      </div>
                       </div>
                       <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0, marginLeft: "1rem" }}>
                         {isAssigned?.id === rec.registration_id ? (
