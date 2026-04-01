@@ -3,19 +3,19 @@ import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 
 const SPEC_SCHEMA = {
-  body_style: "coupe, sedan, convertible, truck, SUV, wagon, hatchback, roadster, van, or other",
-  country_of_origin: "American, Japanese, German, Italian, British, Korean, Swedish, French, or other",
-  category: "muscle car, sports car, luxury, classic, exotic, truck, hot rod, import tuner, pony car, grand tourer, economy, or other",
+  body_style: "Title Case. One of: Coupe, Sedan, Convertible, Truck, SUV, Wagon, Hatchback, Roadster, Van, or Other",
+  country_of_origin: "Title Case. One of: American, Japanese, German, Italian, British, Korean, Swedish, French, or Other",
+  category: "Title Case. One of: Muscle Car, Sports Car, Luxury, Classic, Exotic, Truck, Hot Rod, Import Tuner, Pony Car, Grand Tourer, Economy, or Other",
   cylinders: "number of cylinders (integer), 0 for electric",
   displacement_liters: "engine displacement in liters (decimal), 0 for electric",
-  horsepower: "estimated stock horsepower (integer)",
-  drive_type: "RWD, FWD, AWD, or 4WD",
-  engine_type: "V8, V6, V10, V12, Inline-4, Inline-6, Flat-4, Flat-6, Rotary, Electric, or other",
-  weight_lbs: "curb weight in pounds (integer)",
-  original_msrp: "original MSRP in USD when new (integer, inflation-adjusted is NOT needed — use the actual sticker price)",
-  production_numbers: "approximate total production numbers for this specific year/model, 0 if unknown",
-  era: "Pre-War, Classic 50s, Muscle Era, Malaise Era, Modern Classic, Contemporary",
-  notable_features: "comma-separated list of 2-4 notable features like pop-up headlights, T-tops, gullwing doors, etc.",
+  horsepower: "estimated stock horsepower for the base or most common engine option (integer)",
+  drive_type: "One of: RWD, FWD, AWD, or 4WD",
+  engine_type: "Title Case. One of: V8, V6, V10, V12, Inline-4, Inline-6, Flat-4, Flat-6, Rotary, Electric, or Other",
+  weight_lbs: "approximate curb weight in pounds (integer)",
+  original_msrp: "original base MSRP in USD when new (integer). Use the actual sticker price from that year, NOT inflation-adjusted",
+  production_numbers: "TOTAL production numbers for this model name in this model year across ALL trims and variants. For example, ALL 1966 Mustangs made that year, not just the GT trim. Use 0 if truly unknown. This should typically be in the tens of thousands or hundreds of thousands for popular cars.",
+  era: "One of: Pre-War (before 1946), Post-War (1946-1959), Muscle Era (1960-1973), Malaise Era (1974-1989), Modern Classic (1990-2009), Contemporary (2010+). Choose based on the vehicle year.",
+  notable_features: "Title Case. Comma-separated list of 2-3 features that are FACTORY STANDARD for this model — things that defined this car when it was sold new. Examples: Dual Exhaust, Pop-Up Headlights, T-Tops, Gullwing Doors, Fastback Design. Do NOT guess features that vary by individual car.",
 };
 
 export async function POST(request: NextRequest) {
@@ -74,7 +74,17 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "system",
-              content: `You are a car encyclopedia. Given a vehicle year, make, and model, return a JSON object with estimated specs. Use your best knowledge for the most common variant of that model year. Return ONLY valid JSON with these fields:\n${Object.entries(SPEC_SCHEMA).map(([k, v]) => `  "${k}": ${v}`).join("\n")}`,
+              content: `You are an authoritative automotive encyclopedia. Given a vehicle year, make, and model, return a JSON object with factory specs for the most common variant.
+
+CRITICAL RULES:
+- All string values must be in Title Case (e.g., "Pony Car" not "pony car", "Coupe" not "coupe")
+- The "era" field must be chosen based on the VEHICLE YEAR, not subjective opinion
+- The "production_numbers" field must be the TOTAL for that model name in that year across ALL trims (e.g., total 1966 Mustangs, not just GTs)
+- The "notable_features" must only include features that were FACTORY STANDARD on this model — do not guess aftermarket modifications
+- Use 0 for production_numbers only if the data is truly unknown
+
+Return ONLY valid JSON with these fields:
+${Object.entries(SPEC_SCHEMA).map(([k, v]) => `  "${k}": ${v}`).join("\n")}`,
             },
             {
               role: "user",
