@@ -411,7 +411,7 @@ function RegisterContent() {
                       }
                       style={{ width: "auto", margin: 0 }}
                     />
-                    Keep my name and city anonymous for my vehicle registration placard
+                    Keep my details anonymous on my placard
                   </label>
                 </div>
 
@@ -517,7 +517,7 @@ function RegisterContent() {
 
                     <div className="form-group">
                       <label htmlFor={`story_${index}`}>
-                        Your Car&apos;s Story (optional, shown on placard)
+                        Car Story (optional)
                       </label>
                       <textarea
                         id={`story_${index}`}
@@ -646,10 +646,9 @@ function RegisterContent() {
 
                   <div
                     style={{
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
                       gap: "0.5rem",
-                      flexWrap: "wrap",
-                      justifyContent: "center",
                       marginBottom: "0.75rem",
                     }}
                   >
