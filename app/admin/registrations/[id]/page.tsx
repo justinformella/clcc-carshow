@@ -50,6 +50,7 @@ export default function RegistrationDetailPage() {
   const [contactSubject, setContactSubject] = useState("");
   const [contactMessage, setContactMessage] = useState("");
   const [contactSending, setContactSending] = useState(false);
+  const [siblingRegs, setSiblingRegs] = useState<Registration[]>([]);
 
   const fetchRegistration = useCallback(async () => {
     const supabase = createClient();
@@ -60,6 +61,20 @@ export default function RegistrationDetailPage() {
       .single();
 
     setRegistration(data);
+
+    // Fetch sibling registrations from the same checkout
+    if (data?.stripe_session_id) {
+      const { data: siblings } = await supabase
+        .from("registrations")
+        .select("*")
+        .eq("stripe_session_id", data.stripe_session_id)
+        .neq("id", id)
+        .order("car_number", { ascending: true });
+      setSiblingRegs(siblings || []);
+    } else {
+      setSiblingRegs([]);
+    }
+
     setLoading(false);
   }, [id]);
 
@@ -793,9 +808,56 @@ export default function RegistrationDetailPage() {
 
               <DetailSection title="Payment">
                 <DetailRow label="Status" value={r.payment_status} />
-                <DetailRow label="Amount Paid" value={`$${(r.amount_paid / 100).toFixed(2)}`} />
+                <DetailRow label="This Registration" value={`$${(r.amount_paid / 100).toFixed(2)}`} />
                 {(r.donation_cents || 0) > 0 && (
                   <DetailRow label="Donation" value={`$${(r.donation_cents / 100).toFixed(2)}`} />
+                )}
+
+                {/* Multi-vehicle checkout context */}
+                {siblingRegs.length > 0 && (
+                  <div
+                    style={{
+                      margin: "0.75rem 0",
+                      padding: "0.75rem 1rem",
+                      background: "var(--cream)",
+                      border: "1px solid rgba(0,0,0,0.06)",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    <p style={{ fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)" }}>
+                      Checkout Summary ({siblingRegs.length + 1} vehicles)
+                    </p>
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.2rem 0" }}>
+                      <span>#{r.car_number} {r.vehicle_year} {r.vehicle_make} {r.vehicle_model}</span>
+                      <span>${(r.amount_paid / 100).toFixed(2)}</span>
+                    </div>
+                    {siblingRegs.map((s) => (
+                      <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.2rem 0" }}>
+                        <a href={`/admin/registrations/${s.id}`} style={{ color: "#1565c0", textDecoration: "none" }}>
+                          #{s.car_number} {s.vehicle_year} {s.vehicle_make} {s.vehicle_model}
+                        </a>
+                        <span>${(s.amount_paid / 100).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {(() => {
+                      const totalDonation = (r.donation_cents || 0) + siblingRegs.reduce((sum, s) => sum + (s.donation_cents || 0), 0);
+                      if (totalDonation > 0) {
+                        return (
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "0.2rem 0" }}>
+                            <span>Donation</span>
+                            <span>${(totalDonation / 100).toFixed(2)}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0 0", marginTop: "0.25rem", borderTop: "1px solid rgba(0,0,0,0.1)", fontWeight: 600 }}>
+                      <span>Transaction Total</span>
+                      <span>
+                        ${(((r.amount_paid || 0) + (r.donation_cents || 0) + siblingRegs.reduce((sum, s) => sum + (s.amount_paid || 0) + (s.donation_cents || 0), 0)) / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 )}
 
                 {!r.stripe_payment_intent_id && !r.stripe_session_id ? (
