@@ -75,6 +75,17 @@ export async function POST(request: NextRequest) {
           } catch (err) {
             console.error(`Confirmation email failed for ${regId}:`, err);
           }
+
+          // Enrich vehicle specs
+          try {
+            await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com"}/api/registrations/enrich`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ registration_id: regId }),
+            });
+          } catch (err) {
+            console.error(`Vehicle spec enrichment failed for ${regId}:`, err);
+          }
         }
 
         // Check if admin notifications are enabled

@@ -17,6 +17,7 @@ const allNavItems = [
   { href: "/admin/placards", label: "Placards" },
   { href: "/admin/marketing", label: "Marketing" },
   { href: "/admin/finances", label: "Finances" },
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/email-log", label: "Email Log" },
   { href: "/admin/settings", label: "Settings" },
   { href: "/admin/admins", label: "Users" },
