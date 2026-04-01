@@ -439,7 +439,14 @@ export default function FinancesPage() {
             {[
               { label: "Registration Revenue", value: fmtMoney(fullCapacityReg), detail: `${maxRegistrations} × $${REGISTRATION_PRICE_CENTS / 100}` },
               { label: "Est. Donations", value: fmtMoney(fullCapacityDonations), detail: paidRegs.length > 0 ? `${fmtMoney(Math.round(avgDonationPerReg))} avg/registrant` : "no donation data yet" },
-              { label: "Sponsor Revenue", value: fmtMoney(sponsorRevenue + committedProjected), detail: `${paidSponsors.length} confirmed${committedUnpaid.length > 0 ? ` + ${committedUnpaid.length} committed` : ""}` },
+              { label: "Sponsor Revenue", value: fmtMoney(sponsorRevenue + committedProjected), detail: (() => {
+                const paid = sponsors.filter((s) => s.status === "paid").length;
+                const committed = committedUnpaid.length;
+                if (paid > 0 && committed > 0) return `${paid} paid + ${committed} committed`;
+                if (paid > 0) return `${paid} paid`;
+                if (committed > 0) return `${committed} committed`;
+                return "no sponsors";
+              })() },
               { label: "Gross Revenue", value: fmtMoney(fullCapacityTotal), highlight: true, detail: "total before fees" },
               { label: "Est. Stripe Fees", value: `- ${fmtMoney(Math.round(estimateStripeFee(REGISTRATION_PRICE_CENTS) * maxRegistrations + (fullCapacityDonations > 0 ? estimateStripeFee(Math.round(avgDonationPerReg)) * maxRegistrations : 0)))}`, detail: "~2.9% + $0.30/txn" },
               { label: "Net to Charity", value: fmtMoney(fullCapacityTotal - Math.round(estimateStripeFee(REGISTRATION_PRICE_CENTS) * maxRegistrations + (fullCapacityDonations > 0 ? estimateStripeFee(Math.round(avgDonationPerReg)) * maxRegistrations : 0)) - totalAdSpend), highlight: true, detail: "after fees & ad spend", gold: true },
