@@ -106,11 +106,20 @@ export default function AdminDashboard() {
     .filter((s) => s.status === "paid" || s.status === "engaged")
     .reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
+  // Committed sponsors who haven't paid — projected based on sponsorship level
+  const committedUnpaid = activeSponsors.filter((s) => s.status === "engaged" && s.amount_paid === 0);
+  const committedProjected = committedUnpaid.reduce((sum, s) => {
+    const match = s.sponsorship_level.match(/\$([0-9,]+)/);
+    return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
+  }, 0);
+
   const openSponsors = activeSponsors.filter((s) => s.status === "prospect" || s.status === "inquired");
   const openPipeline = openSponsors.reduce((sum, s) => {
     const match = s.sponsorship_level.match(/\$([0-9,]+)/);
     return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
   }, 0);
+
+  const projectedTotal = totalRevenue + sponsorRevenue + committedProjected;
 
   const adRegistrations = registrations.filter((r) => r.utm_source);
   const adSourceCounts: Record<string, number> = {};
@@ -332,6 +341,15 @@ export default function AdminDashboard() {
           note="available"
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>}
         />
+        {committedProjected > 0 && (
+          <DashboardCard
+            href="/admin/finances"
+            label="Projected Income"
+            value={`$${(projectedTotal / 100).toLocaleString()}`}
+            note={`incl. $${(committedProjected / 100).toLocaleString()} committed sponsors`}
+            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
+          />
+        )}
       </div>
 
       {/* ─── Sponsors & Revenue | Marketing ─── */}

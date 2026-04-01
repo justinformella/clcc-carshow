@@ -75,11 +75,13 @@ function LoginForm() {
 
     // Track last login time via server route (bypasses RLS)
     const userEmail = authData.user?.email ?? email;
-    fetch("/api/admin/track-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: userEmail }),
-    }).catch(() => {});
+    try {
+      await fetch("/api/admin/track-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail }),
+      });
+    } catch {}
 
     const redirect = searchParams.get("redirect") || "/admin";
     // Hard navigate so the browser sends the updated auth cookie to middleware
