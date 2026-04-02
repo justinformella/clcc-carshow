@@ -2,10 +2,10 @@ import { CSSProperties } from "react";
 import { COLORS, FONT, bodyTextStyle } from "@/components/8bit/styles";
 
 const features = [
-  { icon: "♨", label: "LOCAL DINING" },
-  { icon: "♦", label: "UNIQUE SHOPS" },
-  { icon: "■", label: "200+ CARS" },
-  { icon: "♥", label: "FAMILY FRIENDLY" },
+  { label: "LOCAL DINING", color: "#ff0000" },
+  { label: "UNIQUE SHOPS", color: "#00ff00" },
+  { label: "200+ CARS", color: "#ffd700" },
+  { label: "FAMILY FRIENDLY", color: "#00ffff" },
 ];
 
 export default function SpectatorBanner8Bit() {
@@ -86,11 +86,8 @@ export default function SpectatorBanner8Bit() {
           }}
         >
           {features.map((f, i) => (
-            <div key={i} style={featureStyle}>
-              <div style={{ fontFamily: FONT, fontSize: "1.5rem", marginBottom: "0.5rem", color: COLORS.gold }}>
-                {f.icon}
-              </div>
-              {f.label}
+            <div key={i} style={{ ...featureStyle, borderColor: f.color, borderWidth: "3px" }}>
+              <span style={{ color: f.color }}>{f.label}</span>
             </div>
           ))}
         </div>
