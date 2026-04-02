@@ -2,10 +2,10 @@ import { CSSProperties } from "react";
 import { COLORS, FONT, bodyTextStyle } from "@/components/8bit/styles";
 
 const features = [
-  { label: "LOCAL DINING", color: "#ff0000" },
-  { label: "UNIQUE SHOPS", color: "#00ff00" },
-  { label: "200+ CARS", color: "#ffd700" },
-  { label: "FAMILY FRIENDLY", color: "#00ffff" },
+  "LOCAL DINING",
+  "UNIQUE SHOPS",
+  "200+ CARS",
+  "FAMILY FRIENDLY",
 ];
 
 export default function SpectatorBanner8Bit() {
@@ -43,13 +43,14 @@ export default function SpectatorBanner8Bit() {
   const featureStyle: CSSProperties = {
     fontFamily: FONT,
     fontSize: "0.45rem",
-    color: COLORS.lightGray,
+    color: COLORS.gold,
     textTransform: "uppercase",
-    letterSpacing: "0.05em",
+    letterSpacing: "0.06em",
     textAlign: "center",
-    border: `2px solid ${COLORS.border}`,
-    padding: "1rem 0.75rem",
-    lineHeight: 2.5,
+    background: COLORS.bgDark,
+    padding: "1.25rem 0.75rem",
+    lineHeight: 2,
+    boxShadow: `inset 0 0 0 2px ${COLORS.gold}, inset 0 0 0 4px ${COLORS.bgDark}, inset 0 0 0 5px ${COLORS.border}`,
   };
 
   return (
@@ -86,8 +87,8 @@ export default function SpectatorBanner8Bit() {
           }}
         >
           {features.map((f, i) => (
-            <div key={i} style={{ ...featureStyle, borderColor: f.color, borderWidth: "3px" }}>
-              <span style={{ color: f.color }}>{f.label}</span>
+            <div key={i} style={featureStyle}>
+              ► {f}
             </div>
           ))}
         </div>
