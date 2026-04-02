@@ -1,7 +1,8 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useState, useRef, useCallback } from "react";
+import { Suspense, useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 type RaceCar = {
@@ -21,7 +22,17 @@ type RaceCar = {
 
 type Phase = "loading" | "select" | "countdown" | "racing" | "finished";
 
-export default function RacePage() {
+export default function RacePageWrapper() {
+  return (
+    <Suspense fallback={<div style={{ background: "#08090c", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#555" }}>Loading...</div>}>
+      <RacePage />
+    </Suspense>
+  );
+}
+
+function RacePage() {
+  const searchParams = useSearchParams();
+  const preselectedCarId = searchParams.get("car");
   const [cars, setCars] = useState<RaceCar[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
   const [playerCar, setPlayerCar] = useState<RaceCar | null>(null);
@@ -60,10 +71,20 @@ export default function RacePage() {
           aiImage: c.aiImage || null,
         }));
         setCars(raceCars);
+        // Auto-select car from query param (e.g., /race?car=<id>)
+        if (preselectedCarId) {
+          const target = raceCars.find((c) => c.id === preselectedCarId);
+          if (target) {
+            setPlayerCar(target);
+            const others = raceCars.filter((c) => c.id !== target.id);
+            const opp = others[Math.floor(Math.random() * others.length)] || target;
+            setOpponentCar(opp);
+          }
+        }
         setPhase("select");
       })
       .catch(() => setPhase("select"));
-  }, []);
+  }, [preselectedCarId]);
 
   // Keyboard
   useEffect(() => {

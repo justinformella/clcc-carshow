@@ -554,6 +554,10 @@ export default function RegistrationDetailPage() {
                     onClick={() => { setShowContact(true); setMenuOpen(false); }}
                   />
                   <DropdownItem
+                    label="Race This Car"
+                    onClick={() => { setMenuOpen(false); window.open(`/race?car=${r.id}`, "_blank"); }}
+                  />
+                  <DropdownItem
                     label={vehicleSpec ? "Re-enrich Specs" : "Enrich Specs"}
                     onClick={async () => {
                       setMenuOpen(false);
