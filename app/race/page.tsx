@@ -15,6 +15,7 @@ type RaceCar = {
   pwr: number;
   pixelArt: string | null;
   pixelDash: string | null;
+  pixelRear: string | null;
   aiImage: string | null;
 };
 
@@ -39,8 +40,9 @@ export default function RacePage() {
 
   const animRef = useRef<number>(0);
   const startRef = useRef(0);
-  const roadRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const keyRef = useRef<Set<string>>(new Set());
+  const opponentVisualRef = useRef({ topPct: 60, laneOffset: 18, scale: 0.5 });
 
   // Fetch cars
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function RacePage() {
           ...c,
           pixelArt: c.pixelArt || null,
           pixelDash: c.pixelDash || null,
+          pixelRear: c.pixelRear || null,
           aiImage: c.aiImage || null,
         }));
         setCars(raceCars);
@@ -66,6 +69,109 @@ export default function RacePage() {
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, []);
+
+  // Keep canvas resolution matched to display size
+  useEffect(() => {
+    const resize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [phase]);
+
+  const drawRoad = useCallback((canvas: HTMLCanvasElement, roadOffset: number, pSpeed: number, pPos: number, oPos: number) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const horizonY = H * 0.3;
+    const vanishX = W / 2;
+
+    // ─── SKY ───
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+    skyGrad.addColorStop(0, "#0a1628");
+    skyGrad.addColorStop(1, "#1a3a5c");
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, horizonY);
+
+    // Horizon tree line
+    ctx.fillStyle = "#0d2a12";
+    for (let x = 0; x < W; x += 30) {
+      const treeH = 12 + Math.sin(x * 0.3) * 6;
+      ctx.fillRect(x, horizonY - treeH, 20, treeH);
+    }
+
+    // ─── ROAD (perspective, row by row) ───
+    const roadWidthBottom = W * 0.7;
+    const roadWidthTop = W * 0.04;
+    const shoulderWidthBottom = W * 0.12;
+    const shoulderWidthTop = 2;
+    const totalRows = H - horizonY;
+
+    for (let row = 0; row < totalRows; row++) {
+      const y = horizonY + row;
+      const t = row / totalRows;
+      const perspective = t * t;
+
+      const roadW = roadWidthTop + (roadWidthBottom - roadWidthTop) * perspective;
+      const shoulderW = shoulderWidthTop + (shoulderWidthBottom - shoulderWidthTop) * perspective;
+      const roadLeft = vanishX - roadW / 2;
+      const roadRight = vanishX + roadW / 2;
+
+      // Z-depth for stripe calculation
+      const z = 1 / (t + 0.01);
+      const stripePhase = (z + roadOffset * 0.3) % 20;
+      const stripeBand = stripePhase < 10;
+
+      // Grass
+      ctx.fillStyle = stripeBand ? "#1a5c1a" : "#1e6b1e";
+      ctx.fillRect(0, y, roadLeft - shoulderW, 1);
+      ctx.fillRect(roadRight + shoulderW, y, W - (roadRight + shoulderW), 1);
+
+      // Shoulder rumble strips
+      ctx.fillStyle = stripeBand ? "#cc3333" : "#ffffff";
+      ctx.fillRect(roadLeft - shoulderW, y, shoulderW, 1);
+      ctx.fillRect(roadRight, y, shoulderW, 1);
+
+      // Road surface
+      ctx.fillStyle = stripeBand ? "#333333" : "#3a3a3a";
+      ctx.fillRect(roadLeft, y, roadW, 1);
+
+      // Center dashed line (gold)
+      if (stripePhase > 2 && stripePhase < 8) {
+        const lineW = Math.max(2, 4 * perspective);
+        ctx.fillStyle = "#c9a84c";
+        ctx.fillRect(vanishX - lineW / 2, y, lineW, 1);
+      }
+
+      // Lane quarter lines (subtle)
+      const laneOffset = roadW / 4;
+      if (stripePhase > 3 && stripePhase < 6) {
+        const lineW = Math.max(1, 2 * perspective);
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.fillRect(vanishX - laneOffset - lineW / 2, y, lineW, 1);
+        ctx.fillRect(vanishX + laneOffset - lineW / 2, y, lineW, 1);
+      }
+    }
+
+    // ─── Update opponent visual position (used by DOM overlay) ───
+    const delta = oPos - pPos; // positive = opponent ahead
+    const normalizedDist = Math.max(-30, Math.min(50, delta));
+    const tOpp = Math.min(1, Math.max(0, 0.6 + normalizedDist / 120));
+    const scale = 1.0 - tOpp * 0.85;
+    const topPct = 30 + (1 - tOpp) * 60;
+    const laneOff = 18 * scale;
+
+    opponentVisualRef.current = { topPct, laneOffset: laneOff, scale };
   }, []);
 
   const selectCar = useCallback((car: RaceCar) => {
@@ -143,10 +249,10 @@ export default function RacePage() {
           if (pPos >= FINISH && !pFinish) { pFinish = elapsed; }
           if (oPos >= FINISH && !oFinish) { oFinish = elapsed; }
 
-          // Road scroll
-          roadOffset = (roadOffset + pSpeed * 2) % 40;
-          if (roadRef.current) {
-            roadRef.current.style.backgroundPosition = `0 ${roadOffset}px`;
+          // Draw road on canvas
+          roadOffset = roadOffset + pSpeed * 0.5;
+          if (canvasRef.current) {
+            drawRoad(canvasRef.current, roadOffset, pSpeed, pPos, oPos);
           }
 
           setPlayerPos(Math.min(pPos / FINISH * 100, 100));
@@ -177,7 +283,7 @@ export default function RacePage() {
         animRef.current = requestAnimationFrame(animate);
       }
     }, 1000);
-  }, [playerCar, opponentCar]);
+  }, [playerCar, opponentCar, drawRoad]);
 
   useEffect(() => () => cancelAnimationFrame(animRef.current), []);
 
@@ -304,40 +410,57 @@ export default function RacePage() {
 
       {/* Race view */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-        {/* Sky */}
-        <div style={{ height: "25%", background: "linear-gradient(to bottom, #1a3a5c, #2d5a7b)", position: "relative" }}>
-          {/* Trees */}
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40px", background: "repeating-linear-gradient(90deg, transparent 0px, transparent 40px, #1a4a2a 40px, #1a4a2a 55px, transparent 55px, transparent 80px)" }} />
-        </div>
+        {/* Track area — canvas + opponent overlay */}
+        <div style={{ height: "65%", position: "relative", overflow: "hidden", background: "#0a1628" }}>
+          <canvas
+            ref={canvasRef}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+          />
 
-        {/* Road */}
-        <div
-          ref={roadRef}
-          style={{
-            height: "40%",
-            background: `repeating-linear-gradient(to bottom, #333 0px, #333 18px, #444 18px, #444 20px)`,
-            position: "relative",
-          }}
-        >
-          {/* Center line */}
-          <div style={{ position: "absolute", top: "48%", left: 0, right: 0, height: "3px", background: "repeating-linear-gradient(90deg, #c9a84c 0px, #c9a84c 20px, transparent 20px, transparent 40px)" }} />
+          {/* Opponent car sprite */}
+          {opponentCar && (() => {
+            const { topPct, laneOffset, scale } = opponentVisualRef.current;
+            const spriteWidth = Math.round(140 * scale);
+            const visible = (opponentPos - playerPos) > -25;
 
-          {/* Opponent car on road */}
-          <div style={{
-            position: "absolute",
-            top: "15%",
-            left: `${40 + (opponentPos - playerPos) * 0.5}%`,
-            transform: "translateX(-50%)",
-            transition: "left 0.1s linear",
-          }}>
-            {opponentCar?.pixelArt ? (
-              <img src={opponentCar.pixelArt} alt="opponent" style={{ width: `${Math.max(40, 120 - Math.abs(opponentPos - playerPos))}px`, imageRendering: "pixelated", opacity: 0.9 }} />
-            ) : (
-              <div style={{ width: "60px", height: "30px", background: "#dc2626", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "0.6rem", fontWeight: 700 }}>
-                #{opponentCar?.carNumber}
+            return visible ? (
+              <div style={{
+                position: "absolute",
+                top: `${topPct}%`,
+                left: `calc(50% - ${laneOffset}%)`,
+                transform: "translate(-50%, -100%)",
+                zIndex: 2,
+                pointerEvents: "none",
+              }}>
+                {opponentCar.pixelRear ? (
+                  <img
+                    src={opponentCar.pixelRear}
+                    alt="opponent"
+                    style={{
+                      width: `${spriteWidth}px`,
+                      imageRendering: "pixelated",
+                      filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: `${spriteWidth}px`,
+                    height: `${Math.round(spriteWidth * 0.55)}px`,
+                    background: "#dc2626",
+                    borderRadius: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontSize: `${Math.max(8, 14 * scale)}px`,
+                    fontWeight: 700,
+                  }}>
+                    #{opponentCar.carNumber}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            ) : null;
+          })()}
         </div>
 
         {/* Dashboard */}
@@ -350,29 +473,23 @@ export default function RacePage() {
           {playerCar?.pixelDash ? (
             <img src={playerCar.pixelDash} alt="dashboard" style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated", opacity: 0.7 }} />
           ) : (
-            /* Fallback dashboard */
             <div style={{ width: "100%", height: "100%", background: "linear-gradient(to bottom, #222, #111)" }} />
           )}
 
           {/* Gauges overlay */}
           <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "2rem", alignItems: "flex-end" }}>
-            {/* Speedometer */}
             <div style={{ textAlign: "center" }}>
               <div style={{ fontFamily: "monospace", fontSize: "2.5rem", fontWeight: 700, color: "#c9a84c", textShadow: "0 0 10px rgba(201,168,76,0.5)", lineHeight: 1 }}>
                 {playerSpeed}
               </div>
               <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>MPH</div>
             </div>
-
-            {/* RPM */}
             <div style={{ textAlign: "center" }}>
               <div style={{ fontFamily: "monospace", fontSize: "1.5rem", fontWeight: 700, color: rpm > 6000 ? "#dc2626" : "#ddd", textShadow: rpm > 6000 ? "0 0 10px rgba(220,38,38,0.5)" : "none", lineHeight: 1 }}>
                 {rpm}
               </div>
               <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>RPM</div>
             </div>
-
-            {/* Gear */}
             <div style={{ textAlign: "center" }}>
               <div style={{ fontFamily: "monospace", fontSize: "2rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>
                 {gear}
