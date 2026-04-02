@@ -5,7 +5,34 @@ export const alt = "CLCC Car Show Race Mode";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OGImage() {
+async function getRandomDashUrl(): Promise<string | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return null;
+
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/registrations?select=pixel_dashboard_url&pixel_dashboard_url=not.is.null&payment_status=in.(paid,comped)&limit=50`,
+      {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        next: { revalidate: 3600 },
+      }
+    );
+    if (!res.ok) return null;
+    const rows: { pixel_dashboard_url: string }[] = await res.json();
+    if (rows.length === 0) return null;
+    return rows[Math.floor(Math.random() * rows.length)].pixel_dashboard_url;
+  } catch {
+    return null;
+  }
+}
+
+export default async function OGImage() {
+  const dashUrl = await getRandomDashUrl();
+
   return new ImageResponse(
     (
       <div
@@ -19,17 +46,43 @@ export default function OGImage() {
           overflow: "hidden",
         }}
       >
-        {/* Sky */}
+        {/* Dashboard background image — fills entire card */}
+        {dashUrl ? (
+          <img
+            src={dashUrl}
+            alt=""
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              imageRendering: "pixelated",
+            }}
+          />
+        ) : (
+          /* Fallback: simple dark gradient */
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              background: "linear-gradient(to bottom, #0a1628, #1a1a1e)",
+            }}
+          />
+        )}
+
+        {/* Dark overlay for text readability */}
         <div
           style={{
+            position: "absolute",
+            inset: 0,
             display: "flex",
-            width: "100%",
-            height: "180px",
-            background: "linear-gradient(to bottom, #0a1628, #1a3a5c)",
+            background: "rgba(0,0,0,0.55)",
           }}
         />
 
-        {/* Road area */}
+        {/* Content */}
         <div
           style={{
             display: "flex",
@@ -37,82 +90,34 @@ export default function OGImage() {
             alignItems: "center",
             justifyContent: "center",
             flex: 1,
-            background: "linear-gradient(to bottom, #1e6b1e 0%, #1e6b1e 5%, #333 5%, #333 95%, #1e6b1e 95%)",
             position: "relative",
+            gap: "12px",
           }}
         >
-          {/* Center line */}
           <div
             style={{
-              position: "absolute",
-              top: "45%",
-              left: "40%",
-              width: "20%",
-              height: "4px",
-              background: "#c9a84c",
+              fontSize: "80px",
+              fontWeight: 800,
+              color: "#c9a84c",
+              letterSpacing: "-0.02em",
+              textShadow: "0 4px 30px rgba(0,0,0,0.8), 0 2px 10px rgba(201,168,76,0.4)",
               display: "flex",
-            }}
-          />
-
-          {/* Title block */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "8px",
             }}
           >
-            <div
-              style={{
-                fontSize: "72px",
-                fontWeight: 800,
-                color: "#c9a84c",
-                letterSpacing: "-0.02em",
-                textShadow: "0 4px 20px rgba(201,168,76,0.4)",
-                display: "flex",
-              }}
-            >
-              RACE MODE
-            </div>
-            <div
-              style={{
-                fontSize: "28px",
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.7)",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                display: "flex",
-              }}
-            >
-              Crystal Lake Cars &amp; Caffeine
-            </div>
+            RACE MODE
           </div>
-        </div>
-
-        {/* Dashboard strip */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "60px",
-            height: "120px",
-            background: "#1a1a1e",
-            borderTop: "2px solid rgba(201,168,76,0.3)",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ fontSize: "36px", fontWeight: 700, color: "#c9a84c", display: "flex" }}>225</div>
-            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", display: "flex" }}>MPH</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ fontSize: "36px", fontWeight: 700, color: "#dc2626", display: "flex" }}>7000</div>
-            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", display: "flex" }}>RPM</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ fontSize: "36px", fontWeight: 700, color: "#16a34a", display: "flex" }}>5</div>
-            <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", display: "flex" }}>GEAR</div>
+          <div
+            style={{
+              fontSize: "30px",
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.85)",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              textShadow: "0 2px 10px rgba(0,0,0,0.8)",
+              display: "flex",
+            }}
+          >
+            Crystal Lake Cars &amp; Caffeine
           </div>
         </div>
       </div>
