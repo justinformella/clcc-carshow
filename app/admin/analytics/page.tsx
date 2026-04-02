@@ -335,22 +335,56 @@ export default function AnalyticsPage() {
               Analytics
             </h1>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             {enrichResult && <span style={{ fontSize: "0.7rem", color: GREEN }}>{enrichResult}</span>}
-            <button
-              onClick={handleEnrichAll}
-              disabled={enriching || specs.length >= registrations.length}
-              style={{
-                padding: "0.5rem 1.2rem", background: specs.length >= registrations.length ? "transparent" : `linear-gradient(135deg, ${GOLD}, #b8943f)`,
-                color: specs.length >= registrations.length ? TEXT_MUTED : BG, border: specs.length >= registrations.length ? `1px solid ${SURFACE_BORDER}` : "none",
-                fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
-                cursor: enriching || specs.length >= registrations.length ? "default" : "pointer", opacity: enriching ? 0.5 : 1,
-                display: "flex", alignItems: "center", gap: "0.4rem", borderRadius: "2px",
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M10 2C10 5.31 12.69 8 16 8C12.69 8 10 10.69 10 14C10 10.69 7.31 8 4 8C7.31 8 10 5.31 10 2Z"/><path d="M18 12C18 14.21 19.79 16 22 16C19.79 16 18 17.79 18 20C18 17.79 16.21 16 14 16C16.21 16 18 14.21 18 12Z"/></svg>
-              {enriching ? "Working..." : specs.length >= registrations.length ? "All Enriched" : `Enrich ${registrations.length - specs.length}`}
-            </button>
+            {specs.length >= registrations.length ? (
+              <button
+                onClick={async () => {
+                  if (!confirm("Re-enrich all vehicles? This will refresh specs for every registration.")) return;
+                  setEnriching(true);
+                  setEnrichResult(null);
+                  // Clear existing specs
+                  const supabase = createClient();
+                  await supabase.from("vehicle_specs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+                  setSpecs([]);
+                  // Re-enrich
+                  try {
+                    const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true }) });
+                    const data = await res.json();
+                    setEnrichResult(`${data.enriched} re-enriched`);
+                    const { data: newSpecs } = await supabase.from("vehicle_specs").select("*");
+                    setSpecs((newSpecs as VehicleSpec[]) || []);
+                  } catch { setEnrichResult("Failed"); }
+                  finally { setEnriching(false); }
+                }}
+                disabled={enriching}
+                style={{
+                  padding: "0.5rem 1.2rem", background: "transparent",
+                  color: TEXT_MUTED, border: `1px solid ${SURFACE_BORDER}`,
+                  fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
+                  cursor: enriching ? "default" : "pointer", opacity: enriching ? 0.5 : 1,
+                  display: "flex", alignItems: "center", gap: "0.4rem", borderRadius: "2px",
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                {enriching ? "Working..." : "Re-enrich All"}
+              </button>
+            ) : (
+              <button
+                onClick={handleEnrichAll}
+                disabled={enriching}
+                style={{
+                  padding: "0.5rem 1.2rem", background: `linear-gradient(135deg, ${GOLD}, #b8943f)`,
+                  color: BG, border: "none",
+                  fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
+                  cursor: enriching ? "default" : "pointer", opacity: enriching ? 0.5 : 1,
+                  display: "flex", alignItems: "center", gap: "0.4rem", borderRadius: "2px",
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M10 2C10 5.31 12.69 8 16 8C12.69 8 10 10.69 10 14C10 10.69 7.31 8 4 8C7.31 8 10 5.31 10 2Z"/><path d="M18 12C18 14.21 19.79 16 22 16C19.79 16 18 17.79 18 20C18 17.79 16.21 16 14 16C16.21 16 18 14.21 18 12Z"/></svg>
+                {enriching ? "Working..." : `Enrich ${registrations.length - specs.length}`}
+              </button>
+            )}
           </div>
         </div>
 
