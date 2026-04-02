@@ -41,6 +41,8 @@ const sampleReg: Registration = {
   checked_in: false,
   checked_in_at: null,
   ai_image_url: null,
+  pixel_art_url: null,
+  pixel_dashboard_url: null,
   lat: null,
   lng: null,
   utm_source: null,

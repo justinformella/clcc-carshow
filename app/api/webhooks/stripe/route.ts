@@ -86,6 +86,17 @@ export async function POST(request: NextRequest) {
           } catch (err) {
             console.error(`Vehicle spec enrichment failed for ${regId}:`, err);
           }
+
+          // Generate pixel art for racing game
+          try {
+            await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com"}/api/registrations/pixel-art`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ registration_id: regId }),
+            });
+          } catch (err) {
+            console.error(`Pixel art generation failed for ${regId}:`, err);
+          }
         }
 
         // Check if admin notifications are enabled
