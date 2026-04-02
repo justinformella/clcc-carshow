@@ -10,18 +10,12 @@ export default function AboutCharitySection() {
               More Than a Car Show
             </h2>
             <p className="about-charity-text">
-              Every May, three blocks of historic downtown Crystal Lake transform
-              into an open-air showroom&mdash;gleaming hot rods, muscle cars,
-              imports, and modern exotics line Grant, Brink, and Williams streets,
-              each one with a story under the hood. This year&apos;s show is
-              Sunday, May 17, 2026, with a rain date of Sunday, May 31.
+              Three blocks of downtown Crystal Lake become an open-air showroom
+              every May. Sunday, May 17, 2026. Rain date May 31.
             </p>
             <p className="about-charity-text">
-              Whether you&apos;re a lifelong gearhead, a family looking for a
-              great day out, or someone who simply wants to support a good cause,
-              this is your event. Grab a coffee, browse the downtown shops, and
-              soak in the small-town energy&mdash;all while all net proceeds go
-              to the Crystal Lake Food Pantry.
+              200+ vehicles. Great coffee. Local shops. Small-town energy.
+              100% of net proceeds go to the Crystal Lake Food Pantry.
             </p>
 
             <div style={{ margin: "2rem 0" }}>
