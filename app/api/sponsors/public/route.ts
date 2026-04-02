@@ -56,7 +56,7 @@ export async function GET() {
     const tiers: SponsorTier[] = Object.keys(grouped)
       .sort(tierSort)
       .map((level) => ({
-        label: level.replace(/\s*\(\$[\d,]+\)\s*$/, ""),
+        label: level.replace(/\s*\(\$[\d,]+\)\s*$/, "").replace(/Sponsor$/, "Sponsors"),
         sponsors: grouped[level],
         isPresenting: isPresenting(level),
       }));
