@@ -12,6 +12,7 @@ export default function RegistrationsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [archiving, setArchiving] = useState(false);
@@ -67,7 +68,13 @@ export default function RegistrationsPage() {
       (statusFilter === "checked_in" && r.checked_in) ||
       (statusFilter === "not_checked_in" && !r.checked_in);
 
-    return matchesSearch && matchesCategory && matchesStatus;
+    const matchesPayment =
+      !paymentFilter ||
+      (paymentFilter === "abandoned"
+        ? r.payment_status === "pending" && new Date(r.created_at).getTime() < Date.now() - 30 * 60 * 1000
+        : r.payment_status === paymentFilter);
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesPayment;
   }).sort((a, b) => {
     switch (sortBy) {
       case "name": return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
@@ -324,6 +331,22 @@ export default function RegistrationsPage() {
           <option value="">All Status</option>
           <option value="checked_in">Checked In</option>
           <option value="not_checked_in">Not Checked In</option>
+        </select>
+        <select
+          value={paymentFilter}
+          onChange={(e) => setPaymentFilter(e.target.value)}
+          style={{
+            padding: "0.6rem 1rem",
+            border: "1px solid #ddd",
+            fontSize: "0.9rem",
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          <option value="">All Payments</option>
+          <option value="paid">Paid</option>
+          <option value="comped">Comped</option>
+          <option value="pending">Pending</option>
+          <option value="abandoned">Abandoned (30min+)</option>
         </select>
         <select
           value={sortBy}

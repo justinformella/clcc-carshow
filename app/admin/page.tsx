@@ -83,6 +83,9 @@ export default function AdminDashboard() {
   const confirmedRegistrations = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
   const paidRegistrations = registrations.filter((r) => r.payment_status === "paid");
   const unpaidRegistrations = registrations.filter((r) => r.payment_status === "pending");
+  const abandonedRegistrations = unpaidRegistrations.filter(
+    (r) => new Date(r.created_at).getTime() < Date.now() - 30 * 60 * 1000
+  );
   const regRevenueCents = paidRegistrations.reduce(
     (sum, r) => sum + (r.amount_paid || 0),
     0
@@ -352,6 +355,15 @@ export default function AdminDashboard() {
           note={`if all ${maxRegistrations} spots fill`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
         />
+        {abandonedRegistrations.length > 0 && (
+          <DashboardCard
+            href="/admin/registrations"
+            label="Abandoned"
+            value={`${abandonedRegistrations.length}`}
+            note={`started but never paid`}
+            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
+          />
+        )}
       </div>
 
       {/* ─── Sponsors & Revenue | Marketing ─── */}
