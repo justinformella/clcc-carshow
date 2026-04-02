@@ -11,30 +11,18 @@ type RaceCar = {
   owner: string;
   hp: number;
   weight: number;
-  displacement: number;
-  cylinders: number;
-  engineType: string;
-  category: string;
-  driveType: string;
   pwr: number;
-};
-
-type RaceEntry = RaceCar & {
-  lane: number;
-  progress: number;
-  speed: number;
-  baseSpeed: number;
-  finished: boolean;
-  finishTime: number;
   cssColor: string;
 };
 
-const LANE_COLORS = ["#dc2626", "#2563eb", "#16a34a", "#c9a84c", "#9333ea", "#ea580c", "#0891b2", "#be185d", "#4f46e5", "#059669"];
+type RaceResult = RaceCar & { finishTime: number; position: number };
+
+const LANE_COLORS = ["#dc2626", "#2563eb", "#16a34a", "#c9a84c", "#9333ea", "#ea580c", "#0891b2", "#be185d"];
 
 function colorToCss(color: string): string {
   const map: Record<string, string> = {
     red: "#dc2626", blue: "#2563eb", green: "#16a34a", black: "#1a1a1a",
-    white: "#e5e5e5", silver: "#94a3b8", gray: "#6b7280", grey: "#6b7280",
+    white: "#d4d4d8", silver: "#94a3b8", gray: "#6b7280", grey: "#6b7280",
     yellow: "#eab308", orange: "#ea580c", gold: "#c9a84c", brown: "#92400e",
     purple: "#7c3aed", pink: "#ec4899", copper: "#b87333", beige: "#d4a574",
   };
@@ -45,24 +33,29 @@ function colorToCss(color: string): string {
   return LANE_COLORS[Math.floor(Math.random() * LANE_COLORS.length)];
 }
 
-const RACE_DURATION = 18000; // 18 seconds
-const TRACK_LENGTH = 100;
-
 export default function RacePage() {
   const [allCars, setAllCars] = useState<RaceCar[]>([]);
-  const [racers, setRacers] = useState<RaceEntry[]>([]);
+  const [racers, setRacers] = useState<RaceCar[]>([]);
   const [phase, setPhase] = useState<"loading" | "lineup" | "countdown" | "racing" | "finished">("loading");
   const [countdown, setCountdown] = useState(3);
-  const [leaderboard, setLeaderboard] = useState<RaceEntry[]>([]);
-  const animRef = useRef<number>(0);
-  const startTimeRef = useRef(0);
+  const [results, setResults] = useState<RaceResult[]>([]);
 
-  // Fetch cars
+  const carRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const animRef = useRef<number>(0);
+  const progressRef = useRef<number[]>([]);
+  const speedRef = useRef<number[]>([]);
+  const finishedRef = useRef<boolean[]>([]);
+  const finishOrderRef = useRef<{ index: number; time: number }[]>([]);
+
   useEffect(() => {
     fetch("/api/race")
       .then((r) => r.json())
       .then((data) => {
-        setAllCars(data.cars || []);
+        const cars = (data.cars || []).map((c: RaceCar & { color: string }) => ({
+          ...c,
+          cssColor: colorToCss(c.color),
+        }));
+        setAllCars(cars);
         setPhase("lineup");
       })
       .catch(() => setPhase("lineup"));
@@ -70,90 +63,94 @@ export default function RacePage() {
 
   const pickRacers = useCallback(() => {
     const shuffled = [...allCars].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(8, shuffled.length));
-    return selected.map((car, i) => ({
-      ...car,
-      lane: i,
-      progress: 0,
-      speed: 0,
-      baseSpeed: calculateBaseSpeed(car),
-      finished: false,
-      finishTime: 0,
-      cssColor: colorToCss(car.color),
-    }));
+    return shuffled.slice(0, Math.min(8, shuffled.length));
   }, [allCars]);
 
-  function calculateBaseSpeed(car: RaceCar): number {
-    // Power-to-weight ratio is primary factor
-    const pwr = car.hp / (car.weight / 1000);
-    // Normalize to 0.6 - 1.0 range
-    const minPwr = 30;
-    const maxPwr = 200;
-    const normalized = Math.min(Math.max((pwr - minPwr) / (maxPwr - minPwr), 0), 1);
-    return 0.55 + normalized * 0.45;
-  }
-
   const startRace = useCallback(() => {
-    const newRacers = pickRacers();
-    setRacers(newRacers);
-    setLeaderboard([]);
+    const selected = pickRacers();
+    setRacers(selected);
+    setResults([]);
     setPhase("countdown");
     setCountdown(3);
 
-    // Countdown
+    // Reset refs
+    progressRef.current = selected.map(() => 0);
+    speedRef.current = selected.map(() => 0);
+    finishedRef.current = selected.map(() => false);
+    finishOrderRef.current = [];
+    carRefs.current = selected.map(() => null);
+
     let count = 3;
-    const countdownInterval = setInterval(() => {
+    const interval = setInterval(() => {
       count--;
       setCountdown(count);
       if (count <= 0) {
-        clearInterval(countdownInterval);
+        clearInterval(interval);
         setPhase("racing");
-        startTimeRef.current = performance.now();
 
-        // Start animation
-        const finishOrder: RaceEntry[] = [];
+        const startTime = performance.now();
+        const baseSpeedsArr = selected.map((car) => {
+          const pwr = car.hp / (car.weight / 1000);
+          const norm = Math.min(Math.max((pwr - 30) / 170, 0), 1);
+          return 0.3 + norm * 0.5; // 0.3 to 0.8 base speed per frame
+        });
+
+        // Pre-generate noise seeds for smooth variation
+        const seeds = selected.map(() => Math.random() * 1000);
 
         const animate = (now: number) => {
-          const elapsed = now - startTimeRef.current;
-          const t = Math.min(elapsed / RACE_DURATION, 1);
+          const elapsed = now - startTime;
+          let allDone = true;
 
-          setRacers((prev) => {
-            const updated = prev.map((racer) => {
-              if (racer.finished) return racer;
+          for (let i = 0; i < selected.length; i++) {
+            if (finishedRef.current[i]) continue;
+            allDone = false;
 
-              // Speed with randomness — faster cars are generally faster but with variance
-              const noise = (Math.sin(elapsed * 0.003 + racer.lane * 47) * 0.15) +
-                           (Math.sin(elapsed * 0.007 + racer.lane * 23) * 0.1) +
-                           (Math.random() - 0.5) * 0.05;
+            // Smooth speed variation using sine waves
+            const t = elapsed / 1000;
+            const wobble1 = Math.sin(t * 2.3 + seeds[i]) * 0.12;
+            const wobble2 = Math.sin(t * 3.7 + seeds[i] * 1.5) * 0.08;
+            const wobble3 = Math.sin(t * 0.9 + seeds[i] * 0.7) * 0.15;
 
-              const currentSpeed = racer.baseSpeed + noise * racer.baseSpeed;
-              const newProgress = Math.min(racer.progress + currentSpeed * 0.12, TRACK_LENGTH);
+            // Acceleration curve — start slow, build up
+            const accel = Math.min(elapsed / 2000, 1); // Takes 2s to reach full speed
+            const accelCurve = accel * accel; // Quadratic ease-in
 
-              if (newProgress >= TRACK_LENGTH && !racer.finished) {
-                const finished = { ...racer, progress: TRACK_LENGTH, finished: true, finishTime: elapsed, speed: currentSpeed };
-                finishOrder.push(finished);
-                return finished;
-              }
+            const currentSpeed = baseSpeedsArr[i] * accelCurve * (1 + wobble1 + wobble2 + wobble3);
+            speedRef.current[i] = currentSpeed;
 
-              return { ...racer, progress: newProgress, speed: currentSpeed };
-            });
+            progressRef.current[i] = Math.min(progressRef.current[i] + currentSpeed * 0.16, 100);
 
-            return updated;
-          });
+            // Update DOM directly — no React re-render
+            const el = carRefs.current[i];
+            if (el) {
+              el.style.left = `${(progressRef.current[i] / 100) * 90}%`;
+            }
 
-          if (finishOrder.length < newRacers.length && t < 1.2) {
+            if (progressRef.current[i] >= 100) {
+              finishedRef.current[i] = true;
+              finishOrderRef.current.push({ index: i, time: elapsed });
+            }
+          }
+
+          if (!allDone && elapsed < 25000) {
             animRef.current = requestAnimationFrame(animate);
           } else {
-            // Race over — any unfinished cars get max time
-            setRacers((prev) => prev.map((r) => r.finished ? r : { ...r, finished: true, finishTime: RACE_DURATION, progress: r.progress }));
-            const allFinished = [...finishOrder];
-            // Add any that didn't quite finish
-            newRacers.forEach((r) => {
-              if (!allFinished.find((f) => f.id === r.id)) {
-                allFinished.push({ ...r, finished: true, finishTime: RACE_DURATION });
+            // Fill in any unfinished
+            for (let i = 0; i < selected.length; i++) {
+              if (!finishedRef.current[i]) {
+                finishOrderRef.current.push({ index: i, time: 25000 });
               }
-            });
-            setLeaderboard(allFinished.sort((a, b) => a.finishTime - b.finishTime));
+            }
+
+            // Build results
+            const sorted = finishOrderRef.current.sort((a, b) => a.time - b.time);
+            const raceResults: RaceResult[] = sorted.map((f, pos) => ({
+              ...selected[f.index],
+              finishTime: f.time,
+              position: pos + 1,
+            }));
+            setResults(raceResults);
             setPhase("finished");
           }
         };
@@ -163,19 +160,17 @@ export default function RacePage() {
     }, 1000);
 
     return () => {
-      clearInterval(countdownInterval);
+      clearInterval(interval);
       cancelAnimationFrame(animRef.current);
     };
   }, [pickRacers]);
 
-  useEffect(() => {
-    return () => cancelAnimationFrame(animRef.current);
-  }, []);
+  useEffect(() => () => cancelAnimationFrame(animRef.current), []);
 
   if (phase === "loading") {
     return (
       <div style={containerStyle}>
-        <p style={{ color: "#666", fontSize: "1.2rem" }}>Loading vehicles...</p>
+        <p style={{ color: "#666", fontSize: "1.2rem", textAlign: "center", paddingTop: "40vh" }}>Loading vehicles...</p>
       </div>
     );
   }
@@ -184,32 +179,30 @@ export default function RacePage() {
     <div style={containerStyle}>
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-        <Link href="/" style={{ color: "#c9a84c", textDecoration: "none", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+        <Link href="/" style={{ color: "#c9a84c", textDecoration: "none", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.2em" }}>
           Crystal Lake Cars &amp; Caffeine
         </Link>
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "2.5rem", color: "#fff", margin: "0.5rem 0", fontWeight: 400 }}>
           Slot Car Showdown
         </h1>
-        <p style={{ color: "#666", fontSize: "0.9rem" }}>
-          {allCars.length} vehicles ready to race &middot; Powered by real specs
+        <p style={{ color: "#555", fontSize: "0.85rem" }}>
+          {allCars.length} vehicles &middot; Real specs &middot; Random matchups
         </p>
       </div>
 
-      {/* Lineup / Pre-race */}
+      {/* Start screen */}
       {phase === "lineup" && (
-        <div style={{ textAlign: "center" }}>
+        <div style={{ textAlign: "center", paddingTop: "2rem" }}>
           {allCars.length < 2 ? (
-            <p style={{ color: "#888", fontSize: "1rem", marginBottom: "2rem" }}>
-              Need at least 2 enriched vehicles to race. Enrich specs from the admin Analytics page first.
-            </p>
+            <p style={{ color: "#666" }}>Need at least 2 enriched vehicles. Enrich from Admin &gt; Analytics first.</p>
           ) : (
             <>
-              <button onClick={startRace} style={startButtonStyle}>
+              <button onClick={startRace} style={startBtnStyle}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 Start Race
               </button>
-              <p style={{ color: "#555", fontSize: "0.8rem", marginTop: "1rem" }}>
-                {Math.min(8, allCars.length)} random cars will be selected
+              <p style={{ color: "#444", fontSize: "0.8rem", marginTop: "1rem" }}>
+                {Math.min(8, allCars.length)} random cars will line up
               </p>
             </>
           )}
@@ -218,207 +211,120 @@ export default function RacePage() {
 
       {/* Countdown */}
       {phase === "countdown" && (
-        <div style={{ textAlign: "center", position: "relative" }}>
+        <div style={{ textAlign: "center" }}>
           <div style={{
-            fontSize: "8rem",
-            fontFamily: "'Playfair Display', serif",
+            fontSize: "7rem", fontFamily: "'Playfair Display', serif",
             color: countdown === 0 ? "#16a34a" : "#c9a84c",
-            textShadow: `0 0 40px ${countdown === 0 ? "rgba(22,163,106,0.5)" : "rgba(201,168,76,0.5)"}`,
-            lineHeight: 1,
-            marginBottom: "1rem",
-            animation: "pulse 0.5s ease",
+            textShadow: `0 0 60px ${countdown === 0 ? "rgba(22,163,106,0.4)" : "rgba(201,168,76,0.4)"}`,
+            lineHeight: 1, marginBottom: "2rem",
           }}>
             {countdown === 0 ? "GO!" : countdown}
           </div>
-          {/* Show lineup */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: "600px", margin: "0 auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", maxWidth: "600px", margin: "0 auto" }}>
             {racers.map((r) => (
-              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.4rem 0.75rem", background: "rgba(255,255,255,0.04)", borderLeft: `3px solid ${r.cssColor}` }}>
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.4rem 0.75rem", background: "rgba(255,255,255,0.03)", borderLeft: `3px solid ${r.cssColor}` }}>
                 <span style={{ color: "#c9a84c", fontWeight: 700, width: "30px" }}>#{r.carNumber}</span>
-                <span style={{ color: "#fff", flex: 1, fontSize: "0.85rem" }}>{r.name}</span>
-                <span style={{ color: "#666", fontSize: "0.75rem" }}>{r.hp} HP</span>
-                <span style={{ color: "#666", fontSize: "0.75rem" }}>{r.pwr} HP/t</span>
+                <span style={{ color: "#ddd", flex: 1, fontSize: "0.85rem" }}>{r.name}</span>
+                <span style={{ color: "#555", fontSize: "0.75rem" }}>{r.hp} HP</span>
+                <span style={{ color: "#555", fontSize: "0.75rem" }}>{r.pwr} HP/t</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Racing */}
+      {/* Track */}
       {(phase === "racing" || phase === "finished") && (
         <>
-          {/* Track */}
           <div style={{
-            background: "#1a1a1e",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "8px",
-            padding: "1.5rem 1rem",
-            marginBottom: "2rem",
+            background: "#141416", border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: "8px", padding: "1.25rem 0.75rem", marginBottom: "2rem",
             position: "relative",
-            overflow: "hidden",
           }}>
             {/* Finish line */}
             <div style={{
-              position: "absolute",
-              right: "40px",
-              top: 0,
-              bottom: 0,
-              width: "4px",
-              background: "repeating-linear-gradient(to bottom, #fff 0px, #fff 8px, #1a1a1e 8px, #1a1a1e 16px)",
-              opacity: 0.3,
-              zIndex: 1,
+              position: "absolute", right: "36px", top: 0, bottom: 0, width: "3px",
+              background: "repeating-linear-gradient(to bottom, #fff 0px, #fff 6px, transparent 6px, transparent 12px)",
+              opacity: 0.2, zIndex: 1,
             }} />
 
-            {/* Lanes */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               {racers.map((racer, i) => (
-                <div key={racer.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", height: "36px" }}>
-                  {/* Car label */}
-                  <div style={{ width: "40px", textAlign: "right", fontSize: "0.65rem", color: "#555", flexShrink: 0 }}>
-                    #{racer.carNumber}
-                  </div>
-
-                  {/* Lane */}
+                <div key={racer.id} style={{ display: "flex", alignItems: "center", gap: "0.4rem", height: "34px" }}>
+                  <div style={{ width: "36px", textAlign: "right", fontSize: "0.6rem", color: "#444", flexShrink: 0 }}>#{racer.carNumber}</div>
                   <div style={{
-                    flex: 1,
-                    height: "100%",
-                    background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.04)",
-                    borderRadius: "4px",
-                    position: "relative",
-                    overflow: "hidden",
+                    flex: 1, height: "100%",
+                    background: i % 2 === 0 ? "rgba(255,255,255,0.015)" : "rgba(255,255,255,0.03)",
+                    borderRadius: "3px", position: "relative", overflow: "hidden",
                   }}>
-                    {/* Lane line */}
-                    <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: "1px", background: "rgba(255,255,255,0.06)" }} />
+                    {/* Center lane line */}
+                    <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: "1px", background: "rgba(255,255,255,0.04)" }} />
 
-                    {/* Car */}
-                    <div style={{
-                      position: "absolute",
-                      left: `${(racer.progress / TRACK_LENGTH) * 92}%`,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      transition: phase === "finished" ? "none" : "left 0.05s linear",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "2px",
-                      zIndex: 2,
-                    }}>
-                      {/* Car body */}
+                    {/* Car — positioned via ref, not React state */}
+                    <div
+                      ref={(el) => { carRefs.current[i] = el; }}
+                      style={{
+                        position: "absolute", left: "0%", top: "50%",
+                        transform: "translateY(-50%)",
+                        zIndex: 2,
+                        willChange: "left",
+                      }}
+                    >
                       <div style={{
-                        width: "36px",
-                        height: "18px",
-                        background: `linear-gradient(135deg, ${racer.cssColor}, ${racer.cssColor}dd)`,
-                        borderRadius: "3px 8px 8px 3px",
-                        boxShadow: `0 0 8px ${racer.cssColor}44, 2px 0 12px ${racer.cssColor}22`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "0.55rem",
-                        fontWeight: 800,
-                        color: "#fff",
-                        textShadow: "0 1px 2px rgba(0,0,0,0.5)",
-                        position: "relative",
+                        width: "34px", height: "16px",
+                        background: `linear-gradient(90deg, ${racer.cssColor}cc, ${racer.cssColor})`,
+                        borderRadius: "2px 6px 6px 2px",
+                        boxShadow: `0 0 10px ${racer.cssColor}33`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "0.5rem", fontWeight: 800, color: "#fff",
+                        textShadow: "0 1px 2px rgba(0,0,0,0.6)",
                       }}>
                         {racer.carNumber}
-                        {/* Wheels */}
-                        <div style={{ position: "absolute", bottom: "-3px", left: "4px", width: "6px", height: "6px", borderRadius: "50%", background: "#333", border: "1px solid #555" }} />
-                        <div style={{ position: "absolute", bottom: "-3px", right: "4px", width: "6px", height: "6px", borderRadius: "50%", background: "#333", border: "1px solid #555" }} />
+                        <div style={{ position: "absolute", bottom: "-2px", left: "3px", width: "5px", height: "5px", borderRadius: "50%", background: "#222", border: "1px solid #444" }} />
+                        <div style={{ position: "absolute", bottom: "-2px", right: "3px", width: "5px", height: "5px", borderRadius: "50%", background: "#222", border: "1px solid #444" }} />
                       </div>
                     </div>
-
-                    {/* Position indicator when finished */}
-                    {racer.finished && (
-                      <div style={{
-                        position: "absolute",
-                        right: "8px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                        color: leaderboard.findIndex((l) => l.id === racer.id) === 0 ? "#c9a84c" : "#555",
-                      }}>
-                        {leaderboard.findIndex((l) => l.id === racer.id) >= 0
-                          ? `P${leaderboard.findIndex((l) => l.id === racer.id) + 1}`
-                          : ""}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Leaderboard */}
-          {phase === "finished" && leaderboard.length > 0 && (
+          {/* Results */}
+          {phase === "finished" && results.length > 0 && (
             <div style={{ maxWidth: "700px", margin: "0 auto" }}>
               <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", color: "#fff", textAlign: "center", marginBottom: "1.5rem", fontWeight: 400 }}>
-                Race Results
+                Results
               </h2>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                {leaderboard.map((car, i) => (
-                  <div
-                    key={car.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "1rem",
-                      padding: "0.75rem 1rem",
-                      background: i === 0 ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.03)",
-                      borderLeft: i === 0 ? "3px solid #c9a84c" : i === 1 ? "3px solid #94a3b8" : i === 2 ? "3px solid #b87333" : "3px solid transparent",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {/* Position */}
-                    <span style={{
-                      width: "32px",
-                      height: "32px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 800,
-                      fontSize: i < 3 ? "1.1rem" : "0.85rem",
-                      color: i === 0 ? "#c9a84c" : i === 1 ? "#94a3b8" : i === 2 ? "#b87333" : "#555",
-                      flexShrink: 0,
-                    }}>
-                      {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                {results.map((car) => (
+                  <div key={car.id} style={{
+                    display: "flex", alignItems: "center", gap: "0.75rem",
+                    padding: "0.65rem 1rem",
+                    background: car.position === 1 ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.02)",
+                    borderLeft: car.position <= 3 ? `3px solid ${car.position === 1 ? "#c9a84c" : car.position === 2 ? "#94a3b8" : "#b87333"}` : "3px solid transparent",
+                    borderRadius: "3px",
+                  }}>
+                    <span style={{ width: "28px", fontSize: car.position <= 3 ? "1.1rem" : "0.85rem", textAlign: "center", flexShrink: 0 }}>
+                      {car.position === 1 ? "🥇" : car.position === 2 ? "🥈" : car.position === 3 ? "🥉" : <span style={{ color: "#444" }}>{car.position}</span>}
                     </span>
-
-                    {/* Car color dot */}
-                    <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: car.cssColor, flexShrink: 0, boxShadow: `0 0 6px ${car.cssColor}66` }} />
-
-                    {/* Info */}
+                    <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: car.cssColor, flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
-                      <span style={{ color: "#fff", fontSize: "0.9rem", fontWeight: 500 }}>
+                      <span style={{ color: "#fff", fontSize: "0.85rem" }}>
                         <span style={{ color: "#c9a84c" }}>#{car.carNumber}</span> {car.name}
                       </span>
-                      <span style={{ color: "#555", fontSize: "0.75rem", marginLeft: "0.75rem" }}>{car.owner}</span>
+                      <span style={{ color: "#444", fontSize: "0.7rem", marginLeft: "0.5rem" }}>{car.owner}</span>
                     </div>
-
-                    {/* Stats */}
-                    <div style={{ display: "flex", gap: "1.5rem", flexShrink: 0 }}>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>HP</div>
-                        <div style={{ fontSize: "0.85rem", color: "#fff", fontWeight: 600 }}>{car.hp}</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>PWR</div>
-                        <div style={{ fontSize: "0.85rem", color: "#fff", fontWeight: 600 }}>{car.pwr}</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>Time</div>
-                        <div style={{ fontSize: "0.85rem", color: i === 0 ? "#c9a84c" : "#fff", fontWeight: 600 }}>
-                          {(car.finishTime / 1000).toFixed(2)}s
-                        </div>
-                      </div>
-                    </div>
+                    <span style={{ color: "#555", fontSize: "0.75rem", width: "50px", textAlign: "right" }}>{car.hp} HP</span>
+                    <span style={{ color: car.position === 1 ? "#c9a84c" : "#888", fontSize: "0.85rem", fontWeight: 600, width: "60px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                      {(car.finishTime / 1000).toFixed(2)}s
+                    </span>
                   </div>
                 ))}
               </div>
-
-              {/* Race again */}
               <div style={{ textAlign: "center", marginTop: "2rem" }}>
-                <button onClick={startRace} style={startButtonStyle}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <button onClick={startRace} style={startBtnStyle}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   Race Again
                 </button>
               </div>
@@ -426,40 +332,30 @@ export default function RacePage() {
           )}
         </>
       )}
-
-      {/* Styles */}
-      <style>{`
-        @keyframes pulse {
-          0% { transform: scale(0.8); opacity: 0; }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
 
 const containerStyle: React.CSSProperties = {
-  background: "#0a0a0c",
+  background: "#08090c",
   minHeight: "100vh",
   padding: "2rem",
   fontFamily: "'Inter', sans-serif",
 };
 
-const startButtonStyle: React.CSSProperties = {
-  padding: "1rem 3rem",
+const startBtnStyle: React.CSSProperties = {
+  padding: "0.9rem 2.5rem",
   background: "linear-gradient(135deg, #c9a84c, #b8943f)",
-  color: "#0a0a0c",
+  color: "#08090c",
   border: "none",
-  fontSize: "1.1rem",
+  fontSize: "1rem",
   fontWeight: 700,
   textTransform: "uppercase",
   letterSpacing: "0.1em",
   cursor: "pointer",
   display: "inline-flex",
   alignItems: "center",
-  gap: "0.75rem",
+  gap: "0.6rem",
   borderRadius: "4px",
-  boxShadow: "0 4px 20px rgba(201,168,76,0.3)",
-  transition: "transform 0.2s, box-shadow 0.2s",
+  boxShadow: "0 4px 20px rgba(201,168,76,0.25)",
 };
