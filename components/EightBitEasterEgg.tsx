@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 
-const KONAMI = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+const KONAMI = ["arrowup", "arrowup", "arrowdown", "arrowdown", "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a"];
 
 export function KonamiListener() {
-  const router = useRouter();
+
   const seqRef = useRef<string[]>([]);
   const [transitioning, setTransitioning] = useState(false);
 
@@ -17,7 +16,7 @@ export function KonamiListener() {
     // Create canvas overlay for pixelation effect
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    if (!ctx) { router.push("/8bit"); return; }
+    if (!ctx) { window.location.href = "/8bit"; return; }
 
     canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;z-index:99999;pointer-events:none;";
     document.body.appendChild(canvas);
@@ -61,7 +60,7 @@ export function KonamiListener() {
         // Final frame: solid dark with gold text
         ctx.fillStyle = "#0d0d1a";
         ctx.fillRect(0, 0, w, h);
-        setTimeout(() => router.push("/8bit"), 200);
+        setTimeout(() => window.location.href = "/8bit", 200);
       }
     };
 
@@ -82,16 +81,16 @@ export function KonamiListener() {
     } catch {}
 
     animate();
-  }, [router, transitioning]);
+  }, [transitioning]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      seqRef.current.push(e.key);
+      seqRef.current.push(e.key.toLowerCase());
       if (seqRef.current.length > KONAMI.length) {
         seqRef.current = seqRef.current.slice(-KONAMI.length);
       }
       if (seqRef.current.length === KONAMI.length &&
-          seqRef.current.every((k, i) => k.toLowerCase() === KONAMI[i].toLowerCase())) {
+          seqRef.current.every((k, i) => k === KONAMI[i])) {
         seqRef.current = [];
         triggerTransition();
       }
@@ -104,7 +103,7 @@ export function KonamiListener() {
 }
 
 export function FooterPixel() {
-  const router = useRouter();
+
   const [transitioning, setTransitioning] = useState(false);
 
   const triggerTransition = useCallback(() => {
@@ -113,7 +112,7 @@ export function FooterPixel() {
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    if (!ctx) { router.push("/8bit"); return; }
+    if (!ctx) { window.location.href = "/8bit"; return; }
 
     canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;z-index:99999;pointer-events:none;";
     document.body.appendChild(canvas);
@@ -152,7 +151,7 @@ export function FooterPixel() {
       } else {
         ctx.fillStyle = "#0d0d1a";
         ctx.fillRect(0, 0, w, h);
-        setTimeout(() => router.push("/8bit"), 200);
+        setTimeout(() => window.location.href = "/8bit", 200);
       }
     };
 
@@ -172,7 +171,7 @@ export function FooterPixel() {
     } catch {}
 
     animate();
-  }, [router, transitioning]);
+  }, [transitioning]);
 
   return (
     <span
