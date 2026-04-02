@@ -325,19 +325,27 @@ header.scrolled .mobile-toggle span {
 }
 
 .hero-sponsors-bar-logo {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 0.4rem 1rem;
+    background: var(--white);
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-sponsors-bar-logo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .hero-sponsors-bar-logo span {
     font-size: 0.6rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--charcoal);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     white-space: nowrap;
+    font-weight: 600;
 }
 
 .scroll-indicator {
@@ -1339,7 +1347,7 @@ section {
 footer {
     background: var(--charcoal);
     color: var(--white);
-    padding: 5rem 3rem 3rem;
+    padding: 5rem 3rem 6rem;
 }
 
 .footer-inner {

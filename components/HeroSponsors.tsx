@@ -39,15 +39,17 @@ export default function HeroSponsors() {
                 <span className="hero-sponsors-bar-label">Presented by</span>
                 {tier.sponsors.map((s) => (
                   <SponsorLink key={s.company} sponsor={s}>
-                    {getLogoSrc(s) ? (
-                      <img
-                        src={getLogoSrc(s)!}
-                        alt={s.company}
-                        style={{ maxHeight: "70px", maxWidth: "280px", objectFit: "contain" }}
-                      />
-                    ) : (
-                      <span className="hero-sponsors-bar-name">{s.company}</span>
-                    )}
+                    <div className="hero-sponsors-bar-logo" style={{ padding: "0.8rem 1.5rem" }}>
+                      {getLogoSrc(s) ? (
+                        <img
+                          src={getLogoSrc(s)!}
+                          alt={s.company}
+                          style={{ maxHeight: "70px", maxWidth: "280px", objectFit: "contain" }}
+                        />
+                      ) : (
+                        <span className="hero-sponsors-bar-name" style={{ color: "var(--charcoal)" }}>{s.company}</span>
+                      )}
+                    </div>
                   </SponsorLink>
                 ))}
               </div>
