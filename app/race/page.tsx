@@ -143,8 +143,8 @@ export default function RacePage() {
     }
 
     // ─── ROAD (perspective, row by row) ───
-    const roadWidthBottom = W * 0.7;
-    const roadWidthTop = W * 0.04;
+    const roadWidthBottom = W * 0.85;
+    const roadWidthTop = W * 0.06;
     const shoulderWidthBottom = W * 0.12;
     const shoulderWidthTop = 2;
     const totalRows = H - horizonY;
@@ -296,10 +296,10 @@ export default function RacePage() {
             // Y position: 30% (horizon) to 90% (bottom of track)
             const topPct = 30 + (1 - tOpp) * 55;
             // Opponent in LEFT lane — offset left of center
-            // Road width at this depth: perspective = tOpp^2
-            // Road goes from 4% at horizon to 70% at bottom
-            const perspAtOpp = tOpp * tOpp;
-            const roadWidthPct = 4 + (70 - 4) * perspAtOpp;
+            // Road narrows toward horizon: use (1-tOpp)^2 for perspective
+            // tOpp: 0=close (bottom), 1=far (horizon)
+            const perspAtOpp = (1 - tOpp) * (1 - tOpp);
+            const roadWidthPct = 6 + (85 - 6) * perspAtOpp;
             // Offset by 25% of road width to left (center of left lane)
             const laneOff = roadWidthPct * 0.25;
             const spriteWidth = Math.round(220 * scale);
