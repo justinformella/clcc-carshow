@@ -56,13 +56,15 @@ export default function Footer() {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>
-            &copy; 2026 Crystal Lake Cars and Coffee. All rights reserved.
-          </p>
+          <div>
+            <FooterPixelLink />
+            <p style={{ marginTop: "0.3rem" }}>
+              Crystal Lake Cars and Coffee. All rights reserved.
+            </p>
+          </div>
           <div className="footer-social">
             <a href="https://www.facebook.com/groups/389632989553839" target="_blank" rel="noopener noreferrer">Facebook</a>
             <Link href="/admin" style={{ opacity: 0.5 }}>Admin</Link>
-            <FooterPixelLink />
           </div>
         </div>
       </div>

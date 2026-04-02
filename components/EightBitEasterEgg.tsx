@@ -178,16 +178,16 @@ export function FooterPixelLink() {
         onClick={triggerTransition}
         style={{
           fontFamily: "'Press Start 2P', monospace",
-          fontSize: "0.6rem",
-          color: "rgba(255,255,255,0.35)",
+          fontSize: "0.65rem",
+          color: "rgba(255,255,255,0.4)",
           cursor: "pointer",
           transition: "color 0.3s",
-          marginLeft: "0.75rem",
+          display: "block",
         }}
         onMouseEnter={(e) => { e.currentTarget.style.color = "#ffd700"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.35)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
       >
-        CLCC
+        &copy; 2026 CLCC
       </span>
     </>
   );
