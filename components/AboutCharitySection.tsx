@@ -23,6 +23,62 @@ export default function AboutCharitySection() {
               soak in the small-town energy&mdash;all while all net proceeds go
               to the Crystal Lake Food Pantry.
             </p>
+
+            <div style={{ margin: "2rem 0" }}>
+              <p style={{
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.15em",
+                color: "var(--gold)",
+                marginBottom: "1rem",
+              }}>
+                Every Vehicle Has a Place
+              </p>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "0.5rem",
+              }}>
+                {[
+                  "Supercars & Exotics",
+                  "European Luxury",
+                  "Japanese Imports",
+                  "American Muscle",
+                  "Classic & Vintage",
+                  "Hot Rods & Customs",
+                  "Modern Sports Cars",
+                  "Trucks & SUVs",
+                  "EVs & Hybrids",
+                ].map((cat) => (
+                  <div
+                    key={cat}
+                    style={{
+                      padding: "0.6rem 0.75rem",
+                      background: "rgba(0,0,0,0.03)",
+                      border: "1px solid rgba(0,0,0,0.06)",
+                      fontSize: "0.8rem",
+                      color: "var(--charcoal)",
+                      fontWeight: 500,
+                      textAlign: "center",
+                    }}
+                  >
+                    {cat}
+                  </div>
+                ))}
+              </div>
+              <p style={{
+                fontSize: "0.85rem",
+                color: "var(--text-light)",
+                marginTop: "1rem",
+                lineHeight: 1.7,
+              }}>
+                From Ferraris to Fords, Porsches to pickup trucks&mdash;if it has
+                wheels and you&apos;re proud of it, it belongs here. No year, make,
+                or model restrictions.
+              </p>
+            </div>
+
             <div className="intro-stats">
               <div className="intro-stat">
                 <div className="intro-stat-number">4th</div>
