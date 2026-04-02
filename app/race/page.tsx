@@ -663,13 +663,23 @@ function RacePage() {
               <div style={{ fontSize: "3rem", fontFamily: "'Playfair Display', serif", color: winner === "player" ? "#c9a84c" : "#dc2626", marginBottom: "1rem" }}>
                 {winner === "player" ? "YOU WIN!" : "YOU LOSE"}
               </div>
-              <div style={{ display: "flex", gap: "3rem", justifyContent: "center", marginBottom: "2rem" }}>
+              {/* Car images + times */}
+              <div style={{ display: "flex", gap: "2rem", justifyContent: "center", alignItems: "center", marginBottom: "2rem" }}>
                 <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "#c9a84c", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.3rem" }}>Your Time</p>
+                  <p style={{ color: "#c9a84c", fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "0.4rem" }}>You</p>
+                  {playerCar?.pixelArt && (
+                    <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.4rem" }} />
+                  )}
+                  <p style={{ color: "#ddd", fontSize: "0.7rem", marginBottom: "0.2rem" }}>{playerCar?.name}</p>
                   <p style={{ color: "#fff", fontSize: "1.5rem", fontFamily: "monospace" }}>{(playerTime / 1000).toFixed(2)}s</p>
                 </div>
+                <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#555" }}>vs</div>
                 <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "#dc2626", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.3rem" }}>Opponent</p>
+                  <p style={{ color: "#dc2626", fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "0.4rem" }}>Opponent</p>
+                  {opponentCar?.pixelArt && (
+                    <img src={opponentCar.pixelArt} alt={opponentCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.4rem" }} />
+                  )}
+                  <p style={{ color: "#ddd", fontSize: "0.7rem", marginBottom: "0.2rem" }}>{opponentCar?.name}</p>
                   <p style={{ color: "#fff", fontSize: "1.5rem", fontFamily: "monospace" }}>{(opponentTime / 1000).toFixed(2)}s</p>
                 </div>
               </div>
