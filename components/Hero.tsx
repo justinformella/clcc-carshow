@@ -25,9 +25,6 @@ export default function Hero() {
           </a>
         </div>
       </div>
-      <div className="scroll-indicator">
-        <span>Scroll</span>
-      </div>
     </section>
   );
 }
