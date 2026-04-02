@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import { KonamiListener } from "@/components/EightBitEasterEgg";
 import Hero from "@/components/Hero";
 import HeroSponsors from "@/components/HeroSponsors";
 import AboutCharitySection from "@/components/AboutCharitySection";
@@ -15,6 +16,7 @@ export default function Home() {
   return (
     <>
       <Header />
+      <KonamiListener />
       <StickyRegisterBar />
       <Hero />
       <HeroSponsors />
