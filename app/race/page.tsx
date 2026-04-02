@@ -285,40 +285,59 @@ export default function RacePage() {
           // Update opponent overlay position via direct DOM manipulation
           const overlayEl = opponentOverlayRef.current;
           if (overlayEl) {
-            const delta = oPos - pPos;
-            // Clamp distance range: -20 (behind us) to 80 (far ahead)
-            const normalizedDist = Math.max(-20, Math.min(80, delta));
-            // t: 0 = at our position, 1 = at horizon
-            // When even (delta=0), opponent is at ~40% up the road (closer to us)
-            const tOpp = Math.min(1, Math.max(0, 0.4 + normalizedDist / 200));
-            // Scale: 1.0 at bottom, 0.2 at horizon (less aggressive shrink)
-            const scale = 1.0 - tOpp * 0.8;
-            // Y position: 30% (horizon) to 90% (bottom of track)
-            const topPct = 30 + (1 - tOpp) * 55;
-            // Opponent in LEFT lane — offset left of center
-            // Road narrows toward horizon: use (1-tOpp)^2 for perspective
-            // tOpp: 0=close (bottom), 1=far (horizon)
-            const perspAtOpp = (1 - tOpp) * (1 - tOpp);
-            const roadWidthPct = 6 + (85 - 6) * perspAtOpp;
-            // Offset by 25% of road width to left (center of left lane)
-            const laneOff = roadWidthPct * 0.25;
-            const spriteWidth = Math.round(220 * scale);
-            const visible = delta > -15;
+            const delta = oPos - pPos; // positive = ahead, negative = behind
 
-            overlayEl.style.top = `${topPct}%`;
-            overlayEl.style.left = `calc(50% - ${laneOff}%)`;
-            overlayEl.style.display = visible ? "block" : "none";
+            if (delta >= 0) {
+              // ─── OPPONENT IS AHEAD OR EVEN ───
+              // tOpp: 0=right next to us, 1=at horizon
+              const tOpp = Math.min(1, delta / 150);
+              const scale = 1.0 - tOpp * 0.75;
+              const topPct = 30 + (1 - tOpp) * 55;
+              // Lane offset proportional to road width at this depth
+              const perspAtOpp = (1 - tOpp) * (1 - tOpp);
+              const roadWidthPct = 6 + (85 - 6) * perspAtOpp;
+              const laneOff = roadWidthPct * 0.22;
+              const spriteWidth = Math.round(240 * scale);
 
-            const imgEl = opponentImgRef.current;
-            if (imgEl) {
-              imgEl.style.width = `${spriteWidth}px`;
+              overlayEl.style.top = `${topPct}%`;
+              overlayEl.style.left = `calc(50% - ${laneOff}%)`;
+              overlayEl.style.display = "block";
+              overlayEl.style.opacity = "1";
+
+              if (opponentImgRef.current) opponentImgRef.current.style.width = `${spriteWidth}px`;
+              if (opponentFallbackRef.current) {
+                opponentFallbackRef.current.style.width = `${spriteWidth}px`;
+                opponentFallbackRef.current.style.height = `${Math.round(spriteWidth * 0.55)}px`;
+                opponentFallbackRef.current.style.fontSize = `${Math.max(10, 16 * scale)}px`;
+              }
+            } else {
+              // ─── OPPONENT IS BEHIND (we passed them) ───
+              // They grow larger and slide to the left as they fall back
+              const behind = Math.min(Math.abs(delta), 80); // 0-80 range
+              const behindT = behind / 80; // 0=just passed, 1=way behind
+              // Scale gets bigger (they're closer/beside us)
+              const scale = 1.0 + behindT * 0.8;
+              // Slide down past bottom of track view
+              const topPct = 85 + behindT * 30;
+              // Slide further left as they fall behind
+              const laneOff = 20 + behindT * 25;
+              const spriteWidth = Math.round(240 * scale);
+              // Fade out as they go off screen
+              const opacity = Math.max(0, 1 - behindT * 1.2);
+
+              overlayEl.style.top = `${topPct}%`;
+              overlayEl.style.left = `calc(50% - ${laneOff}%)`;
+              overlayEl.style.display = opacity > 0.01 ? "block" : "none";
+              overlayEl.style.opacity = `${opacity}`;
+
+              if (opponentImgRef.current) opponentImgRef.current.style.width = `${spriteWidth}px`;
+              if (opponentFallbackRef.current) {
+                opponentFallbackRef.current.style.width = `${spriteWidth}px`;
+                opponentFallbackRef.current.style.height = `${Math.round(spriteWidth * 0.55)}px`;
+                opponentFallbackRef.current.style.fontSize = `${Math.max(10, 16 * scale)}px`;
+              }
             }
-            const fallbackEl = opponentFallbackRef.current;
-            if (fallbackEl) {
-              fallbackEl.style.width = `${spriteWidth}px`;
-              fallbackEl.style.height = `${Math.round(spriteWidth * 0.55)}px`;
-              fallbackEl.style.fontSize = `${Math.max(10, 16 * scale)}px`;
-            }
+
           }
 
           setPlayerPos(Math.min(pPos / FINISH * 100, 100));
