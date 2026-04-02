@@ -4,6 +4,11 @@
 import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import {
+  playCountdownBeep, startEngine, updateEngine, stopEngine,
+  playGearShift, playWinJingle, playLoseJingle,
+  startMusic, stopAll,
+} from "@/lib/race-audio";
 
 type RaceCar = {
   id: string;
@@ -240,13 +245,17 @@ function RacePage() {
     setPlayerTime(0);
     setOpponentTime(0);
 
+    playCountdownBeep(false); // first beep on 3
     let c = 3;
     const interval = setInterval(() => {
       c--;
       setCountdown(c);
+      playCountdownBeep(c <= 0); // higher pitch on GO
       if (c <= 0) {
         clearInterval(interval);
         setPhase("racing");
+        startEngine();
+        startMusic();
         startRef.current = performance.now();
 
         const FINISH = 1000; // distance units
@@ -282,6 +291,7 @@ function RacePage() {
           if (pRpm > 6500 && pGear < 5) {
             pGear++;
             pRpm = 3000;
+            playGearShift();
           }
 
           // Opponent AI — smooth acceleration with slight variation
@@ -368,44 +378,40 @@ function RacePage() {
           setGear(pGear);
           setRpm(Math.round(pRpm));
 
+          // Update engine sound pitch/volume
+          updateEngine(pRpm, pSpeed);
+
           // Race ends when EITHER car finishes or at 30s timeout
-          if (pFinish && oFinish) {
-            // Both finished
-            setWinner(pFinish < oFinish ? "player" : "opponent");
-            setPlayerTime(pFinish);
-            setOpponentTime(oFinish);
+          const finishRace = (w: "player" | "opponent", pT: number, oT: number) => {
+            setWinner(w);
+            setPlayerTime(pT);
+            setOpponentTime(oT);
             setPhase("finished");
+            stopAll();
+            if (w === "player") playWinJingle(); else playLoseJingle();
+          };
+
+          if (pFinish && oFinish) {
+            finishRace(pFinish < oFinish ? "player" : "opponent", pFinish, oFinish);
             return;
           }
 
           if (pFinish && !oFinish) {
-            // Player finished, opponent didn't — player wins, estimate opponent time
             const oppRemaining = (FINISH - oPos) / (oSpeed || 0.01);
-            setWinner("player");
-            setPlayerTime(pFinish);
-            setOpponentTime(Math.round(pFinish + oppRemaining * 1000 / 60));
-            setPhase("finished");
+            finishRace("player", pFinish, Math.round(pFinish + oppRemaining * 1000 / 60));
             return;
           }
 
           if (oFinish && !pFinish) {
-            // Opponent finished, player didn't — opponent wins, estimate player time
             const pRemaining = (FINISH - pPos) / (pSpeed || 0.01);
-            setWinner("opponent");
-            setPlayerTime(Math.round(oFinish + pRemaining * 1000 / 60));
-            setOpponentTime(oFinish);
-            setPhase("finished");
+            finishRace("opponent", Math.round(oFinish + pRemaining * 1000 / 60), oFinish);
             return;
           }
 
           if (elapsed < 30000) {
             animRef.current = requestAnimationFrame(animate);
           } else {
-            // Timeout — whoever is further ahead wins
-            setWinner(pPos > oPos ? "player" : "opponent");
-            setPlayerTime(elapsed);
-            setOpponentTime(elapsed);
-            setPhase("finished");
+            finishRace(pPos > oPos ? "player" : "opponent", elapsed, elapsed);
           }
         };
 
@@ -414,7 +420,7 @@ function RacePage() {
     }, 1000);
   }, [playerCar, opponentCar, drawRoad]);
 
-  useEffect(() => () => cancelAnimationFrame(animRef.current), []);
+  useEffect(() => () => { cancelAnimationFrame(animRef.current); stopAll(); }, []);
 
   const handleGenerateAll = async () => {
     setGenerating(true);
