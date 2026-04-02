@@ -85,6 +85,72 @@ export default function Gallery() {
             alt="Classic car trunk filled with Hot Wheels collection"
           />
         </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_155942985.jpg"
+            alt="Red vintage Corvette convertible"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_155951956.jpg"
+            alt="Blue Porsche sports car"
+          />
+        </div>
+        <div className="gallery-item large">
+          <img
+            src="/images/PXL_20250831_160346026.jpg"
+            alt="Turquoise 1950s convertible with hood open"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_161046917.jpg"
+            alt="Black Ferrari and red Ferrari side by side"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_161313235.jpg"
+            alt="Green Mini Cooper with racing stripes"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_161301464.jpg"
+            alt="Black Thunderbird convertible"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_171624884.jpg"
+            alt="Yellow and purple custom art car"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_171631050.jpg"
+            alt="Orange enclosed hot rod"
+          />
+        </div>
+        <div className="gallery-item large">
+          <img
+            src="/images/PXL_20250831_155741964.jpg"
+            alt="Vintage cars in front of historic Queen Sadie building"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_161944007.jpg"
+            alt="Red convertible with crowds on the street"
+          />
+        </div>
+        <div className="gallery-item">
+          <img
+            src="/images/PXL_20250831_161451131.jpg"
+            alt="Families doing craft activities at the event"
+          />
+        </div>
       </div>
     </section>
   );
