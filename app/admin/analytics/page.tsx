@@ -334,7 +334,7 @@ export default function AnalyticsPage() {
   // Site analytics computations
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const visitors7d = trafficData.filter((d) => d.date >= sevenDaysAgo).reduce((s, d) => s + d.visitors, 0);
-  const regs7d = registrations.filter((r) => r.paid_at && r.paid_at >= sevenDaysAgo).length;
+  const regs7d = registrations.filter((r) => r.payment_status === "paid" && r.paid_at && r.paid_at >= sevenDaysAgo).length;
   const conversionRate7d = visitors7d > 0 ? ((regs7d / visitors7d) * 100).toFixed(1) : "0.0";
   const avgDailyVisitors = trafficData.length > 0 ? Math.round(trafficData.reduce((s, d) => s + d.visitors, 0) / trafficData.length) : 0;
 
@@ -342,7 +342,7 @@ export default function AnalyticsPage() {
   const dailyRegCounts = useMemo(() => {
     const map: Record<string, number> = {};
     registrations.forEach((r) => {
-      if (r.paid_at) {
+      if (r.payment_status === "paid" && r.paid_at) {
         const day = r.paid_at.split("T")[0];
         map[day] = (map[day] || 0) + 1;
       }
@@ -363,7 +363,7 @@ export default function AnalyticsPage() {
   const totalVisitors = trafficData.reduce((s, d) => s + d.visitors, 0);
   const homepageViews = pathData.filter((p) => p.path === "/").reduce((s, p) => s + p.views, 0) || totalVisitors;
   const registerViews = pathData.filter((p) => p.path.startsWith("/register")).reduce((s, p) => s + p.views, 0) || Math.round(totalVisitors * 0.27);
-  const paidCount = registrations.length;
+  const paidCount = registrations.filter((r) => r.payment_status === "paid").length;
 
   const nivoTheme = {
     text: { fill: "#666" },
