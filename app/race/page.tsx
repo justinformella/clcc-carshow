@@ -268,8 +268,8 @@ export default function RacePage() {
             // Y position: 30% (horizon) to 90% (bottom of track)
             const topPct = 30 + (1 - tOpp) * 55;
             // Opponent in LEFT lane — offset left of vanish point
-            // More offset when close, converges to vanish point when far
-            const laneOff = 22 * scale;
+            // Offset scales with perspective so car stays on the road
+            const laneOff = 8 * scale;
             // Bigger base sprite
             const spriteWidth = Math.round(220 * scale);
             const visible = delta > -15;
@@ -461,9 +461,9 @@ export default function RacePage() {
                 top: "60%",
                 left: "calc(50% - 9%)",
                 transform: "translate(-50%, -100%)",
-                zIndex: 2,
                 pointerEvents: "none",
                 display: "none",
+                mixBlendMode: "screen",
               }}
             >
               {opponentCar.pixelRear ? (
@@ -474,7 +474,6 @@ export default function RacePage() {
                   style={{
                     width: "110px",
                     imageRendering: "pixelated",
-                    mixBlendMode: "screen",
                   }}
                 />
               ) : (
