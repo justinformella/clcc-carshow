@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FooterPixel } from "@/components/EightBitEasterEgg";
+import { FooterPixelLink } from "@/components/EightBitEasterEgg";
 
 export default function Footer() {
   return (
@@ -62,7 +62,7 @@ export default function Footer() {
           <div className="footer-social">
             <a href="https://www.facebook.com/groups/389632989553839" target="_blank" rel="noopener noreferrer">Facebook</a>
             <Link href="/admin" style={{ opacity: 0.5 }}>Admin</Link>
-            <FooterPixel />
+            <FooterPixelLink />
           </div>
         </div>
       </div>

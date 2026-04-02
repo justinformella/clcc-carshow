@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 export default function StickyRegisterBar() {
   const [visible, setVisible] = useState(false);
+  const [footerVisible, setFooterVisible] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -13,8 +15,24 @@ export default function StickyRegisterBar() {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    // Hide when footer is in view
+    const footer = document.querySelector("footer");
+    if (footer) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => setFooterVisible(entry.isIntersecting),
+        { threshold: 0.1 }
+      );
+      observerRef.current.observe(footer);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      observerRef.current?.disconnect();
+    };
   }, []);
+
+  const show = visible && !footerVisible;
 
   return (
     <div
@@ -25,7 +43,7 @@ export default function StickyRegisterBar() {
         left: 0,
         right: 0,
         zIndex: 100,
-        transform: visible ? "translateY(0)" : "translateY(100%)",
+        transform: show ? "translateY(0)" : "translateY(100%)",
         transition: "transform 0.3s ease",
       }}
     >

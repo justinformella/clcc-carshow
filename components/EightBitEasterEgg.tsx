@@ -102,8 +102,7 @@ export function KonamiListener() {
   return null;
 }
 
-export function FooterPixel() {
-
+export function FooterPixelLink() {
   const [transitioning, setTransitioning] = useState(false);
 
   const triggerTransition = useCallback(() => {
@@ -122,7 +121,6 @@ export function FooterPixel() {
     canvas.width = w;
     canvas.height = h;
 
-    let blockSize = 2;
     const maxBlock = 48;
     const steps = 15;
     const stepMs = 80;
@@ -130,7 +128,7 @@ export function FooterPixel() {
 
     let step = 0;
     const animate = () => {
-      blockSize = Math.round(2 + (maxBlock - 2) * (step / steps) * (step / steps));
+      const blockSize = Math.round(2 + (maxBlock - 2) * (step / steps) * (step / steps));
       ctx.clearRect(0, 0, w, h);
 
       for (let y = 0; y < h; y += blockSize) {
@@ -151,7 +149,7 @@ export function FooterPixel() {
       } else {
         ctx.fillStyle = "#0d0d1a";
         ctx.fillRect(0, 0, w, h);
-        setTimeout(() => window.location.href = "/8bit", 200);
+        setTimeout(() => { window.location.href = "/8bit"; }, 200);
       }
     };
 
@@ -174,25 +172,23 @@ export function FooterPixel() {
   }, [transitioning]);
 
   return (
-    <span
-      onClick={triggerTransition}
-      title="8-BIT MODE"
-      style={{
-        display: "inline-flex",
-        gap: "2px",
-        cursor: "pointer",
-        verticalAlign: "middle",
-        marginLeft: "0.75rem",
-        opacity: 0.4,
-        transition: "opacity 0.3s",
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.4"; }}
-    >
-      <span style={{ width: "6px", height: "6px", background: "#ff0000", display: "inline-block" }} />
-      <span style={{ width: "6px", height: "6px", background: "#ffd700", display: "inline-block" }} />
-      <span style={{ width: "6px", height: "6px", background: "#00ff00", display: "inline-block" }} />
-      <span style={{ width: "6px", height: "6px", background: "#0088ff", display: "inline-block" }} />
-    </span>
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+      <span
+        onClick={triggerTransition}
+        style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: "0.6rem",
+          color: "rgba(255,255,255,0.35)",
+          cursor: "pointer",
+          transition: "color 0.3s",
+          marginLeft: "0.75rem",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "#ffd700"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.35)"; }}
+      >
+        CLCC
+      </span>
+    </>
   );
 }
