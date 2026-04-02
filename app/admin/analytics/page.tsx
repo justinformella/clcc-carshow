@@ -410,6 +410,41 @@ export default function AnalyticsPage() {
       {/* ═══════════════ TAB: Site Analytics ═══════════════ */}
       {tab === "site" && (
         <>
+          {/* AI Insights */}
+          <Card title="AI Insights">
+            {insightsLoading && (
+              <p style={{ color: "#999", animation: "pulse 1.5s ease-in-out infinite" }}>Generating insights...</p>
+            )}
+            {insights && (
+              <div>
+                <span style={{
+                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
+                  background: insights.trend === "Improving" ? "#dcfce7" : insights.trend === "Declining" ? "#fef2f2" : "#fefce8",
+                  color: insights.trend === "Improving" ? "#166534" : insights.trend === "Declining" ? "#991b1b" : "#854d0e",
+                  marginBottom: "1rem",
+                }}>{insights.trend}</span>
+                <ul style={{ margin: "1rem 0", paddingLeft: "1.25rem", color: "#1a1a1a" }}>
+                  {insights.insights.map((item, i) => (
+                    <li key={i} style={{ marginBottom: "0.5rem", lineHeight: 1.5, fontSize: "0.9rem" }}>{item}</li>
+                  ))}
+                </ul>
+                {insights.recommendations.length > 0 && (
+                  <div style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.06)", padding: "1rem", marginTop: "1rem" }}>
+                    <p style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#999", marginBottom: "0.5rem", fontWeight: 600 }}>Recommendations</p>
+                    <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#1a1a1a" }}>
+                      {insights.recommendations.map((rec, i) => (
+                        <li key={i} style={{ marginBottom: "0.4rem", lineHeight: 1.5, fontSize: "0.85rem" }}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+            {!insightsLoading && !insights && (
+              <p style={{ color: "#999", fontSize: "0.9rem" }}>Unable to generate insights</p>
+            )}
+          </Card>
+
           {/* Stat cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
             {[
@@ -478,41 +513,6 @@ export default function AnalyticsPage() {
               </div>
             </Card>
           )}
-
-          {/* AI Insights */}
-          <Card title="AI Insights">
-            {insightsLoading && (
-              <p style={{ color: "#999", animation: "pulse 1.5s ease-in-out infinite" }}>Generating insights...</p>
-            )}
-            {insights && (
-              <div>
-                <span style={{
-                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
-                  background: insights.trend === "Improving" ? "#dcfce7" : insights.trend === "Declining" ? "#fef2f2" : "#fefce8",
-                  color: insights.trend === "Improving" ? "#166534" : insights.trend === "Declining" ? "#991b1b" : "#854d0e",
-                  marginBottom: "1rem",
-                }}>{insights.trend}</span>
-                <ul style={{ margin: "1rem 0", paddingLeft: "1.25rem", color: "#1a1a1a" }}>
-                  {insights.insights.map((item, i) => (
-                    <li key={i} style={{ marginBottom: "0.5rem", lineHeight: 1.5, fontSize: "0.9rem" }}>{item}</li>
-                  ))}
-                </ul>
-                {insights.recommendations.length > 0 && (
-                  <div style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.06)", padding: "1rem", marginTop: "1rem" }}>
-                    <p style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#999", marginBottom: "0.5rem", fontWeight: 600 }}>Recommendations</p>
-                    <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#1a1a1a" }}>
-                      {insights.recommendations.map((rec, i) => (
-                        <li key={i} style={{ marginBottom: "0.4rem", lineHeight: 1.5, fontSize: "0.85rem" }}>{rec}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-            {!insightsLoading && !insights && (
-              <p style={{ color: "#999", fontSize: "0.9rem" }}>Unable to generate insights</p>
-            )}
-          </Card>
 
           {/* Two-column row: Funnel + Referrers */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
