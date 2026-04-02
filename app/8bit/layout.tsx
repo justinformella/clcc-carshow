@@ -3,7 +3,17 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "CLCC Car Show | 8-Bit Edition",
   description:
-    "Crystal Lake Cars & Caffeine — 8-Bit Edition. May 17, 2026 in Downtown Crystal Lake.",
+    "Crystal Lake Cars & Caffeine — 8-Bit retro arcade edition. May 17, 2026 in Downtown Crystal Lake.",
+  openGraph: {
+    title: "CLCC Car Show | 8-Bit Edition",
+    description: "Crystal Lake Cars & Caffeine — 8-Bit retro arcade edition.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CLCC Car Show | 8-Bit Edition",
+    description: "Crystal Lake Cars & Caffeine — 8-Bit retro arcade edition.",
+  },
 };
 
 export default function Layout8Bit({
