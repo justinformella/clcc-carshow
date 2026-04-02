@@ -22,27 +22,27 @@ export default function AboutCharitySection() {
               100% of net proceeds go to the Crystal Lake Food Pantry.
             </p>
 
-            <div style={{
-              margin: "2rem 0",
-              background: "rgba(0,0,0,0.03)",
-              border: "1px solid rgba(0,0,0,0.06)",
-              padding: "1.75rem",
-            }}>
+            <p className="about-charity-text">
+              From Ferraris to Fords, Porsches to pickup trucks&mdash;if it has
+              wheels and you&apos;re proud of it, it belongs here. No year, make,
+              or model restrictions.
+            </p>
+
+            <div style={{ margin: "2rem 0" }}>
               <p style={{
-                fontSize: "0.95rem",
-                color: "var(--charcoal)",
-                lineHeight: 1.7,
-                marginBottom: "1.25rem",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.15em",
+                color: "var(--gold)",
+                marginBottom: "1rem",
               }}>
-                From Ferraris to Fords, Porsches to pickup trucks&mdash;if it has
-                wheels and you&apos;re proud of it, it belongs here. No year, make,
-                or model restrictions.
+                Every Vehicle Has a Place
               </p>
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
                 gap: "0.5rem",
-                marginBottom: "1.5rem",
               }}>
                 {[
                   "Supercars & Exotics",
@@ -59,8 +59,8 @@ export default function AboutCharitySection() {
                     key={cat}
                     style={{
                       padding: "0.6rem 0.75rem",
-                      background: "var(--white)",
-                      border: "1px solid rgba(0,0,0,0.08)",
+                      background: "rgba(0,0,0,0.03)",
+                      border: "1px solid rgba(0,0,0,0.06)",
                       fontSize: "0.8rem",
                       color: "var(--charcoal)",
                       fontWeight: 500,
@@ -71,25 +71,20 @@ export default function AboutCharitySection() {
                   </div>
                 ))}
               </div>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "0.5rem",
-                borderTop: "1px solid rgba(0,0,0,0.08)",
-                paddingTop: "1.25rem",
-              }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", fontWeight: 400, color: "var(--charcoal)" }}>4th</div>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-light)", marginTop: "0.25rem" }}>Annual Show</div>
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", fontWeight: 400, color: "var(--charcoal)" }}>3</div>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-light)", marginTop: "0.25rem" }}>City Blocks</div>
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", fontWeight: 400, color: "var(--charcoal)" }}>100%</div>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-light)", marginTop: "0.25rem" }}>For Charity</div>
-                </div>
+            </div>
+
+            <div className="intro-stats">
+              <div className="intro-stat">
+                <div className="intro-stat-number">4th</div>
+                <div className="intro-stat-label">Annual Show</div>
+              </div>
+              <div className="intro-stat">
+                <div className="intro-stat-number">3</div>
+                <div className="intro-stat-label">City Blocks</div>
+              </div>
+              <div className="intro-stat">
+                <div className="intro-stat-number">100%</div>
+                <div className="intro-stat-label">For Charity</div>
               </div>
             </div>
           </div>
