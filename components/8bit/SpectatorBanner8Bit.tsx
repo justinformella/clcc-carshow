@@ -2,10 +2,10 @@ import { CSSProperties } from "react";
 import { COLORS, FONT, bodyTextStyle } from "@/components/8bit/styles";
 
 const features = [
-  { icon: "🍽", label: "LOCAL DINING" },
-  { icon: "🛍", label: "UNIQUE SHOPS" },
+  { icon: "🍴", label: "LOCAL DINING" },
+  { icon: "🛍️", label: "UNIQUE SHOPS" },
   { icon: "🚗", label: "200+ CARS" },
-  { icon: "👨‍👩‍👧", label: "FAMILY FRIENDLY" },
+  { icon: "👨‍👩‍👧‍👦", label: "FAMILY FRIENDLY" },
 ];
 
 export default function SpectatorBanner8Bit() {
@@ -18,56 +18,57 @@ export default function SpectatorBanner8Bit() {
     textAlign: "center",
   };
 
-  const labelStyle: CSSProperties = {
+  const badgeStyle: CSSProperties = {
     fontFamily: FONT,
-    fontSize: "clamp(0.55rem, 1.5vw, 0.75rem)",
-    color: COLORS.bgDark,
-    backgroundColor: COLORS.green,
+    fontSize: "clamp(0.5rem, 1.5vw, 0.7rem)",
+    color: COLORS.white,
+    backgroundColor: COLORS.bgDark,
     textTransform: "uppercase",
-    letterSpacing: "0.1em",
-    padding: "0.4rem 1rem",
+    letterSpacing: "0.12em",
+    padding: "0.6rem 1.5rem",
     display: "inline-block",
-    marginBottom: "1.5rem",
+    marginBottom: "2rem",
   };
 
   const titleStyle: CSSProperties = {
     fontFamily: FONT,
-    fontSize: "clamp(0.75rem, 2.5vw, 1.1rem)",
-    color: COLORS.white,
+    fontSize: "clamp(0.75rem, 2.5vw, 1.2rem)",
+    color: COLORS.gold,
     textTransform: "uppercase",
     letterSpacing: "0.05em",
     marginBottom: "1.5rem",
-    lineHeight: "1.8",
+    lineHeight: 1.8,
   };
 
   const featureStyle: CSSProperties = {
     fontFamily: FONT,
-    fontSize: "0.5rem",
+    fontSize: "0.45rem",
     color: COLORS.lightGray,
     textTransform: "uppercase",
     letterSpacing: "0.05em",
     textAlign: "center",
     border: `2px solid ${COLORS.border}`,
     padding: "1rem 0.75rem",
-    lineHeight: "2.5",
+    lineHeight: 2.5,
   };
 
   return (
     <section style={sectionStyle}>
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div style={labelStyle}>FREE ADMISSION</div>
+        <div style={badgeStyle}>SPECTATORS FREE</div>
         <h2 style={titleStyle}>★ COME SEE THE SHOW! ★</h2>
         <p
           style={{
             ...bodyTextStyle(),
             textAlign: "center",
-            maxWidth: "650px",
+            maxWidth: "700px",
             margin: "0 auto 2.5rem",
           }}
         >
-          SPECTATOR ENTRY IS COMPLETELY FREE! BRING THE WHOLE FAMILY AND ENJOY
-          HUNDREDS OF INCREDIBLE VEHICLES, THE VIBRANT DOWNTOWN CRYSTAL LAKE
-          ATMOSPHERE, AND ALL-DAY ENTERTAINMENT.
+          DON&apos;T HAVE A CAR TO SHOW? NO PROBLEM! SPECTATORS GET IN FREE—NO
+          TICKETS, NO REGISTRATION. STROLL DOWN GRANT, BRINK, AND WILLIAMS
+          STREETS FILLED WITH AMAZING CARS, THEN ENJOY THE UNIQUE SHOPPING AND
+          DINING IN HISTORIC DOWNTOWN CRYSTAL LAKE.
         </p>
         <style>{`
           @media (max-width: 600px) {
