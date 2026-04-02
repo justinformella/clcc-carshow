@@ -1,0 +1,94 @@
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<h2>Typography approach for the 8-bit page</h2>
+<p class="subtitle">Compare full pixel font vs. mixed approach</p>
+
+<div class="split">
+  <div class="mockup" data-choice="a" onclick="toggleSelect(this)" style="cursor: pointer;">
+    <div class="mockup-header">A: All Pixel Font</div>
+    <div class="mockup-body" style="background: #1a1a2e; color: #fff; padding: 0; overflow: hidden;">
+      <!-- Nav -->
+      <div style="background: #0d0d1a; padding: 0.6rem 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ffd700;">
+        <span style="font-family: 'Press Start 2P', monospace; font-size: 0.55rem; color: #ffd700;">CLCC 2026</span>
+        <div style="display: flex; gap: 0.8rem;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.4rem; color: #aaa;">ABOUT</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.4rem; color: #aaa;">SCHEDULE</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.4rem; color: #ffd700;">REGISTER</span>
+        </div>
+      </div>
+      <!-- Hero -->
+      <div style="padding: 1.5rem 1rem; text-align: center; background: linear-gradient(to bottom, #1a1a2e, #2a1a3e);">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 1rem; color: #ffd700; line-height: 1.8; text-shadow: 3px 3px 0 #b8860b;">CRYSTAL LAKE</div>
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 0.55rem; color: #fff; margin-top: 0.5rem; line-height: 1.6;">CARS & CAFFEINE</div>
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 0.35rem; color: #aaa; margin-top: 0.5rem; line-height: 1.8;">MAY 17, 2026</div>
+      </div>
+      <!-- Body text sample -->
+      <div style="padding: 1rem; border-top: 2px solid #333;">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 0.45rem; color: #ffd700; margin-bottom: 0.6rem;">ABOUT THE EVENT</div>
+        <p style="font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: #ccc; line-height: 2.2; margin: 0;">
+          Join us for the 4th annual Crystal Lake Cars & Caffeine charity car show in downtown Crystal Lake. Over 200 vehicles, live awards, and all net proceeds benefit the Crystal Lake Food Pantry.
+        </p>
+      </div>
+      <!-- Schedule -->
+      <div style="padding: 0.8rem 1rem; border-top: 2px solid #333;">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 0.45rem; color: #ffd700; margin-bottom: 0.5rem;">SCHEDULE</div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: #0f0;">7:30 AM</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: #ccc;">Gates Open</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: #0f0;">10:00 AM</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: #ccc;">Judging Begins</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: #0f0;">1:00 PM</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.3rem; color: #ccc;">Awards Ceremony</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup" data-choice="b" onclick="toggleSelect(this)" style="cursor: pointer;">
+    <div class="mockup-header">B: Pixel Headings + Readable Body</div>
+    <div class="mockup-body" style="background: #1a1a2e; color: #fff; padding: 0; overflow: hidden;">
+      <!-- Nav -->
+      <div style="background: #0d0d1a; padding: 0.6rem 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ffd700;">
+        <span style="font-family: 'Press Start 2P', monospace; font-size: 0.55rem; color: #ffd700;">CLCC 2026</span>
+        <div style="display: flex; gap: 1rem;">
+          <span style="font-family: sans-serif; font-size: 0.7rem; color: #aaa;">About</span>
+          <span style="font-family: sans-serif; font-size: 0.7rem; color: #aaa;">Schedule</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.4rem; color: #ffd700; border: 1px solid #ffd700; padding: 0.2rem 0.4rem;">REGISTER</span>
+        </div>
+      </div>
+      <!-- Hero -->
+      <div style="padding: 1.5rem 1rem; text-align: center; background: linear-gradient(to bottom, #1a1a2e, #2a1a3e);">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 1rem; color: #ffd700; line-height: 1.8; text-shadow: 3px 3px 0 #b8860b;">CRYSTAL LAKE</div>
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 0.55rem; color: #fff; margin-top: 0.5rem; line-height: 1.6;">CARS & CAFFEINE</div>
+        <div style="font-family: sans-serif; font-size: 0.7rem; color: #aaa; margin-top: 0.5rem;">May 17, 2026 &middot; Downtown Crystal Lake</div>
+      </div>
+      <!-- Body text sample -->
+      <div style="padding: 1rem; border-top: 2px solid #333;">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 0.45rem; color: #ffd700; margin-bottom: 0.6rem;">ABOUT THE EVENT</div>
+        <p style="font-family: sans-serif; font-size: 0.75rem; color: #ccc; line-height: 1.7; margin: 0;">
+          Join us for the 4th annual Crystal Lake Cars & Caffeine charity car show in downtown Crystal Lake. Over 200 vehicles, live awards, and all net proceeds benefit the Crystal Lake Food Pantry.
+        </p>
+      </div>
+      <!-- Schedule -->
+      <div style="padding: 0.8rem 1rem; border-top: 2px solid #333;">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 0.45rem; color: #ffd700; margin-bottom: 0.5rem;">SCHEDULE</div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.35rem; color: #0f0;">7:30 AM</span>
+          <span style="font-family: sans-serif; font-size: 0.7rem; color: #ccc;">Gates Open</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.35rem; color: #0f0;">10:00 AM</span>
+          <span style="font-family: sans-serif; font-size: 0.7rem; color: #ccc;">Judging Begins</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 0.35rem; color: #0f0;">1:00 PM</span>
+          <span style="font-family: sans-serif; font-size: 0.7rem; color: #ccc;">Awards Ceremony</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

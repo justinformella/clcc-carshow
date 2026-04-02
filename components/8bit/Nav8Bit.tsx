@@ -86,7 +86,7 @@ export default function Nav8Bit() {
         }
       `}</style>
       <nav style={navStyle}>
-        <Link href="/80s" style={logoStyle}>
+        <Link href="/8bit" style={logoStyle}>
           <span style={{ fontFamily: FONT, fontSize: "clamp(0.65rem, 2vw, 0.9rem)", color: COLORS.gold }}>
             ★ CRYSTAL LAKE CARS &amp; CAFFEINE ★
           </span>

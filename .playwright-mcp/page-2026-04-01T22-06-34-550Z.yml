@@ -1,0 +1,300 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CLCC Logo Crystal Lake Cars & Caffeine Est. 2021 · Crystal Lake, Illinois" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CLCC Logo" [ref=e5]
+        - generic [ref=e6]:
+          - generic [ref=e7]: Crystal Lake Cars & Caffeine
+          - generic [ref=e8]: Est. 2021 · Crystal Lake, Illinois
+      - navigation [ref=e9]:
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link "About" [ref=e12] [cursor=pointer]:
+              - /url: "#about"
+          - listitem [ref=e13]:
+            - link "Schedule" [ref=e14] [cursor=pointer]:
+              - /url: "#schedule"
+          - listitem [ref=e15]:
+            - link "Sponsors" [ref=e16] [cursor=pointer]:
+              - /url: "#sponsors"
+          - listitem [ref=e17]:
+            - link "FAQ" [ref=e18] [cursor=pointer]:
+              - /url: "#faq"
+          - listitem [ref=e19]:
+            - link "Contact" [ref=e20] [cursor=pointer]:
+              - /url: /contact
+          - listitem [ref=e21]:
+            - link "Register" [ref=e22] [cursor=pointer]:
+              - /url: /register
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - generic [ref=e26]: Crystal Lake Cars & Caffeine
+      - generic [ref=e27]: May 17, 2026 · $30 per vehicle · 100% to charity
+    - link "Register Now" [ref=e28] [cursor=pointer]:
+      - /url: /register
+  - generic [ref=e29]:
+    - generic [ref=e30]:
+      - generic [ref=e31]: 4th Annual Charity Event
+      - heading "CLCC Annual Charity Car Show" [level=1] [ref=e32]:
+        - text: CLCC Annual
+        - text: Charity Car Show
+      - paragraph [ref=e33]: May 17, 2026
+      - paragraph [ref=e34]: Grant, Brink & Williams Streets · Downtown Crystal Lake
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]: "45"
+          - generic [ref=e38]: Days
+        - generic [ref=e39]: ":"
+        - generic [ref=e40]:
+          - generic [ref=e41]: "16"
+          - generic [ref=e42]: Hours
+        - generic [ref=e43]: ":"
+        - generic [ref=e44]:
+          - generic [ref=e45]: "53"
+          - generic [ref=e46]: Mins
+        - generic [ref=e47]: ":"
+        - generic [ref=e48]:
+          - generic [ref=e49]: "25"
+          - generic [ref=e50]: Secs
+      - generic [ref=e51]:
+        - link "Register Your Vehicle" [ref=e52] [cursor=pointer]:
+          - /url: /register
+        - link "Become a Sponsor" [ref=e53] [cursor=pointer]:
+          - /url: "#sponsors"
+    - generic [ref=e55]: Scroll
+  - generic [ref=e58]:
+    - generic [ref=e59]:
+      - generic [ref=e60]: About the Event
+      - heading "More Than a Car Show" [level=2] [ref=e61]
+      - paragraph [ref=e62]: Every May, three blocks of historic downtown Crystal Lake transform into an open-air showroom—gleaming hot rods, muscle cars, imports, and modern exotics line Grant, Brink, and Williams streets, each one with a story under the hood. This year's show is Sunday, May 17, 2026, with a rain date of Sunday, May 31.
+      - paragraph [ref=e63]: Whether you're a lifelong gearhead, a family looking for a great day out, or someone who simply wants to support a good cause, this is your event. Grab a coffee, browse the downtown shops, and soak in the small-town energy—all while all net proceeds go to the Crystal Lake Food Pantry.
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]: 4th
+          - generic [ref=e67]: Annual Show
+        - generic [ref=e68]:
+          - generic [ref=e69]: "3"
+          - generic [ref=e70]: City Blocks
+        - generic [ref=e71]:
+          - generic [ref=e72]: 100%
+          - generic [ref=e73]: For Charity
+    - generic [ref=e74]:
+      - generic [ref=e75]: Our Cause
+      - heading "Driving Out Hunger" [level=2] [ref=e76]
+      - heading "Crystal Lake Food Pantry" [level=3] [ref=e77]
+      - paragraph [ref=e78]: Every registration, every sponsorship—all net proceeds go directly to the Crystal Lake Food Pantry. Since 1983, they've been the safety net for families facing food insecurity in McHenry County.
+      - paragraph [ref=e79]: In our community, 1 in 8 people struggle with hunger. The Food Pantry serves over 800 families each month, providing nutritious food with dignity and compassion. Your participation in this car show helps stock their shelves and fill empty plates.
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - paragraph [ref=e82]: $10K
+          - paragraph [ref=e83]: 2026 Fundraising Goal
+        - generic [ref=e84]:
+          - paragraph [ref=e85]: 800+
+          - paragraph [ref=e86]: Families served monthly
+        - generic [ref=e87]:
+          - paragraph [ref=e88]: 100%
+          - paragraph [ref=e89]: Net proceeds donated
+  - generic [ref=e91]:
+    - generic [ref=e92]:
+      - generic [ref=e93]: Plan Your Day
+      - heading "Schedule & Awards" [level=2] [ref=e94]
+      - paragraph [ref=e95]: Everything you need to know to make the most of your experience
+    - generic [ref=e96]:
+      - generic [ref=e97]:
+        - heading "Event Schedule" [level=3] [ref=e98]
+        - generic [ref=e99]:
+          - generic [ref=e100]: 7:30 AM
+          - generic [ref=e101]: Check-in & Day-of Registration
+        - generic [ref=e102]:
+          - generic [ref=e103]: 9:30 AM
+          - generic [ref=e104]: Registration Closes
+        - generic [ref=e105]:
+          - generic [ref=e106]: 10:00 AM
+          - generic [ref=e107]: Show Starts
+        - generic [ref=e108]:
+          - generic [ref=e109]: 12:30 PM
+          - generic [ref=e110]: Awards Ceremony
+        - generic [ref=e111]:
+          - generic [ref=e112]: 2:00 PM
+          - generic [ref=e113]: Show Ends
+      - generic [ref=e114]:
+        - heading "Award Categories" [level=3] [ref=e115]
+        - list [ref=e116]:
+          - listitem [ref=e117]: Best Classic (Pre-2000)
+          - listitem [ref=e118]: Best Modern (2000+)
+          - listitem [ref=e119]: Best European
+          - listitem [ref=e120]: Best Japanese
+          - listitem [ref=e121]: Best Domestic
+          - listitem [ref=e122]: Best Vanity Plate
+          - listitem [ref=e123]: Best Interior
+  - generic [ref=e124]:
+    - generic [ref=e125]: Spectators Free
+    - heading "Come See the Show!" [level=2] [ref=e126]
+    - paragraph [ref=e127]: Don't have a car to show? No problem! Spectators get in free—no tickets, no registration. Stroll down Grant, Brink, and Williams streets filled with amazing cars, then enjoy the unique shopping and dining in historic downtown Crystal Lake.
+    - generic [ref=e128]:
+      - generic [ref=e129]:
+        - generic [ref=e130]: 🍴
+        - generic [ref=e131]: Local Dining
+      - generic [ref=e132]:
+        - generic [ref=e133]: 🛍
+        - generic [ref=e134]: Unique Shops
+      - generic [ref=e135]:
+        - generic [ref=e136]: 🚘
+        - generic [ref=e137]: 200+ Cars
+      - generic [ref=e138]:
+        - generic [ref=e139]: 👪
+        - generic [ref=e140]: Family Friendly
+  - generic [ref=e142]:
+    - generic [ref=e143]:
+      - generic [ref=e144]: Be Prepared
+      - heading "Weather Policy" [level=2] [ref=e145]
+      - paragraph [ref=e146]: Rain or shine, we celebrate automotive passion
+    - generic [ref=e147]:
+      - generic [ref=e148]:
+        - heading "Light Rain" [level=4] [ref=e149]
+        - paragraph [ref=e150]: The show goes on! We're car enthusiasts—a little water won't stop us. Bring appropriate gear and enjoy the unique atmosphere.
+      - generic [ref=e151]:
+        - heading "Severe Weather" [level=4] [ref=e152]
+        - paragraph [ref=e153]: "If severe weather is forecasted, the event will be postponed to our rain date: Sunday, May 31, 2026. Decision made by Friday, May 16 at 4:00 PM."
+      - generic [ref=e154]:
+        - heading "Updates" [level=4] [ref=e155]
+        - paragraph [ref=e156]: Weather decisions announced via our website and email to registered participants.
+      - generic [ref=e157]:
+        - heading "Refunds" [level=4] [ref=e158]
+        - paragraph [ref=e159]: All registrations are non-refundable. 100% of net proceeds are donated to the Crystal Lake Food Pantry.
+  - generic [ref=e161]:
+    - generic [ref=e162]:
+      - generic [ref=e163]: Questions
+      - heading "Frequently Asked" [level=2] [ref=e164]
+    - generic [ref=e165]:
+      - generic [ref=e166]:
+        - generic [ref=e167] [cursor=pointer]:
+          - generic [ref=e168]: What types of vehicles can participate?
+          - generic [ref=e169]: +
+        - generic [ref=e170]: All vehicles are welcome! Classic cars, modern sports cars, muscle cars, imports, trucks, motorcycles, and anything with wheels that you're proud of. We celebrate all automotive enthusiasm. There are no year, make, or model restrictions.
+      - generic [ref=e171]:
+        - generic [ref=e172] [cursor=pointer]:
+          - generic [ref=e173]: Can I leave early if needed?
+          - generic [ref=e174]: +
+        - generic [ref=e175]: For safety reasons, we ask that all show vehicles remain in place until 2:00 PM. This ensures the safety of spectators and maintains the integrity of the show. Emergency exits are available if absolutely necessary. Please inform staff at registration if you anticipate needing to leave early.
+      - generic [ref=e176]:
+        - generic [ref=e177] [cursor=pointer]:
+          - generic [ref=e178]: Are pets allowed at the event?
+          - generic [ref=e179]: +
+        - generic [ref=e180]: Leashed pets are welcome! Please keep them under control at all times and clean up after them. We ask that pets be kept away from show vehicles unless you're the owner.
+      - generic [ref=e181]:
+        - generic [ref=e182] [cursor=pointer]:
+          - generic [ref=e183]: Is pre-registration required?
+          - generic [ref=e184]: +
+        - generic [ref=e185]: Pre-registration is strongly encouraged to guarantee your spot. We have limited space for show vehicles, and historically we reach capacity before the event date. Day-of registration may be available but is not guaranteed.
+  - generic [ref=e187]:
+    - generic [ref=e188]:
+      - generic [ref=e189]: Our Partners
+      - heading "Event Sponsors" [level=2] [ref=e190]
+      - paragraph [ref=e191]: We are grateful to the businesses that make this event possible
+    - generic [ref=e192]:
+      - heading "Why Sponsor?" [level=3] [ref=e193]
+      - paragraph [ref=e194]: Put your brand in front of thousands of engaged attendees in the heart of downtown Crystal Lake. Our sponsors get prominent logo placement, on-site signage, PA mentions, and a direct connection to the community—all while supporting the Crystal Lake Food Pantry.
+      - generic [ref=e195]:
+        - generic [ref=e196]:
+          - paragraph [ref=e197]: 6,000+
+          - paragraph [ref=e198]: Attendees
+        - generic [ref=e199]:
+          - paragraph [ref=e200]: 200+
+          - paragraph [ref=e201]: Show Vehicles
+        - generic [ref=e202]:
+          - paragraph [ref=e203]: "3"
+          - paragraph [ref=e204]: City Blocks
+        - generic [ref=e205]:
+          - paragraph [ref=e206]: 4th
+          - paragraph [ref=e207]: Annual Event
+    - generic [ref=e208]:
+      - heading "Become a Sponsor" [level=3] [ref=e209]
+      - paragraph [ref=e210]: Join us in supporting the automotive community and Crystal Lake Food Pantry
+      - generic [ref=e211]:
+        - generic [ref=e212]:
+          - generic [ref=e213]:
+            - generic [ref=e214]: Name
+            - textbox "Name" [ref=e215]
+          - generic [ref=e216]:
+            - generic [ref=e217]: Company
+            - textbox "Company" [ref=e218]
+        - generic [ref=e219]:
+          - generic [ref=e220]:
+            - generic [ref=e221]: Email
+            - textbox "Email" [ref=e222]
+          - generic [ref=e223]:
+            - generic [ref=e224]: Phone
+            - textbox "Phone" [ref=e225]
+        - generic [ref=e226]:
+          - generic [ref=e227]: Sponsorship Level of Interest
+          - combobox "Sponsorship Level of Interest" [ref=e228]:
+            - option "Select a level..." [selected]
+            - option "Presenting Sponsor ($2,500)"
+            - option "Premier Sponsor ($1,000)"
+            - option "Community Sponsor ($500)"
+            - option "Other / Not Sure"
+        - generic [ref=e229]:
+          - generic [ref=e230]: Message (Optional)
+          - textbox "Message (Optional)" [ref=e231]:
+            - /placeholder: Tell us about your business or any questions you have...
+        - button "Submit Inquiry" [ref=e232] [cursor=pointer]
+  - generic [ref=e233]:
+    - generic [ref=e234]:
+      - generic [ref=e235]: From Previous Years
+      - heading "Gallery" [level=2] [ref=e236]
+    - generic [ref=e237]:
+      - img "Classic Jaguar XK at Crystal Lake Cars and Caffeine" [ref=e239]
+      - img "Ferrari California at car show" [ref=e241]
+      - img "Classic hot rod" [ref=e243]
+      - img "Mazda Miata at downtown Crystal Lake" [ref=e245]
+      - img "Street view of car show" [ref=e247]
+      - img "Downtown Crystal Lake with cars" [ref=e249]
+      - img "Classic car detail" [ref=e251]
+      - img "Red Corvette C1 in front of Raue Center for the Arts" [ref=e253]
+      - img "Orange Chevy Blazer convertible on Williams Street" [ref=e255]
+      - img "Crowds walking downtown Crystal Lake lined with show cars" [ref=e257]
+      - img "Street view with cars and spectators on a sunny day" [ref=e259]
+      - img "Blue Shelby GT350 Mustang on Brink Street" [ref=e261]
+      - img "Classic car trunk filled with Hot Wheels collection" [ref=e263]
+  - contentinfo [ref=e264]:
+    - generic [ref=e265]:
+      - generic [ref=e266]:
+        - generic [ref=e267]:
+          - generic [ref=e268]:
+            - img "CLCC Logo" [ref=e269]
+            - heading "Crystal Lake Cars & Caffeine" [level=3] [ref=e270]
+          - paragraph [ref=e271]: An annual celebration of automotive excellence benefiting the Crystal Lake Food Pantry. Join us in downtown Crystal Lake for the premier car show in McHenry County.
+        - generic [ref=e272]:
+          - heading "Event" [level=4] [ref=e273]
+          - list [ref=e274]:
+            - listitem [ref=e275]:
+              - link "About" [ref=e276] [cursor=pointer]:
+                - /url: "#about"
+            - listitem [ref=e277]:
+              - link "Schedule" [ref=e278] [cursor=pointer]:
+                - /url: "#schedule"
+            - listitem [ref=e279]:
+              - link "Registration" [ref=e280] [cursor=pointer]:
+                - /url: /register
+        - generic [ref=e281]:
+          - heading "Partners" [level=4] [ref=e282]
+          - list [ref=e283]:
+            - listitem [ref=e284]:
+              - link "Sponsors" [ref=e285] [cursor=pointer]:
+                - /url: "#sponsors"
+        - generic [ref=e286]:
+          - heading "Contact" [level=4] [ref=e287]
+          - list [ref=e288]:
+            - listitem [ref=e289]:
+              - link "Contact Us" [ref=e290] [cursor=pointer]:
+                - /url: /contact
+      - generic [ref=e291]:
+        - paragraph [ref=e292]: © 2026 Crystal Lake Cars and Coffee. All rights reserved.
+        - generic [ref=e293]:
+          - link "Facebook" [ref=e294] [cursor=pointer]:
+            - /url: https://www.facebook.com/groups/389632989553839
+          - link "Admin" [ref=e295] [cursor=pointer]:
+            - /url: /admin
+  - alert [ref=e296]

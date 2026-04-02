@@ -1,0 +1,94 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CLCC Logo Crystal Lake Cars & Caffeine" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CLCC Logo" [ref=e5]
+        - generic [ref=e7]: Crystal Lake Cars & Caffeine
+      - navigation [ref=e8]:
+        - list [ref=e9]:
+          - listitem [ref=e10]:
+            - link "Home" [ref=e11] [cursor=pointer]:
+              - /url: /
+  - generic [ref=e13]:
+    - generic [ref=e14]:
+      - generic [ref=e15]: Join Us
+      - heading "Vehicle Registration" [level=1] [ref=e16]
+      - paragraph [ref=e17]: $30 per vehicle · Limited to 200 vehicles
+    - generic [ref=e18]:
+      - heading "Owner Information" [level=3] [ref=e19]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]: First Name *
+            - textbox "First Name *" [ref=e24]
+          - generic [ref=e25]:
+            - generic [ref=e26]: Last Name *
+            - textbox "Last Name *" [ref=e27]
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - generic [ref=e30]: Email *
+            - textbox "Email *" [ref=e31]
+          - generic [ref=e32]:
+            - generic [ref=e33]: Phone
+            - textbox "Phone" [ref=e34]
+        - generic [ref=e35]:
+          - generic [ref=e36]: Street Address *
+          - textbox "Street Address *" [ref=e37]:
+            - /placeholder: e.g., 123 Main St
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - generic [ref=e40]: City *
+            - textbox "City *" [ref=e41]:
+              - /placeholder: e.g., Crystal Lake
+          - generic [ref=e42]:
+            - generic [ref=e43]: State *
+            - textbox "State *" [ref=e44]:
+              - /placeholder: e.g., IL
+        - generic [ref=e45]:
+          - generic [ref=e46]: ZIP Code *
+          - textbox "ZIP Code *" [ref=e47]:
+            - /placeholder: e.g., 60014
+        - generic [ref=e49] [cursor=pointer]:
+          - checkbox "Keep my name and city anonymous for my vehicle registration placard" [ref=e50]
+          - text: Keep my name and city anonymous for my vehicle registration placard
+        - generic [ref=e51]:
+          - heading "Vehicle Information" [level=3] [ref=e53]
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - generic [ref=e56]: Year *
+              - spinbutton "Year *" [ref=e57]
+            - generic [ref=e58]:
+              - generic [ref=e59]: Make *
+              - textbox "Make *" [ref=e60]:
+                - /placeholder: e.g., Ford
+          - generic [ref=e61]:
+            - generic [ref=e62]:
+              - generic [ref=e63]: Model *
+              - textbox "Model *" [ref=e64]:
+                - /placeholder: e.g., Mustang GT
+            - generic [ref=e65]:
+              - generic [ref=e66]: Color
+              - textbox "Color" [ref=e67]:
+                - /placeholder: e.g., Guards Red
+          - generic [ref=e68]:
+            - generic [ref=e69]: Your Car's Story (optional, shown on placard)
+            - textbox "Your Car's Story (optional, shown on placard)" [ref=e70]:
+              - /placeholder: Tell us about your car — how you got it, what it means to you, fun facts...
+        - button "+ Add Another Vehicle" [ref=e71] [cursor=pointer]
+        - generic [ref=e72]:
+          - paragraph [ref=e73]: Registration Fee
+          - paragraph [ref=e74]: $30
+          - paragraph [ref=e75]: Non-refundable. 100% of net proceeds go to the Crystal Lake Food Pantry.
+        - generic [ref=e76]:
+          - heading "Additional Donation to the Crystal Lake Food Pantry" [level=3] [ref=e77]
+          - paragraph [ref=e78]: Add an optional donation with your registration
+          - generic [ref=e79]:
+            - button "+$5" [ref=e80] [cursor=pointer]
+            - button "+$10" [ref=e81] [cursor=pointer]
+            - button "+$25" [ref=e82] [cursor=pointer]
+            - button "+$50" [ref=e83] [cursor=pointer]
+            - button "Custom" [ref=e84] [cursor=pointer]
+          - paragraph [ref=e85]: No thanks, just register
+        - button "Proceed to Payment" [ref=e86] [cursor=pointer]
+  - alert [ref=e87]

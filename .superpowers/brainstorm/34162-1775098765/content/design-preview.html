@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<title>8-Bit CLCC Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Press Start 2P', monospace;
+    background: #0d0d1a;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  /* CRT scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+  }
+
+  /* Nav */
+  .nav-8bit {
+    background: #0d0d1a;
+    border-bottom: 3px solid #ffd700;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-8bit-logo { color: #ffd700; font-size: 0.7rem; }
+  .nav-8bit-links { display: flex; gap: 1.5rem; align-items: center; }
+  .nav-8bit-links a {
+    color: #aaa; font-size: 0.5rem; text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-8bit-links a:hover { color: #ffd700; }
+  .nav-8bit-register {
+    color: #ffd700 !important;
+    border: 2px solid #ffd700;
+    padding: 0.4rem 0.8rem;
+  }
+  .nav-8bit-register:hover {
+    background: #ffd700;
+    color: #0d0d1a !important;
+  }
+
+  /* Hero */
+  .hero-8bit {
+    background: linear-gradient(to bottom, #1a1a2e, #2a1a3e, #1a1a2e);
+    text-align: center;
+    padding: 4rem 2rem 3rem;
+    position: relative;
+    border-bottom: 3px solid #ffd700;
+  }
+  .hero-8bit-title {
+    font-size: 2.5rem;
+    color: #ffd700;
+    text-shadow: 4px 4px 0 #b8860b;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+  .hero-8bit-subtitle {
+    font-size: 0.8rem;
+    color: #fff;
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+  .hero-8bit-date {
+    font-size: 0.55rem;
+    color: #00ff00;
+    letter-spacing: 0.15em;
+    margin-bottom: 2rem;
+  }
+  .hero-8bit-stars {
+    color: #ffd700;
+    font-size: 0.5rem;
+    letter-spacing: 0.3em;
+    margin-bottom: 1.5rem;
+  }
+  .hero-8bit-cta {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.7rem;
+    color: #0d0d1a;
+    background: #ffd700;
+    padding: 1rem 2.5rem;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .hero-8bit-cta:hover { background: #ffed4a; }
+  .hero-8bit-pixels {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 2rem;
+  }
+  .hero-8bit-pixels div {
+    width: 10px; height: 10px;
+  }
+
+  /* Section */
+  .section-8bit {
+    padding: 3rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .section-8bit-alt { background: #1a1a2e; }
+  .section-8bit-title {
+    font-size: 0.7rem;
+    color: #ffd700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    letter-spacing: 0.15em;
+  }
+  .section-8bit-text {
+    font-size: 0.45rem;
+    color: #ccc;
+    line-height: 2.4;
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .section-8bit-divider {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin: 1.5rem 0;
+  }
+  .section-8bit-divider div {
+    width: 8px; height: 8px; background: #ffd700;
+  }
+
+  /* Schedule */
+  .schedule-8bit {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .schedule-8bit-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px dashed #333;
+    align-items: center;
+  }
+  .schedule-8bit-time {
+    font-size: 0.45rem;
+    color: #00ff00;
+  }
+  .schedule-8bit-event {
+    font-size: 0.45rem;
+    color: #ccc;
+  }
+
+  /* Sponsors */
+  .sponsors-8bit-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .sponsor-8bit-card {
+    background: #111;
+    border: 2px solid #333;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    min-width: 150px;
+    transition: border-color 0.2s;
+  }
+  .sponsor-8bit-card:hover { border-color: #ffd700; }
+  .sponsor-8bit-card img {
+    image-rendering: pixelated;
+    max-height: 50px;
+    margin-bottom: 0.5rem;
+  }
+  .sponsor-8bit-name {
+    font-size: 0.35rem;
+    color: #aaa;
+    letter-spacing: 0.1em;
+  }
+
+  /* Gallery */
+  .gallery-8bit-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  .gallery-8bit-img {
+    aspect-ratio: 16/9;
+    background: #222;
+    border: 2px solid #333;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 0.35rem;
+    image-rendering: pixelated;
+    transition: border-color 0.2s;
+  }
+  .gallery-8bit-img:hover { border-color: #ffd700; }
+
+  /* FAQ */
+  .faq-8bit-item {
+    border: 2px solid #333;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+  }
+  .faq-8bit-q {
+    font-size: 0.4rem;
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+    line-height: 1.8;
+  }
+  .faq-8bit-a {
+    font-size: 0.35rem;
+    color: #aaa;
+    line-height: 2.2;
+  }
+
+  /* Footer */
+  .footer-8bit {
+    background: #0d0d1a;
+    border-top: 3px solid #ffd700;
+    padding: 2rem;
+    text-align: center;
+  }
+  .footer-8bit-text {
+    font-size: 0.35rem;
+    color: #555;
+    line-height: 2;
+  }
+  .footer-8bit-copy {
+    font-size: 0.3rem;
+    color: #333;
+    margin-top: 1rem;
+  }
+
+  /* Sticky bar */
+  .sticky-8bit {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0d0d1a;
+    border-top: 3px solid #ffd700;
+    padding: 0.6rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+  }
+  .sticky-8bit-text { font-size: 0.4rem; color: #ffd700; }
+  .sticky-8bit-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.4rem;
+    background: #ffd700;
+    color: #0d0d1a;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    cursor: pointer;
+  }
+
+  @media (max-width: 600px) {
+    .hero-8bit-title { font-size: 1.2rem; }
+    .gallery-8bit-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav-8bit">
+  <span class="nav-8bit-logo">★ CLCC 2026 ★</span>
+  <div class="nav-8bit-links">
+    <a href="#">ABOUT</a>
+    <a href="#">SCHEDULE</a>
+    <a href="#">SPONSORS</a>
+    <a href="#" class="nav-8bit-register">► REGISTER</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero-8bit">
+  <div class="hero-8bit-stars">★ ★ ★ ★ ★</div>
+  <h1 class="hero-8bit-title">CRYSTAL LAKE</h1>
+  <p class="hero-8bit-subtitle">CARS & CAFFEINE</p>
+  <p class="hero-8bit-date">► MAY 17, 2026 ◄ DOWNTOWN CRYSTAL LAKE</p>
+  <a href="#" class="hero-8bit-cta">★ REGISTER NOW ★</a>
+  <div class="hero-8bit-pixels">
+    <div style="background:#ff0000"></div>
+    <div style="background:#ff8800"></div>
+    <div style="background:#ffd700"></div>
+    <div style="background:#00ff00"></div>
+    <div style="background:#0088ff"></div>
+    <div style="background:#ff00ff"></div>
+    <div style="background:#ff0000"></div>
+    <div style="background:#ff8800"></div>
+    <div style="background:#ffd700"></div>
+    <div style="background:#00ff00"></div>
+  </div>
+</section>
+
+<!-- About -->
+<section class="section-8bit-alt">
+  <div class="section-8bit">
+    <h2 class="section-8bit-title">★ ABOUT THE EVENT ★</h2>
+    <p class="section-8bit-text">
+      Join us for the 4th annual Crystal Lake Cars & Caffeine charity car show in downtown Crystal Lake. Over 200 vehicles on display across 3 city blocks. Live awards, food vendors, and all net proceeds benefit the Crystal Lake Food Pantry.
+    </p>
+    <div class="section-8bit-divider">
+      <div></div><div></div><div></div><div></div><div></div>
+      <div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <p class="section-8bit-text">
+      $30 per vehicle · 100% to charity · Rain or shine
+    </p>
+  </div>
+</section>
+
+<!-- Schedule -->
+<section>
+  <div class="section-8bit">
+    <h2 class="section-8bit-title">► SCHEDULE ◄</h2>
+    <div class="schedule-8bit">
+      <div class="schedule-8bit-row">
+        <span class="schedule-8bit-time">7:30 AM</span>
+        <span class="schedule-8bit-event">GATES OPEN</span>
+      </div>
+      <div class="schedule-8bit-row">
+        <span class="schedule-8bit-time">8:00 AM</span>
+        <span class="schedule-8bit-event">SHOW CARS ARRIVE</span>
+      </div>
+      <div class="schedule-8bit-row">
+        <span class="schedule-8bit-time">10:00 AM</span>
+        <span class="schedule-8bit-event">JUDGING BEGINS</span>
+      </div>
+      <div class="schedule-8bit-row">
+        <span class="schedule-8bit-time">12:00 PM</span>
+        <span class="schedule-8bit-event">PEOPLE'S CHOICE VOTING</span>
+      </div>
+      <div class="schedule-8bit-row">
+        <span class="schedule-8bit-time">1:00 PM</span>
+        <span class="schedule-8bit-event">★ AWARDS CEREMONY ★</span>
+      </div>
+      <div class="schedule-8bit-row" style="border: none;">
+        <span class="schedule-8bit-time">2:00 PM</span>
+        <span class="schedule-8bit-event">SHOW ENDS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Sponsors -->
+<section class="section-8bit-alt">
+  <div class="section-8bit">
+    <h2 class="section-8bit-title">★ SPONSORS ★</h2>
+    <p class="section-8bit-text" style="margin-bottom: 1rem;">PREMIER SPONSOR</p>
+    <div class="sponsors-8bit-grid">
+      <div class="sponsor-8bit-card" style="border-color: #ffd700;">
+        <div style="font-size: 0.5rem; color: #ffd700; margin-bottom: 0.3rem;">CIDEAS, INC</div>
+        <div class="sponsor-8bit-name">BUILDPARTS.COM</div>
+      </div>
+      <div class="sponsor-8bit-card" style="border-color: #ffd700;">
+        <div style="font-size: 0.5rem; color: #ffd700; margin-bottom: 0.3rem;">URW</div>
+        <div class="sponsor-8bit-name">AUTOMOTIVE</div>
+      </div>
+    </div>
+    <p class="section-8bit-text" style="margin-top: 2rem; margin-bottom: 1rem;">COMMUNITY SPONSOR</p>
+    <div class="sponsors-8bit-grid">
+      <div class="sponsor-8bit-card">
+        <div style="font-size: 0.4rem; color: #ccc;">DETAIL TECH</div>
+      </div>
+      <div class="sponsor-8bit-card">
+        <div style="font-size: 0.4rem; color: #ccc;">FIRST INSTITUTE</div>
+      </div>
+      <div class="sponsor-8bit-card">
+        <div style="font-size: 0.4rem; color: #ccc;">IVY HALL</div>
+      </div>
+      <div class="sponsor-8bit-card">
+        <div style="font-size: 0.4rem; color: #ccc;">REDLINE MOTOR</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Gallery -->
+<section>
+  <div class="section-8bit">
+    <h2 class="section-8bit-title">► GALLERY ◄</h2>
+    <div class="gallery-8bit-grid">
+      <div class="gallery-8bit-img">8-BIT PHOTO 1</div>
+      <div class="gallery-8bit-img">8-BIT PHOTO 2</div>
+      <div class="gallery-8bit-img">8-BIT PHOTO 3</div>
+      <div class="gallery-8bit-img">8-BIT PHOTO 4</div>
+      <div class="gallery-8bit-img">8-BIT PHOTO 5</div>
+      <div class="gallery-8bit-img">8-BIT PHOTO 6</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section-8bit-alt">
+  <div class="section-8bit">
+    <h2 class="section-8bit-title">★ FAQ ★</h2>
+    <div class="faq-8bit-item">
+      <div class="faq-8bit-q">► WHAT TIME SHOULD I ARRIVE?</div>
+      <div class="faq-8bit-a">Gates open at 7:30 AM. Show cars should arrive by 9:00 AM for placement.</div>
+    </div>
+    <div class="faq-8bit-item">
+      <div class="faq-8bit-q">► HOW MUCH DOES IT COST?</div>
+      <div class="faq-8bit-a">$30 per vehicle registration. Spectators are free! All proceeds go to the Crystal Lake Food Pantry.</div>
+    </div>
+    <div class="faq-8bit-item">
+      <div class="faq-8bit-q">► WHAT IF IT RAINS?</div>
+      <div class="faq-8bit-a">The show goes on rain or shine. No refunds for weather cancellations.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer-8bit">
+  <div class="footer-8bit-text">
+    ★ CRYSTAL LAKE CARS & CAFFEINE ★<br><br>
+    ANNUAL CHARITY CAR SHOW<br>
+    DOWNTOWN CRYSTAL LAKE, IL
+  </div>
+  <div class="footer-8bit-copy">
+    © 2026 CLCC · ALL RIGHTS RESERVED
+  </div>
+</footer>
+
+<!-- Sticky bar -->
+<div class="sticky-8bit">
+  <span class="sticky-8bit-text">► REGISTER YOUR RIDE ◄</span>
+  <button class="sticky-8bit-btn">★ REGISTER ★</button>
+</div>
+
+</body>
+</html>

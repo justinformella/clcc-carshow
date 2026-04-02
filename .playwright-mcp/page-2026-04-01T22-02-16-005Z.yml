@@ -1,0 +1,206 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Redline Motor Condos" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "Redline Motor Condos" [ref=e5]
+      - navigation [ref=e6]:
+        - link "Units" [ref=e7] [cursor=pointer]:
+          - /url: /units
+        - link "Gallery" [ref=e8] [cursor=pointer]:
+          - /url: /gallery
+        - link "Amenities" [ref=e9] [cursor=pointer]:
+          - /url: /amenities
+        - link "Location" [ref=e10] [cursor=pointer]:
+          - /url: /location
+        - link "About" [ref=e11] [cursor=pointer]:
+          - /url: /about
+      - link "Contact Us" [ref=e13] [cursor=pointer]:
+        - /url: /contact
+        - button "Contact Us" [ref=e14]:
+          - img
+          - text: Contact Us
+  - main [ref=e15]:
+    - generic [ref=e16]:
+      - img "Redline Motor Condos Exterior" [ref=e18]
+      - generic [ref=e20]:
+        - paragraph [ref=e22]: Crystal Lake, Illinois
+        - heading "ELEVATE YOUR DRIVE" [level=1] [ref=e23]:
+          - text: ELEVATE YOUR
+          - generic [ref=e24]: DRIVE
+        - paragraph [ref=e25]: Luxury automobile condominiums with 20' ceilings, 14' garage doors, and fully customizable spaces. Your dream garage, reimagined.
+        - generic [ref=e26]:
+          - link "View Available Units" [ref=e27] [cursor=pointer]:
+            - /url: /units
+            - button "View Available Units" [ref=e28]:
+              - text: View Available Units
+              - img
+          - link "Schedule a Tour" [ref=e29] [cursor=pointer]:
+            - /url: /contact
+            - button "Schedule a Tour" [ref=e30]
+        - paragraph [ref=e31]: Opening Late Spring 2026
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - paragraph [ref=e38]: Premium Features
+        - heading "Built for Enthusiasts" [level=2] [ref=e39]
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - img [ref=e42]
+          - heading "20' Ceilings" [level=3] [ref=e48]
+          - paragraph [ref=e49]: Soaring ceiling heights for car lifts and mezzanines
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - heading "14' Garage Doors" [level=3] [ref=e54]
+          - paragraph [ref=e55]: Oversized glass garage doors for any vehicle
+        - generic [ref=e56]:
+          - img [ref=e57]
+          - heading "Gated Community" [level=3] [ref=e59]
+          - paragraph [ref=e60]: Secure, gated access with 24/7 surveillance
+        - generic [ref=e61]:
+          - img [ref=e62]
+          - heading "Climate Ready" [level=3] [ref=e64]
+          - paragraph [ref=e65]: Insulated buildings designed for year-round comfort
+        - generic [ref=e66]:
+          - img [ref=e67]
+          - heading "Full Customization" [level=3] [ref=e71]
+          - paragraph [ref=e72]: Build out your space to your exact vision
+        - generic [ref=e73]:
+          - img [ref=e74]
+          - heading "Photometric Lighting" [level=3] [ref=e76]
+          - paragraph [ref=e77]: Premium exterior and interior lighting design
+        - generic [ref=e78]:
+          - img [ref=e79]
+          - heading "Sprinkler System" [level=3] [ref=e82]
+          - paragraph [ref=e83]: Full fire protection throughout
+        - generic [ref=e84]:
+          - img [ref=e85]
+          - heading "On-Staff Designers" [level=3] [ref=e89]
+          - paragraph [ref=e90]: Professional design support for your buildout
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - paragraph [ref=e95]: Available Now
+          - heading "Featured Units" [level=2] [ref=e96]
+        - link "View All Units" [ref=e98] [cursor=pointer]:
+          - /url: /units
+          - text: View All Units
+          - img [ref=e99]
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - img "Unit A-101" [ref=e104]
+            - generic [ref=e105]: Available
+          - generic [ref=e106]:
+            - heading "Unit A-101" [level=3] [ref=e107]
+            - paragraph [ref=e108]: 960 SF
+            - generic [ref=e109]:
+              - generic [ref=e110]: From $XXX,XXX
+              - link "Details →" [ref=e111] [cursor=pointer]:
+                - /url: /units/1
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - img "Unit A-102" [ref=e114]
+            - generic [ref=e115]: Available
+          - generic [ref=e116]:
+            - heading "Unit A-102" [level=3] [ref=e117]
+            - paragraph [ref=e118]: 1,440 SF
+            - generic [ref=e119]:
+              - generic [ref=e120]: From $XXX,XXX
+              - link "Details →" [ref=e121] [cursor=pointer]:
+                - /url: /units/2
+        - generic [ref=e122]:
+          - generic [ref=e123]:
+            - img "Unit B-201" [ref=e124]
+            - generic [ref=e125]: Reserved
+          - generic [ref=e126]:
+            - heading "Unit B-201" [level=3] [ref=e127]
+            - paragraph [ref=e128]: 1,920 SF
+            - generic [ref=e129]:
+              - generic [ref=e130]: From $XXX,XXX
+              - link "Details →" [ref=e131] [cursor=pointer]:
+                - /url: /units/3
+        - generic [ref=e132]:
+          - generic [ref=e133]:
+            - img "Unit C-301" [ref=e134]
+            - generic [ref=e135]: Available
+          - generic [ref=e136]:
+            - heading "Unit C-301" [level=3] [ref=e137]
+            - paragraph [ref=e138]: 3,840 SF
+            - generic [ref=e139]:
+              - generic [ref=e140]: From $XXX,XXX
+              - link "Details →" [ref=e141] [cursor=pointer]:
+                - /url: /units/4
+    - generic [ref=e143]:
+      - generic [ref=e144]:
+        - paragraph [ref=e145]: The Development
+        - heading "Site Plan" [level=2] [ref=e146]
+      - img "Redline Motor Condos Site Plan" [ref=e148]
+    - generic [ref=e151]:
+      - generic [ref=e152]:
+        - paragraph [ref=e153]: Prime Location
+        - heading "Crystal Lake, IL" [level=2] [ref=e154]
+        - generic [ref=e155]:
+          - generic [ref=e156]:
+            - img [ref=e157]
+            - generic [ref=e160]:
+              - paragraph [ref=e161]: 7225 Teckler Blvd, Crystal Lake, IL 60014
+              - paragraph [ref=e162]: Conveniently located with easy access to major highways
+          - paragraph [ref=e163]: Situated in the heart of Crystal Lake, Redline Motor Condos offers the perfect blend of accessibility and privacy for your automotive collection.
+        - link "Get Directions" [ref=e165] [cursor=pointer]:
+          - /url: /location
+          - button "Get Directions" [ref=e166]:
+            - text: Get Directions
+            - img
+      - iframe [ref=e168]
+    - generic [ref=e172]:
+      - heading "Ready to Elevate Your Drive?" [level=2] [ref=e173]
+      - paragraph [ref=e174]: Units are selling fast. Contact our team today to learn more about available units and customization options.
+      - generic [ref=e175]:
+        - link "Contact Us Today" [ref=e176] [cursor=pointer]:
+          - /url: /contact
+          - button "Contact Us Today" [ref=e177]:
+            - text: Contact Us Today
+            - img
+        - link "Browse Units" [ref=e178] [cursor=pointer]:
+          - /url: /units
+          - button "Browse Units" [ref=e179]
+  - contentinfo [ref=e180]:
+    - generic [ref=e181]:
+      - generic [ref=e182]:
+        - generic [ref=e183]:
+          - img "Redline Motor Condos" [ref=e184]
+          - paragraph [ref=e185]: Luxury automobile condominiums featuring 20' ceilings, 14' garage doors, and full customization options.
+        - generic [ref=e186]:
+          - heading "Explore" [level=3] [ref=e187]
+          - list [ref=e188]:
+            - listitem [ref=e189]:
+              - link "Available Units" [ref=e190] [cursor=pointer]:
+                - /url: /units
+            - listitem [ref=e191]:
+              - link "Gallery" [ref=e192] [cursor=pointer]:
+                - /url: /gallery
+            - listitem [ref=e193]:
+              - link "Amenities" [ref=e194] [cursor=pointer]:
+                - /url: /amenities
+            - listitem [ref=e195]:
+              - link "About" [ref=e196] [cursor=pointer]:
+                - /url: /about
+        - generic [ref=e197]:
+          - heading "Contact" [level=3] [ref=e198]
+          - list [ref=e199]:
+            - listitem [ref=e200]:
+              - img [ref=e201]
+              - generic [ref=e204]:
+                - text: 7225 Teckler Blvd
+                - text: Crystal Lake, IL 60014
+            - listitem [ref=e205]:
+              - link "info@redlinemotorcondos.com" [ref=e206] [cursor=pointer]:
+                - /url: mailto:info@redlinemotorcondos.com
+                - img [ref=e207]
+                - text: info@redlinemotorcondos.com
+        - generic [ref=e210]:
+          - heading "Get Started" [level=3] [ref=e211]
+          - paragraph [ref=e212]: Opening Late Spring 2026. Reserve your unit today.
+          - link "Inquire Now" [ref=e213] [cursor=pointer]:
+            - /url: /contact
+      - generic [ref=e214]: © 2026 Redline Motor Condos. All rights reserved.
