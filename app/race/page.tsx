@@ -97,7 +97,8 @@ export default function RacePage() {
     const W = canvas.width;
     const H = canvas.height;
     const horizonY = H * 0.3;
-    const vanishX = W / 2;
+    // Vanish point offset right — player is in the right lane
+    const vanishX = W * 0.55;
 
     // ─── SKY ───
     const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
@@ -200,8 +201,8 @@ export default function RacePage() {
         startRef.current = performance.now();
 
         const FINISH = 1000; // distance units
-        const playerMaxSpeed = (playerCar.hp / (playerCar.weight / 1000)) * 0.15;
-        const oppMaxSpeed = (opponentCar.hp / (opponentCar.weight / 1000)) * 0.15;
+        const playerMaxSpeed = (playerCar.hp / (playerCar.weight / 1000)) * 0.06;
+        const oppMaxSpeed = (opponentCar.hp / (opponentCar.weight / 1000)) * 0.06;
         let pPos = 0, oPos = 0, pSpeed = 0, oSpeed = 0;
         let pGear = 1, pRpm = 800;
         let pFinish = 0, oFinish = 0;
@@ -219,10 +220,10 @@ export default function RacePage() {
           const accel = keyRef.current.has(" ") || keyRef.current.has("arrowup");
 
           if (accel && !pFinish) {
-            pRpm = Math.min(pRpm + 120, 7000);
+            pRpm = Math.min(pRpm + 80, 7000);
             const gearFactor = 1 - (pGear - 1) * 0.12;
             const rpmFactor = Math.min(pRpm / 5000, 1.2);
-            pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.4, playerMaxSpeed);
+            pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, playerMaxSpeed);
           } else {
             pRpm = Math.max(pRpm - 60, 800);
             pSpeed = Math.max(pSpeed - 0.3, 0);
@@ -236,7 +237,7 @@ export default function RacePage() {
 
           // Opponent AI — smooth acceleration with slight variation
           if (!oFinish) {
-            const oppAccelCurve = Math.min(elapsed / 3000, 1);
+            const oppAccelCurve = Math.min(elapsed / 8000, 1);
             const wobble = Math.sin(elapsed * 0.002) * 0.05;
             oSpeed = oppMaxSpeed * oppAccelCurve * (0.85 + wobble);
           }
@@ -257,16 +258,24 @@ export default function RacePage() {
           const overlayEl = opponentOverlayRef.current;
           if (overlayEl) {
             const delta = oPos - pPos;
-            const normalizedDist = Math.max(-30, Math.min(50, delta));
-            const tOpp = Math.min(1, Math.max(0, 0.6 + normalizedDist / 120));
-            const scale = 1.0 - tOpp * 0.85;
-            const topPct = 30 + (1 - tOpp) * 60;
-            const laneOff = 18 * scale;
-            const spriteWidth = Math.round(140 * scale);
-            const visible = delta > -25;
+            // Clamp distance range: -20 (behind us) to 80 (far ahead)
+            const normalizedDist = Math.max(-20, Math.min(80, delta));
+            // t: 0 = at our position, 1 = at horizon
+            // When even (delta=0), opponent is at ~40% up the road (closer to us)
+            const tOpp = Math.min(1, Math.max(0, 0.4 + normalizedDist / 200));
+            // Scale: 1.0 at bottom, 0.2 at horizon (less aggressive shrink)
+            const scale = 1.0 - tOpp * 0.8;
+            // Y position: 30% (horizon) to 90% (bottom of track)
+            const topPct = 30 + (1 - tOpp) * 55;
+            // Opponent in LEFT lane — offset left of vanish point
+            // More offset when close, converges to vanish point when far
+            const laneOff = 22 * scale;
+            // Bigger base sprite
+            const spriteWidth = Math.round(220 * scale);
+            const visible = delta > -15;
 
             overlayEl.style.top = `${topPct}%`;
-            overlayEl.style.left = `calc(50% - ${laneOff}%)`;
+            overlayEl.style.left = `calc(55% - ${laneOff}%)`;
             overlayEl.style.display = visible ? "block" : "none";
 
             const imgEl = opponentImgRef.current;
@@ -277,14 +286,14 @@ export default function RacePage() {
             if (fallbackEl) {
               fallbackEl.style.width = `${spriteWidth}px`;
               fallbackEl.style.height = `${Math.round(spriteWidth * 0.55)}px`;
-              fallbackEl.style.fontSize = `${Math.max(8, 14 * scale)}px`;
+              fallbackEl.style.fontSize = `${Math.max(10, 16 * scale)}px`;
             }
           }
 
           setPlayerPos(Math.min(pPos / FINISH * 100, 100));
           setOpponentPos(Math.min(oPos / FINISH * 100, 100));
-          setPlayerSpeed(Math.round(pSpeed * 15));
-          setOpponentSpeed(Math.round(oSpeed * 15));
+          setPlayerSpeed(Math.round(pSpeed * 38));
+          setOpponentSpeed(Math.round(oSpeed * 38));
           setGear(pGear);
           setRpm(Math.round(pRpm));
 
@@ -463,9 +472,9 @@ export default function RacePage() {
                   src={opponentCar.pixelRear}
                   alt="opponent"
                   style={{
-                    width: "70px",
+                    width: "110px",
                     imageRendering: "pixelated",
-                    filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
+                    mixBlendMode: "screen",
                   }}
                 />
               ) : (
