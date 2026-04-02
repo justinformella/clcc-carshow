@@ -5,6 +5,7 @@ export type PublicSponsor = {
   company: string;
   sponsorship_level: string;
   logo_url: string | null;
+  pixel_logo_url: string | null;
   website: string | null;
 };
 
@@ -36,7 +37,7 @@ export async function GET() {
     const supabase = createServerClient();
     const { data } = await supabase
       .from("sponsors")
-      .select("company, sponsorship_level, logo_url, website")
+      .select("company, sponsorship_level, logo_url, pixel_logo_url, website")
       .in("status", ["paid", "engaged"])
       .order("company");
 
