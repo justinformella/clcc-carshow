@@ -33,6 +33,7 @@ export type Registration = {
   ai_image_url: string | null;
   pixel_art_url: string | null;
   pixel_dashboard_url: string | null;
+  pixel_rear_url: string | null;
   // Geocoded location
   lat: number | null;
   lng: number | null;

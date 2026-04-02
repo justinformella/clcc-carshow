@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase-server";
 
-export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string }> {
+export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
   const supabase = createServerClient();
 
   const { data: reg, error } = await supabase
@@ -14,8 +14,8 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
   const carDesc = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
   const color = reg.vehicle_color || "silver";
 
-  // Generate both images in parallel
-  const [sideBuffer, dashBuffer] = await Promise.all([
+  // Generate all three images in parallel
+  const [sideBuffer, dashBuffer, rearBuffer] = await Promise.all([
     generateImage(
       `8-bit retro pixel art side profile view of a ${carDesc} in ${color}. ` +
       `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
@@ -27,6 +27,9 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
       `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`
     ),
+    generateImage(
+      `8-bit retro pixel art rear view of a ${carDesc} in ${color}. The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Black background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
+    ),
   ]);
 
   // Upload both to storage
@@ -37,24 +40,27 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
 
   const sideFileName = `side-${registrationId}.png`;
   const dashFileName = `dash-${registrationId}.png`;
+  const rearFileName = `rear-${registrationId}.png`;
 
   await Promise.all([
     supabase.storage.from("pixel-art").upload(sideFileName, sideBuffer, { contentType: "image/png", upsert: true }),
     supabase.storage.from("pixel-art").upload(dashFileName, dashBuffer, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(rearFileName, rearBuffer, { contentType: "image/png", upsert: true }),
   ]);
 
   const sideUrl = `${supabase.storage.from("pixel-art").getPublicUrl(sideFileName).data.publicUrl}?v=${Date.now()}`;
   const dashUrl = `${supabase.storage.from("pixel-art").getPublicUrl(dashFileName).data.publicUrl}?v=${Date.now()}`;
+  const rearUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearFileName).data.publicUrl}?v=${Date.now()}`;
 
   await supabase
     .from("registrations")
-    .update({ pixel_art_url: sideUrl, pixel_dashboard_url: dashUrl })
+    .update({ pixel_art_url: sideUrl, pixel_dashboard_url: dashUrl, pixel_rear_url: rearUrl })
     .eq("id", registrationId);
 
-  return { sideUrl, dashUrl };
+  return { sideUrl, dashUrl, rearUrl };
 }
 
-async function generateImage(prompt: string): Promise<Buffer> {
+export async function generateImage(prompt: string): Promise<Buffer> {
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
   if (geminiKey) {

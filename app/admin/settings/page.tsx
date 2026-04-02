@@ -43,6 +43,7 @@ const sampleReg: Registration = {
   ai_image_url: null,
   pixel_art_url: null,
   pixel_dashboard_url: null,
+  pixel_rear_url: null,
   lat: null,
   lng: null,
   utm_source: null,
