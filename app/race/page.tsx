@@ -164,8 +164,8 @@ function RacePage() {
     }
 
     // ─── ROAD (perspective, row by row) ───
-    const roadWidthBottom = W * 0.85;
-    const roadWidthTop = W * 0.06;
+    const roadWidthBottom = W * 0.95;
+    const roadWidthTop = W * 0.08;
     const shoulderWidthBottom = W * 0.12;
     const shoulderWidthTop = 2;
     const totalRows = H - horizonY;
@@ -316,7 +316,7 @@ function RacePage() {
               const topPct = 30 + (1 - tOpp) * 55;
               // Lane offset proportional to road width at this depth
               const perspAtOpp = (1 - tOpp) * (1 - tOpp);
-              const roadWidthPct = 6 + (85 - 6) * perspAtOpp;
+              const roadWidthPct = 8 + (95 - 8) * perspAtOpp;
               const laneOff = roadWidthPct * 0.22;
               const spriteWidth = Math.round(240 * scale);
 
@@ -368,9 +368,31 @@ function RacePage() {
           setGear(pGear);
           setRpm(Math.round(pRpm));
 
+          // Race ends when EITHER car finishes or at 30s timeout
           if (pFinish && oFinish) {
+            // Both finished
             setWinner(pFinish < oFinish ? "player" : "opponent");
             setPlayerTime(pFinish);
+            setOpponentTime(oFinish);
+            setPhase("finished");
+            return;
+          }
+
+          if (pFinish && !oFinish) {
+            // Player finished, opponent didn't — player wins, estimate opponent time
+            const oppRemaining = (FINISH - oPos) / (oSpeed || 0.01);
+            setWinner("player");
+            setPlayerTime(pFinish);
+            setOpponentTime(Math.round(pFinish + oppRemaining * 1000 / 60));
+            setPhase("finished");
+            return;
+          }
+
+          if (oFinish && !pFinish) {
+            // Opponent finished, player didn't — opponent wins, estimate player time
+            const pRemaining = (FINISH - pPos) / (pSpeed || 0.01);
+            setWinner("opponent");
+            setPlayerTime(Math.round(oFinish + pRemaining * 1000 / 60));
             setOpponentTime(oFinish);
             setPhase("finished");
             return;
@@ -379,9 +401,10 @@ function RacePage() {
           if (elapsed < 30000) {
             animRef.current = requestAnimationFrame(animate);
           } else {
+            // Timeout — whoever is further ahead wins
             setWinner(pPos > oPos ? "player" : "opponent");
-            setPlayerTime(30000);
-            setOpponentTime(30000);
+            setPlayerTime(elapsed);
+            setOpponentTime(elapsed);
             setPhase("finished");
           }
         };
