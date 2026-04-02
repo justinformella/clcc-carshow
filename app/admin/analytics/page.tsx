@@ -30,20 +30,8 @@ type VehicleSpec = {
 
 type RegWithSpec = Registration & { spec?: VehicleSpec };
 
-// ─── Theme ───
-const BG = "#08090c";
-const SURFACE = "rgba(255,255,255,0.04)";
-const SURFACE_BORDER = "rgba(255,255,255,0.07)";
-const GOLD = "#c9a84c";
-const GOLD_GLOW = "rgba(201,168,76,0.25)";
-const CYAN = "#00d4ff";
-const RED = "#ff3b5c";
-const GREEN = "#00e68a";
-const ORANGE = "#ff9f43";
-const PURPLE = "#a855f7";
-const TEXT = "#d4d4d8";
-const TEXT_MUTED = "#52525b";
-const ACCENT_COLORS = [GOLD, "#e8845c", CYAN, GREEN, PURPLE, "#f472b6", ORANGE, "#38bdf8", "#fbbf24", "#a78bfa"];
+// ─── Light Theme ───
+const ACCENT_COLORS = ["#4f46e5", "#0d9488", "#c9a84c", "#e11d48", "#7c3aed", "#f59e0b", "#06b6d4", "#84cc16", "#ec4899", "#8b5cf6"];
 
 // Normalize fancy color names to base colors
 function normalizeColor(raw: string | null | undefined): string {
@@ -132,32 +120,26 @@ function AnimNum({ target, duration = 1400, prefix = "", suffix = "", raw = fals
   return <>{prefix}{raw ? current : current.toLocaleString()}{suffix}</>;
 }
 
-// ─── Tachometer Gauge ───
+// ─── Tachometer Gauge (kept but not rendered) ───
 function TachGauge({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = Math.min(value / max, 1);
-  const angle = pct * 240 - 120; // -120 to 120 degrees
+  const angle = pct * 240 - 120;
+  const GREEN = "#00e68a", ORANGE = "#ff9f43", RED = "#ff3b5c", TEXT_MUTED = "#52525b";
   const color = pct < 0.6 ? GREEN : pct < 0.85 ? ORANGE : RED;
   return (
     <div style={{ position: "relative", width: "100%", maxWidth: "260px", margin: "0 auto" }}>
       <svg viewBox="0 0 200 130" style={{ width: "100%" }}>
-        {/* Track */}
         <path d="M 20 120 A 80 80 0 1 1 180 120" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" strokeLinecap="round" />
-        {/* Tick marks */}
         {Array.from({ length: 13 }).map((_, i) => {
           const a = ((i / 12) * 240 - 120) * (Math.PI / 180);
           const r1 = 87, r2 = i % 3 === 0 ? 97 : 93;
           return <line key={i} x1={100 + Math.cos(a) * r1} y1={110 + Math.sin(a) * r1} x2={100 + Math.cos(a) * r2} y2={110 + Math.sin(a) * r2} stroke="rgba(255,255,255,0.15)" strokeWidth={i % 3 === 0 ? 2 : 1} />;
         })}
-        {/* Fill arc */}
         <path d="M 20 120 A 80 80 0 1 1 180 120" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"
           strokeDasharray={`${pct * 335} 335`}
           style={{ filter: `drop-shadow(0 0 6px ${color})`, transition: "stroke-dasharray 1s ease" }}
         />
-        {/* Needle */}
-        <line
-          x1="100" y1="110"
-          x2={100 + Math.cos(angle * Math.PI / 180) * 65}
-          y2={110 + Math.sin(angle * Math.PI / 180) * 65}
+        <line x1="100" y1="110" x2={100 + Math.cos(angle * Math.PI / 180) * 65} y2={110 + Math.sin(angle * Math.PI / 180) * 65}
           stroke="#fff" strokeWidth="2" strokeLinecap="round"
           style={{ transition: "all 1s ease", filter: "drop-shadow(0 0 3px rgba(255,255,255,0.5))" }}
         />
@@ -173,6 +155,7 @@ function TachGauge({ value, max, label }: { value: number; max: number; label: s
     </div>
   );
 }
+void TachGauge; // suppress unused warning
 
 // ─── Horizontal stacked bar ───
 function StackedBar({ data }: { data: { id: string; value: number }[] }) {
@@ -197,6 +180,21 @@ function StackedBar({ data }: { data: { id: string; value: number }[] }) {
   );
 }
 
+// ─── Card component ───
+function Card({ title, children, headerRight }: { title?: string; children: React.ReactNode; headerRight?: React.ReactNode }) {
+  return (
+    <div style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", padding: "1.5rem", marginBottom: "1rem" }}>
+      {(title || headerRight) && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+          {title && <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontWeight: 400, color: "var(--charcoal)", margin: 0 }}>{title}</h3>}
+          {headerRight}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -206,6 +204,14 @@ export default function AnalyticsPage() {
   const [enrichResult, setEnrichResult] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<"hp" | "rare" | "value">("hp");
   const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS_DEFAULT);
+  const [tab, setTab] = useState<"site" | "registration" | "vehicles" | "leaderboard">("site");
+
+  // Site analytics state
+  const [trafficData, setTrafficData] = useState<{ date: string; views: number; visitors: number }[]>([]);
+  const [pathData, setPathData] = useState<{ path: string; views: number }[]>([]);
+  const [referrerData, setReferrerData] = useState<{ referrer: string; visitors: number }[]>([]);
+  const [insights, setInsights] = useState<{ trend: string; insights: string[]; recommendations: string[] } | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -221,10 +227,40 @@ export default function AnalyticsPage() {
         const v = parseInt(settingRes.data.value, 10);
         if (!isNaN(v)) setMaxRegistrations(v);
       }
+
+      // Fetch traffic data
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const [trafficRes, pathRes, referrerRes] = await Promise.all([
+        supabase.from("page_views").select("date, views, visitors").gte("date", thirtyDaysAgo).order("date"),
+        supabase.from("page_view_paths").select("path, views").gte("date", thirtyDaysAgo),
+        supabase.from("page_view_referrers").select("referrer, visitors").gte("date", thirtyDaysAgo),
+      ]);
+      setTrafficData(trafficRes.data || []);
+      // Aggregate paths across dates
+      const pathMap: Record<string, number> = {};
+      (pathRes.data || []).forEach((r: { path: string; views: number }) => { pathMap[r.path] = (pathMap[r.path] || 0) + r.views; });
+      setPathData(Object.entries(pathMap).map(([path, views]) => ({ path, views })).sort((a, b) => b.views - a.views));
+      // Aggregate referrers across dates
+      const refMap: Record<string, number> = {};
+      (referrerRes.data || []).forEach((r: { referrer: string; visitors: number }) => { refMap[r.referrer] = (refMap[r.referrer] || 0) + r.visitors; });
+      setReferrerData(Object.entries(refMap).map(([referrer, visitors]) => ({ referrer, visitors })).sort((a, b) => b.visitors - a.visitors));
+
       setLoading(false);
     };
     fetchData();
   }, []);
+
+  // Fetch AI insights when site tab is active
+  useEffect(() => {
+    if (tab === "site" && !insights && !insightsLoading) {
+      setInsightsLoading(true);
+      fetch("/api/analytics/insights", { method: "POST" })
+        .then((r) => r.json())
+        .then((data) => { if (data.trend) setInsights(data); })
+        .catch(() => {})
+        .finally(() => setInsightsLoading(false));
+    }
+  }, [tab, insights, insightsLoading]);
 
   const handleEnrichAll = async () => {
     setEnriching(true);
@@ -250,9 +286,6 @@ export default function AnalyticsPage() {
   const totalWeight = specs.reduce((s, sp) => s + (sp.weight_lbs || 0), 0);
   const totalMsrp = specs.reduce((s, sp) => s + (sp.original_msrp || 0), 0);
   const totalMsrpAdjusted = specs.reduce((s, sp) => s + (sp.msrp_adjusted || 0), 0);
-  const eventDate = new Date("2026-05-17T00:00:00");
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const daysUntil = Math.max(0, Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
   // Charts
   const byMake = countBy(registrations, (r) => r.vehicle_make?.trim());
@@ -274,10 +307,10 @@ export default function AnalyticsPage() {
     const b: Record<string, number> = {};
     specs.filter((s) => s.horsepower).forEach((s) => {
       const hp = s.horsepower || 0;
-      const key = hp < 150 ? "< 150" : hp < 250 ? "150–249" : hp < 350 ? "250–349" : hp < 500 ? "350–499" : "500+";
+      const key = hp < 150 ? "< 150" : hp < 250 ? "150-249" : hp < 350 ? "250-349" : hp < 500 ? "350-499" : "500+";
       b[key] = (b[key] || 0) + 1;
     });
-    return ["< 150", "150–249", "250–349", "350–499", "500+"].filter((k) => b[k]).map((id) => ({ id, value: b[id] }));
+    return ["< 150", "150-249", "250-349", "350-499", "500+"].filter((k) => b[k]).map((id) => ({ id, value: b[id] }));
   })();
 
   // Radar
@@ -298,20 +331,53 @@ export default function AnalyticsPage() {
     return items.filter((r) => r.spec?.msrp_adjusted || r.spec?.original_msrp).sort((a, b) => (b.spec?.msrp_adjusted || b.spec?.original_msrp || 0) - (a.spec?.msrp_adjusted || a.spec?.original_msrp || 0));
   })().slice(0, 8);
 
+  // Site analytics computations
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const visitors7d = trafficData.filter((d) => d.date >= sevenDaysAgo).reduce((s, d) => s + d.visitors, 0);
+  const regs7d = registrations.filter((r) => r.paid_at && r.paid_at >= sevenDaysAgo).length;
+  const conversionRate7d = visitors7d > 0 ? ((regs7d / visitors7d) * 100).toFixed(1) : "0.0";
+  const avgDailyVisitors = trafficData.length > 0 ? Math.round(trafficData.reduce((s, d) => s + d.visitors, 0) / trafficData.length) : 0;
+
+  // Build daily data for charts
+  const dailyRegCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    registrations.forEach((r) => {
+      if (r.paid_at) {
+        const day = r.paid_at.split("T")[0];
+        map[day] = (map[day] || 0) + 1;
+      }
+    });
+    return map;
+  }, [registrations]);
+
+  const mergedDailyData = useMemo(() => {
+    return trafficData.map((d) => ({
+      date: d.date,
+      visitors: d.visitors,
+      registrations: dailyRegCounts[d.date] || 0,
+      conversionRate: d.visitors > 0 ? Number(((dailyRegCounts[d.date] || 0) / d.visitors * 100).toFixed(1)) : 0,
+    }));
+  }, [trafficData, dailyRegCounts]);
+
+  // Conversion funnel
+  const homepageViews = pathData.filter((p) => p.path === "/").reduce((s, p) => s + p.views, 0);
+  const registerViews = pathData.filter((p) => p.path.startsWith("/register")).reduce((s, p) => s + p.views, 0);
+  const paidCount = registrations.length;
+
   const nivoTheme = {
-    text: { fill: TEXT },
-    axis: { ticks: { text: { fill: TEXT_MUTED, fontSize: 11 } } },
-    grid: { line: { stroke: "rgba(255,255,255,0.04)" } },
-    tooltip: { container: { background: "#18181b", color: TEXT, fontSize: 13, borderRadius: 6, border: `1px solid ${SURFACE_BORDER}`, boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)` } },
+    text: { fill: "#666" },
+    axis: { ticks: { text: { fill: "#999", fontSize: 11 } } },
+    grid: { line: { stroke: "rgba(0,0,0,0.06)" } },
+    tooltip: { container: { background: "#fff", color: "#333", fontSize: 13, borderRadius: 6, border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" } },
     labels: { text: { fill: "#fff", fontSize: 11, fontWeight: 600 } },
   };
 
   if (loading) {
     return (
-      <div className="analytics-root" style={{ background: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", margin: "-2rem", padding: "2rem", width: "calc(100% + 4rem)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ width: "40px", height: "40px", border: `2px solid ${SURFACE_BORDER}`, borderTop: `2px solid ${GOLD}`, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem" }} />
-          <p style={{ color: TEXT_MUTED }}>Initializing analytics...</p>
+          <div style={{ width: "40px", height: "40px", border: "2px solid rgba(0,0,0,0.08)", borderTop: "2px solid var(--gold)", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 1rem" }} />
+          <p style={{ color: "#999" }}>Initializing analytics...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -319,35 +385,245 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="analytics-root" style={{ background: BG, margin: "-2rem", padding: "2rem 2.5rem", minHeight: "100vh", width: "calc(100% + 4rem)", position: "relative", overflow: "hidden" }}>
-      {/* Scanline overlay */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.015) 2px, rgba(255,255,255,0.015) 4px)" }} />
+    <div className="analytics-root" style={{ position: "relative" }}>
+      {/* ─── Header ─── */}
+      <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", fontWeight: 400, marginBottom: "1.5rem", color: "#1a1a1a" }}>Analytics</h1>
 
-      {/* Ambient glow */}
-      <div style={{ position: "absolute", top: "-200px", right: "-100px", width: "600px", height: "600px", borderRadius: "50%", background: `radial-gradient(circle, ${GOLD_GLOW} 0%, transparent 70%)`, pointerEvents: "none", zIndex: 0 }} />
+      {/* ─── Tabs ─── */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid rgba(0,0,0,0.08)", marginBottom: "1.5rem" }}>
+        {([
+          { key: "site" as const, label: "Site Analytics" },
+          { key: "registration" as const, label: "Registration Data" },
+          { key: "vehicles" as const, label: "Vehicle Intelligence" },
+          { key: "leaderboard" as const, label: "Leaderboard" },
+        ]).map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{
+            padding: "0.6rem 1.5rem", fontSize: "0.8rem", fontWeight: 600,
+            textTransform: "uppercase", letterSpacing: "0.08em", background: "transparent",
+            border: "none", borderBottom: tab === t.key ? "2px solid var(--gold)" : "2px solid transparent",
+            marginBottom: "-2px", color: tab === t.key ? "var(--charcoal)" : "var(--text-light)",
+            cursor: "pointer", transition: "color 0.15s, border-color 0.15s",
+          }}>{t.label}</button>
+        ))}
+      </div>
 
-      <div style={{ position: "relative", zIndex: 2 }}>
-        {/* ─── Header ─── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2.5rem" }}>
-          <div>
-            <p style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.3em", color: GOLD, marginBottom: "0.5rem" }}>Mission Control</p>
-            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "2.5rem", fontWeight: 400, color: "#fff", margin: 0, lineHeight: 1 }}>
-              Analytics
-            </h1>
+      {/* ═══════════════ TAB: Site Analytics ═══════════════ */}
+      {tab === "site" && (
+        <>
+          {/* Stat cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+            {[
+              { label: "Visitors (7d)", value: visitors7d, color: "#4f46e5" },
+              { label: "Registrations (7d)", value: regs7d, color: "#0d9488" },
+              { label: "Conversion Rate", value: conversionRate7d, suffix: "%", color: "#c9a84c" },
+              { label: "Avg Daily Visitors", value: avgDailyVisitors, color: "#6366f1" },
+            ].map((s) => (
+              <Card key={s.label}>
+                <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#999", marginBottom: "0.4rem" }}>{s.label}</p>
+                <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "2rem", fontWeight: 600, color: s.color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                  {typeof s.value === "number" ? <AnimNum target={s.value} /> : s.value}{s.suffix || ""}
+                </p>
+              </Card>
+            ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {enrichResult && <span style={{ fontSize: "0.7rem", color: GREEN }}>{enrichResult}</span>}
+
+          {/* Conversion Rate Trend */}
+          {mergedDailyData.length > 0 && (
+            <Card title="Conversion Rate Trend">
+              <div style={{ height: 280 }}>
+                <ResponsiveBar
+                  data={mergedDailyData.map((d) => ({ date: d.date.slice(5), visitors: d.visitors, conversionRate: d.conversionRate }))}
+                  keys={["visitors"]}
+                  indexBy="date"
+                  theme={nivoTheme}
+                  colors={["#4f46e5"]}
+                  borderRadius={2}
+                  padding={0.3}
+                  margin={{ top: 24, right: 16, bottom: 36, left: 48 }}
+                  axisBottom={{ tickSize: 0, tickPadding: 6, tickRotation: -45 }}
+                  axisLeft={{ tickSize: 0, tickPadding: 6 }}
+                  enableLabel
+                  label={(d) => `${mergedDailyData.find((m) => m.date.slice(5) === d.indexValue)?.conversionRate || 0}%`}
+                  labelTextColor="#fff"
+                  animate
+                  motionConfig="gentle"
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* Visitors & Registrations by Day */}
+          {mergedDailyData.length > 0 && (
+            <Card title="Visitors & Registrations by Day">
+              <div style={{ height: 280 }}>
+                <ResponsiveBar
+                  data={mergedDailyData.map((d) => ({ date: d.date.slice(5), visitors: d.visitors, registrations: d.registrations }))}
+                  keys={["visitors", "registrations"]}
+                  indexBy="date"
+                  theme={nivoTheme}
+                  colors={["#4f46e5", "#0d9488"]}
+                  groupMode="grouped"
+                  borderRadius={2}
+                  padding={0.3}
+                  margin={{ top: 8, right: 16, bottom: 36, left: 48 }}
+                  axisBottom={{ tickSize: 0, tickPadding: 6, tickRotation: -45 }}
+                  axisLeft={{ tickSize: 0, tickPadding: 6 }}
+                  enableLabel={false}
+                  legends={[
+                    { dataFrom: "keys", anchor: "top-right", direction: "row", translateY: -4, itemWidth: 100, itemHeight: 20, symbolSize: 10, symbolShape: "square" },
+                  ]}
+                  animate
+                  motionConfig="gentle"
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* AI Insights */}
+          <Card title="AI Insights">
+            {insightsLoading && (
+              <p style={{ color: "#999", animation: "pulse 1.5s ease-in-out infinite" }}>Generating insights...</p>
+            )}
+            {insights && (
+              <div>
+                <span style={{
+                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
+                  background: insights.trend === "Improving" ? "#dcfce7" : insights.trend === "Declining" ? "#fef2f2" : "#fefce8",
+                  color: insights.trend === "Improving" ? "#166534" : insights.trend === "Declining" ? "#991b1b" : "#854d0e",
+                  marginBottom: "1rem",
+                }}>{insights.trend}</span>
+                <ul style={{ margin: "1rem 0", paddingLeft: "1.25rem", color: "#1a1a1a" }}>
+                  {insights.insights.map((item, i) => (
+                    <li key={i} style={{ marginBottom: "0.5rem", lineHeight: 1.5, fontSize: "0.9rem" }}>{item}</li>
+                  ))}
+                </ul>
+                {insights.recommendations.length > 0 && (
+                  <div style={{ background: "#f8fafc", border: "1px solid rgba(0,0,0,0.06)", padding: "1rem", marginTop: "1rem" }}>
+                    <p style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#999", marginBottom: "0.5rem", fontWeight: 600 }}>Recommendations</p>
+                    <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#1a1a1a" }}>
+                      {insights.recommendations.map((rec, i) => (
+                        <li key={i} style={{ marginBottom: "0.4rem", lineHeight: 1.5, fontSize: "0.85rem" }}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+            {!insightsLoading && !insights && (
+              <p style={{ color: "#999", fontSize: "0.9rem" }}>Unable to generate insights</p>
+            )}
+          </Card>
+
+          {/* Two-column row: Funnel + Referrers */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            {/* Conversion Funnel */}
+            <Card title="Conversion Funnel">
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {[
+                  { label: "Homepage Visitors", value: homepageViews, color: "#4f46e5" },
+                  { label: "/register Visitors", value: registerViews, color: "#0d9488" },
+                  { label: "Paid Registrations", value: paidCount, color: "#c9a84c" },
+                ].map((step) => {
+                  const maxVal = Math.max(homepageViews, 1);
+                  return (
+                    <div key={step.label}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                        <span style={{ fontSize: "0.8rem", color: "#1a1a1a" }}>{step.label}</span>
+                        <span style={{ fontSize: "0.8rem", fontWeight: 600, color: step.color }}>{step.value.toLocaleString()}</span>
+                      </div>
+                      <div style={{ height: "24px", background: "rgba(0,0,0,0.04)", borderRadius: "4px", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${(step.value / maxVal) * 100}%`, background: step.color, borderRadius: "4px", transition: "width 0.8s ease" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+
+            {/* Top Referrers */}
+            <Card title="Top Referrers">
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                <thead>
+                  <tr>
+                    <th style={thLight}>Source</th>
+                    <th style={{ ...thLight, textAlign: "right" }}>Visitors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {referrerData.slice(0, 8).map((r) => (
+                    <tr key={r.referrer}>
+                      <td style={tdLight}>{r.referrer || "(direct)"}</td>
+                      <td style={{ ...tdLight, textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{r.visitors.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                  {referrerData.length === 0 && (
+                    <tr><td colSpan={2} style={{ ...tdLight, textAlign: "center", color: "#999", padding: "2rem" }}>No referrer data yet</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* ═══════════════ TAB: Registration Data ═══════════════ */}
+      {tab === "registration" && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+            <Card title="Makes">
+              <div style={{ height: 300 }}>
+                <ResponsiveTreeMap data={treemapData} identity="name" value="value" label={(n) => `${n.id} (${n.formattedValue})`} labelSkipSize={40} theme={nivoTheme} colors={ACCENT_COLORS} borderWidth={2} borderColor="#fff" nodeOpacity={0.85} labelTextColor="#fff" enableParentLabel={false} />
+              </div>
+            </Card>
+            <Card title="Decades">
+              <div style={{ height: 300 }}>
+                <ResponsiveBar data={byDecade.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={["#c9a84c"]} borderRadius={2} padding={0.3} margin={{ top: 8, right: 8, bottom: 36, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel={false} animate motionConfig="gentle" />
+              </div>
+            </Card>
+            <Card title="Colors">
+              <div style={{ height: 300 }}>
+                <ResponsivePie
+                  data={byColor.slice(0, 10)}
+                  theme={nivoTheme}
+                  colors={(d) => {
+                    const colorMap: Record<string, string> = {
+                      Red: "#dc2626", Blue: "#2563eb", Green: "#16a34a", Black: "#27272a",
+                      White: "#d4d4d8", Silver: "#94a3b8", Gray: "#6b7280", Yellow: "#eab308",
+                      Orange: "#ea580c", Gold: "#c9a84c", Brown: "#92400e", Purple: "#7c3aed",
+                      Pink: "#ec4899", Beige: "#d4a574", Unknown: "#525252",
+                    };
+                    return colorMap[d.id] || "#525252";
+                  }}
+                  innerRadius={0.6} padAngle={2} cornerRadius={3}
+                  margin={{ top: 15, right: 60, bottom: 15, left: 60 }}
+                  arcLinkLabelsColor={{ from: "color" }}
+                  arcLinkLabelsTextColor="#666"
+                  arcLinkLabelsThickness={1.5}
+                  arcLabelsTextColor="#fff"
+                  enableArcLabels={false}
+                  animate motionConfig="gentle"
+                />
+              </div>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* ═══════════════ TAB: Vehicle Intelligence ═══════════════ */}
+      {tab === "vehicles" && (
+        <>
+          {/* Enrich button */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+            {enrichResult && <span style={{ fontSize: "0.7rem", color: "#0d9488" }}>{enrichResult}</span>}
             {specs.length >= registrations.length ? (
               <button
                 onClick={async () => {
                   if (!confirm("Re-enrich all vehicles? This will refresh specs for every registration.")) return;
                   setEnriching(true);
                   setEnrichResult(null);
-                  // Clear existing specs
                   const supabase = createClient();
                   await supabase.from("vehicle_specs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
                   setSpecs([]);
-                  // Re-enrich
                   try {
                     const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true }) });
                     const data = await res.json();
@@ -360,7 +636,7 @@ export default function AnalyticsPage() {
                 disabled={enriching}
                 style={{
                   padding: "0.5rem 1.2rem", background: "transparent",
-                  color: TEXT_MUTED, border: `1px solid ${SURFACE_BORDER}`,
+                  color: "#999", border: "1px solid rgba(0,0,0,0.12)",
                   fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
                   cursor: enriching ? "default" : "pointer", opacity: enriching ? 0.5 : 1,
                   display: "flex", alignItems: "center", gap: "0.4rem", borderRadius: "2px",
@@ -374,8 +650,8 @@ export default function AnalyticsPage() {
                 onClick={handleEnrichAll}
                 disabled={enriching}
                 style={{
-                  padding: "0.5rem 1.2rem", background: `linear-gradient(135deg, ${GOLD}, #b8943f)`,
-                  color: BG, border: "none",
+                  padding: "0.5rem 1.2rem", background: "linear-gradient(135deg, #c9a84c, #b8943f)",
+                  color: "#fff", border: "none",
                   fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
                   cursor: enriching ? "default" : "pointer", opacity: enriching ? 0.5 : 1,
                   display: "flex", alignItems: "center", gap: "0.4rem", borderRadius: "2px",
@@ -386,160 +662,107 @@ export default function AnalyticsPage() {
               </button>
             )}
           </div>
-        </div>
 
-        {/* ─── Hero Row: Gauge + Metrics ─── */}
-        <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
-          {/* Tachometer */}
-          <GlassCard>
-            <TachGauge value={registrations.length} max={maxRegistrations} label="Capacity" />
-            <div style={{ textAlign: "center", marginTop: "0.25rem" }}>
-              <span style={{ fontSize: "0.8rem", color: TEXT }}>{registrations.length}</span>
-              <span style={{ fontSize: "0.8rem", color: TEXT_MUTED }}> / {maxRegistrations}</span>
-            </div>
-          </GlassCard>
-
-          {/* Stat grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1px", background: SURFACE_BORDER, borderRadius: "4px", overflow: "hidden" }}>
-            {[
-              { label: "Vehicles", val: registrations.length, glow: CYAN, raw: false },
-              { label: "Makes", val: uniqueMakes, glow: PURPLE, raw: false },
-              { label: "Combined HP", val: totalHp, glow: RED, raw: false },
-              { label: "Avg Year", val: Math.round(registrations.reduce((s, r) => s + r.vehicle_year, 0) / (registrations.length || 1)), glow: GREEN, raw: true },
-              { label: "Tonnage", val: Math.round(totalWeight / 2000 * 10) / 10, suffix: "t", glow: ORANGE, raw: false },
-              { label: "Original Sticker", val: totalMsrp, prefix: "$", glow: GOLD, raw: false },
-              { label: "In 2026 Dollars", val: totalMsrpAdjusted, prefix: "$", glow: ORANGE, raw: false },
-            ].map((m) => (
-              <div key={m.label} style={{ background: BG, padding: "1.2rem 1rem", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: `linear-gradient(to right, transparent, ${m.glow}30, transparent)` }} />
-                <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.2em", color: TEXT_MUTED, marginBottom: "0.4rem" }}>{m.label}</p>
-                <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.8rem", fontWeight: 600, color: "#fff", lineHeight: 1, fontVariantNumeric: "tabular-nums", textShadow: `0 0 20px ${m.glow}40` }}>
-                  <AnimNum target={typeof m.val === "number" ? m.val : 0} prefix={m.prefix || ""} suffix={m.suffix || ""} raw={m.raw} />
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ─── Fun Stats ─── */}
-        {hasSpecs && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "2rem" }}>
-            {([
-              oldest ? { label: "Oldest", value: `${oldest.vehicle_year} ${oldest.vehicle_make}`, detail: oldest.vehicle_model } : null,
-              newest ? { label: "Newest", value: `${newest.vehicle_year} ${newest.vehicle_make}`, detail: newest.vehicle_model } : null,
-              mostPowerful?.spec?.horsepower ? { label: "Most Powerful", value: `${mostPowerful.vehicle_make} ${mostPowerful.vehicle_model}`, detail: `${mostPowerful.spec.horsepower} HP` } : null,
-              rarest?.spec?.production_numbers ? { label: "Rarest", value: `${rarest.vehicle_make} ${rarest.vehicle_model}`, detail: `${rarest.spec.production_numbers.toLocaleString()} built` } : null,
-            ] as ({ label: string; value: string; detail: string } | null)[]).filter((s): s is { label: string; value: string; detail: string } => s !== null).map((s) => (
-              <div key={s.label} style={{ background: SURFACE, border: `1px solid ${SURFACE_BORDER}`, borderLeft: `2px solid ${GOLD}`, padding: "0.8rem 1rem", borderRadius: "2px" }}>
-                <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: "0.3rem" }}>{s.label}</p>
-                <p style={{ fontSize: "0.9rem", color: "#fff", fontWeight: 500 }}>{s.value}</p>
-                <p style={{ fontSize: "0.75rem", color: TEXT_MUTED }}>{s.detail}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ─── Section: Registration Data ─── */}
-        <SectionDivider label="Registration Data" />
-
-        {/* Treemap + Decade + Color */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
-          <GlassCard title="Makes">
-            <div style={{ height: 300 }}>
-              <ResponsiveTreeMap data={treemapData} identity="name" value="value" label={(n) => `${n.id} (${n.formattedValue})`} labelSkipSize={40} theme={nivoTheme} colors={ACCENT_COLORS} borderWidth={2} borderColor={BG} nodeOpacity={0.85} labelTextColor="#fff" enableParentLabel={false} />
-            </div>
-          </GlassCard>
-          <GlassCard title="Decades">
-            <div style={{ height: 300 }}>
-              <ResponsiveBar data={byDecade.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={[GOLD]} borderRadius={2} padding={0.3} margin={{ top: 8, right: 8, bottom: 36, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel={false} animate motionConfig="gentle" />
-            </div>
-          </GlassCard>
-          <GlassCard title="Colors">
-            <div style={{ height: 300 }}>
-              <ResponsivePie
-                data={byColor.slice(0, 10)}
-                theme={nivoTheme}
-                colors={(d) => {
-                  const colorMap: Record<string, string> = {
-                    Red: "#dc2626", Blue: "#2563eb", Green: "#16a34a", Black: "#27272a",
-                    White: "#d4d4d8", Silver: "#94a3b8", Gray: "#6b7280", Yellow: "#eab308",
-                    Orange: "#ea580c", Gold: "#c9a84c", Brown: "#92400e", Purple: "#7c3aed",
-                    Pink: "#ec4899", Beige: "#d4a574", Unknown: "#525252",
-                  };
-                  return colorMap[d.id] || "#525252";
-                }}
-                innerRadius={0.6} padAngle={2} cornerRadius={3}
-                margin={{ top: 15, right: 60, bottom: 15, left: 60 }}
-                arcLinkLabelsColor={{ from: "color" }}
-                arcLinkLabelsTextColor={TEXT}
-                arcLinkLabelsThickness={1.5}
-                arcLabelsTextColor="#fff"
-                enableArcLabels={false}
-                animate motionConfig="gentle"
-              />
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* ─── Section: Vehicle Intelligence ─── */}
-        {hasSpecs && (
-          <>
-            <SectionDivider label="Vehicle Intelligence" accent />
-
-            {/* Country + Category stacked bar + Era */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
-              <GlassCard title="Country of Origin">
-                <div style={{ height: 260 }}>
-                  <ResponsivePie data={byCountry} theme={nivoTheme} colors={ACCENT_COLORS} margin={{ top: 15, right: 70, bottom: 15, left: 70 }} arcLinkLabelsColor={{ from: "color" }} arcLinkLabelsTextColor={TEXT} arcLinkLabelsThickness={1.5} arcLabelsTextColor="#fff" padAngle={1} cornerRadius={2} animate motionConfig="gentle" />
-                </div>
-              </GlassCard>
-
-              <GlassCard title="Category Breakdown">
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "0.5rem 0" }}>
-                  <StackedBar data={byCategory} />
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {byCategory.map((c, i) => (
-                      <span key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: TEXT_MUTED }}>
-                        <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: ACCENT_COLORS[i % ACCENT_COLORS.length] }} />
-                        {c.id} ({c.value})
-                      </span>
-                    ))}
+          {hasSpecs ? (
+            <>
+              {/* Country + Category + Era */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+                <Card title="Country of Origin">
+                  <div style={{ height: 260 }}>
+                    <ResponsivePie data={byCountry} theme={nivoTheme} colors={ACCENT_COLORS} margin={{ top: 15, right: 70, bottom: 15, left: 70 }} arcLinkLabelsColor={{ from: "color" }} arcLinkLabelsTextColor="#666" arcLinkLabelsThickness={1.5} arcLabelsTextColor="#fff" padAngle={1} cornerRadius={2} animate motionConfig="gentle" />
                   </div>
-                </div>
-                {radarData.length > 0 && (
-                  <>
-                    <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: TEXT_MUTED, marginTop: "1rem", marginBottom: "0.5rem" }}>Show Profile</p>
-                    <div style={{ height: 200 }}>
-                      <ResponsiveRadar data={radarData} keys={["value"]} indexBy="stat" theme={nivoTheme} colors={[GOLD]} fillOpacity={0.15} borderWidth={2} borderColor={GOLD} dotSize={6} dotColor={GOLD} dotBorderWidth={0} gridLevels={3} gridShape="linear" margin={{ top: 20, right: 50, bottom: 20, left: 50 }} animate motionConfig="gentle" />
+                </Card>
+
+                <Card title="Category Breakdown">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "0.5rem 0" }}>
+                    <StackedBar data={byCategory} />
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                      {byCategory.map((c, i) => (
+                        <span key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#999" }}>
+                          <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: ACCENT_COLORS[i % ACCENT_COLORS.length] }} />
+                          {c.id} ({c.value})
+                        </span>
+                      ))}
                     </div>
-                  </>
-                )}
-              </GlassCard>
-
-              <GlassCard title="Era">
-                <div style={{ height: 260 }}>
-                  <ResponsiveBar data={byEra.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={[GREEN]} borderRadius={2} padding={0.35} margin={{ top: 8, right: 8, bottom: 56, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6, tickRotation: -30 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel={false} animate motionConfig="gentle" />
-                </div>
-              </GlassCard>
-            </div>
-
-            {/* HP Distribution full-width */}
-            {hpBuckets.length > 0 && (
-              <div style={{ marginBottom: "1.5rem" }}>
-                <GlassCard title="Horsepower Distribution">
-                  <div style={{ height: 180 }}>
-                    <ResponsiveBar data={hpBuckets.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={[RED]} borderRadius={2} padding={0.3} margin={{ top: 8, right: 16, bottom: 36, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel labelTextColor="#fff" animate motionConfig="gentle" />
                   </div>
-                </GlassCard>
-              </div>
-            )}
+                  {radarData.length > 0 && (
+                    <>
+                      <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#999", marginTop: "1rem", marginBottom: "0.5rem" }}>Show Profile</p>
+                      <div style={{ height: 200 }}>
+                        <ResponsiveRadar data={radarData} keys={["value"]} indexBy="stat" theme={nivoTheme} colors={["#c9a84c"]} fillOpacity={0.15} borderWidth={2} borderColor="#c9a84c" dotSize={6} dotColor="#c9a84c" dotBorderWidth={0} gridLevels={3} gridShape="linear" margin={{ top: 20, right: 50, bottom: 20, left: 50 }} animate motionConfig="gentle" />
+                      </div>
+                    </>
+                  )}
+                </Card>
 
-            {/* ─── Leaderboard ─── */}
-            <SectionDivider label="Leaderboard" />
-            <GlassCard headerRight={
+                <Card title="Era">
+                  <div style={{ height: 260 }}>
+                    <ResponsiveBar data={byEra.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={["#0d9488"]} borderRadius={2} padding={0.35} margin={{ top: 8, right: 8, bottom: 56, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6, tickRotation: -30 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel={false} animate motionConfig="gentle" />
+                  </div>
+                </Card>
+              </div>
+
+              {/* HP Distribution */}
+              {hpBuckets.length > 0 && (
+                <Card title="Horsepower Distribution">
+                  <div style={{ height: 180 }}>
+                    <ResponsiveBar data={hpBuckets.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={["#e11d48"]} borderRadius={2} padding={0.3} margin={{ top: 8, right: 16, bottom: 36, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel labelTextColor="#fff" animate motionConfig="gentle" />
+                  </div>
+                </Card>
+              )}
+
+              {/* Fun Stats */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
+                {([
+                  oldest ? { label: "Oldest", value: `${oldest.vehicle_year} ${oldest.vehicle_make}`, detail: oldest.vehicle_model } : null,
+                  newest ? { label: "Newest", value: `${newest.vehicle_year} ${newest.vehicle_make}`, detail: newest.vehicle_model } : null,
+                  mostPowerful?.spec?.horsepower ? { label: "Most Powerful", value: `${mostPowerful.vehicle_make} ${mostPowerful.vehicle_model}`, detail: `${mostPowerful.spec.horsepower} HP` } : null,
+                  rarest?.spec?.production_numbers ? { label: "Rarest", value: `${rarest.vehicle_make} ${rarest.vehicle_model}`, detail: `${rarest.spec.production_numbers.toLocaleString()} built` } : null,
+                ] as ({ label: string; value: string; detail: string } | null)[]).filter((s): s is { label: string; value: string; detail: string } => s !== null).map((s) => (
+                  <div key={s.label} style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", borderLeft: "2px solid #c9a84c", padding: "0.8rem 1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                    <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#c9a84c", marginBottom: "0.3rem" }}>{s.label}</p>
+                    <p style={{ fontSize: "0.9rem", color: "#1a1a1a", fontWeight: 500 }}>{s.value}</p>
+                    <p style={{ fontSize: "0.75rem", color: "#999" }}>{s.detail}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Stat summary cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1rem" }}>
+                {[
+                  { label: "Vehicles", val: registrations.length },
+                  { label: "Makes", val: uniqueMakes },
+                  { label: "Combined HP", val: totalHp },
+                  { label: "Avg Year", val: Math.round(registrations.reduce((s, r) => s + r.vehicle_year, 0) / (registrations.length || 1)), raw: true },
+                  { label: "Tonnage", val: Math.round(totalWeight / 2000 * 10) / 10, suffix: "t" },
+                  { label: "Original Sticker", val: totalMsrp, prefix: "$" },
+                  { label: "In 2026 Dollars", val: totalMsrpAdjusted, prefix: "$" },
+                ].map((m) => (
+                  <Card key={m.label}>
+                    <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#999", marginBottom: "0.4rem" }}>{m.label}</p>
+                    <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.8rem", fontWeight: 600, color: "#1a1a1a", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                      <AnimNum target={typeof m.val === "number" ? m.val : 0} prefix={m.prefix || ""} suffix={m.suffix || ""} raw={m.raw} />
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : (
+            <Card>
+              <p style={{ textAlign: "center", color: "#999", padding: "2rem" }}>Enrich vehicles to unlock Vehicle Intelligence</p>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* ═══════════════ TAB: Leaderboard ═══════════════ */}
+      {tab === "leaderboard" && (
+        <>
+          {hasSpecs ? (
+            <Card headerRight={
               <div style={{ display: "flex", gap: "2px", borderRadius: "2px", overflow: "hidden" }}>
                 {([["hp", "Power"], ["rare", "Rarest"], ["value", "Original Price"]] as const).map(([key, label]) => (
-                  <button key={key} onClick={() => setLeaderboard(key)} style={{ padding: "0.3rem 0.7rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", border: "none", cursor: "pointer", background: leaderboard === key ? GOLD : "rgba(255,255,255,0.06)", color: leaderboard === key ? BG : TEXT_MUTED, transition: "all 0.2s" }}>
+                  <button key={key} onClick={() => setLeaderboard(key)} style={{ padding: "0.3rem 0.7rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", border: "none", cursor: "pointer", background: leaderboard === key ? "#c9a84c" : "rgba(0,0,0,0.04)", color: leaderboard === key ? "#fff" : "#999", transition: "all 0.2s" }}>
                     {label}
                   </button>
                 ))}
@@ -548,49 +771,54 @@ export default function AnalyticsPage() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
                 <thead>
                   <tr>
-                    <th style={thDark}></th>
-                    <th style={thDark}>Vehicle</th>
-                    <th style={thDark}>Category</th>
-                    <th style={{ ...thDark, textAlign: "right" }}>{leaderboard === "hp" ? "HP" : leaderboard === "rare" ? "Production" : "2026 Dollars"}</th>
+                    <th style={thLight}></th>
+                    <th style={thLight}>Vehicle</th>
+                    <th style={thLight}>Category</th>
+                    <th style={{ ...thLight, textAlign: "right" }}>{leaderboard === "hp" ? "HP" : leaderboard === "rare" ? "Production" : "2026 Dollars"}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {leaderboardData.map((r, i) => (
-                    <tr key={r.id} onClick={() => router.push(`/admin/registrations/${r.id}`)} style={{ borderBottom: `1px solid ${SURFACE_BORDER}`, cursor: "pointer" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                    <tr key={r.id} onClick={() => router.push(`/admin/registrations/${r.id}`)} style={{ borderBottom: "1px solid rgba(0,0,0,0.08)", cursor: "pointer" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.02)")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                     >
-                      <td style={{ ...tdDark, width: "32px", fontWeight: 700, color: i < 3 ? GOLD : TEXT_MUTED, textShadow: i < 3 ? `0 0 8px ${GOLD_GLOW}` : "none" }}>{i + 1}</td>
-                      <td style={tdDark}>
-                        <span style={{ color: "#fff" }}>{r.vehicle_year} {r.vehicle_make} {r.vehicle_model}</span>
-                        <span style={{ color: TEXT_MUTED, marginLeft: "0.5rem", fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" }}>#{r.car_number}</span>
+                      <td style={{ ...tdLight, width: "32px", fontWeight: 700, color: i < 3 ? "#c9a84c" : "#999" }}>{i + 1}</td>
+                      <td style={tdLight}>
+                        <span style={{ color: "#1a1a1a" }}>{r.vehicle_year} {r.vehicle_make} {r.vehicle_model}</span>
+                        <span style={{ color: "#999", marginLeft: "0.5rem", fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" }}>#{r.car_number}</span>
                       </td>
-                      <td style={{ ...tdDark, color: TEXT_MUTED }}>{r.spec?.category || "—"}</td>
-                      <td style={{ ...tdDark, textAlign: "right", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.1rem", fontWeight: 600, color: "#fff", fontVariantNumeric: "tabular-nums" }}>
-                        {leaderboard === "hp" ? `${r.spec?.horsepower?.toLocaleString() || "—"}` :
-                         leaderboard === "rare" ? `${r.spec?.production_numbers?.toLocaleString() || "—"}` :
-                         r.spec?.msrp_adjusted ? `$${r.spec.msrp_adjusted.toLocaleString()}` : r.spec?.original_msrp ? `$${r.spec.original_msrp.toLocaleString()}` : "—"}
+                      <td style={{ ...tdLight, color: "#999" }}>{r.spec?.category || "\u2014"}</td>
+                      <td style={{ ...tdLight, textAlign: "right", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.1rem", fontWeight: 600, color: "#1a1a1a", fontVariantNumeric: "tabular-nums" }}>
+                        {leaderboard === "hp" ? `${r.spec?.horsepower?.toLocaleString() || "\u2014"}` :
+                         leaderboard === "rare" ? `${r.spec?.production_numbers?.toLocaleString() || "\u2014"}` :
+                         r.spec?.msrp_adjusted ? `$${r.spec.msrp_adjusted.toLocaleString()}` : r.spec?.original_msrp ? `$${r.spec.original_msrp.toLocaleString()}` : "\u2014"}
                       </td>
                     </tr>
                   ))}
                   {leaderboardData.length === 0 && (
-                    <tr><td colSpan={4} style={{ ...tdDark, textAlign: "center", color: TEXT_MUTED, padding: "2rem" }}>Enrich vehicles to unlock the leaderboard</td></tr>
+                    <tr><td colSpan={4} style={{ ...tdLight, textAlign: "center", color: "#999", padding: "2rem" }}>Enrich vehicles to unlock the leaderboard</td></tr>
                   )}
                 </tbody>
               </table>
-            </GlassCard>
-          </>
-        )}
-      </div>
+            </Card>
+          ) : (
+            <Card>
+              <p style={{ textAlign: "center", color: "#999", padding: "2rem" }}>Enrich vehicles to unlock the leaderboard</p>
+            </Card>
+          )}
+        </>
+      )}
 
       {/* ─── Styles ─── */}
       <style>{`
         .admin-content > div { max-width: none !important; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @media (max-width: 1100px) {
           .analytics-root [style*="grid-template-columns: 2fr 1fr 1fr"],
           .analytics-root [style*="grid-template-columns: 1fr 1fr 1fr"],
-          .analytics-root [style*="grid-template-columns: 280px 1fr"] {
+          .analytics-root [style*="grid-template-columns: 1fr 1fr"] {
             grid-template-columns: 1fr !important;
           }
         }
@@ -604,37 +832,6 @@ export default function AnalyticsPage() {
   );
 }
 
-// ─── Components ───
-
-function GlassCard({ title, children, headerRight }: { title?: string; children: React.ReactNode; headerRight?: React.ReactNode }) {
-  return (
-    <div style={{
-      background: SURFACE,
-      border: `1px solid ${SURFACE_BORDER}`,
-      borderRadius: "4px",
-      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 24px rgba(0,0,0,0.3)`,
-      overflow: "hidden",
-    }}>
-      {(title || headerRight) && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1rem", borderBottom: `1px solid ${SURFACE_BORDER}` }}>
-          {title && <h3 style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", color: TEXT_MUTED, margin: 0 }}>{title}</h3>}
-          {headerRight}
-        </div>
-      )}
-      <div style={{ padding: "0.75rem 1rem" }}>{children}</div>
-    </div>
-  );
-}
-
-function SectionDivider({ label, accent }: { label: string; accent?: boolean }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "1rem", margin: "1.5rem 0 1.25rem" }}>
-      <div style={{ height: "1px", flex: 1, background: accent ? `linear-gradient(to right, ${GOLD}50, transparent)` : `linear-gradient(to right, ${SURFACE_BORDER}, transparent)` }} />
-      <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.25em", color: accent ? GOLD : TEXT_MUTED, whiteSpace: "nowrap" }}>{label}</span>
-      <div style={{ height: "1px", flex: 1, background: accent ? `linear-gradient(to left, ${GOLD}50, transparent)` : `linear-gradient(to left, ${SURFACE_BORDER}, transparent)` }} />
-    </div>
-  );
-}
-
-const thDark: React.CSSProperties = { padding: "0.5rem 0.75rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: TEXT_MUTED, textAlign: "left", borderBottom: `1px solid ${SURFACE_BORDER}` };
-const tdDark: React.CSSProperties = { padding: "0.6rem 0.75rem" };
+// ─── Table styles ───
+const thLight: React.CSSProperties = { padding: "0.5rem 0.75rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#999", textAlign: "left", borderBottom: "1px solid rgba(0,0,0,0.08)" };
+const tdLight: React.CSSProperties = { padding: "0.6rem 0.75rem" };
