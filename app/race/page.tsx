@@ -466,23 +466,24 @@ function RacePage() {
             </div>
 
             <div style={{ textAlign: "center" }}>
-              <button onClick={startRace} style={goldBtnStyle}>
-                Race!
-              </button>
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", alignItems: "center" }}>
+                <button onClick={startRace} style={goldBtnStyle}>
+                  Race!
+                </button>
+                <button
+                  onClick={() => {
+                    const others = cars.filter((c) => c.id !== playerCar.id && c.id !== opponentCar.id);
+                    if (others.length > 0) {
+                      setOpponentCar(others[Math.floor(Math.random() * others.length)]);
+                    }
+                  }}
+                  style={{ padding: "0.8rem 2rem", background: "rgba(255,255,255,0.08)", color: "#ddd", border: "1px solid rgba(255,255,255,0.15)", fontSize: "0.85rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer", borderRadius: "4px" }}
+                >
+                  Shuffle Opponent
+                </button>
+              </div>
               <br />
-              <button
-                onClick={() => {
-                  const others = cars.filter((c) => c.id !== playerCar.id && c.id !== opponentCar.id);
-                  if (others.length > 0) {
-                    setOpponentCar(others[Math.floor(Math.random() * others.length)]);
-                  }
-                }}
-                style={{ marginTop: "1rem", background: "none", border: "1px solid rgba(255,255,255,0.15)", padding: "0.4rem 1.2rem", color: "#888", fontSize: "0.8rem", cursor: "pointer", borderRadius: "4px" }}
-              >
-                Random opponent
-              </button>
-              <br />
-              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); }} style={{ marginTop: "0.75rem", background: "none", border: "none", color: "#555", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
+              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); }} style={{ background: "none", border: "none", color: "#555", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
                 Pick a different car
               </button>
             </div>
