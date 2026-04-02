@@ -10,8 +10,8 @@ export default function AboutCharitySection() {
               More Than a Car Show
             </h2>
             <p className="about-charity-text">
-              Three blocks of downtown Crystal Lake become an open-air showroom
-              every May. Sunday, May 17, 2026. Rain date May 31.
+              Every year, three blocks of downtown Crystal Lake become an
+              open-air showroom. This year: Sunday, May 17, 2026. Rain date May 31.
             </p>
             <p className="about-charity-text">
               200+ vehicles. Great coffee. Local shops. Small-town energy.
