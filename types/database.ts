@@ -187,6 +187,7 @@ export type Sponsor = {
   notes: string | null;
   assigned_to: string | null;
   logo_url: string | null;
+  pixel_logo_url: string | null;
   paid_at: string | null;
   created_at: string;
   updated_at: string;
