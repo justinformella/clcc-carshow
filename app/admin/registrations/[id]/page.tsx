@@ -1377,6 +1377,117 @@ export default function RegistrationDetailPage() {
                 <QuickInfoRow label="Registered" value={new Date(r.created_at).toLocaleString()} small />
                 <QuickInfoRow label="Updated" value={new Date(r.updated_at).toLocaleString()} small />
               </div>
+
+              {/* Racing Game card */}
+              <div
+                style={{
+                  background: "var(--white)",
+                  padding: "1.5rem",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.75rem",
+                }}
+              >
+                <h3 style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: "1rem",
+                  fontWeight: 400,
+                  marginBottom: "0.25rem",
+                  paddingBottom: "0.5rem",
+                  borderBottom: "1px solid rgba(0,0,0,0.08)",
+                  color: "var(--charcoal)",
+                }}>
+                  Racing Game
+                </h3>
+
+                {/* Race Stats */}
+                {vehicleSpec ? (() => {
+                  const hp = Number(vehicleSpec.horsepower) || 150;
+                  const weight = Number(vehicleSpec.weight_lbs) || 3000;
+                  const pwr = Math.round((hp / (weight / 1000)) * 10) / 10;
+                  return (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", textAlign: "center" }}>
+                        <div style={{ background: "#f8f8f8", padding: "0.5rem 0.25rem", borderRadius: "4px" }}>
+                          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--charcoal)" }}>{hp}</div>
+                          <div style={{ fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-light)" }}>HP</div>
+                        </div>
+                        <div style={{ background: "#f8f8f8", padding: "0.5rem 0.25rem", borderRadius: "4px" }}>
+                          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--charcoal)" }}>{weight.toLocaleString()}</div>
+                          <div style={{ fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-light)" }}>LBS</div>
+                        </div>
+                        <div style={{ background: "#f8f8f8", padding: "0.5rem 0.25rem", borderRadius: "4px" }}>
+                          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--gold, #c9a84c)" }}>{pwr}</div>
+                          <div style={{ fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-light)" }}>HP/T</div>
+                        </div>
+                      </div>
+                      {vehicleSpec.engine_type && (
+                        <div style={{ fontSize: "0.8rem", color: "var(--text-light)", textAlign: "center" }}>
+                          {vehicleSpec.engine_type}{vehicleSpec.displacement_liters ? ` · ${vehicleSpec.displacement_liters}L` : ""}{vehicleSpec.drive_type ? ` · ${vehicleSpec.drive_type}` : ""}
+                        </div>
+                      )}
+                    </>
+                  );
+                })() : (
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-light)", textAlign: "center" }}>
+                    No specs enriched yet — race stats use defaults (150 HP / 3,000 lbs)
+                  </p>
+                )}
+
+                {/* Pixel Art Previews */}
+                <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: "0.75rem" }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginBottom: "0.5rem" }}>
+                    Pixel Art Assets
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                    {[
+                      { label: "Side", url: r.pixel_art_url },
+                      { label: "Dash", url: r.pixel_dashboard_url },
+                      { label: "Rear", url: r.pixel_rear_url },
+                    ].map(({ label, url }) => (
+                      <div key={label} style={{ textAlign: "center" }}>
+                        <div style={{
+                          aspectRatio: "16/9",
+                          background: "#111",
+                          borderRadius: "3px",
+                          overflow: "hidden",
+                          marginBottom: "0.25rem",
+                        }}>
+                          {url ? (
+                            <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const }} />
+                          ) : (
+                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontSize: "0.55rem" }}>—</div>
+                          )}
+                        </div>
+                        <div style={{ fontSize: "0.6rem", color: url ? "var(--charcoal)" : "var(--text-light)", fontWeight: 500 }}>
+                          {label} {url ? "✓" : "✗"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Race Button */}
+                <button
+                  onClick={() => window.open(`/race?car=${r.id}`, "_blank")}
+                  style={{
+                    marginTop: "0.25rem",
+                    padding: "0.5rem 1rem",
+                    background: "var(--charcoal, #1a1a1e)",
+                    color: "var(--gold, #c9a84c)",
+                    border: "none",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    cursor: "pointer",
+                    width: "100%",
+                  }}
+                >
+                  Race This Car
+                </button>
+              </div>
             </div>
           </div>
 
