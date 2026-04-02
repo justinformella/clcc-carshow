@@ -48,6 +48,7 @@ export default function RegistrationDetailPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showContact, setShowContact] = useState(false);
   const [contactSubject, setContactSubject] = useState("");
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [contactMessage, setContactMessage] = useState("");
   const [contactSending, setContactSending] = useState(false);
   const [siblingRegs, setSiblingRegs] = useState<Registration[]>([]);
@@ -908,13 +909,20 @@ export default function RegistrationDetailPage() {
                     { label: "Rear", url: r.pixel_rear_url },
                   ].map(({ label, url }) => (
                     <div key={label}>
-                      <div style={{
-                        aspectRatio: "16/9",
-                        background: "#111",
-                        borderRadius: "6px",
-                        overflow: "hidden",
-                        marginBottom: "0.4rem",
-                      }}>
+                      <div
+                        onClick={() => url && setLightboxUrl(url)}
+                        style={{
+                          aspectRatio: "16/9",
+                          background: "#111",
+                          borderRadius: "6px",
+                          overflow: "hidden",
+                          marginBottom: "0.4rem",
+                          cursor: url ? "zoom-in" : "default",
+                          transition: "box-shadow 0.2s",
+                        }}
+                        onMouseEnter={(e) => { if (url) e.currentTarget.style.boxShadow = "0 0 0 2px var(--gold)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+                      >
                         {url ? (
                           <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const }} />
                         ) : (
@@ -928,23 +936,24 @@ export default function RegistrationDetailPage() {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => window.open(`/race?car=${r.id}`, "_blank")}
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 1.5rem",
-                    background: "var(--charcoal, #1a1a1e)",
-                    color: "var(--gold, #c9a84c)",
-                    border: "none",
-                    fontSize: "0.8rem",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    cursor: "pointer",
-                  }}
-                >
-                  Race This Car
-                </button>
+                <div style={{ textAlign: "center" }}>
+                  <button
+                    onClick={() => window.open(`/race?car=${r.id}`, "_blank")}
+                    style={{
+                      padding: "0.6rem 2.5rem",
+                      background: "var(--charcoal, #1a1a1e)",
+                      color: "var(--gold, #c9a84c)",
+                      border: "none",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Race This Car
+                  </button>
+                </div>
               </DetailSection>
 
               <DetailSection title="Payment">
@@ -1463,6 +1472,59 @@ export default function RegistrationDetailPage() {
 
             </div>
           </div>
+
+          {/* Pixel art lightbox */}
+          {lightboxUrl && (
+            <div
+              onClick={() => setLightboxUrl(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.85)",
+                zIndex: 1000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "zoom-out",
+                padding: "2rem",
+              }}
+            >
+              <img
+                src={lightboxUrl}
+                alt="Pixel art preview"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  maxWidth: "90vw",
+                  maxHeight: "85vh",
+                  objectFit: "contain",
+                  imageRendering: "pixelated",
+                  borderRadius: "8px",
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+                }}
+              />
+              <button
+                onClick={() => setLightboxUrl(null)}
+                style={{
+                  position: "absolute",
+                  top: "1.5rem",
+                  right: "1.5rem",
+                  background: "rgba(255,255,255,0.15)",
+                  border: "none",
+                  color: "#fff",
+                  fontSize: "1.5rem",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                &times;
+              </button>
+            </div>
+          )}
 
           {/* Responsive styles */}
           <style>{`
