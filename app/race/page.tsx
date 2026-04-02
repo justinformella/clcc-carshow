@@ -42,7 +42,9 @@ export default function RacePage() {
   const startRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keyRef = useRef<Set<string>>(new Set());
-  const opponentVisualRef = useRef({ topPct: 60, laneOffset: 18, scale: 0.5 });
+  const opponentOverlayRef = useRef<HTMLDivElement>(null);
+  const opponentImgRef = useRef<HTMLImageElement>(null);
+  const opponentFallbackRef = useRef<HTMLDivElement>(null);
 
   // Fetch cars
   useEffect(() => {
@@ -82,12 +84,13 @@ export default function RacePage() {
       canvas.width = rect.width;
       canvas.height = rect.height;
     };
+    // Initial sizing happens on first drawRoad call (canvas may not be mounted yet)
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
-  }, [phase]);
+  }, []);
 
-  const drawRoad = useCallback((canvas: HTMLCanvasElement, roadOffset: number, pSpeed: number, pPos: number, oPos: number) => {
+  const drawRoad = useCallback((canvas: HTMLCanvasElement, roadOffset: number) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -163,15 +166,6 @@ export default function RacePage() {
       }
     }
 
-    // ─── Update opponent visual position (used by DOM overlay) ───
-    const delta = oPos - pPos; // positive = opponent ahead
-    const normalizedDist = Math.max(-30, Math.min(50, delta));
-    const tOpp = Math.min(1, Math.max(0, 0.6 + normalizedDist / 120));
-    const scale = 1.0 - tOpp * 0.85;
-    const topPct = 30 + (1 - tOpp) * 60;
-    const laneOff = 18 * scale;
-
-    opponentVisualRef.current = { topPct, laneOffset: laneOff, scale };
   }, []);
 
   const selectCar = useCallback((car: RaceCar) => {
@@ -212,9 +206,13 @@ export default function RacePage() {
         let pGear = 1, pRpm = 800;
         let pFinish = 0, oFinish = 0;
         let roadOffset = 0;
+        let prevTime = performance.now();
+        const STRIPE_CYCLE = 20 / 0.3; // one full stripe cycle for modulo cap
 
         const animate = (now: number) => {
           const elapsed = now - startRef.current;
+          const actualDt = Math.min((now - prevTime) / 1000, 0.05); // cap at 50ms
+          prevTime = now;
           const dt = 1 / 60;
 
           // Player acceleration — hold space/up to accelerate
@@ -249,10 +247,38 @@ export default function RacePage() {
           if (pPos >= FINISH && !pFinish) { pFinish = elapsed; }
           if (oPos >= FINISH && !oFinish) { oFinish = elapsed; }
 
-          // Draw road on canvas
-          roadOffset = roadOffset + pSpeed * 0.5;
+          // Draw road on canvas (frame-rate-independent)
+          roadOffset = (roadOffset + pSpeed * 0.5 * (actualDt * 60)) % STRIPE_CYCLE;
           if (canvasRef.current) {
-            drawRoad(canvasRef.current, roadOffset, pSpeed, pPos, oPos);
+            drawRoad(canvasRef.current, roadOffset);
+          }
+
+          // Update opponent overlay position via direct DOM manipulation
+          const overlayEl = opponentOverlayRef.current;
+          if (overlayEl) {
+            const delta = oPos - pPos;
+            const normalizedDist = Math.max(-30, Math.min(50, delta));
+            const tOpp = Math.min(1, Math.max(0, 0.6 + normalizedDist / 120));
+            const scale = 1.0 - tOpp * 0.85;
+            const topPct = 30 + (1 - tOpp) * 60;
+            const laneOff = 18 * scale;
+            const spriteWidth = Math.round(140 * scale);
+            const visible = delta > -25;
+
+            overlayEl.style.top = `${topPct}%`;
+            overlayEl.style.left = `calc(50% - ${laneOff}%)`;
+            overlayEl.style.display = visible ? "block" : "none";
+
+            const imgEl = opponentImgRef.current;
+            if (imgEl) {
+              imgEl.style.width = `${spriteWidth}px`;
+            }
+            const fallbackEl = opponentFallbackRef.current;
+            if (fallbackEl) {
+              fallbackEl.style.width = `${spriteWidth}px`;
+              fallbackEl.style.height = `${Math.round(spriteWidth * 0.55)}px`;
+              fallbackEl.style.fontSize = `${Math.max(8, 14 * scale)}px`;
+            }
           }
 
           setPlayerPos(Math.min(pPos / FINISH * 100, 100));
@@ -417,50 +443,52 @@ export default function RacePage() {
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
           />
 
-          {/* Opponent car sprite */}
-          {opponentCar && (() => {
-            const { topPct, laneOffset, scale } = opponentVisualRef.current;
-            const spriteWidth = Math.round(140 * scale);
-            const visible = (opponentPos - playerPos) > -25;
-
-            return visible ? (
-              <div style={{
+          {/* Opponent car sprite — positioned via direct DOM manipulation in animation loop */}
+          {opponentCar && (
+            <div
+              ref={opponentOverlayRef}
+              style={{
                 position: "absolute",
-                top: `${topPct}%`,
-                left: `calc(50% - ${laneOffset}%)`,
+                top: "60%",
+                left: "calc(50% - 9%)",
                 transform: "translate(-50%, -100%)",
                 zIndex: 2,
                 pointerEvents: "none",
-              }}>
-                {opponentCar.pixelRear ? (
-                  <img
-                    src={opponentCar.pixelRear}
-                    alt="opponent"
-                    style={{
-                      width: `${spriteWidth}px`,
-                      imageRendering: "pixelated",
-                      filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
-                    }}
-                  />
-                ) : (
-                  <div style={{
-                    width: `${spriteWidth}px`,
-                    height: `${Math.round(spriteWidth * 0.55)}px`,
+                display: "none",
+              }}
+            >
+              {opponentCar.pixelRear ? (
+                <img
+                  ref={opponentImgRef}
+                  src={opponentCar.pixelRear}
+                  alt="opponent"
+                  style={{
+                    width: "70px",
+                    imageRendering: "pixelated",
+                    filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))",
+                  }}
+                />
+              ) : (
+                <div
+                  ref={opponentFallbackRef}
+                  style={{
+                    width: "70px",
+                    height: "39px",
                     background: "#dc2626",
                     borderRadius: "4px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     color: "#fff",
-                    fontSize: `${Math.max(8, 14 * scale)}px`,
+                    fontSize: "10px",
                     fontWeight: 700,
-                  }}>
-                    #{opponentCar.carNumber}
-                  </div>
-                )}
-              </div>
-            ) : null;
-          })()}
+                  }}
+                >
+                  #{opponentCar.carNumber}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Dashboard */}
