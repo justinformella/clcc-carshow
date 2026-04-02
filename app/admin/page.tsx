@@ -22,6 +22,7 @@ export default function AdminDashboard() {
     created_at: string;
   }[]>([]);
   const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS_DEFAULT);
+  const [trafficData, setTrafficData] = useState<{ date: string; views: number; visitors: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,6 +59,15 @@ export default function AdminDashboard() {
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
 
       setOpenTickets(helpResult.data || []);
+
+      // Fetch last 7 days of traffic data
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const { data: trafficRows } = await supabase
+        .from("page_views")
+        .select("date, views, visitors")
+        .gte("date", sevenDaysAgo)
+        .order("date", { ascending: false });
+      setTrafficData(trafficRows || []);
 
       if (settingResult.data?.value) {
         const val = parseInt(settingResult.data.value, 10);
@@ -365,6 +375,61 @@ export default function AdminDashboard() {
           />
         )}
       </div>
+
+      {/* ─── Traffic & Conversion ─── */}
+      {trafficData.length > 0 && (() => {
+        const totalVisitors = trafficData.reduce((s, d) => s + d.visitors, 0);
+        const totalViews = trafficData.reduce((s, d) => s + d.views, 0);
+        // Count registrations in the same period
+        const oldestDate = trafficData[trafficData.length - 1]?.date;
+        const regsInPeriod = registrations.filter(
+          (r) => (r.payment_status === "paid" || r.payment_status === "comped") && r.paid_at && r.paid_at >= oldestDate
+        ).length;
+        const conversionRate = totalVisitors > 0 ? ((regsInPeriod / totalVisitors) * 100).toFixed(1) : "0";
+
+        return (
+          <>
+            <SectionHeader title="Traffic & Conversion (Last 7 Days)" />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "1.25rem",
+                marginBottom: "2.5rem",
+              }}
+            >
+              <DashboardCard
+                href="/admin"
+                label="Visitors"
+                value={`${totalVisitors.toLocaleString()}`}
+                note={`${totalViews.toLocaleString()} page views`}
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+              />
+              <DashboardCard
+                href="/admin/registrations"
+                label="Registrations"
+                value={`${regsInPeriod}`}
+                note="in same period"
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>}
+              />
+              <DashboardCard
+                href="/admin"
+                label="Conversion Rate"
+                value={`${conversionRate}%`}
+                note="visitors → registrations"
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
+              />
+              <DashboardCard
+                href="/admin"
+                label="Avg Daily Visitors"
+                value={`${Math.round(totalVisitors / trafficData.length)}`}
+                note={`over ${trafficData.length} days`}
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
+              />
+            </div>
+          </>
+        );
+      })()}
 
       {/* ─── Sponsors & Revenue | Marketing ─── */}
       <div
