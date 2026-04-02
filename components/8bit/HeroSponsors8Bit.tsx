@@ -88,9 +88,10 @@ export default function HeroSponsors8Bit() {
             key={tier.label}
             style={{
               display: "flex",
-              flexWrap: "wrap",
+              flexDirection: "column",
               alignItems: "center",
-              gap: "1rem",
+              gap: "0.75rem",
+              width: "100%",
             }}
           >
             <span
@@ -99,12 +100,12 @@ export default function HeroSponsors8Bit() {
                 fontSize: "0.4rem",
                 color: COLORS.goldDark,
                 textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                whiteSpace: "nowrap",
+                letterSpacing: "0.12em",
               }}
             >
               {tier.label}
             </span>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
             {tier.sponsors.map((s) => {
               const logoSrc = getLogoSrc(s);
               const isPresenting = tier.isPresenting;
@@ -159,6 +160,7 @@ export default function HeroSponsors8Bit() {
                 </SponsorLink>
               );
             })}
+            </div>
           </div>
         ))}
       </div>
