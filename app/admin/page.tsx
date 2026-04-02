@@ -389,7 +389,12 @@ export default function AdminDashboard() {
 
         return (
           <>
-            <SectionHeader title="Traffic & Conversion (Last 7 Days)" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <SectionHeader title="Traffic & Conversion (Last 7 Days)" />
+              <span style={{ fontSize: "0.75rem", color: "var(--text-light)" }}>
+                Last updated: {trafficData[0]?.date ? new Date(trafficData[0].date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+              </span>
+            </div>
             <div
               style={{
                 display: "grid",

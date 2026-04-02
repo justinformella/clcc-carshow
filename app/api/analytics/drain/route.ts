@@ -4,17 +4,12 @@ import { createServerClient } from "@/lib/supabase-server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
-    // Vercel sends an array of events (JSON format) or single objects (NDJSON)
     const events = Array.isArray(body) ? body : [body];
-
     const supabase = createServerClient();
 
     // Group pageviews by date
-    const dailyCounts: Record<string, { views: number; sessions: Set<number> }> = {};
-    // Group by date+path
+    const dailyCounts: Record<string, { views: number; deviceIds: Set<string> }> = {};
     const pathCounts: Record<string, number> = {};
-    // Group by date+referrer
     const referrerCounts: Record<string, number> = {};
 
     for (const event of events) {
@@ -23,49 +18,60 @@ export async function POST(request: NextRequest) {
 
       const date = new Date(event.timestamp).toISOString().split("T")[0];
 
-      // Daily aggregate
       if (!dailyCounts[date]) {
-        dailyCounts[date] = { views: 0, sessions: new Set() };
+        dailyCounts[date] = { views: 0, deviceIds: new Set() };
       }
       dailyCounts[date].views++;
-      if (event.sessionId) {
-        dailyCounts[date].sessions.add(event.sessionId);
+      // Use deviceId for visitor deduplication (more stable than sessionId)
+      const deviceKey = String(event.deviceId || event.sessionId || "");
+      if (deviceKey) {
+        dailyCounts[date].deviceIds.add(deviceKey);
       }
 
-      // Per-path
       const path: string = event.path || "/";
       const pathKey = `${date}||${path}`;
       pathCounts[pathKey] = (pathCounts[pathKey] ?? 0) + 1;
 
-      // Per-referrer
       const referrer: string =
         event.referrer && event.referrer.trim() !== "" ? event.referrer.trim() : "Direct";
       const referrerKey = `${date}||${referrer}`;
       referrerCounts[referrerKey] = (referrerCounts[referrerKey] ?? 0) + 1;
     }
 
-    // Upsert daily counts
+    // Upsert daily counts — use device IDs to deduplicate visitors across batches
     for (const [date, data] of Object.entries(dailyCounts)) {
-      // Try to increment existing row
       const { data: existing } = await supabase
         .from("page_views")
-        .select("id, views, visitors")
+        .select("id, views, visitors, seen_devices")
         .eq("date", date)
         .maybeSingle();
 
       if (existing) {
+        // Merge new device IDs with previously seen ones
+        const previousDevices: string[] = existing.seen_devices || [];
+        const previousSet = new Set(previousDevices);
+        let newVisitors = 0;
+        for (const deviceId of data.deviceIds) {
+          if (!previousSet.has(deviceId)) {
+            previousSet.add(deviceId);
+            newVisitors++;
+          }
+        }
+
         await supabase
           .from("page_views")
           .update({
             views: existing.views + data.views,
-            visitors: existing.visitors + data.sessions.size,
+            visitors: existing.visitors + newVisitors,
+            seen_devices: Array.from(previousSet),
           })
           .eq("id", existing.id);
       } else {
         await supabase.from("page_views").insert({
           date,
           views: data.views,
-          visitors: data.sessions.size,
+          visitors: data.deviceIds.size,
+          seen_devices: Array.from(data.deviceIds),
         });
       }
     }
