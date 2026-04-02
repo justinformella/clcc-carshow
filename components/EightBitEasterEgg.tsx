@@ -5,9 +5,20 @@ import { useEffect, useRef, useState, useCallback } from "react";
 const KONAMI = ["arrowup", "arrowup", "arrowdown", "arrowdown", "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a"];
 
 export function KonamiListener() {
-
   const seqRef = useRef<string[]>([]);
   const [transitioning, setTransitioning] = useState(false);
+
+  // Clean up transition overlay if user navigates back (bfcache restore)
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        document.querySelectorAll("canvas[style*='z-index:99999']").forEach((el) => el.remove());
+        setTransitioning(false);
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   const triggerTransition = useCallback(() => {
     if (transitioning) return;
