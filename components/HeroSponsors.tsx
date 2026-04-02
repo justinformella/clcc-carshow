@@ -33,7 +33,7 @@ export default function HeroSponsors() {
       <div className="hero-sponsors-bar-inner">
         {tiers.map((tier, i) => (
           <div key={tier.label} style={{ display: "contents" }}>
-            {i > 0 && <div className="hero-sponsors-bar-divider" />}
+            {/* removed tier divider */}
             {tier.isPresenting ? (
               <div className="hero-sponsors-bar-presenting">
                 <span className="hero-sponsors-bar-label">Presented by</span>
