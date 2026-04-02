@@ -87,10 +87,10 @@ export default function Nav8Bit() {
       `}</style>
       <nav style={navStyle}>
         <Link href="/80s" style={logoStyle}>
-          <span style={{ fontFamily: FONT, fontSize: "clamp(0.5rem, 1.5vw, 0.65rem)", color: COLORS.gold }}>
+          <span style={{ fontFamily: FONT, fontSize: "clamp(0.65rem, 2vw, 0.9rem)", color: COLORS.gold }}>
             ★ CRYSTAL LAKE CARS &amp; CAFFEINE ★
           </span>
-          <span style={{ fontFamily: FONT, fontSize: "0.3rem", color: COLORS.lightGray, letterSpacing: "0.1em" }}>
+          <span style={{ fontFamily: FONT, fontSize: "0.4rem", color: COLORS.lightGray, letterSpacing: "0.1em" }}>
             EST. 2021 · CRYSTAL LAKE, ILLINOIS
           </span>
         </Link>
