@@ -113,7 +113,7 @@ export default function HeroSponsors8Bit() {
                   <div
                     style={{
                       border: `2px solid ${isPresenting ? COLORS.borderGold : COLORS.border}`,
-                      padding: isPresenting ? "0.75rem 1.25rem" : "0.5rem 0.75rem",
+                      padding: isPresenting ? "1rem 1.5rem" : "0.75rem 1.25rem",
                       backgroundColor: COLORS.bgMid,
                       display: "flex",
                       flexDirection: "column",
@@ -136,8 +136,8 @@ export default function HeroSponsors8Bit() {
                         src={logoSrc}
                         alt={s.company}
                         style={{
-                          maxHeight: isPresenting ? "56px" : "40px",
-                          maxWidth: isPresenting ? "160px" : "120px",
+                          maxHeight: isPresenting ? "80px" : "64px",
+                          maxWidth: isPresenting ? "220px" : "180px",
                           objectFit: "contain",
                           imageRendering: "pixelated",
                         }}
