@@ -45,6 +45,7 @@ export default function RacePage() {
   const opponentOverlayRef = useRef<HTMLDivElement>(null);
   const opponentImgRef = useRef<HTMLImageElement>(null);
   const opponentFallbackRef = useRef<HTMLDivElement>(null);
+  const [processedRearUrl, setProcessedRearUrl] = useState<string | null>(null);
 
   // Fetch cars
   useEffect(() => {
@@ -73,6 +74,34 @@ export default function RacePage() {
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
   }, []);
 
+  // Remove black background from opponent rear image
+  useEffect(() => {
+    const src = opponentCar?.pixelRear;
+    if (!src) { setProcessedRearUrl(null); return; }
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, c.width, c.height);
+      const d = imageData.data;
+      // Make near-black pixels transparent (threshold 40)
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] < 40 && d[i + 1] < 40 && d[i + 2] < 40) {
+          d[i + 3] = 0; // set alpha to 0
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+      setProcessedRearUrl(c.toDataURL("image/png"));
+    };
+    img.src = src;
+  }, [opponentCar?.pixelRear]);
+
   // Keep canvas resolution matched to display size
   useEffect(() => {
     const resize = () => {
@@ -97,8 +126,7 @@ export default function RacePage() {
     const W = canvas.width;
     const H = canvas.height;
     const horizonY = H * 0.3;
-    // Vanish point offset right — player is in the right lane
-    const vanishX = W * 0.55;
+    const vanishX = W / 2;
 
     // ─── SKY ───
     const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
@@ -267,15 +295,18 @@ export default function RacePage() {
             const scale = 1.0 - tOpp * 0.8;
             // Y position: 30% (horizon) to 90% (bottom of track)
             const topPct = 30 + (1 - tOpp) * 55;
-            // Opponent in LEFT lane — offset left of vanish point
-            // Offset scales with perspective so car stays on the road
-            const laneOff = 8 * scale;
-            // Bigger base sprite
+            // Opponent in LEFT lane — offset left of center
+            // Road width at this depth: perspective = tOpp^2
+            // Road goes from 4% at horizon to 70% at bottom
+            const perspAtOpp = tOpp * tOpp;
+            const roadWidthPct = 4 + (70 - 4) * perspAtOpp;
+            // Offset by 25% of road width to left (center of left lane)
+            const laneOff = roadWidthPct * 0.25;
             const spriteWidth = Math.round(220 * scale);
             const visible = delta > -15;
 
             overlayEl.style.top = `${topPct}%`;
-            overlayEl.style.left = `calc(55% - ${laneOff}%)`;
+            overlayEl.style.left = `calc(50% - ${laneOff}%)`;
             overlayEl.style.display = visible ? "block" : "none";
 
             const imgEl = opponentImgRef.current;
@@ -463,13 +494,12 @@ export default function RacePage() {
                 transform: "translate(-50%, -100%)",
                 pointerEvents: "none",
                 display: "none",
-                mixBlendMode: "screen",
               }}
             >
-              {opponentCar.pixelRear ? (
+              {(processedRearUrl || opponentCar.pixelRear) ? (
                 <img
                   ref={opponentImgRef}
-                  src={opponentCar.pixelRear}
+                  src={processedRearUrl || opponentCar.pixelRear!}
                   alt="opponent"
                   style={{
                     width: "110px",
