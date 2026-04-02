@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
-import { generatePixelArt, generateImage } from "@/lib/generate-pixel-art";
+import { generatePixelArt, generateImage, buildRearPrompt } from "@/lib/generate-pixel-art";
 
 async function generateRearOnly(registrationId: string): Promise<void> {
   const supabase = createServerClient();
@@ -16,9 +16,7 @@ async function generateRearOnly(registrationId: string): Promise<void> {
   const carDesc = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
   const color = reg.vehicle_color || "silver";
 
-  const rearBuffer = await generateImage(
-    `8-bit retro pixel art rear view of a ${carDesc} in ${color}. The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Black background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
-  );
+  const rearBuffer = await generateImage(buildRearPrompt(carDesc, color));
 
   const rearFileName = `rear-${registrationId}.png`;
   await supabase.storage.from("pixel-art").upload(rearFileName, rearBuffer, { contentType: "image/png", upsert: true });
