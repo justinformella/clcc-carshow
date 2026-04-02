@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     const { data: sponsorRows, error: fetchErr } = await supabase
       .from("sponsors")
       .select("id, company, logo_url, pixel_logo_url")
-      .eq("status", "paid")
+      .in("status", ["paid", "engaged"])
       .not("logo_url", "is", null)
       .is("pixel_logo_url", null);
 

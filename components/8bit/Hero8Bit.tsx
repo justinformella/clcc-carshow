@@ -1,6 +1,11 @@
+"use client";
+
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { CSSProperties } from "react";
 import { COLORS, FONT } from "@/components/8bit/styles";
+
+const HERO_IMG = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/hero.png`;
 
 const PIXEL_COLORS = [
   "#ff0000",
@@ -15,11 +20,12 @@ const PIXEL_COLORS = [
 
 export default function Hero8Bit() {
   const heroStyle: CSSProperties = {
-    background: `linear-gradient(180deg, ${COLORS.bgMid} 0%, ${COLORS.bgLight} 50%, ${COLORS.bgMid} 100%)`,
+    position: "relative",
     padding: "5rem 2rem 3rem",
     textAlign: "center",
     borderBottom: `3px solid ${COLORS.gold}`,
     fontFamily: FONT,
+    overflow: "hidden",
   };
 
   const starsStyle: CSSProperties = {
@@ -78,6 +84,31 @@ export default function Hero8Bit() {
 
   return (
     <section style={heroStyle} id="home">
+      {/* 8-bit hero background image */}
+      <img
+        src={HERO_IMG}
+        alt=""
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          imageRendering: "pixelated",
+          opacity: 0.35,
+          zIndex: 0,
+        }}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+      />
+      {/* Dark gradient overlay */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        background: `linear-gradient(180deg, rgba(13,13,26,0.6) 0%, rgba(42,26,62,0.4) 50%, rgba(13,13,26,0.8) 100%)`,
+        zIndex: 1,
+      }} />
+      {/* Content */}
+      <div style={{ position: "relative", zIndex: 2 }}>
       <span style={starsStyle}>★ ★ ★ ★ ★</span>
       <h1 style={titleStyle}>CRYSTAL LAKE</h1>
       <p style={subtitleStyle}>CARS &amp; CAFFEINE</p>
@@ -110,6 +141,7 @@ export default function Hero8Bit() {
             }}
           />
         ))}
+      </div>
       </div>
     </section>
   );
