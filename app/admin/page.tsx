@@ -383,7 +383,7 @@ export default function AdminDashboard() {
         // Count registrations in the same period
         const oldestDate = trafficData[trafficData.length - 1]?.date;
         const regsInPeriod = registrations.filter(
-          (r) => (r.payment_status === "paid" || r.payment_status === "comped") && r.paid_at && r.paid_at >= oldestDate
+          (r) => r.payment_status === "paid" && r.paid_at && r.paid_at >= oldestDate
         ).length;
         const conversionRate = totalVisitors > 0 ? ((regsInPeriod / totalVisitors) * 100).toFixed(1) : "0";
 
@@ -399,7 +399,7 @@ export default function AdminDashboard() {
               }}
             >
               <DashboardCard
-                href="/admin"
+                href="/admin/analytics"
                 label="Visitors"
                 value={`${totalVisitors.toLocaleString()}`}
                 note={`${totalViews.toLocaleString()} page views`}
@@ -413,14 +413,14 @@ export default function AdminDashboard() {
                 icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>}
               />
               <DashboardCard
-                href="/admin"
+                href="/admin/analytics"
                 label="Conversion Rate"
                 value={`${conversionRate}%`}
-                note="visitors → registrations"
+                note="visitors → paid registrations"
                 icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
               />
               <DashboardCard
-                href="/admin"
+                href="/admin/analytics"
                 label="Avg Daily Visitors"
                 value={`${Math.round(totalVisitors / trafficData.length)}`}
                 note={`over ${trafficData.length} days`}
