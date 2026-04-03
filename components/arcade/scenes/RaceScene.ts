@@ -1,4 +1,5 @@
 import { drawRoad } from "../road";
+import { createHorizonTexture } from "../horizon";
 
 export class RaceScene extends Phaser.Scene {
   private roadCanvas!: HTMLCanvasElement;
@@ -10,6 +11,8 @@ export class RaceScene extends Phaser.Scene {
   private accelHeld = false;
 
   private sceneryItems: { sprite: Phaser.GameObjects.Rectangle; baseX: number; z: number }[] = [];
+
+  private horizonImage!: Phaser.GameObjects.TileSprite;
 
   constructor() {
     super({ key: "RaceScene" });
@@ -25,6 +28,14 @@ export class RaceScene extends Phaser.Scene {
 
     this.roadTexture = this.textures.createCanvas("road", width, height)!;
     this.add.image(width / 2, height / 2, "road");
+
+    const horizonY = height * 0.35;
+    const horizonHeight = 50;
+    const horizonCanvas = createHorizonTexture(width, horizonHeight);
+    this.textures.addCanvas("horizon", horizonCanvas);
+    this.horizonImage = this.add.tileSprite(
+      width / 2, horizonY - horizonHeight / 2, width, horizonHeight, "horizon"
+    ).setDepth(1);
 
     this.createScenery(width, height);
 
@@ -82,6 +93,8 @@ export class RaceScene extends Phaser.Scene {
 
     drawRoad(this.roadCtx, this.roadCanvas.width, this.roadCanvas.height, this.roadOffset);
     this.roadTexture.refresh();
+
+    this.horizonImage.tilePositionX += this.speed * dt * 6;
 
     const { height } = this.scale;
     const horizonY = height * 0.35;
