@@ -1,7 +1,12 @@
 import Phaser from "phaser";
-import { drawRoad } from "../road";
+import { drawRoad, pickRandomSkin, RoadColors } from "../road";
 import { createHorizonTexture } from "../horizon";
 import { RaceCar, PlayerState, OpponentState } from "../physics";
+import {
+  initAudio, playCountdownBeep, startEngine, updateEngine,
+  stopEngine, playGearShift, playWinJingle, playLoseJingle,
+  playFoulBuzzer, startMusic, stopAll,
+} from "@/lib/race-audio";
 
 type RacePhase = "countdown" | "racing" | "finished";
 
@@ -11,6 +16,8 @@ export class RaceScene extends Phaser.Scene {
   private accelHeld = false;
   private horizonImage!: Phaser.GameObjects.TileSprite;
   private sceneryItems: { sprite: Phaser.GameObjects.Rectangle; z: number; side: number }[] = [];
+  private trackSkin!: RoadColors;
+  private speedLines: Phaser.GameObjects.Line[] = [];
 
   // Race state
   private phase: RacePhase = "countdown";
@@ -54,6 +61,11 @@ export class RaceScene extends Phaser.Scene {
     this.reacted = false;
     this.roadOffset = 0;
     this.accelHeld = false;
+    this.trackSkin = pickRandomSkin();
+    this.speedLines = [];
+
+    // Stop any previous audio (e.g., select music)
+    stopAll();
 
     // Get cars from registry (set by SelectScene/MatchupScene)
     const playerCar: RaceCar = this.registry.get("playerCar");
@@ -153,6 +165,18 @@ export class RaceScene extends Phaser.Scene {
     this.greenLight = this.add.circle(treeX, treeBaseY + 3 * 30, 15, 0x222222)
       .setStrokeStyle(2, 0x333333).setDepth(20);
 
+    // Speed lines (appear at high speed on screen edges)
+    for (let i = 0; i < 8; i++) {
+      const side = i % 2 === 0 ? 1 : -1;
+      const x = side > 0 ? width - 20 - Math.random() * 60 : 20 + Math.random() * 60;
+      const line = this.add.line(
+        x, height * 0.3 + Math.random() * height * 0.4,
+        0, 0, side * (15 + Math.random() * 25), 40 + Math.random() * 30,
+        0xffffff
+      ).setAlpha(0).setDepth(8).setLineWidth(1);
+      this.speedLines.push(line);
+    }
+
     // Countdown / result text
     this.countdownText = this.add.text(width / 2, height * 0.2, "", {
       fontFamily: "'Press Start 2P'", fontSize: "20px", color: "#ffd700",
@@ -180,6 +204,7 @@ export class RaceScene extends Phaser.Scene {
   private startCountdown() {
     this.countdown = 3;
     this.updateTreeLights();
+    playCountdownBeep(false);
 
     this.time.addEvent({
       delay: 1000,
@@ -187,18 +212,21 @@ export class RaceScene extends Phaser.Scene {
       callback: () => {
         this.countdown--;
         this.updateTreeLights();
+        playCountdownBeep(this.countdown <= 0);
 
         // Jump detection: holding accel during amber
         if (this.countdown > 0 && this.accelHeld) {
           this.jumped = true;
+          playFoulBuzzer();
         }
 
         if (this.countdown <= 0) {
           // GO!
           this.phase = "racing";
           this.raceStartTime = this.time.now;
+          startEngine();
+          startMusic();
           if (this.jumped) {
-            // Add 500ms penalty
             this.raceStartTime -= 500;
           }
         }
@@ -236,7 +264,7 @@ export class RaceScene extends Phaser.Scene {
 
   private drawRoadFrame() {
     const ctx = this.roadTexture.getContext();
-    drawRoad(ctx, this.roadTexture.width, this.roadTexture.height, this.roadOffset);
+    drawRoad(ctx, this.roadTexture.width, this.roadTexture.height, this.roadOffset, this.trackSkin);
     this.roadTexture.refresh();
   }
 
@@ -257,7 +285,8 @@ export class RaceScene extends Phaser.Scene {
       // Update player physics
       const shifted = this.playerState.update(this.accelHeld, elapsed);
       if (shifted) {
-        // Could play shift sound here in SP4
+        playGearShift();
+        this.cameras.main.shake(80, 0.003); // subtle screen shake on shift
       }
 
       // Update opponent
@@ -285,6 +314,17 @@ export class RaceScene extends Phaser.Scene {
 
     // --- VISUAL UPDATES (all phases) ---
     const visualSpeed = this.phase === "racing" ? this.playerState.speed : 0;
+
+    // Update engine sound
+    if (this.phase === "racing") {
+      updateEngine(this.playerState.rpm, this.playerState.speed);
+    }
+
+    // Speed lines — fade in at high speed
+    const speedPct = this.playerState ? this.playerState.speed / (this.playerState.peakSpeed || 1) : 0;
+    for (const line of this.speedLines) {
+      line.setAlpha(speedPct > 0.6 ? (speedPct - 0.6) * 2.5 * (0.1 + Math.random() * 0.15) : 0);
+    }
 
     // Scroll road
     this.roadOffset += visualSpeed * dt * 30;
@@ -367,9 +407,16 @@ export class RaceScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const playerWon = this.playerState.finishTime <= this.opponentState.finishTime;
 
+    // Audio
+    stopAll();
+    if (playerWon) playWinJingle(); else playLoseJingle();
+
+    // Camera shake on finish
+    this.cameras.main.shake(200, 0.005);
+
     // Flash effect
     const flash = this.add.rectangle(width / 2, height / 2, width, height, 0xffffff).setDepth(25).setAlpha(0.9);
-    this.tweens.add({ targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
+    this.tweens.add({ targets: flash, alpha: 0, duration: 400, onComplete: () => flash.destroy() });
 
     // Result text
     this.resultText.setText(playerWon ? "YOU WIN!" : "YOU LOSE");

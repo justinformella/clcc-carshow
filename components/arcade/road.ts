@@ -15,18 +15,42 @@ export type RoadColors = {
   centerLine: string;
 };
 
-export const DEFAULT_COLORS: RoadColors = {
-  skyTop: "#050510",
-  skyBottom: "#0d0d2a",
-  grassA: "#0a3a0a",
-  grassB: "#0d4a0d",
-  roadA: "#1a1a2e",
-  roadB: "#222240",
-  shoulderA: "#cc2222",
-  shoulderB: "#ffffff",
-  laneMarker: "#ffd700",
-  centerLine: "#ffd700",
-};
+export const TRACK_SKINS: RoadColors[] = [
+  { // Night (default)
+    skyTop: "#050510", skyBottom: "#0d0d2a",
+    grassA: "#0a3a0a", grassB: "#0d4a0d",
+    roadA: "#1a1a2e", roadB: "#222240",
+    shoulderA: "#cc2222", shoulderB: "#ffffff",
+    laneMarker: "#ffd700", centerLine: "#ffd700",
+  },
+  { // Dusk
+    skyTop: "#1a0a2e", skyBottom: "#3d1a4a",
+    grassA: "#1a3a1a", grassB: "#1d4a1d",
+    roadA: "#2a2a3e", roadB: "#333348",
+    shoulderA: "#ff6600", shoulderB: "#ffffff",
+    laneMarker: "#ff9900", centerLine: "#ff9900",
+  },
+  { // Dawn
+    skyTop: "#1a1a3a", skyBottom: "#4a2a1a",
+    grassA: "#1a4a0a", grassB: "#2a5a1a",
+    roadA: "#252535", roadB: "#2e2e40",
+    shoulderA: "#cc2222", shoulderB: "#ffcc00",
+    laneMarker: "#ffcc00", centerLine: "#ffcc00",
+  },
+  { // Midnight blue
+    skyTop: "#000008", skyBottom: "#000020",
+    grassA: "#061a06", grassB: "#082a08",
+    roadA: "#111122", roadB: "#181830",
+    shoulderA: "#cc2222", shoulderB: "#cccccc",
+    laneMarker: "#ffd700", centerLine: "#ffd700",
+  },
+];
+
+export const DEFAULT_COLORS: RoadColors = TRACK_SKINS[0];
+
+export function pickRandomSkin(): RoadColors {
+  return TRACK_SKINS[Math.floor(Math.random() * TRACK_SKINS.length)];
+}
 
 export function drawRoad(
   ctx: CanvasRenderingContext2D,

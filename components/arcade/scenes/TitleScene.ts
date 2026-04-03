@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { initAudio, startSelectMusic } from "@/lib/race-audio";
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -68,9 +69,17 @@ export class TitleScene extends Phaser.Scene {
 
     btn.on("pointerover", () => btn.setFillStyle(0xffe066));
     btn.on("pointerout", () => btn.setFillStyle(0xffd700));
-    btn.on("pointerdown", () => this.scene.start("SelectScene"));
+    btn.on("pointerdown", () => {
+      initAudio();
+      startSelectMusic();
+      this.scene.start("SelectScene");
+    });
 
-    this.input.keyboard!.once("keydown-SPACE", () => this.scene.start("SelectScene"));
+    this.input.keyboard!.once("keydown-SPACE", () => {
+      initAudio();
+      startSelectMusic();
+      this.scene.start("SelectScene");
+    });
 
     // Back to site link
     const backText = this.add.text(width / 2, height * 0.95, "BACK TO SITE", {
