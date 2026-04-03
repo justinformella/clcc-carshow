@@ -11,6 +11,7 @@ export class SelectScene extends Phaser.Scene {
   private scrollY = 0;
   private maxScrollY = 0;
   private scrollContainer!: Phaser.GameObjects.Container;
+  private isDragging = false;
 
   constructor() {
     super({ key: "SelectScene" });
@@ -67,16 +68,20 @@ export class SelectScene extends Phaser.Scene {
       this.scrollContainer.setY(headerH - this.scrollY);
     });
 
-    // Touch drag scroll
+    // Touch/mouse drag scroll with click-vs-drag detection
     let dragStartY = 0;
     let dragScrollStart = 0;
+    this.isDragging = false;
+
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       dragStartY = pointer.y;
       dragScrollStart = this.scrollY;
+      this.isDragging = false;
     });
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
       if (pointer.isDown) {
         const dy = dragStartY - pointer.y;
+        if (Math.abs(dy) > 5) this.isDragging = true; // threshold: 5px = drag, not click
         this.scrollY = Phaser.Math.Clamp(dragScrollStart + dy, 0, this.maxScrollY);
         this.scrollContainer.setY(headerH - this.scrollY);
       }
@@ -157,7 +162,8 @@ export class SelectScene extends Phaser.Scene {
     // Click handler
     bg.on("pointerover", () => bg.setStrokeStyle(2, 0xffd700));
     bg.on("pointerout", () => bg.setStrokeStyle(2, 0x333333));
-    bg.on("pointerdown", () => {
+    bg.on("pointerup", () => {
+      if (this.isDragging) return; // was a scroll, not a click
       const cars: RaceCar[] = this.registry.get("cars") || [];
       const others = cars.filter((c) => c.id !== car.id);
       const opponent = others.length > 0
