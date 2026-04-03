@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: specs } = await supabase
       .from("vehicle_specs")
-      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type, body_style, country_of_origin, era, production_numbers");
+      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type, body_style, country_of_origin, era, production_numbers, redline_rpm");
 
     if (!registrations || registrations.length === 0) {
       return NextResponse.json({ cars: [] });
@@ -47,6 +47,7 @@ export async function GET() {
           origin: spec.country_of_origin || "",
           era: spec.era || "",
           production: spec.production_numbers || 0,
+          redline: spec.redline_rpm || 6500,
           pwr: Math.round(pwr * 10) / 10,
           pixelArt: r.pixel_art_url || null,
           pixelDash: r.pixel_dashboard_url || null,

@@ -45,6 +45,7 @@ type RaceCar = {
   origin: string;
   era: string;
   production: number;
+  redline: number;
   pixelArt: string | null;
   pixelDash: string | null;
   pixelRear: string | null;
@@ -101,16 +102,18 @@ function topSpeedMPH(hp: number, weightLbs: number, year: number = 2000): number
  * the actual acceleration model (player holding space perfectly,
  * or opponent AI curve) to account for gear shifts, RPM ramp, etc.
  */
-function calibratePlayer(targetET: number): number {
+function calibratePlayer(targetET: number, redline: number = 6500): number {
+  const shiftPoint = Math.round(redline * 0.92);
   const test = (factor: number) => {
     const maxSpeed = 1000 / (targetET * 60 * factor);
     let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0;
     while (pos < 1000 && frames < 60 * 30) {
-      rpm = Math.min(rpm + 80, 7000);
+      rpm = Math.min(rpm + 80, redline);
       const gf = 1 - (gear - 1) * 0.20;
-      const rf = Math.min(rpm / 5000, 1.2);
-      speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, maxSpeed);
-      if (rpm > 6500 && gear < 5) { gear++; rpm = 3000; }
+      const rf = Math.min(rpm / (redline * 0.7), 1.2);
+      const atLimiter = rpm >= redline && gear >= 5;
+      if (!atLimiter) speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, maxSpeed);
+      if (rpm >= shiftPoint && gear < 5) { gear++; rpm = Math.round(redline * 0.45); }
       pos += speed * (1/60) * 60;
       frames++;
     }
@@ -389,7 +392,7 @@ function RacePage() {
 
     // Calibrate maxSpeed per car by simulating the exact physics model,
     // so perfect play finishes at the predicted ET
-    const playerFactor = calibratePlayer(playerTargetET);
+    const playerFactor = calibratePlayer(playerTargetET, playerCar.redline || 6500);
     const oppFactor = calibrateOpponent(oppTargetET);
     const playerMaxSpeed = 1000 / (playerTargetET * 60 * playerFactor);
     const oppMaxSpeed = 1000 / (oppTargetET * 60 * oppFactor);
@@ -452,20 +455,31 @@ function RacePage() {
             setReactionTime(rt);
           }
 
+          const pRedline = playerCar.redline || 6500;
+          const pShiftPoint = Math.round(pRedline * 0.92); // shift at 92% of redline
+
           if (accel && !pFinish) {
-            pRpm = Math.min(pRpm + 80, 7000);
+            pRpm = Math.min(pRpm + 80, pRedline);
             const gearFactor = 1 - (pGear - 1) * 0.20;
-            const rpmFactor = Math.min(pRpm / 5000, 1.2);
-            pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, playerMaxSpeed);
+            const rpmFactor = Math.min(pRpm / (pRedline * 0.7), 1.2);
+
+            // Rev limiter: at redline in top gear, cut acceleration
+            const atRevLimit = pRpm >= pRedline && pGear >= 5;
+            if (atRevLimit) {
+              // Bouncing off limiter — hold speed, no more acceleration
+              pSpeed = Math.min(pSpeed, playerMaxSpeed);
+            } else {
+              pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, playerMaxSpeed);
+            }
           } else {
             pRpm = Math.max(pRpm - 60, 800);
             pSpeed = Math.max(pSpeed - 0.3, 0);
           }
 
-          // Auto shift
-          if (pRpm > 6500 && pGear < 5) {
+          // Auto shift at shift point (92% of redline)
+          if (pRpm >= pShiftPoint && pGear < 5) {
             pGear++;
-            pRpm = 3000;
+            pRpm = Math.round(pRedline * 0.45);
             playGearShift();
           }
 
@@ -877,7 +891,7 @@ function RacePage() {
               <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.midGray, marginTop: "0.2rem" }}>MPH</div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: FONT, fontSize: "1rem", color: rpm > 6000 ? C.red : C.gray, textShadow: rpm > 6000 ? `0 0 10px rgba(255,0,0,0.5)` : "none", lineHeight: 1 }}>
+              <div style={{ fontFamily: FONT, fontSize: "1rem", color: rpm > (playerCar?.redline || 6500) * 0.88 ? C.red : C.gray, textShadow: rpm > (playerCar?.redline || 6500) * 0.88 ? `0 0 10px rgba(255,0,0,0.5)` : "none", lineHeight: 1 }}>
                 {rpm}
               </div>
               <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.midGray, marginTop: "0.2rem" }}>RPM</div>

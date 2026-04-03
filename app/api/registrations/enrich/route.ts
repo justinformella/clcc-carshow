@@ -39,6 +39,7 @@ const SPEC_SCHEMA = {
   production_numbers: "TOTAL production numbers for this model name in this model year across ALL trims and variants. For example, ALL 1966 Mustangs made that year, not just the GT trim. Use 0 if truly unknown. This should typically be in the tens of thousands or hundreds of thousands for popular cars.",
   era: "One of: Pre-War (before 1946), 1950s (1946-1959), 1960s-70s (1960-1979), 1980s-90s (1980-1999), 2000s (2000-2014), Modern (2015+). Choose based on the vehicle year.",
   notable_features: "Title Case. Comma-separated list of 2-3 features that are FACTORY STANDARD for this model — things that defined this car when it was sold new. Examples: Dual Exhaust, Pop-Up Headlights, T-Tops, Gullwing Doors, Fastback Design. Do NOT guess features that vary by individual car.",
+  redline_rpm: "engine redline RPM (integer). The maximum RPM the tachometer redline begins at for this specific engine. Typically 5500-6500 for V8s, 6000-7000 for V6/I4, 7000-9000 for high-revving sports cars. Use 0 if electric.",
 };
 
 export async function POST(request: NextRequest) {
@@ -144,6 +145,7 @@ ${Object.entries(SPEC_SCHEMA).map(([k, v]) => `  "${k}": ${v}`).join("\n")}`,
           production_numbers: specs.production_numbers != null ? Number(specs.production_numbers) : null,
           era: specs.era || null,
           notable_features: specs.notable_features || null,
+          redline_rpm: specs.redline_rpm != null ? Number(specs.redline_rpm) : null,
         }, { onConflict: "registration_id" });
 
         enriched++;
