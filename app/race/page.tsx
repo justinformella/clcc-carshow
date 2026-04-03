@@ -111,7 +111,7 @@ function calibratePlayer(targetET: number, redline: number = 6500, maxGears: num
     const maxSpeed = 1000 / (targetET * 60 * factor);
     let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0, peak = 0;
     while (pos < 1000 && frames < 60 * 30) {
-      rpm = Math.min(rpm + 80, redline);
+      rpm = Math.min(rpm + 30, redline);
       const gf = 1 - (gear - 1) * gearPenalty;
       const rf = Math.min(rpm / (redline * 0.7), 1.2);
       const atLimiter = rpm >= redline && gear >= maxGears;
@@ -467,7 +467,7 @@ function RacePage() {
           const pGearPenalty = 0.20 / (pMaxGears / 5); // scale: more gears = less penalty per gear
 
           if (accel && !pFinish) {
-            pRpm = Math.min(pRpm + 80, pRedline);
+            pRpm = Math.min(pRpm + 30, pRedline);
             const gearFactor = 1 - (pGear - 1) * pGearPenalty;
             const rpmFactor = Math.min(pRpm / (pRedline * 0.7), 1.2);
 
@@ -479,7 +479,7 @@ function RacePage() {
               pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, playerMaxSpeed);
             }
           } else {
-            pRpm = Math.max(pRpm - 60, 800);
+            pRpm = Math.max(pRpm - 40, 800);
             pSpeed = Math.max(pSpeed - 0.3, 0);
           }
 
