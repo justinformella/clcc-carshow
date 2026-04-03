@@ -516,6 +516,47 @@ export class RaceScene extends Phaser.Scene {
 
       if (result.carTocar) {
         this.cameras.main.shake(100, 0.008);
+        // Spark burst at collision point
+        const sparkX = width / 2 + ((this.playerState.laneX + this.opponentState.laneX) / 2) * width * 0.3;
+        const sparkY = height * 0.45;
+        for (let i = 0; i < 10; i++) {
+          const spark = this.add.rectangle(
+            sparkX + (Math.random() - 0.5) * 20,
+            sparkY + (Math.random() - 0.5) * 15,
+            3 + Math.random() * 3, 3 + Math.random() * 3,
+            Math.random() > 0.5 ? 0xffaa00 : 0xff6600
+          ).setDepth(15);
+          this.tweens.add({
+            targets: spark,
+            x: spark.x + (Math.random() - 0.5) * 80,
+            y: spark.y + (Math.random() - 0.5) * 60,
+            alpha: 0,
+            duration: 200 + Math.random() * 150,
+            onComplete: () => spark.destroy(),
+          });
+        }
+      }
+
+      // Grass debris when player on grass
+      if (result.playerOnGrass && this.playerCarSprite && Math.random() < 0.3) {
+        const debrisX = this.playerCarSprite.x;
+        const debrisY = this.playerCarSprite.y;
+        for (let i = 0; i < 4; i++) {
+          const debris = this.add.rectangle(
+            debrisX + (Math.random() - 0.5) * 30,
+            debrisY,
+            2 + Math.random() * 2, 2 + Math.random() * 2,
+            0x2a6a2a
+          ).setDepth(6);
+          this.tweens.add({
+            targets: debris,
+            x: debris.x + (Math.random() - 0.5) * 40,
+            y: debris.y - 20 - Math.random() * 30,
+            alpha: 0,
+            duration: 300 + Math.random() * 200,
+            onComplete: () => debris.destroy(),
+          });
+        }
       }
 
       // Check finish
