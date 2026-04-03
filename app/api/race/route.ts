@@ -32,6 +32,7 @@ export async function GET() {
         return {
           id: r.id,
           carNumber: r.car_number,
+          year: r.vehicle_year || 2000,
           name: `${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}`,
           color: r.vehicle_color || "Silver",
           owner: `${r.first_name} ${r.last_name[0]}.`,

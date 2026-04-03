@@ -10,9 +10,25 @@ import {
   startMusic, stopAll,
 } from "@/lib/race-audio";
 
+// ─── 8-BIT PALETTE ───
+const C = {
+  bgDark: "#0d0d1a",
+  bgMid: "#1a1a2e",
+  bgLight: "#2a1a3e",
+  gold: "#ffd700",
+  goldDark: "#b8860b",
+  green: "#00ff00",
+  red: "#ff0000",
+  white: "#ffffff",
+  gray: "#cccccc",
+  midGray: "#aaaaaa",
+  border: "#333333",
+};
+
 type RaceCar = {
   id: string;
   carNumber: number;
+  year: number;
   name: string;
   color: string;
   owner: string;
@@ -27,9 +43,27 @@ type RaceCar = {
 
 type Phase = "loading" | "select" | "countdown" | "racing" | "finished";
 
+/**
+ * Realistic quarter-mile elapsed time (seconds).
+ * Base formula: ET = 5.825 × (weight / hp)^(1/3)
+ * Era correction accounts for tire tech, traction, drivetrain losses:
+ *   Pre-1975: ×1.20 (bias-ply tires, drum brakes, gross HP ratings)
+ *   1975-1995: ×1.10 (emissions era, improving tech)
+ *   1996-2010: ×1.02 (modern baseline)
+ *   2010+: ×0.97 (launch control, DCTs, sticky rubber)
+ */
+function quarterMileET(hp: number, weightLbs: number, year: number = 2000): number {
+  const base = 5.825 * Math.pow(weightLbs / hp, 1 / 3);
+  let eraFactor = 1.02;
+  if (year < 1975) eraFactor = 1.20;
+  else if (year < 1996) eraFactor = 1.10;
+  else if (year >= 2010) eraFactor = 0.97;
+  return base * eraFactor;
+}
+
 export default function RacePageWrapper() {
   return (
-    <Suspense fallback={<div style={{ background: "#08090c", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#555" }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ background: C.bgDark, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: C.midGray, fontFamily: FONT, fontSize: "0.75rem" }}>LOADING...</div>}>
       <RacePage />
     </Suspense>
   );
@@ -76,7 +110,6 @@ function RacePage() {
           aiImage: c.aiImage || null,
         }));
         setCars(raceCars);
-        // Auto-select car from query param (e.g., /race?car=<id>)
         if (preselectedCarId) {
           const target = raceCars.find((c) => c.id === preselectedCarId);
           if (target) {
@@ -116,10 +149,9 @@ function RacePage() {
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, c.width, c.height);
       const d = imageData.data;
-      // Make near-black pixels transparent (threshold 40)
       for (let i = 0; i < d.length; i += 4) {
         if (d[i] < 40 && d[i + 1] < 40 && d[i + 2] < 40) {
-          d[i + 3] = 0; // set alpha to 0
+          d[i + 3] = 0;
         }
       }
       ctx.putImageData(imageData, 0, 0);
@@ -139,7 +171,6 @@ function RacePage() {
       canvas.width = rect.width;
       canvas.height = rect.height;
     };
-    // Initial sizing happens on first drawRoad call (canvas may not be mounted yet)
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
@@ -154,21 +185,30 @@ function RacePage() {
     const horizonY = H * 0.3;
     const vanishX = W / 2;
 
-    // ─── SKY ───
+    // Sky
     const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
-    skyGrad.addColorStop(0, "#0a1628");
-    skyGrad.addColorStop(1, "#1a3a5c");
+    skyGrad.addColorStop(0, "#050510");
+    skyGrad.addColorStop(1, "#0d0d2a");
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, W, horizonY);
 
-    // Horizon tree line
-    ctx.fillStyle = "#0d2a12";
-    for (let x = 0; x < W; x += 30) {
-      const treeH = 12 + Math.sin(x * 0.3) * 6;
-      ctx.fillRect(x, horizonY - treeH, 20, treeH);
+    // Pixel stars
+    ctx.fillStyle = C.white;
+    for (let i = 0; i < 30; i++) {
+      const sx = (Math.sin(i * 127.1) * 0.5 + 0.5) * W;
+      const sy = (Math.sin(i * 269.5) * 0.5 + 0.5) * horizonY * 0.8;
+      const size = i % 3 === 0 ? 2 : 1;
+      ctx.fillRect(Math.floor(sx), Math.floor(sy), size, size);
     }
 
-    // ─── ROAD (perspective, row by row) ───
+    // Horizon tree line (blocky pixel trees)
+    ctx.fillStyle = "#0a1a0a";
+    for (let x = 0; x < W; x += 20) {
+      const treeH = 10 + ((x * 7) % 11);
+      ctx.fillRect(x, horizonY - treeH, 16, treeH);
+    }
+
+    // Road (perspective, row by row)
     const roadWidthBottom = W * 0.95;
     const roadWidthTop = W * 0.08;
     const shoulderWidthBottom = W * 0.12;
@@ -185,47 +225,44 @@ function RacePage() {
       const roadLeft = vanishX - roadW / 2;
       const roadRight = vanishX + roadW / 2;
 
-      // Z-depth for stripe calculation
       const z = 1 / (t + 0.01);
       const stripePhase = (z + roadOffset * 0.3) % 20;
       const stripeBand = stripePhase < 10;
 
-      // Grass
-      ctx.fillStyle = stripeBand ? "#1a5c1a" : "#1e6b1e";
+      // Grass — alternating green bands
+      ctx.fillStyle = stripeBand ? "#0a3a0a" : "#0d4a0d";
       ctx.fillRect(0, y, roadLeft - shoulderW, 1);
       ctx.fillRect(roadRight + shoulderW, y, W - (roadRight + shoulderW), 1);
 
       // Shoulder rumble strips
-      ctx.fillStyle = stripeBand ? "#cc3333" : "#ffffff";
+      ctx.fillStyle = stripeBand ? C.red : C.white;
       ctx.fillRect(roadLeft - shoulderW, y, shoulderW, 1);
       ctx.fillRect(roadRight, y, shoulderW, 1);
 
       // Road surface
-      ctx.fillStyle = stripeBand ? "#333333" : "#3a3a3a";
+      ctx.fillStyle = stripeBand ? "#1a1a2e" : "#222240";
       ctx.fillRect(roadLeft, y, roadW, 1);
 
       // Center dashed line (gold)
       if (stripePhase > 2 && stripePhase < 8) {
         const lineW = Math.max(2, 4 * perspective);
-        ctx.fillStyle = "#c9a84c";
+        ctx.fillStyle = C.gold;
         ctx.fillRect(vanishX - lineW / 2, y, lineW, 1);
       }
 
-      // Lane quarter lines (subtle)
+      // Lane quarter lines
       const laneOffset = roadW / 4;
       if (stripePhase > 3 && stripePhase < 6) {
         const lineW = Math.max(1, 2 * perspective);
-        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.fillStyle = "rgba(255,215,0,0.15)";
         ctx.fillRect(vanishX - laneOffset - lineW / 2, y, lineW, 1);
         ctx.fillRect(vanishX + laneOffset - lineW / 2, y, lineW, 1);
       }
     }
-
   }, []);
 
   const selectCar = useCallback((car: RaceCar) => {
     setPlayerCar(car);
-    // Pick random opponent
     const others = cars.filter((c) => c.id !== car.id);
     const opp = others[Math.floor(Math.random() * others.length)] || car;
     setOpponentCar(opp);
@@ -245,12 +282,23 @@ function RacePage() {
     setPlayerTime(0);
     setOpponentTime(0);
 
-    playCountdownBeep(false); // first beep on 3
+    // Compute realistic target quarter-mile times
+    const playerTargetET = quarterMileET(playerCar.hp, playerCar.weight, playerCar.year);
+    const oppTargetET = quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year);
+
+    // Scale max speeds so the race finishes near those ETs
+    // FINISH=1000 units, at 60fps, if we integrate speed*dt*60 each frame,
+    // a car going maxSpeed for targetET seconds covers maxSpeed*60*targetET units
+    // We want that ≈ FINISH, but with acceleration curve, effective coverage is ~55%
+    const playerMaxSpeed = 1000 / (playerTargetET * 60 * 0.55);
+    const oppMaxSpeed = 1000 / (oppTargetET * 60 * 0.55);
+
+    playCountdownBeep(false);
     let c = 3;
     const interval = setInterval(() => {
       c--;
       setCountdown(c);
-      playCountdownBeep(c <= 0); // higher pitch on GO
+      playCountdownBeep(c <= 0);
       if (c <= 0) {
         clearInterval(interval);
         setPhase("racing");
@@ -258,23 +306,21 @@ function RacePage() {
         startMusic();
         startRef.current = performance.now();
 
-        const FINISH = 1000; // distance units
-        const playerMaxSpeed = (playerCar.hp / (playerCar.weight / 1000)) * 0.06;
-        const oppMaxSpeed = (opponentCar.hp / (opponentCar.weight / 1000)) * 0.06;
+        const FINISH = 1000;
         let pPos = 0, oPos = 0, pSpeed = 0, oSpeed = 0;
         let pGear = 1, pRpm = 800;
         let pFinish = 0, oFinish = 0;
         let roadOffset = 0;
         let prevTime = performance.now();
-        const STRIPE_CYCLE = 20 / 0.3; // one full stripe cycle for modulo cap
+        const STRIPE_CYCLE = 20 / 0.3;
 
         const animate = (now: number) => {
           const elapsed = now - startRef.current;
-          const actualDt = Math.min((now - prevTime) / 1000, 0.05); // cap at 50ms
+          const actualDt = Math.min((now - prevTime) / 1000, 0.05);
           prevTime = now;
           const dt = 1 / 60;
 
-          // Player acceleration — hold space/up to accelerate
+          // Player acceleration
           const accel = keyRef.current.has(" ") || keyRef.current.has("arrowup");
 
           if (accel && !pFinish) {
@@ -287,14 +333,14 @@ function RacePage() {
             pSpeed = Math.max(pSpeed - 0.3, 0);
           }
 
-          // Auto shift for player
+          // Auto shift
           if (pRpm > 6500 && pGear < 5) {
             pGear++;
             pRpm = 3000;
             playGearShift();
           }
 
-          // Opponent AI — smooth acceleration with slight variation
+          // Opponent AI
           if (!oFinish) {
             const oppAccelCurve = Math.min(elapsed / 8000, 1);
             const wobble = Math.sin(elapsed * 0.002) * 0.05;
@@ -307,24 +353,21 @@ function RacePage() {
           if (pPos >= FINISH && !pFinish) { pFinish = elapsed; }
           if (oPos >= FINISH && !oFinish) { oFinish = elapsed; }
 
-          // Draw road on canvas (frame-rate-independent)
+          // Draw road
           roadOffset = (roadOffset + pSpeed * 0.5 * (actualDt * 60)) % STRIPE_CYCLE;
           if (canvasRef.current) {
             drawRoad(canvasRef.current, roadOffset);
           }
 
-          // Update opponent overlay position via direct DOM manipulation
+          // Opponent overlay positioning
           const overlayEl = opponentOverlayRef.current;
           if (overlayEl) {
-            const delta = oPos - pPos; // positive = ahead, negative = behind
+            const delta = oPos - pPos;
 
             if (delta >= 0) {
-              // ─── OPPONENT IS AHEAD OR EVEN ───
-              // tOpp: 0=right next to us, 1=at horizon
               const tOpp = Math.min(1, delta / 150);
               const scale = 1.0 - tOpp * 0.75;
               const topPct = 30 + (1 - tOpp) * 55;
-              // Lane offset proportional to road width at this depth
               const perspAtOpp = (1 - tOpp) * (1 - tOpp);
               const roadWidthPct = 8 + (95 - 8) * perspAtOpp;
               const laneOff = roadWidthPct * 0.22;
@@ -342,18 +385,12 @@ function RacePage() {
                 opponentFallbackRef.current.style.fontSize = `${Math.max(10, 16 * scale)}px`;
               }
             } else {
-              // ─── OPPONENT IS BEHIND (we passed them) ───
-              // They grow larger and slide to the left as they fall back
-              const behind = Math.min(Math.abs(delta), 80); // 0-80 range
-              const behindT = behind / 80; // 0=just passed, 1=way behind
-              // Scale gets bigger (they're closer/beside us)
+              const behind = Math.min(Math.abs(delta), 80);
+              const behindT = behind / 80;
               const scale = 1.0 + behindT * 0.8;
-              // Slide down past bottom of track view
               const topPct = 85 + behindT * 30;
-              // Slide further left as they fall behind
               const laneOff = 20 + behindT * 25;
               const spriteWidth = Math.round(240 * scale);
-              // Fade out as they go off screen
               const opacity = Math.max(0, 1 - behindT * 1.2);
 
               overlayEl.style.top = `${topPct}%`;
@@ -368,7 +405,6 @@ function RacePage() {
                 opponentFallbackRef.current.style.fontSize = `${Math.max(10, 16 * scale)}px`;
               }
             }
-
           }
 
           setPlayerPos(Math.min(pPos / FINISH * 100, 100));
@@ -377,11 +413,8 @@ function RacePage() {
           setOpponentSpeed(Math.round(oSpeed * 38));
           setGear(pGear);
           setRpm(Math.round(pRpm));
-
-          // Update engine sound pitch/volume
           updateEngine(pRpm, pSpeed);
 
-          // Race ends when EITHER car finishes or at 30s timeout
           const finishRace = (w: "player" | "opponent", pT: number, oT: number) => {
             setWinner(w);
             setPlayerTime(pT);
@@ -395,19 +428,16 @@ function RacePage() {
             finishRace(pFinish < oFinish ? "player" : "opponent", pFinish, oFinish);
             return;
           }
-
           if (pFinish && !oFinish) {
             const oppRemaining = (FINISH - oPos) / (oSpeed || 0.01);
             finishRace("player", pFinish, Math.round(pFinish + oppRemaining * 1000 / 60));
             return;
           }
-
           if (oFinish && !pFinish) {
             const pRemaining = (FINISH - pPos) / (pSpeed || 0.01);
             finishRace("opponent", Math.round(oFinish + pRemaining * 1000 / 60), oFinish);
             return;
           }
-
           if (elapsed < 30000) {
             animRef.current = requestAnimationFrame(animate);
           } else {
@@ -430,7 +460,6 @@ function RacePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ batch: true }),
       });
-      // Reload cars
       const res = await fetch("/api/race");
       const data = await res.json();
       setCars(data.cars || []);
@@ -440,7 +469,7 @@ function RacePage() {
 
   // ─── LOADING ───
   if (phase === "loading") {
-    return <div style={pageStyle}><p style={{ color: "#555", textAlign: "center", paddingTop: "40vh" }}>Loading garage...</p></div>;
+    return <div style={pageStyle}><p style={{ color: C.midGray, textAlign: "center", paddingTop: "40vh", fontFamily: FONT, fontSize: "0.75rem" }}>LOADING GARAGE...</p></div>;
   }
 
   // ─── CAR SELECT ───
@@ -448,14 +477,14 @@ function RacePage() {
     return (
       <div style={pageStyle}>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <Link href="/" style={{ color: "#c9a84c", textDecoration: "none", fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em" }}>CLCC</Link>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "2.2rem", color: "#fff", margin: "0.5rem 0", fontWeight: 400 }}>
+          <Link href="/" style={{ color: C.gold, textDecoration: "none", fontFamily: FONT, fontSize: "0.85rem", letterSpacing: "0.2em" }}>CLCC</Link>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1rem, 3vw, 1.5rem)", color: C.gold, margin: "1rem 0 0.5rem", textTransform: "uppercase" }}>
             Choose Your Ride
           </h1>
-          <p style={{ color: "#555", fontSize: "0.8rem" }}>{cars.length} vehicles in the garage</p>
+          <p style={{ color: C.midGray, fontFamily: FONT, fontSize: "0.85rem" }}>{cars.length} VEHICLES IN THE GARAGE</p>
           {cars.some((c) => !c.pixelArt) && (
-            <button onClick={handleGenerateAll} disabled={generating} style={{ marginTop: "0.75rem", padding: "0.4rem 1rem", background: "rgba(255,255,255,0.06)", color: "#c9a84c", border: `1px solid rgba(201,168,76,0.3)`, fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", cursor: generating ? "wait" : "pointer", opacity: generating ? 0.5 : 1 }}>
-              {generating ? "Generating Pixel Art..." : `Generate Pixel Art (${cars.filter((c) => !c.pixelArt).length} remaining)`}
+            <button onClick={handleGenerateAll} disabled={generating} style={{ ...pixelBtnStyle, marginTop: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}`, opacity: generating ? 0.5 : 1, cursor: generating ? "wait" : "pointer" }}>
+              {generating ? "GENERATING..." : `GENERATE PIXEL ART (${cars.filter((c) => !c.pixelArt).length})`}
             </button>
           )}
         </div>
@@ -464,18 +493,31 @@ function RacePage() {
           /* Matchup screen */
           <div style={{ maxWidth: "800px", margin: "0 auto" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "1.5rem", alignItems: "center", marginBottom: "2rem" }}>
-              <CarCard car={playerCar} label="YOU" />
+              <CarCard car={playerCar} label="P1" isPlayer />
               <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "#c9a84c" }}>VS</span>
+                <span style={{ fontFamily: FONT, fontSize: "1rem", color: C.gold }}>VS</span>
               </div>
-              <CarCard car={opponentCar} label="OPPONENT" />
+              <CarCard car={opponentCar} label="CPU" isPlayer={false} />
+            </div>
+
+            {/* Spec comparison */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginBottom: "1.5rem", padding: "0 1rem" }}>
+              {[
+                { label: "HP", p: playerCar.hp, o: opponentCar.hp },
+                { label: "LBS", p: playerCar.weight, o: opponentCar.weight },
+                { label: "1/4 MI", p: quarterMileET(playerCar.hp, playerCar.weight, playerCar.year).toFixed(1) + "s", o: quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year).toFixed(1) + "s" },
+              ].map((s) => (
+                <div key={s.label} style={{ textAlign: "center", padding: "0.6rem", background: "rgba(255,215,0,0.05)", border: `1px solid ${C.border}` }}>
+                  <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.midGray, marginBottom: "0.3rem" }}>{s.label}</div>
+                  <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.gold }}>{typeof s.p === "number" ? s.p.toLocaleString() : s.p}</div>
+                  <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.red, marginTop: "0.15rem" }}>{typeof s.o === "number" ? s.o.toLocaleString() : s.o}</div>
+                </div>
+              ))}
             </div>
 
             <div style={{ textAlign: "center" }}>
               <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", alignItems: "center" }}>
-                <button onClick={startRace} style={goldBtnStyle}>
-                  Race!
-                </button>
+                <button onClick={startRace} style={goldBtnStyle}>RACE!</button>
                 <button
                   onClick={() => {
                     const others = cars.filter((c) => c.id !== playerCar.id && c.id !== opponentCar.id);
@@ -483,40 +525,39 @@ function RacePage() {
                       setOpponentCar(others[Math.floor(Math.random() * others.length)]);
                     }
                   }}
-                  style={{ padding: "0.8rem 2rem", background: "rgba(255,255,255,0.08)", color: "#ddd", border: "1px solid rgba(255,255,255,0.15)", fontSize: "0.85rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", cursor: "pointer", borderRadius: "4px" }}
+                  style={pixelBtnStyle}
                 >
-                  Shuffle Opponent
+                  SHUFFLE
                 </button>
               </div>
               <br />
-              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); }} style={{ background: "none", border: "none", color: "#555", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
-                Pick a different car
+              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "1rem", cursor: "pointer", textDecoration: "underline" }}>
+                PICK DIFFERENT CAR
               </button>
             </div>
 
-            <div style={{ marginTop: "1.5rem", textAlign: "center", color: "#444", fontSize: "0.75rem" }}>
-              Hold <kbd style={kbdStyle}>SPACE</kbd> or <kbd style={kbdStyle}>↑</kbd> to accelerate
+            <div style={{ marginTop: "1.5rem", textAlign: "center", fontFamily: FONT, fontSize: "0.75rem", color: C.border }}>
+              HOLD <span style={kbdStyle}>SPACE</span> OR <span style={kbdStyle}>UP</span> TO ACCELERATE
             </div>
           </div>
         ) : (
           /* Car grid */
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "1rem", maxWidth: "1000px", margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "0.75rem", maxWidth: "1000px", margin: "0 auto" }}>
             {cars.map((car) => (
               <button
                 key={car.id}
                 onClick={() => selectCar(car)}
                 style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "6px",
+                  background: C.bgMid,
+                  border: `2px solid ${C.border}`,
                   padding: 0,
                   cursor: "pointer",
                   overflow: "hidden",
                   textAlign: "left",
-                  transition: "border-color 0.2s, transform 0.2s",
+                  fontFamily: FONT,
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#c9a84c"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}
               >
                 <div style={{ width: "100%", aspectRatio: "16/9", background: "#111", overflow: "hidden" }}>
                   {car.pixelArt ? (
@@ -524,15 +565,14 @@ function RacePage() {
                   ) : car.aiImage ? (
                     <img src={car.aiImage} alt={car.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#333", fontSize: "0.7rem" }}>No Image</div>
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: C.border, fontFamily: FONT, fontSize: "0.75rem" }}>NO IMAGE</div>
                   )}
                 </div>
-                <div style={{ padding: "0.6rem 0.75rem" }}>
-                  <p style={{ color: "#c9a84c", fontSize: "0.65rem", fontWeight: 600, marginBottom: "0.2rem" }}>#{car.carNumber}</p>
-                  <p style={{ color: "#ddd", fontSize: "0.8rem", fontWeight: 500, marginBottom: "0.15rem" }}>{car.name}</p>
-                  <div style={{ display: "flex", gap: "1rem", fontSize: "0.7rem", color: "#555" }}>
+                <div style={{ padding: "0.5rem 0.6rem" }}>
+                  <p style={{ color: C.white, fontSize: "0.85rem", fontFamily: FONT, marginBottom: "0.2rem", lineHeight: 1.6 }}>{car.name}</p>
+                  <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.75rem", fontFamily: FONT, color: C.midGray }}>
                     <span>{car.hp} HP</span>
-                    <span>{car.pwr} HP/t</span>
+                    <span>{quarterMileET(car.hp, car.weight, car.year).toFixed(1)}s</span>
                   </div>
                 </div>
               </button>
@@ -545,27 +585,27 @@ function RacePage() {
 
   // ─── RACING / COUNTDOWN / FINISHED ───
   return (
-    <div style={{ ...pageStyle, display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+    <div style={{ ...pageStyle, display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", padding: 0 }}>
       {/* HUD */}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1.5rem", flexShrink: 0 }}>
-        <div style={{ color: "#ddd", fontSize: "0.8rem" }}>
-          <span style={{ color: "#c9a84c" }}>#{playerCar?.carNumber}</span> {playerCar?.name}
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 1rem", flexShrink: 0, borderBottom: `2px solid ${C.border}` }}>
+        <div style={{ fontFamily: FONT, fontSize: "1rem", color: C.gray }}>
+          <span style={{ color: C.gold }}>P1</span> #{playerCar?.carNumber} {playerCar?.name}
         </div>
-        <div style={{ color: "#888", fontSize: "0.8rem" }}>
-          vs <span style={{ color: "#dc2626" }}>#{opponentCar?.carNumber}</span> {opponentCar?.name}
+        <div style={{ fontFamily: FONT, fontSize: "1rem", color: C.gray }}>
+          <span style={{ color: C.red }}>CPU</span> #{opponentCar?.carNumber} {opponentCar?.name}
         </div>
       </div>
 
       {/* Race view */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
-        {/* Track area — canvas + opponent overlay */}
-        <div style={{ height: "65%", position: "relative", overflow: "hidden", background: "#0a1628" }}>
+        {/* Track area */}
+        <div style={{ height: "65%", position: "relative", overflow: "hidden", background: "#050510" }}>
           <canvas
             ref={canvasRef}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
           />
 
-          {/* Opponent car sprite — positioned via direct DOM manipulation in animation loop */}
+          {/* Opponent sprite */}
           {opponentCar && (
             <div
               ref={opponentOverlayRef}
@@ -583,10 +623,7 @@ function RacePage() {
                   ref={opponentImgRef}
                   src={processedRearUrl || opponentCar.pixelRear!}
                   alt="opponent"
-                  style={{
-                    width: "110px",
-                    imageRendering: "pixelated",
-                  }}
+                  style={{ width: "110px", imageRendering: "pixelated" }}
                 />
               ) : (
                 <div
@@ -594,14 +631,13 @@ function RacePage() {
                   style={{
                     width: "70px",
                     height: "39px",
-                    background: "#dc2626",
-                    borderRadius: "4px",
+                    background: C.red,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#fff",
-                    fontSize: "10px",
-                    fontWeight: 700,
+                    color: C.white,
+                    fontFamily: FONT,
+                    fontSize: "8px",
                   }}
                 >
                   #{opponentCar.carNumber}
@@ -614,43 +650,44 @@ function RacePage() {
         {/* Dashboard */}
         <div style={{
           height: "35%",
-          background: "#1a1a1e",
+          background: C.bgMid,
           position: "relative",
           overflow: "hidden",
+          borderTop: `2px solid ${C.border}`,
         }}>
           {playerCar?.pixelDash ? (
-            <img src={playerCar.pixelDash} alt="dashboard" style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated", opacity: 0.7 }} />
+            <img src={playerCar.pixelDash} alt="dashboard" style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated", opacity: 0.6 }} />
           ) : (
-            <div style={{ width: "100%", height: "100%", background: "linear-gradient(to bottom, #222, #111)" }} />
+            <div style={{ width: "100%", height: "100%", background: `linear-gradient(to bottom, ${C.bgMid}, ${C.bgDark})` }} />
           )}
 
           {/* Gauges overlay */}
-          <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "2rem", alignItems: "flex-end" }}>
+          <div style={{ position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "2.5rem", alignItems: "flex-end" }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "monospace", fontSize: "2.5rem", fontWeight: 700, color: "#c9a84c", textShadow: "0 0 10px rgba(201,168,76,0.5)", lineHeight: 1 }}>
+              <div style={{ fontFamily: FONT, fontSize: "2rem", color: C.gold, textShadow: `0 0 10px rgba(255,215,0,0.5)`, lineHeight: 1 }}>
                 {playerSpeed}
               </div>
-              <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>MPH</div>
+              <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.midGray, marginTop: "0.2rem" }}>MPH</div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "monospace", fontSize: "1.5rem", fontWeight: 700, color: rpm > 6000 ? "#dc2626" : "#ddd", textShadow: rpm > 6000 ? "0 0 10px rgba(220,38,38,0.5)" : "none", lineHeight: 1 }}>
+              <div style={{ fontFamily: FONT, fontSize: "1rem", color: rpm > 6000 ? C.red : C.gray, textShadow: rpm > 6000 ? `0 0 10px rgba(255,0,0,0.5)` : "none", lineHeight: 1 }}>
                 {rpm}
               </div>
-              <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>RPM</div>
+              <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.midGray, marginTop: "0.2rem" }}>RPM</div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "monospace", fontSize: "2rem", fontWeight: 700, color: "#16a34a", lineHeight: 1 }}>
+              <div style={{ fontFamily: FONT, fontSize: "1.6rem", color: C.green, lineHeight: 1 }}>
                 {gear}
               </div>
-              <div style={{ fontSize: "0.6rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em" }}>GEAR</div>
+              <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.midGray, marginTop: "0.2rem" }}>GEAR</div>
             </div>
           </div>
         </div>
 
         {/* Countdown overlay */}
         {phase === "countdown" && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", zIndex: 10 }}>
-            <div style={{ fontSize: "10rem", fontFamily: "'Playfair Display', serif", color: countdown === 0 ? "#16a34a" : "#c9a84c", textShadow: `0 0 80px ${countdown === 0 ? "rgba(22,163,106,0.5)" : "rgba(201,168,76,0.5)"}` }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(13,13,26,0.7)", zIndex: 10 }}>
+            <div style={{ fontFamily: FONT, fontSize: "5rem", color: countdown === 0 ? C.green : C.gold, textShadow: `0 0 40px ${countdown === 0 ? "rgba(0,255,0,0.6)" : "rgba(255,215,0,0.6)"}` }}>
               {countdown === 0 ? "GO!" : countdown}
             </div>
           </div>
@@ -658,35 +695,41 @@ function RacePage() {
 
         {/* Finish overlay */}
         {phase === "finished" && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.75)", zIndex: 10 }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(13,13,26,0.85)", zIndex: 10 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "3rem", fontFamily: "'Playfair Display', serif", color: winner === "player" ? "#c9a84c" : "#dc2626", marginBottom: "1rem" }}>
+              <div style={{
+                fontFamily: FONT,
+                fontSize: "clamp(1.2rem, 5vw, 2.5rem)",
+                color: winner === "player" ? C.gold : C.red,
+                marginBottom: "1.5rem",
+                textShadow: `0 0 20px ${winner === "player" ? "rgba(255,215,0,0.5)" : "rgba(255,0,0,0.5)"}`,
+              }}>
                 {winner === "player" ? "YOU WIN!" : "YOU LOSE"}
               </div>
               {/* Car images + times */}
               <div style={{ display: "flex", gap: "2rem", justifyContent: "center", alignItems: "center", marginBottom: "2rem" }}>
                 <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "#c9a84c", fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "0.4rem" }}>You</p>
+                  <p style={{ color: C.gold, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.5rem" }}>P1</p>
                   {playerCar?.pixelArt && (
-                    <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.4rem" }} />
+                    <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.5rem" }} />
                   )}
-                  <p style={{ color: "#ddd", fontSize: "0.7rem", marginBottom: "0.2rem" }}>{playerCar?.name}</p>
-                  <p style={{ color: "#fff", fontSize: "1.5rem", fontFamily: "monospace" }}>{(playerTime / 1000).toFixed(2)}s</p>
+                  <p style={{ color: C.gray, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.3rem" }}>{playerCar?.name}</p>
+                  <p style={{ color: C.white, fontFamily: FONT, fontSize: "1rem" }}>{(playerTime / 1000).toFixed(2)}s</p>
                 </div>
-                <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#555" }}>vs</div>
+                <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.border }}>VS</div>
                 <div style={{ textAlign: "center" }}>
-                  <p style={{ color: "#dc2626", fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "0.4rem" }}>Opponent</p>
+                  <p style={{ color: C.red, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.5rem" }}>CPU</p>
                   {opponentCar?.pixelArt && (
-                    <img src={opponentCar.pixelArt} alt={opponentCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.4rem" }} />
+                    <img src={opponentCar.pixelArt} alt={opponentCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.5rem" }} />
                   )}
-                  <p style={{ color: "#ddd", fontSize: "0.7rem", marginBottom: "0.2rem" }}>{opponentCar?.name}</p>
-                  <p style={{ color: "#fff", fontSize: "1.5rem", fontFamily: "monospace" }}>{(opponentTime / 1000).toFixed(2)}s</p>
+                  <p style={{ color: C.gray, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.3rem" }}>{opponentCar?.name}</p>
+                  <p style={{ color: C.white, fontFamily: FONT, fontSize: "1rem" }}>{(opponentTime / 1000).toFixed(2)}s</p>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-                <button onClick={startRace} style={goldBtnStyle}>Rematch</button>
-                <button onClick={() => { setPlayerCar(null); setOpponentCar(null); setPhase("select"); }} style={{ ...goldBtnStyle, background: "rgba(255,255,255,0.1)", color: "#ddd" }}>
-                  New Car
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+                <button onClick={startRace} style={goldBtnStyle}>REMATCH</button>
+                <button onClick={() => { setPlayerCar(null); setOpponentCar(null); setPhase("select"); }} style={pixelBtnStyle}>
+                  NEW CAR
                 </button>
               </div>
             </div>
@@ -695,72 +738,94 @@ function RacePage() {
       </div>
 
       {/* Mobile accelerate button */}
-      <div style={{ flexShrink: 0, padding: "0.5rem", textAlign: "center" }}>
+      <div style={{ flexShrink: 0, padding: "0.5rem", textAlign: "center", borderTop: `2px solid ${C.border}` }}>
         <button
           onTouchStart={() => keyRef.current.add(" ")}
           onTouchEnd={() => keyRef.current.delete(" ")}
           onMouseDown={() => keyRef.current.add(" ")}
           onMouseUp={() => keyRef.current.delete(" ")}
-          style={{ width: "100%", maxWidth: "400px", padding: "1rem", background: phase === "racing" ? "linear-gradient(135deg, #c9a84c, #b8943f)" : "rgba(255,255,255,0.05)", color: phase === "racing" ? "#08090c" : "#444", border: "none", fontSize: "1rem", fontWeight: 700, textTransform: "uppercase", cursor: "pointer", borderRadius: "4px", letterSpacing: "0.1em", userSelect: "none", WebkitUserSelect: "none" }}
+          style={{
+            width: "100%",
+            maxWidth: "400px",
+            padding: "0.8rem",
+            background: phase === "racing" ? C.gold : C.bgMid,
+            color: phase === "racing" ? C.bgDark : C.border,
+            border: `2px solid ${phase === "racing" ? C.goldDark : C.border}`,
+            fontFamily: FONT,
+            fontSize: "0.85rem",
+            cursor: "pointer",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+          }}
         >
-          {phase === "racing" ? "HOLD TO ACCELERATE" : phase === "finished" ? (winner === "player" ? "🏆 WINNER!" : "Try Again") : "GET READY..."}
+          {phase === "racing" ? "HOLD TO ACCELERATE" : phase === "finished" ? (winner === "player" ? "WINNER!" : "TRY AGAIN") : "GET READY..."}
         </button>
       </div>
     </div>
   );
 }
 
-function CarCard({ car, label }: { car: RaceCar; label: string }) {
+function CarCard({ car, label, isPlayer }: { car: RaceCar; label: string; isPlayer: boolean }) {
+  const accent = isPlayer ? C.gold : C.red;
   return (
     <div style={{ textAlign: "center" }}>
-      <p style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.15em", color: label === "YOU" ? "#c9a84c" : "#dc2626", marginBottom: "0.5rem" }}>{label}</p>
-      <div style={{ width: "100%", aspectRatio: "16/9", background: "#111", borderRadius: "6px", overflow: "hidden", marginBottom: "0.75rem", border: `1px solid ${label === "YOU" ? "rgba(201,168,76,0.3)" : "rgba(220,38,38,0.3)"}` }}>
+      <p style={{ fontFamily: FONT, fontSize: "1rem", color: accent, marginBottom: "0.5rem" }}>{label}</p>
+      <div style={{ width: "100%", aspectRatio: "16/9", background: "#111", overflow: "hidden", marginBottom: "0.75rem", border: `2px solid ${accent}` }}>
         {car.pixelArt ? (
           <img src={car.pixelArt} alt={car.name} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" }} />
         ) : car.aiImage ? (
           <img src={car.aiImage} alt={car.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
-          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#333" }}>No Image</div>
+          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: C.border, fontFamily: FONT, fontSize: "0.75rem" }}>NO IMAGE</div>
         )}
       </div>
-      <p style={{ color: "#c9a84c", fontSize: "0.7rem", fontWeight: 600 }}>#{car.carNumber}</p>
-      <p style={{ color: "#fff", fontSize: "1rem", fontWeight: 500 }}>{car.name}</p>
-      <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center", marginTop: "0.5rem", fontSize: "0.75rem", color: "#555" }}>
+      <p style={{ color: accent, fontFamily: FONT, fontSize: "0.75rem" }}>#{car.carNumber}</p>
+      <p style={{ color: C.white, fontFamily: FONT, fontSize: "0.85rem", margin: "0.3rem 0", lineHeight: 1.8 }}>{car.name}</p>
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center", fontFamily: FONT, fontSize: "0.75rem", color: C.midGray }}>
         <span>{car.hp} HP</span>
-        <span>{car.weight.toLocaleString()} lbs</span>
-        <span>{car.pwr} HP/t</span>
+        <span>{car.weight.toLocaleString()} LBS</span>
       </div>
     </div>
   );
 }
 
+const FONT = "'Press Start 2P', monospace";
+
 const pageStyle: React.CSSProperties = {
-  background: "#08090c",
+  background: C.bgDark,
   minHeight: "100vh",
   padding: "1.5rem",
-  fontFamily: "'Inter', sans-serif",
+  fontFamily: FONT,
 };
 
 const goldBtnStyle: React.CSSProperties = {
-  padding: "0.8rem 2.5rem",
-  background: "linear-gradient(135deg, #c9a84c, #b8943f)",
-  color: "#08090c",
-  border: "none",
-  fontSize: "1rem",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.1em",
+  padding: "0.7rem 1.5rem",
+  background: C.gold,
+  color: C.bgDark,
+  border: `2px solid ${C.goldDark}`,
+  fontFamily: FONT,
+  fontSize: "0.75rem",
   cursor: "pointer",
-  borderRadius: "4px",
+  textTransform: "uppercase",
+};
+
+const pixelBtnStyle: React.CSSProperties = {
+  padding: "0.7rem 1.5rem",
+  background: C.bgMid,
+  color: C.gray,
+  border: `2px solid ${C.border}`,
+  fontFamily: FONT,
+  fontSize: "0.75rem",
+  cursor: "pointer",
+  textTransform: "uppercase",
 };
 
 const kbdStyle: React.CSSProperties = {
   display: "inline-block",
-  padding: "0.15rem 0.5rem",
-  background: "rgba(255,255,255,0.08)",
-  border: "1px solid rgba(255,255,255,0.15)",
-  borderRadius: "3px",
+  padding: "0.15rem 0.4rem",
+  background: C.bgMid,
+  border: `1px solid ${C.border}`,
+  fontFamily: FONT,
   fontSize: "0.75rem",
-  color: "#ddd",
-  fontFamily: "monospace",
+  color: C.gold,
 };
