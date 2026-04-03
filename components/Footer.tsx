@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FooterPixelLink } from "@/components/EightBitEasterEgg";
+import { FooterPixelBadge } from "@/components/EightBitEasterEgg";
 
 export default function Footer() {
   return (
@@ -57,10 +57,7 @@ export default function Footer() {
         </div>
         <div className="footer-bottom">
           <div>
-            <FooterPixelLink />
-            <p style={{ marginTop: "0.3rem" }}>
-              Crystal Lake Cars and Coffee. All rights reserved.
-            </p>
+            <FooterPixelBadge />
           </div>
           <div className="footer-social">
             <a href="https://www.facebook.com/groups/389632989553839" target="_blank" rel="noopener noreferrer">Facebook</a>

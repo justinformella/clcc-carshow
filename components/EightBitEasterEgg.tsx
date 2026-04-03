@@ -142,8 +142,9 @@ export function KonamiListener() {
   return null;
 }
 
-export function FooterPixelLink() {
+export function FooterPixelBadge() {
   const [transitioning, setTransitioning] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   const triggerTransition = useCallback(() => {
     if (transitioning) return;
@@ -154,21 +155,49 @@ export function FooterPixelLink() {
   return (
     <>
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
-      <span
+      <div
         onClick={triggerTransition}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: "0.65rem",
-          color: "rgba(255,255,255,0.4)",
+          display: "inline-block",
+          padding: "0.8rem 1.2rem",
+          background: hovered ? "rgba(255,215,0,0.08)" : "rgba(255,255,255,0.03)",
+          border: `2px solid ${hovered ? "#ffd700" : "rgba(255,255,255,0.15)"}`,
+          boxShadow: hovered ? "3px 3px 0 #b8860b" : "2px 2px 0 rgba(255,255,255,0.05)",
           cursor: "pointer",
-          transition: "color 0.3s",
-          display: "block",
+          transition: "all 0.3s",
+          textAlign: "center",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#ffd700"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
       >
-        &copy; 2026 CLCC
-      </span>
+        <span
+          style={{
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: "0.65rem",
+            color: hovered ? "#ffd700" : "rgba(255,255,255,0.5)",
+            display: "block",
+            letterSpacing: "0.1em",
+            transition: "color 0.3s",
+          }}
+        >
+          &copy; 2026 CLCC
+        </span>
+        <span
+          style={{
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: "0.4rem",
+            color: hovered ? "rgba(255,215,0,0.7)" : "rgba(255,255,255,0.3)",
+            display: "block",
+            marginTop: "0.4rem",
+            lineHeight: 1.8,
+            transition: "color 0.3s",
+          }}
+        >
+          Crystal Lake Cars &amp; Caffeine
+          <br />
+          All rights reserved
+        </span>
+      </div>
     </>
   );
 }
