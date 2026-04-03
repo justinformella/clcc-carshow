@@ -450,7 +450,10 @@ export class RaceScene extends Phaser.Scene {
     this.add.text(width * 0.65, height * 0.65, "NEW CAR", {
       fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#cccccc",
     }).setOrigin(0.5).setDepth(23);
-    newCarBtn.on("pointerdown", () => this.scene.start("SelectScene"));
+    newCarBtn.on("pointerdown", () => {
+      import("@/lib/race-audio").then(({ startSelectMusic }) => startSelectMusic());
+      this.scene.start("SelectScene");
+    });
 
     // Keyboard shortcuts
     this.input.keyboard!.once("keydown-SPACE", () => this.scene.restart());

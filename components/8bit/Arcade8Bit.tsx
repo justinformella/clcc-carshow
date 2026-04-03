@@ -139,7 +139,7 @@ export default function Arcade8Bit() {
 
               {/* Play button */}
               <Link
-                href="/race"
+                href="/arcade"
                 className="arcade-play-btn"
                 style={{
                   display: "inline-block",
