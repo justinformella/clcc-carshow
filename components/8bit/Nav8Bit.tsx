@@ -101,6 +101,7 @@ export default function Nav8Bit() {
           <a href="#schedule" onClick={(e) => handleAnchorClick(e, "#schedule")} style={linkStyle} className="nav-8bit-link">SCHEDULE</a>
           <a href="#sponsors" onClick={(e) => handleAnchorClick(e, "#sponsors")} style={linkStyle} className="nav-8bit-link">SPONSORS</a>
           <a href="#faq" onClick={(e) => handleAnchorClick(e, "#faq")} style={linkStyle} className="nav-8bit-link">FAQ</a>
+          <a href="#arcade" onClick={(e) => handleAnchorClick(e, "#arcade")} style={linkStyle} className="nav-8bit-link">ARCADE</a>
           <Link href="/contact" style={linkStyle} className="nav-8bit-link">CONTACT</Link>
           <Link href="/register" style={registerBtnStyle}>► REGISTER</Link>
         </div>
@@ -138,7 +139,7 @@ export default function Nav8Bit() {
           }}
         >
           <button onClick={() => setMenuOpen(false)} style={{ position: "absolute", top: "1rem", right: "1.5rem", background: "none", border: "none", color: COLORS.gold, fontFamily: FONT, fontSize: "1rem", cursor: "pointer" }}>✕</button>
-          {["#about", "#schedule", "#sponsors", "#faq"].map((href) => (
+          {["#about", "#schedule", "#sponsors", "#faq", "#arcade"].map((href) => (
             <a key={href} href={href} onClick={(e) => handleAnchorClick(e, href)} style={{ ...linkStyle, fontSize: "0.6rem" }}>{href.replace("#", "").toUpperCase()}</a>
           ))}
           <Link href="/contact" style={{ ...linkStyle, fontSize: "0.6rem" }} onClick={() => setMenuOpen(false)}>CONTACT</Link>
