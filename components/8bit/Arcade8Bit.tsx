@@ -31,142 +31,157 @@ export default function Arcade8Bit() {
     <section id="arcade" style={{ ...sectionStyle(COLORS.bgDark), textAlign: "center" }}>
       <h2 style={sectionTitleStyle()}>TRY THE CLCC / REDLINE MOTOR CONDOS ARCADE</h2>
 
-      {/* Arcade Cabinet */}
-      <div style={{
-        display: "inline-block",
-        background: "linear-gradient(to bottom, #2a2a3e, #1a1a2e)",
-        border: `3px solid #444`,
-        borderRadius: "12px 12px 4px 4px",
-        padding: "0",
-        maxWidth: "550px",
-        width: "90%",
-        overflow: "hidden",
-      }}>
-        {/* Gold Marquee */}
-        <div style={{
-          background: `linear-gradient(to right, ${COLORS.goldDark}, ${COLORS.gold}, ${COLORS.goldDark})`,
-          padding: "0.6rem 1rem",
-          textAlign: "center",
-        }}>
-          <span style={{
-            fontFamily: FONT,
-            fontSize: "0.7rem",
-            color: COLORS.bgDark,
-            letterSpacing: "0.15em",
-          }}>
-            ★ CLCC ARCADE ★
-          </span>
-        </div>
+      <style>{`
+        @keyframes cabinetBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+        @keyframes marqueeLights { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .arcade-play-btn:hover { transform: translateY(2px) !important; box-shadow: 0 3px 0 #8a6d1b, 0 4px 8px rgba(0,0,0,0.4) !important; }
+        .arcade-play-btn:active { transform: translateY(5px) !important; box-shadow: 0 0px 0 #8a6d1b !important; }
+      `}</style>
 
-        {/* Screen Area */}
+      {/* Arcade Cabinet */}
+      <div style={{ position: "relative", display: "inline-block", maxWidth: "560px", width: "92%" }}>
+        {/* Side panels */}
+        <div style={{ position: "absolute", top: 0, bottom: "40px", left: "-2px", width: "12px", background: "linear-gradient(to right, #15152a, #1e1e35)", borderLeft: "2px solid #555", borderRadius: "6px 0 0 0", zIndex: 2 }} />
+        <div style={{ position: "absolute", top: 0, bottom: "40px", right: "-2px", width: "12px", background: "linear-gradient(to left, #15152a, #1e1e35)", borderRight: "2px solid #555", borderRadius: "0 6px 0 0", zIndex: 2 }} />
+
+        {/* Cabinet body */}
         <div style={{
-          background: "#000",
-          border: `2px solid ${COLORS.border}`,
-          margin: "1rem",
-          padding: "0.8rem",
+          background: "linear-gradient(175deg, #2d2d48 0%, #1e1e35 40%, #191930 100%)",
+          border: "2px solid #555",
+          borderRadius: "10px 10px 2px 2px",
+          overflow: "hidden",
+          position: "relative",
         }}>
-          {/* Car thumbnails inside the screen */}
+          {/* T-molding */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(to right, transparent 5%, #ffd700 20%, #ffd700 80%, transparent 95%)", zIndex: 3, borderRadius: "10px 10px 0 0" }} />
+
+          {/* Marquee */}
           <div style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "0.4rem",
-            marginBottom: "0.6rem",
+            background: "linear-gradient(180deg, #e6c44a 0%, #ffd700 30%, #c9a84c 70%, #b8860b 100%)",
+            padding: "0.8rem 1rem",
+            position: "relative",
+            borderBottom: "3px solid #8a6d1b",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3)",
           }}>
-            {cars.map((car, i) => (
-              <div
-                key={i}
-                style={{
-                  flex: "1 1 0",
-                  aspectRatio: "16/9",
-                  background: "#111",
-                  border: `1px solid ${COLORS.border}`,
-                  overflow: "hidden",
-                  lineHeight: 0,
-                }}
-              >
-                <img
-                  src={car.pixelArt}
-                  alt="Show car"
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    imageRendering: "pixelated",
-                  }}
-                />
+            <span style={{ fontFamily: FONT, fontSize: "clamp(0.55rem, 1.8vw, 0.75rem)", color: "#1a0a00", letterSpacing: "0.12em", textShadow: "0 1px 0 rgba(255,255,255,0.3)" }}>
+              ★ CLCC ARCADE ★
+            </span>
+            {/* Marquee light strip */}
+            <div style={{ position: "absolute", bottom: "-3px", left: "10%", right: "10%", height: "3px", background: "repeating-linear-gradient(to right, #ffd700 0px, #ffd700 4px, transparent 4px, transparent 8px)", animation: "marqueeLights 0.8s infinite" }} />
+          </div>
+
+          {/* CRT Bezel */}
+          <div style={{
+            margin: "0.8rem",
+            padding: "6px",
+            background: "linear-gradient(145deg, #111 0%, #222 50%, #0a0a0a 100%)",
+            border: "2px solid #333",
+            borderRadius: "4px",
+            boxShadow: "inset 0 0 15px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.5)",
+          }}>
+            {/* Screen */}
+            <div style={{
+              background: "#000",
+              border: "1px solid #1a1a1a",
+              padding: "0.8rem",
+              position: "relative",
+              overflow: "hidden",
+            }}>
+              {/* Scanlines */}
+              <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px)", pointerEvents: "none", zIndex: 1 }} />
+              {/* Screen glow */}
+              <div style={{ position: "absolute", inset: "-2px", borderRadius: "2px", boxShadow: "0 0 20px rgba(255,215,0,0.05), inset 0 0 30px rgba(0,50,0,0.1)", pointerEvents: "none" }} />
+
+              {/* Car thumbnails */}
+              <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.6rem", position: "relative", zIndex: 2 }}>
+                {cars.map((car, i) => (
+                  <div key={i} style={{ flex: "1 1 0", aspectRatio: "16/9", background: "#0a0a15", border: "1px solid #222", overflow: "hidden", lineHeight: 0 }}>
+                    <img src={car.pixelArt} alt="Show car" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" }} />
+                  </div>
+                ))}
               </div>
+
+              <p style={{ fontFamily: FONT, fontSize: "clamp(0.5rem, 1.5vw, 0.6rem)", color: COLORS.gold, lineHeight: 2, position: "relative", zIndex: 2 }}>
+                REDLINE MOTOR CONDOS
+              </p>
+              <p style={{ fontFamily: FONT, fontSize: "clamp(0.45rem, 1.2vw, 0.5rem)", color: COLORS.green, animation: "cabinetBlink 1.5s infinite", position: "relative", zIndex: 2, marginTop: "0.2rem" }}>
+                INSERT COIN
+              </p>
+            </div>
+          </div>
+
+          {/* Speaker grille */}
+          <div style={{ display: "flex", justifyContent: "center", gap: "2px", padding: "0.4rem 2rem" }}>
+            {[...Array(8)].map((_, i) => (
+              <div key={i} style={{ height: "2px", flex: 1, maxWidth: "60px", background: "#333", borderRadius: "1px" }} />
             ))}
           </div>
 
-          {/* Screen text */}
-          <p style={{
-            fontFamily: FONT,
-            fontSize: "0.5rem",
-            color: COLORS.gold,
-            lineHeight: 2,
-            marginBottom: "0.4rem",
+          {/* Control panel */}
+          <div style={{
+            background: "linear-gradient(175deg, #252540, #1a1a30)",
+            borderTop: "2px solid #3a3a50",
+            padding: "1.2rem 1.5rem 1rem",
+            position: "relative",
           }}>
-            REDLINE MOTOR CONDOS
-          </p>
-          <p style={{
-            fontFamily: FONT,
-            fontSize: "0.4rem",
-            color: COLORS.green,
-            animation: "cabinetBlink 1.5s infinite",
-          }}>
-            INSERT COIN
-          </p>
-        </div>
+            {/* Angled top edge */}
+            <div style={{ position: "absolute", top: "-8px", left: "5%", right: "5%", height: "8px", background: "linear-gradient(to bottom, transparent, #252540)" }} />
 
-        {/* Controls area */}
-        <div style={{ padding: "0 1rem 1rem", textAlign: "center" }}>
-          <p style={{
-            fontFamily: FONT,
-            fontSize: "0.45rem",
-            color: COLORS.lightGray,
-            lineHeight: 2.2,
-            marginBottom: "0.8rem",
-          }}>
-            Race the registered cars
-          </p>
+            <p style={{ fontFamily: FONT, fontSize: "clamp(0.55rem, 1.5vw, 0.7rem)", color: "#ccc", lineHeight: 2.2, marginBottom: "1rem" }}>
+              Race the registered show cars
+            </p>
 
-          {/* Play button as a big arcade button */}
-          <Link
-            href="/race"
-            style={{
-              display: "inline-block",
-              fontFamily: FONT,
-              fontSize: "0.65rem",
-              color: COLORS.bgDark,
-              background: COLORS.gold,
-              border: `2px solid ${COLORS.goldDark}`,
-              boxShadow: `0 4px 0 ${COLORS.goldDark}`,
-              padding: "0.6rem 2rem",
-              textDecoration: "none",
-              letterSpacing: "0.1em",
-              borderRadius: "50px",
-            }}
-          >
-            PLAY
-          </Link>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem" }}>
+              {/* Joystick */}
+              <div style={{ width: "32px", height: "32px", background: "radial-gradient(circle at 40% 40%, #444, #222)", border: "2px solid #555", borderRadius: "50%", position: "relative", flexShrink: 0 }}>
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "12px", height: "12px", background: "#333", borderRadius: "50%", border: "1px solid #555" }} />
+              </div>
 
-          {/* Coin slot */}
-          <div style={{ marginTop: "0.8rem" }}>
-            <div style={{
-              display: "inline-block",
-              background: "#222",
-              border: `2px solid #555`,
-              borderRadius: "2px",
-              padding: "0.15rem 0.8rem",
-            }}>
-              <div style={{ width: "24px", height: "3px", background: "#888", borderRadius: "1px", margin: "0.1rem auto" }} />
+              {/* Play button */}
+              <Link
+                href="/race"
+                className="arcade-play-btn"
+                style={{
+                  display: "inline-block",
+                  fontFamily: FONT,
+                  fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
+                  color: COLORS.bgDark,
+                  background: "linear-gradient(180deg, #ffe066, #ffd700, #c9a84c)",
+                  border: "3px solid #b8860b",
+                  boxShadow: "0 5px 0 #8a6d1b, 0 7px 14px rgba(0,0,0,0.4)",
+                  padding: "0.7rem 2.2rem",
+                  textDecoration: "none",
+                  letterSpacing: "0.12em",
+                  borderRadius: "50px",
+                  transition: "all 0.1s",
+                }}
+              >
+                PLAY
+              </Link>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid #555", boxShadow: "0 2px 0 rgba(0,0,0,0.3)", background: "radial-gradient(circle at 40% 40%, #ef4444, #991b1b)" }} />
+                <div style={{ width: "24px", height: "24px", borderRadius: "50%", border: "2px solid #555", boxShadow: "0 2px 0 rgba(0,0,0,0.3)", background: "radial-gradient(circle at 40% 40%, #3b82f6, #1d4ed8)" }} />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <style>{`@keyframes cabinetBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
+          {/* Coin door */}
+          <div style={{ padding: "0.6rem", display: "flex", justifyContent: "center" }}>
+            <div style={{ background: "#1a1a2e", border: "2px solid #444", borderRadius: "3px", padding: "0.3rem 0.7rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+              <span style={{ fontFamily: FONT, fontSize: "0.25rem", color: "#666", letterSpacing: "0.1em" }}>COIN</span>
+              <div style={{ width: "28px", height: "4px", background: "#111", border: "1px solid #555", borderRadius: "2px" }} />
+            </div>
+          </div>
+
+          {/* Kick plate */}
+          <div style={{ background: "linear-gradient(to bottom, #151528, #0d0d1a)", borderTop: "1px solid #333", height: "20px", borderRadius: "0 0 2px 2px", margin: "0 -2px -2px", border: "2px solid #555", borderTopStyle: "none" }} />
+        </div>
+
+        {/* Base (wider than cabinet) */}
+        <div style={{ width: "108%", marginLeft: "-4%", height: "12px", background: "linear-gradient(to bottom, #222, #111)", border: "2px solid #444", borderTopStyle: "none", borderRadius: "0 0 4px 4px" }} />
+      </div>
     </section>
   );
 }
