@@ -248,6 +248,7 @@ function RacePage() {
   const [generating, setGenerating] = useState(false);
   const [trackSkin, setTrackSkin] = useState<TrackSkin>(TRACK_SKINS[0]);
   const [finishFlash, setFinishFlash] = useState(false);
+  const [revving, setRevving] = useState(false);
 
   const animRef = useRef<number>(0);
   const startRef = useRef(0);
@@ -646,7 +647,7 @@ function RacePage() {
             if (w === "player") playWinJingle(); else playLoseJingle();
             // Flash + flag then show results
             setFinishFlash(true);
-            setTimeout(() => { setFinishFlash(false); setPhase("finished"); }, 600);
+            setTimeout(() => { setFinishFlash(false); setPhase("finished"); }, 1000);
           };
 
           if (pFinish && oFinish) {
@@ -676,6 +677,15 @@ function RacePage() {
   }, [playerCar, opponentCar, drawRoad, trackSkin]);
 
   useEffect(() => () => { cancelAnimationFrame(animRef.current); stopAll(); }, []);
+
+  // Detect revving during countdown for burnout smoke
+  useEffect(() => {
+    if (phase !== "countdown") { setRevving(false); return; }
+    const poll = setInterval(() => {
+      setRevving(keyRef.current.has(" ") || keyRef.current.has("arrowup"));
+    }, 50);
+    return () => clearInterval(poll);
+  }, [phase]);
 
   const handleGenerateAll = async () => {
     setGenerating(true);
@@ -1028,8 +1038,42 @@ function RacePage() {
             {countdown === 0 && !jumped && (
               <p style={{ fontFamily: FONT, fontSize: "1.5rem", color: C.green, textShadow: "0 0 20px rgba(0,255,0,0.6)" }}>GO!</p>
             )}
+
+            {/* Burnout smoke puffs */}
+            {revving && (
+              <div style={{ position: "absolute", bottom: "38%", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "3rem", pointerEvents: "none" }}>
+                <div style={{ position: "relative" }}>
+                  <div className="smoke-puff" style={{ animationDelay: "0s" }} />
+                  <div className="smoke-puff" style={{ animationDelay: "0.3s" }} />
+                  <div className="smoke-puff" style={{ animationDelay: "0.6s" }} />
+                </div>
+                <div style={{ position: "relative" }}>
+                  <div className="smoke-puff" style={{ animationDelay: "0.15s" }} />
+                  <div className="smoke-puff" style={{ animationDelay: "0.45s" }} />
+                  <div className="smoke-puff" style={{ animationDelay: "0.75s" }} />
+                </div>
+              </div>
+            )}
           </div>
         )}
+        <style>{`
+          .smoke-puff {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: rgba(200,200,200,0.6);
+            border-radius: 50%;
+            animation: smokePuff 0.9s ease-out infinite;
+          }
+          @keyframes smokePuff {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            50% { transform: translate(var(--drift, -5px), -20px) scale(2.5); opacity: 0.4; }
+            100% { transform: translate(var(--drift, -10px), -45px) scale(4); opacity: 0; }
+          }
+          .smoke-puff:nth-child(1) { --drift: -8px; }
+          .smoke-puff:nth-child(2) { --drift: 4px; left: 5px; }
+          .smoke-puff:nth-child(3) { --drift: -12px; left: -3px; }
+        `}</style>
 
         {/* Finish flash + checkered flag */}
         {finishFlash && (
