@@ -29,7 +29,7 @@ export default function Arcade8Bit() {
 
   return (
     <section id="arcade" style={{ ...sectionStyle(COLORS.bgDark), textAlign: "center" }}>
-      <h2 style={sectionTitleStyle()}>CLCC ARCADE</h2>
+      <h2 style={sectionTitleStyle()}>TRY THE CLCC / REDLINE MOTOR CONDOS ARCADE</h2>
 
       {/* Arcade Cabinet */}
       <div style={{
@@ -38,7 +38,7 @@ export default function Arcade8Bit() {
         border: `3px solid #444`,
         borderRadius: "12px 12px 4px 4px",
         padding: "0",
-        maxWidth: "400px",
+        maxWidth: "550px",
         width: "90%",
         overflow: "hidden",
       }}>
