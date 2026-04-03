@@ -596,7 +596,8 @@ function RacePage() {
         }} />
         {/* Content */}
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem" }}>
-          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1.1rem, 4vw, 1.8rem)", color: C.gold, textShadow: "0 0 20px rgba(255,215,0,0.3)" }}>WELCOME TO REDLINE MOTOR CONDOS</h1>
+          <p style={{ fontFamily: FONT, fontSize: "0.65rem", color: C.gold, letterSpacing: "0.25em" }}>CLCC ARCADE</p>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1.1rem, 4vw, 1.8rem)", color: C.white, textShadow: "0 0 20px rgba(255,215,0,0.3)" }}>WELCOME TO REDLINE MOTOR CONDOS</h1>
           <p style={{ fontFamily: FONT, fontSize: "0.7rem", color: C.midGray, lineHeight: 2 }}>{cars.length} VEHICLES IN THE GARAGE</p>
           <button
             onClick={() => {
@@ -617,13 +618,26 @@ function RacePage() {
   // ─── CAR SELECT ───
   if (phase === "select") {
     return (
-      <div style={pageStyle}>
+      <div style={{ ...pageStyle, position: "relative", overflow: "hidden" }}>
+        {/* Dimmed Redline background */}
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          backgroundImage: `url(${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png?v=2)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+          imageRendering: "pixelated",
+          opacity: 0.12,
+          pointerEvents: "none",
+        }} />
+        <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <Link href="/" style={{ color: C.gold, textDecoration: "none", fontFamily: FONT, fontSize: "0.85rem", letterSpacing: "0.2em" }}>CLCC</Link>
-          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1rem, 3vw, 1.5rem)", color: C.gold, margin: "1rem 0 0.5rem", textTransform: "uppercase" }}>
-            Choose Your Ride
+          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.5rem" }}>CLCC ARCADE</p>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1rem, 3vw, 1.5rem)", color: C.gold, margin: "0 0 0.3rem", textTransform: "uppercase" }}>
+            Redline Motor Condos
           </h1>
-          <p style={{ color: C.midGray, fontFamily: FONT, fontSize: "0.85rem" }}>{cars.length} VEHICLES IN THE GARAGE</p>
+          <p style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.white, margin: "0 0 0.5rem" }}>Choose Your Ride</p>
+          <p style={{ color: C.midGray, fontFamily: FONT, fontSize: "0.7rem" }}>{cars.length} VEHICLES IN THE GARAGE</p>
           {cars.some((c) => !c.pixelArt) && (
             <button onClick={handleGenerateAll} disabled={generating} style={{ ...pixelBtnStyle, marginTop: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}`, opacity: generating ? 0.5 : 1, cursor: generating ? "wait" : "pointer" }}>
               {generating ? "GENERATING..." : `GENERATE PIXEL ART (${cars.filter((c) => !c.pixelArt).length})`}
@@ -732,6 +746,7 @@ function RacePage() {
             ))}
           </div>
         )}
+      </div>
       </div>
     );
   }
