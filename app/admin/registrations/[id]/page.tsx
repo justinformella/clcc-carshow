@@ -830,6 +830,9 @@ export default function RegistrationDetailPage() {
                     {vehicleSpec.weight_lbs != null && <DetailRow label="Weight" value={`${Number(vehicleSpec.weight_lbs).toLocaleString()} lbs`} />}
                     {vehicleSpec.original_msrp != null && Number(vehicleSpec.original_msrp) > 0 && <DetailRow label="Original MSRP" value={`$${Number(vehicleSpec.original_msrp).toLocaleString()}`} />}
                     {vehicleSpec.msrp_adjusted != null && Number(vehicleSpec.msrp_adjusted) > 0 && <DetailRow label="In 2026 Dollars" value={`$${Number(vehicleSpec.msrp_adjusted).toLocaleString()}`} />}
+                    {vehicleSpec.redline_rpm != null && Number(vehicleSpec.redline_rpm) > 0 && <DetailRow label="Redline" value={`${Number(vehicleSpec.redline_rpm).toLocaleString()} RPM`} />}
+                    {vehicleSpec.top_speed_mph != null && Number(vehicleSpec.top_speed_mph) > 0 && <DetailRow label="Top Speed" value={`${vehicleSpec.top_speed_mph} MPH`} />}
+                    {vehicleSpec.num_gears != null && Number(vehicleSpec.num_gears) > 0 && <DetailRow label="Transmission" value={`${vehicleSpec.num_gears}-speed`} />}
                     {vehicleSpec.production_numbers != null && Number(vehicleSpec.production_numbers) > 0 && <DetailRow label="Production" value={`${Number(vehicleSpec.production_numbers).toLocaleString()} units`} />}
                   </div>
                   {vehicleSpec.notable_features && (
