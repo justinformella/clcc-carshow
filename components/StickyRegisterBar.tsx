@@ -50,7 +50,7 @@ export default function StickyRegisterBar() {
       <div className="sticky-register-inner">
         <div className="sticky-register-text">
           <span className="sticky-register-title">Crystal Lake Cars &amp; Caffeine</span>
-          <span className="sticky-register-subtitle">May 17, 2026 &middot; $30 per vehicle &middot; 100% to charity</span>
+          <span className="sticky-register-subtitle">May 17, 2026 &middot; $30 per vehicle &middot; Net proceeds to charity</span>
         </div>
         <Link href="/register" className="sticky-register-btn">
           Register Now
