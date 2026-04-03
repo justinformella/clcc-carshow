@@ -8,6 +8,7 @@ import WeatherPolicy8Bit from "@/components/8bit/WeatherPolicy8Bit";
 import FAQ8Bit from "@/components/8bit/FAQ8Bit";
 import Sponsors8Bit from "@/components/8bit/Sponsors8Bit";
 import Gallery8Bit from "@/components/8bit/Gallery8Bit";
+import Arcade8Bit from "@/components/8bit/Arcade8Bit";
 import Footer8Bit from "@/components/8bit/Footer8Bit";
 import StickyBar8Bit from "@/components/8bit/StickyBar8Bit";
 
@@ -24,6 +25,7 @@ export default function Page80s() {
       <FAQ8Bit />
       <Sponsors8Bit />
       <Gallery8Bit />
+      <Arcade8Bit />
       <Footer8Bit />
       <StickyBar8Bit />
     </>
