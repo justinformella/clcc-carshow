@@ -5,25 +5,6 @@ import { RaceCar, PlayerState, OpponentState } from "../physics";
 
 type RacePhase = "countdown" | "racing" | "finished";
 
-// Test cars for sub-project 2 (replaced by real data in SP5)
-const TEST_PLAYER: RaceCar = {
-  id: "test-1", carNumber: 17, year: 1966, name: "1966 Ford Mustang GT",
-  color: "Red", owner: "Test", hp: 225, weight: 2800, pwr: 80.4,
-  displacement: 4.7, cylinders: 8, engineType: "V8", category: "Pony Car",
-  driveType: "RWD", bodyStyle: "Coupe", origin: "American", era: "1960s-70s",
-  production: 0, redline: 6000, topSpeed: 130, gears: 4, trans: "Manual",
-  pixelArt: null, pixelDash: null, pixelRear: null, aiImage: null,
-};
-
-const TEST_OPPONENT: RaceCar = {
-  id: "test-2", carNumber: 19, year: 2000, name: "2000 Ferrari 360",
-  color: "Red", owner: "CPU", hp: 400, weight: 3197, pwr: 125.1,
-  displacement: 3.6, cylinders: 8, engineType: "V8", category: "Exotic",
-  driveType: "RWD", bodyStyle: "Coupe", origin: "Italian", era: "2000s",
-  production: 0, redline: 8500, topSpeed: 183, gears: 6, trans: "Semi-Auto",
-  pixelArt: null, pixelDash: null, pixelRear: null, aiImage: null,
-};
-
 export class RaceScene extends Phaser.Scene {
   private roadTexture!: Phaser.Textures.CanvasTexture;
   private roadOffset = 0;
@@ -74,9 +55,23 @@ export class RaceScene extends Phaser.Scene {
     this.roadOffset = 0;
     this.accelHeld = false;
 
+    // Get cars from registry (set by SelectScene/MatchupScene)
+    const playerCar: RaceCar = this.registry.get("playerCar");
+    const opponentCar: RaceCar = this.registry.get("opponentCar");
+
+    // Fallback test cars if no selection was made (direct URL access)
+    const fallbackCar: RaceCar = {
+      id: "fallback", carNumber: 0, year: 2000, name: "Test Car",
+      color: "Red", owner: "Test", hp: 300, weight: 3000, pwr: 100,
+      displacement: 3.0, cylinders: 6, engineType: "V6", category: "Sports Car",
+      driveType: "RWD", bodyStyle: "Coupe", origin: "American", era: "2000s",
+      production: 0, redline: 6500, topSpeed: 150, gears: 5, trans: "Manual",
+      pixelArt: null, pixelDash: null, pixelRear: null, aiImage: null,
+    };
+
     // Init physics
-    this.playerState = new PlayerState(TEST_PLAYER);
-    this.opponentState = new OpponentState(TEST_OPPONENT);
+    this.playerState = new PlayerState(playerCar || fallbackCar);
+    this.opponentState = new OpponentState(opponentCar || fallbackCar);
 
     // Road texture
     this.roadTexture = this.textures.createCanvas("road-" + Date.now(), width, height)!;
@@ -394,16 +389,23 @@ export class RaceScene extends Phaser.Scene {
       fontFamily: "'Press Start 2P'", fontSize: "8px", color: this.jumped ? "#ff0000" : "#00ff00",
     }).setOrigin(0.5).setDepth(21);
 
-    this.add.text(width / 2, height * 0.65, "PRESS SPACE TO RESTART", {
-      fontFamily: "'Press Start 2P'", fontSize: "8px", color: "#aaaaaa",
-    }).setOrigin(0.5).setDepth(21);
+    // REMATCH button
+    const rematchBtn = this.add.rectangle(width * 0.35, height * 0.65, 140, 35, 0xffd700)
+      .setDepth(22).setInteractive({ useHandCursor: true });
+    this.add.text(width * 0.35, height * 0.65, "REMATCH", {
+      fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#0d0d1a",
+    }).setOrigin(0.5).setDepth(23);
+    rematchBtn.on("pointerdown", () => this.scene.restart());
 
-    // Restart on space
-    this.input.keyboard!.once("keydown-SPACE", () => {
-      this.scene.restart();
-    });
-    this.input.once("pointerdown", () => {
-      this.scene.restart();
-    });
+    // NEW CAR button
+    const newCarBtn = this.add.rectangle(width * 0.65, height * 0.65, 140, 35, 0x1a1a2e)
+      .setStrokeStyle(2, 0x333333).setDepth(22).setInteractive({ useHandCursor: true });
+    this.add.text(width * 0.65, height * 0.65, "NEW CAR", {
+      fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#cccccc",
+    }).setOrigin(0.5).setDepth(23);
+    newCarBtn.on("pointerdown", () => this.scene.start("SelectScene"));
+
+    // Keyboard shortcuts
+    this.input.keyboard!.once("keydown-SPACE", () => this.scene.restart());
   }
 }

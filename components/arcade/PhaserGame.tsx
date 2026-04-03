@@ -12,8 +12,12 @@ export default function PhaserGame() {
 
     Promise.all([
       import("phaser"),
+      import("@/components/arcade/scenes/BootScene"),
+      import("@/components/arcade/scenes/TitleScene"),
+      import("@/components/arcade/scenes/SelectScene"),
+      import("@/components/arcade/scenes/MatchupScene"),
       import("@/components/arcade/scenes/RaceScene"),
-    ]).then(([Phaser, { RaceScene }]) => {
+    ]).then(([Phaser, { BootScene }, { TitleScene }, { SelectScene }, { MatchupScene }, { RaceScene }]) => {
       game = new Phaser.Game({
         type: Phaser.AUTO,
         width: 800,
@@ -25,7 +29,7 @@ export default function PhaserGame() {
           mode: Phaser.Scale.FIT,
           autoCenter: Phaser.Scale.CENTER_BOTH,
         },
-        scene: [RaceScene],
+        scene: [BootScene, TitleScene, SelectScene, MatchupScene, RaceScene],
       });
     });
 
