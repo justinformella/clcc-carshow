@@ -138,8 +138,7 @@ function calibratePlayer(targetET: number, redline: number = 6500, maxGears: num
       const gearCeiling = maxSpeed * (0.20 + 0.80 * Math.pow(gear / maxGears, 1.4));
       const gearFloor = gear === 1 ? 0 : maxSpeed * (0.20 + 0.80 * Math.pow((gear - 1) / maxGears, 1.4));
       const rpmPct = (rpm - 800) / (redline - 800);
-      const target = gearFloor + (gearCeiling - gearFloor) * rpmPct;
-      speed += (target - speed) * 0.15;
+      speed = gearFloor + (gearCeiling - gearFloor) * rpmPct;
       if (speed > peak) peak = speed;
       if (rpm >= shiftPoint && gear < maxGears) { gear++; rpm = Math.round(redline * 0.45); }
       pos += speed * (1/60) * 60;
@@ -545,9 +544,8 @@ function RacePage() {
             const gearCeiling = playerMaxSpeed * (0.20 + 0.80 * Math.pow(pGear / pMaxGears, 1.4));
             const gearFloor = pGear === 1 ? 0 : playerMaxSpeed * (0.20 + 0.80 * Math.pow((pGear - 1) / pMaxGears, 1.4));
             const rpmPct = (pRpm - 800) / (pRedline - 800); // 0 at idle, 1 at redline
-            const targetSpeed = gearFloor + (gearCeiling - gearFloor) * rpmPct;
-            // Smoothly approach target speed (don't snap instantly)
-            pSpeed += (targetSpeed - pSpeed) * 0.15;
+            // Speed is directly proportional to RPM position in gear
+            pSpeed = gearFloor + (gearCeiling - gearFloor) * rpmPct;
           } else {
             pRpm = Math.max(pRpm - pRedline * 0.005, 800);
             pSpeed = Math.max(pSpeed - 0.3, 0);
