@@ -73,20 +73,6 @@ export default function AboutCharitySection() {
               </div>
             </div>
 
-            <div className="intro-stats">
-              <div className="intro-stat">
-                <div className="intro-stat-number">4th</div>
-                <div className="intro-stat-label">Annual Show</div>
-              </div>
-              <div className="intro-stat">
-                <div className="intro-stat-number">3</div>
-                <div className="intro-stat-label">City Blocks</div>
-              </div>
-              <div className="intro-stat">
-                <div className="intro-stat-number">100%</div>
-                <div className="intro-stat-label">For Charity</div>
-              </div>
-            </div>
           </div>
 
           {/* Right Column: Our Cause */}
