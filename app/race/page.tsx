@@ -104,12 +104,12 @@ function topSpeedMPH(hp: number, weightLbs: number, year: number = 2000, stored:
  * the actual acceleration model (player holding space perfectly,
  * or opponent AI curve) to account for gear shifts, RPM ramp, etc.
  */
-function calibratePlayer(targetET: number, redline: number = 6500, maxGears: number = 5): number {
+function calibratePlayer(targetET: number, redline: number = 6500, maxGears: number = 5): { factor: number; peakSpeed: number } {
   const shiftPoint = Math.round(redline * 0.92);
-  const gearPenalty = 0.20 / (maxGears / 5); // scale penalty so more gears = less penalty per gear
+  const gearPenalty = 0.20 / (maxGears / 5);
   const test = (factor: number) => {
     const maxSpeed = 1000 / (targetET * 60 * factor);
-    let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0;
+    let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0, peak = 0;
     while (pos < 1000 && frames < 60 * 30) {
       rpm = Math.min(rpm + 80, redline);
       const gf = 1 - (gear - 1) * gearPenalty;
@@ -118,16 +118,18 @@ function calibratePlayer(targetET: number, redline: number = 6500, maxGears: num
       if (!atLimiter) speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, maxSpeed);
       if (rpm >= shiftPoint && gear < maxGears) { gear++; rpm = Math.round(redline * 0.45); }
       pos += speed * (1/60) * 60;
+      if (speed > peak) peak = speed;
       frames++;
     }
-    return frames / 60;
+    return { time: frames / 60, peak };
   };
   let lo = 0.3, hi = 1.5;
   for (let i = 0; i < 25; i++) {
     const mid = (lo + hi) / 2;
-    if (test(mid) < targetET) lo = mid; else hi = mid;
+    if (test(mid).time < targetET) lo = mid; else hi = mid;
   }
-  return (lo + hi) / 2;
+  const finalFactor = (lo + hi) / 2;
+  return { factor: finalFactor, peakSpeed: test(finalFactor).peak };
 }
 
 function calibrateOpponent(targetET: number): number {
@@ -395,13 +397,14 @@ function RacePage() {
 
     // Calibrate maxSpeed per car by simulating the exact physics model,
     // so perfect play finishes at the predicted ET
-    const playerFactor = calibratePlayer(playerTargetET, playerCar.redline || 6500, playerCar.gears || 5);
+    const playerCal = calibratePlayer(playerTargetET, playerCar.redline || 6500, playerCar.gears || 5);
     const oppFactor = calibrateOpponent(oppTargetET);
-    const playerMaxSpeed = 1000 / (playerTargetET * 60 * playerFactor);
+    const playerMaxSpeed = 1000 / (playerTargetET * 60 * playerCal.factor);
     const oppMaxSpeed = 1000 / (oppTargetET * 60 * oppFactor);
 
     // Map physics speed to realistic MPH display
-    const playerMPHScale = playerTopSpeed / playerMaxSpeed;
+    // Use peak achievable speed (not maxSpeed) since rev limiter may cap below it
+    const playerMPHScale = playerTopSpeed / playerCal.peakSpeed;
     const oppMPHScale = oppTopSpeed / oppMaxSpeed;
 
     // Christmas tree countdown: 3 amber stages → green
