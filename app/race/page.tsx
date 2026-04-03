@@ -572,7 +572,7 @@ function RacePage() {
         {/* Garage image */}
         <div style={{ maxWidth: "500px", width: "90%", border: `2px solid ${C.border}`, boxShadow: `4px 4px 0 ${C.goldDark}`, overflow: "hidden", lineHeight: 0 }}>
           <img
-            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png`}
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png?v=2`}
             alt="Redline Motor Condos"
             style={{ display: "block", width: "100%", imageRendering: "pixelated" }}
           />
