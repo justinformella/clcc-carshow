@@ -282,7 +282,9 @@ export default function AnalyticsPage() {
 
   // Metrics
   const uniqueMakes = new Set(registrations.map((r) => r.vehicle_make?.trim().toLowerCase())).size;
-  const totalHp = specs.reduce((s, sp) => s + (sp.horsepower || 0), 0);
+  // Convert pre-1972 SAE Gross HP to Net (×0.80) for accurate aggregates
+  const toNetHP = (hp: number, year: number) => year < 1972 ? Math.round(hp * 0.80) : hp;
+  const totalHp = regsWithSpecs.reduce((s, r) => s + toNetHP(r.spec?.horsepower || 0, r.vehicle_year), 0);
   const totalWeight = specs.reduce((s, sp) => s + (sp.weight_lbs || 0), 0);
   const totalMsrp = specs.reduce((s, sp) => s + (sp.original_msrp || 0), 0);
   const totalMsrpAdjusted = specs.reduce((s, sp) => s + (sp.msrp_adjusted || 0), 0);
@@ -299,14 +301,14 @@ export default function AnalyticsPage() {
   // Fun stats
   const oldest = registrations.length > 0 ? registrations.reduce((m, r) => r.vehicle_year < m.vehicle_year ? r : m, registrations[0]) : null;
   const newest = registrations.length > 0 ? registrations.reduce((m, r) => r.vehicle_year > m.vehicle_year ? r : m, registrations[0]) : null;
-  const mostPowerful = regsWithSpecs.filter((r) => r.spec?.horsepower).sort((a, b) => (b.spec?.horsepower || 0) - (a.spec?.horsepower || 0))[0] || null;
+  const mostPowerful = regsWithSpecs.filter((r) => r.spec?.horsepower).sort((a, b) => toNetHP(b.spec?.horsepower || 0, b.vehicle_year) - toNetHP(a.spec?.horsepower || 0, a.vehicle_year))[0] || null;
   const rarest = regsWithSpecs.filter((r) => r.spec?.production_numbers && r.spec.production_numbers > 0).sort((a, b) => (a.spec?.production_numbers || Infinity) - (b.spec?.production_numbers || Infinity))[0] || null;
 
   // HP distribution
   const hpBuckets = (() => {
     const b: Record<string, number> = {};
-    specs.filter((s) => s.horsepower).forEach((s) => {
-      const hp = s.horsepower || 0;
+    regsWithSpecs.filter((r) => r.spec?.horsepower).forEach((r) => {
+      const hp = toNetHP(r.spec!.horsepower!, r.vehicle_year);
       const key = hp < 150 ? "< 150" : hp < 250 ? "150-249" : hp < 350 ? "250-349" : hp < 500 ? "350-499" : "500+";
       b[key] = (b[key] || 0) + 1;
     });
@@ -316,7 +318,7 @@ export default function AnalyticsPage() {
   // Radar
   const specsWithData = specs.filter((s) => s.horsepower && s.weight_lbs);
   const radarData = specsWithData.length > 0 ? [
-    { stat: "Power", value: Math.round(specsWithData.reduce((s, sp) => s + (sp.horsepower || 0), 0) / specsWithData.length / 5) },
+    { stat: "Power", value: Math.round(regsWithSpecs.filter((r) => r.spec?.horsepower && r.spec?.weight_lbs).reduce((s, r) => s + toNetHP(r.spec!.horsepower!, r.vehicle_year), 0) / specsWithData.length / 5) },
     { stat: "Weight", value: Math.round(specsWithData.reduce((s, sp) => s + (sp.weight_lbs || 0), 0) / specsWithData.length / 50) },
     { stat: "Displ.", value: Math.round(specs.filter((s) => s.displacement_liters).reduce((s, sp) => s + (Number(sp.displacement_liters) || 0), 0) / (specs.filter((s) => s.displacement_liters).length || 1) * 10) },
     { stat: "Rarity", value: Math.min(100, Math.round(100 - (specs.filter((s) => s.production_numbers).reduce((s, sp) => s + Math.min(sp.production_numbers || 100000, 100000), 0) / (specs.filter((s) => s.production_numbers).length || 1)) / 1000)) },
@@ -326,7 +328,7 @@ export default function AnalyticsPage() {
   // Leaderboard
   const leaderboardData = (() => {
     const items = regsWithSpecs.filter((r) => r.spec);
-    if (leaderboard === "hp") return items.sort((a, b) => (b.spec?.horsepower || 0) - (a.spec?.horsepower || 0));
+    if (leaderboard === "hp") return items.sort((a, b) => toNetHP(b.spec?.horsepower || 0, b.vehicle_year) - toNetHP(a.spec?.horsepower || 0, a.vehicle_year));
     if (leaderboard === "rare") return items.filter((r) => r.spec?.production_numbers && r.spec.production_numbers > 0).sort((a, b) => (a.spec?.production_numbers || Infinity) - (b.spec?.production_numbers || Infinity));
     return items.filter((r) => r.spec?.msrp_adjusted || r.spec?.original_msrp).sort((a, b) => (b.spec?.msrp_adjusted || b.spec?.original_msrp || 0) - (a.spec?.msrp_adjusted || a.spec?.original_msrp || 0));
   })().slice(0, 8);
@@ -705,7 +707,7 @@ export default function AnalyticsPage() {
 
               {/* HP Distribution */}
               {hpBuckets.length > 0 && (
-                <Card title="Horsepower Distribution">
+                <Card title="SAE Net HP Distribution">
                   <div style={{ height: 180 }}>
                     <ResponsiveBar data={hpBuckets.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={["#e11d48"]} borderRadius={2} padding={0.3} margin={{ top: 8, right: 16, bottom: 36, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel labelTextColor="#fff" animate motionConfig="gentle" />
                   </div>
@@ -717,7 +719,7 @@ export default function AnalyticsPage() {
                 {([
                   oldest ? { label: "Oldest", value: `${oldest.vehicle_year} ${oldest.vehicle_make}`, detail: oldest.vehicle_model } : null,
                   newest ? { label: "Newest", value: `${newest.vehicle_year} ${newest.vehicle_make}`, detail: newest.vehicle_model } : null,
-                  mostPowerful?.spec?.horsepower ? { label: "Most Powerful", value: `${mostPowerful.vehicle_make} ${mostPowerful.vehicle_model}`, detail: `${mostPowerful.spec.horsepower} HP` } : null,
+                  mostPowerful?.spec?.horsepower ? { label: "Most Powerful (SAE Net)", value: `${mostPowerful.vehicle_make} ${mostPowerful.vehicle_model}`, detail: `${toNetHP(mostPowerful.spec.horsepower, mostPowerful.vehicle_year)} HP${mostPowerful.vehicle_year < 1972 ? ` (${mostPowerful.spec.horsepower} gross)` : ""}` } : null,
                   rarest?.spec?.production_numbers ? { label: "Rarest", value: `${rarest.vehicle_make} ${rarest.vehicle_model}`, detail: `${rarest.spec.production_numbers.toLocaleString()} built` } : null,
                 ] as ({ label: string; value: string; detail: string } | null)[]).filter((s): s is { label: string; value: string; detail: string } => s !== null).map((s) => (
                   <div key={s.label} style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", borderLeft: "2px solid #c9a84c", padding: "0.8rem 1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
@@ -733,7 +735,7 @@ export default function AnalyticsPage() {
                 {[
                   { label: "Vehicles", val: registrations.length },
                   { label: "Makes", val: uniqueMakes },
-                  { label: "Combined HP", val: totalHp },
+                  { label: "Combined SAE Net HP", val: totalHp },
                   { label: "Avg Year", val: Math.round(registrations.reduce((s, r) => s + r.vehicle_year, 0) / (registrations.length || 1)), raw: true },
                   { label: "Tonnage", val: Math.round(totalWeight / 2000 * 10) / 10, suffix: "t" },
                   { label: "Original Sticker", val: totalMsrp, prefix: "$" },
@@ -775,7 +777,7 @@ export default function AnalyticsPage() {
                     <th style={thLight}></th>
                     <th style={thLight}>Vehicle</th>
                     <th style={thLight}>Category</th>
-                    <th style={{ ...thLight, textAlign: "right" }}>{leaderboard === "hp" ? "HP" : leaderboard === "rare" ? "Production" : "2026 Dollars"}</th>
+                    <th style={{ ...thLight, textAlign: "right" }}>{leaderboard === "hp" ? "SAE Net HP" : leaderboard === "rare" ? "Production" : "2026 Dollars"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -791,7 +793,7 @@ export default function AnalyticsPage() {
                       </td>
                       <td style={{ ...tdLight, color: "#999" }}>{r.spec?.category || "\u2014"}</td>
                       <td style={{ ...tdLight, textAlign: "right", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.1rem", fontWeight: 600, color: "#1a1a1a", fontVariantNumeric: "tabular-nums" }}>
-                        {leaderboard === "hp" ? `${r.spec?.horsepower?.toLocaleString() || "\u2014"}` :
+                        {leaderboard === "hp" ? `${r.spec?.horsepower ? toNetHP(r.spec.horsepower, r.vehicle_year).toLocaleString() : "\u2014"}` :
                          leaderboard === "rare" ? `${r.spec?.production_numbers?.toLocaleString() || "\u2014"}` :
                          r.spec?.msrp_adjusted ? `$${r.spec.msrp_adjusted.toLocaleString()}` : r.spec?.original_msrp ? `$${r.spec.original_msrp.toLocaleString()}` : "\u2014"}
                       </td>

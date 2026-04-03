@@ -44,21 +44,96 @@ type RaceCar = {
 type Phase = "loading" | "select" | "countdown" | "racing" | "finished";
 
 /**
+ * Convert advertised HP to SAE Net equivalent.
+ *
+ * Before 1972, automakers reported SAE Gross HP — measured at the
+ * flywheel with no accessories, water pump, alternator, or exhaust
+ * system attached. In 1972 the SAE J1349 standard switched to Net HP,
+ * measured with all production accessories and full exhaust. Gross
+ * figures ran roughly 20-25% higher than net for the same engine.
+ *
+ * We apply an 0.80 multiplier to pre-1972 cars to approximate net HP.
+ */
+function netHP(hp: number, year: number): number {
+  if (year < 1972) return hp * 0.80;
+  return hp;
+}
+
+/**
  * Realistic quarter-mile elapsed time (seconds).
- * Base formula: ET = 5.825 × (weight / hp)^(1/3)
- * Era correction accounts for tire tech, traction, drivetrain losses:
- *   Pre-1975: ×1.20 (bias-ply tires, drum brakes, gross HP ratings)
- *   1975-1995: ×1.10 (emissions era, improving tech)
- *   1996-2010: ×1.02 (modern baseline)
- *   2010+: ×0.97 (launch control, DCTs, sticky rubber)
+ * Uses the standard empirical formula: ET = 5.825 × (weight / hp)^(1/3)
+ * HP is first converted to SAE Net equivalent for pre-1972 cars.
  */
 function quarterMileET(hp: number, weightLbs: number, year: number = 2000): number {
-  const base = 5.825 * Math.pow(weightLbs / hp, 1 / 3);
-  let eraFactor = 1.02;
-  if (year < 1975) eraFactor = 1.20;
-  else if (year < 1996) eraFactor = 1.10;
-  else if (year >= 2010) eraFactor = 0.97;
-  return base * eraFactor;
+  return 5.825 * Math.pow(weightLbs / netHP(hp, year), 1 / 3);
+}
+
+/**
+ * Quarter-mile trap speed (MPH).
+ * Empirical formula: speed = 234 × (hp / weight)^(1/3)
+ */
+function trapSpeedMPH(hp: number, weightLbs: number, year: number = 2000): number {
+  return 234 * Math.pow(netHP(hp, year) / weightLbs, 1 / 3);
+}
+
+/**
+ * Estimated top speed (MPH).
+ * Empirical: top speed ≈ trap speed × 1.35 for most cars.
+ * Gives realistic values (e.g., Mustang GT: 94×1.35 ≈ 127mph, Ferrari 360: 117×1.35 ≈ 158mph).
+ */
+function topSpeedMPH(hp: number, weightLbs: number, year: number = 2000): number {
+  return trapSpeedMPH(hp, weightLbs, year) * 1.35;
+}
+
+/**
+ * Find the maxSpeed calibration factor so the simulated physics
+ * finishes in exactly targetET seconds. Runs a binary search over
+ * the actual acceleration model (player holding space perfectly,
+ * or opponent AI curve) to account for gear shifts, RPM ramp, etc.
+ */
+function calibratePlayer(targetET: number): number {
+  const test = (factor: number) => {
+    const maxSpeed = 1000 / (targetET * 60 * factor);
+    let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0;
+    while (pos < 1000 && frames < 60 * 30) {
+      rpm = Math.min(rpm + 80, 7000);
+      const gf = 1 - (gear - 1) * 0.12;
+      const rf = Math.min(rpm / 5000, 1.2);
+      speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, maxSpeed);
+      if (rpm > 6500 && gear < 5) { gear++; rpm = 3000; }
+      pos += speed * (1/60) * 60;
+      frames++;
+    }
+    return frames / 60;
+  };
+  let lo = 0.5, hi = 1.0;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (test(mid) < targetET) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function calibrateOpponent(targetET: number): number {
+  const test = (factor: number) => {
+    const maxSpeed = 1000 / (targetET * 60 * factor);
+    let pos = 0, frames = 0;
+    while (pos < 1000 && frames < 60 * 30) {
+      const elapsed = frames * (1000/60);
+      const curve = Math.min(elapsed / 8000, 1);
+      const wobble = Math.sin(elapsed * 0.002) * 0.05;
+      const speed = maxSpeed * curve * (0.85 + wobble);
+      pos += speed * (1/60) * 60;
+      frames++;
+    }
+    return frames / 60;
+  };
+  let lo = 0.4, hi = 1.0;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (test(mid) < targetET) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
 }
 
 export default function RacePageWrapper() {
@@ -282,16 +357,22 @@ function RacePage() {
     setPlayerTime(0);
     setOpponentTime(0);
 
-    // Compute realistic target quarter-mile times
+    // Compute realistic target quarter-mile times and trap speeds
     const playerTargetET = quarterMileET(playerCar.hp, playerCar.weight, playerCar.year);
     const oppTargetET = quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year);
+    const playerTopSpeed = topSpeedMPH(playerCar.hp, playerCar.weight, playerCar.year);
+    const oppTopSpeed = topSpeedMPH(opponentCar.hp, opponentCar.weight, opponentCar.year);
 
-    // Scale max speeds so the race finishes near those ETs
-    // FINISH=1000 units, at 60fps, if we integrate speed*dt*60 each frame,
-    // a car going maxSpeed for targetET seconds covers maxSpeed*60*targetET units
-    // We want that ≈ FINISH, but with acceleration curve, effective coverage is ~55%
-    const playerMaxSpeed = 1000 / (playerTargetET * 60 * 0.55);
-    const oppMaxSpeed = 1000 / (oppTargetET * 60 * 0.55);
+    // Calibrate maxSpeed per car by simulating the exact physics model,
+    // so perfect play finishes at the predicted ET
+    const playerFactor = calibratePlayer(playerTargetET);
+    const oppFactor = calibrateOpponent(oppTargetET);
+    const playerMaxSpeed = 1000 / (playerTargetET * 60 * playerFactor);
+    const oppMaxSpeed = 1000 / (oppTargetET * 60 * oppFactor);
+
+    // Map physics speed to realistic MPH display
+    const playerMPHScale = playerTopSpeed / playerMaxSpeed;
+    const oppMPHScale = oppTopSpeed / oppMaxSpeed;
 
     playCountdownBeep(false);
     let c = 3;
@@ -409,8 +490,8 @@ function RacePage() {
 
           setPlayerPos(Math.min(pPos / FINISH * 100, 100));
           setOpponentPos(Math.min(oPos / FINISH * 100, 100));
-          setPlayerSpeed(Math.round(pSpeed * 38));
-          setOpponentSpeed(Math.round(oSpeed * 38));
+          setPlayerSpeed(Math.round(pSpeed * playerMPHScale));
+          setOpponentSpeed(Math.round(oSpeed * oppMPHScale));
           setGear(pGear);
           setRpm(Math.round(pRpm));
           updateEngine(pRpm, pSpeed);
@@ -711,7 +792,7 @@ function RacePage() {
                 <div style={{ textAlign: "center" }}>
                   <p style={{ color: C.gold, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.5rem" }}>P1</p>
                   {playerCar?.pixelArt && (
-                    <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.5rem" }} />
+                    <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "220px", maxWidth: "40vw", imageRendering: "pixelated", marginBottom: "0.5rem" }} />
                   )}
                   <p style={{ color: C.gray, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.3rem" }}>{playerCar?.name}</p>
                   <p style={{ color: C.white, fontFamily: FONT, fontSize: "1rem" }}>{(playerTime / 1000).toFixed(2)}s</p>
@@ -720,7 +801,7 @@ function RacePage() {
                 <div style={{ textAlign: "center" }}>
                   <p style={{ color: C.red, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.5rem" }}>CPU</p>
                   {opponentCar?.pixelArt && (
-                    <img src={opponentCar.pixelArt} alt={opponentCar.name} style={{ width: "140px", imageRendering: "pixelated", marginBottom: "0.5rem" }} />
+                    <img src={opponentCar.pixelArt} alt={opponentCar.name} style={{ width: "220px", maxWidth: "40vw", imageRendering: "pixelated", marginBottom: "0.5rem" }} />
                   )}
                   <p style={{ color: C.gray, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.3rem" }}>{opponentCar?.name}</p>
                   <p style={{ color: C.white, fontFamily: FONT, fontSize: "1rem" }}>{(opponentTime / 1000).toFixed(2)}s</p>

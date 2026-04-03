@@ -825,7 +825,7 @@ export default function RegistrationDetailPage() {
                     {vehicleSpec.engine_type && <DetailRow label="Engine" value={String(vehicleSpec.engine_type)} />}
                     {vehicleSpec.cylinders != null && <DetailRow label="Cylinders" value={String(vehicleSpec.cylinders)} />}
                     {vehicleSpec.displacement_liters != null && <DetailRow label="Displacement" value={`${vehicleSpec.displacement_liters}L`} />}
-                    {vehicleSpec.horsepower != null && <DetailRow label="Horsepower" value={`${vehicleSpec.horsepower} HP`} />}
+                    {vehicleSpec.horsepower != null && <DetailRow label="Horsepower" value={`${vehicleSpec.horsepower} HP${r.vehicle_year < 1972 ? " (SAE Gross)" : " (SAE Net)"}`} />}
                     {vehicleSpec.drive_type && <DetailRow label="Drive" value={String(vehicleSpec.drive_type)} />}
                     {vehicleSpec.weight_lbs != null && <DetailRow label="Weight" value={`${Number(vehicleSpec.weight_lbs).toLocaleString()} lbs`} />}
                     {vehicleSpec.original_msrp != null && Number(vehicleSpec.original_msrp) > 0 && <DetailRow label="Original MSRP" value={`$${Number(vehicleSpec.original_msrp).toLocaleString()}`} />}
@@ -861,15 +861,20 @@ export default function RegistrationDetailPage() {
               <DetailSection title="Game Assets">
                 {/* Race Stats */}
                 {vehicleSpec ? (() => {
-                  const hp = Number(vehicleSpec.horsepower) || 150;
+                  const hpRaw = Number(vehicleSpec.horsepower) || 150;
+                  const isGross = r.vehicle_year < 1972;
+                  const hpNet = isGross ? Math.round(hpRaw * 0.80) : hpRaw;
                   const weight = Number(vehicleSpec.weight_lbs) || 3000;
-                  const pwr = Math.round((hp / (weight / 1000)) * 10) / 10;
+                  const pwr = Math.round((hpNet / (weight / 1000)) * 10) / 10;
                   return (
                     <>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
                         <div style={{ background: "#f8f8f8", padding: "1rem", borderRadius: "6px", textAlign: "center" }}>
-                          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--charcoal)" }}>{hp}</div>
-                          <div style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginTop: "0.2rem" }}>HP</div>
+                          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--charcoal)" }}>{hpNet}</div>
+                          <div style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginTop: "0.2rem" }}>SAE NET HP</div>
+                          {isGross && (
+                            <div style={{ fontSize: "0.65rem", color: "var(--text-light)", marginTop: "0.15rem" }}>({hpRaw} gross)</div>
+                          )}
                         </div>
                         <div style={{ background: "#f8f8f8", padding: "1rem", borderRadius: "6px", textAlign: "center" }}>
                           <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--charcoal)" }}>{weight.toLocaleString()}</div>
@@ -877,7 +882,7 @@ export default function RegistrationDetailPage() {
                         </div>
                         <div style={{ background: "#f8f8f8", padding: "1rem", borderRadius: "6px", textAlign: "center" }}>
                           <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--gold, #c9a84c)" }}>{pwr}</div>
-                          <div style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginTop: "0.2rem" }}>HP/T</div>
+                          <div style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginTop: "0.2rem" }}>SAE NET HP/T</div>
                         </div>
                       </div>
                       {vehicleSpec.engine_type && (
