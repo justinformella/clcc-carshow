@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: specs } = await supabase
       .from("vehicle_specs")
-      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type, body_style, country_of_origin, era, production_numbers, redline_rpm, top_speed_mph, num_gears");
+      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type, body_style, country_of_origin, era, production_numbers, redline_rpm, top_speed_mph, num_gears, transmission_type");
 
     if (!registrations || registrations.length === 0) {
       return NextResponse.json({ cars: [] });
@@ -50,6 +50,7 @@ export async function GET() {
           redline: spec.redline_rpm || 6500,
           topSpeed: spec.top_speed_mph || 0,
           gears: spec.num_gears || 5,
+          trans: spec.transmission_type || "Manual",
           pwr: Math.round(pwr * 10) / 10,
           pixelArt: r.pixel_art_url || null,
           pixelDash: r.pixel_dashboard_url || null,

@@ -48,6 +48,7 @@ type RaceCar = {
   redline: number;
   topSpeed: number;
   gears: number;
+  trans: string;
   pixelArt: string | null;
   pixelDash: string | null;
   pixelRear: string | null;
@@ -73,12 +74,34 @@ function netHP(hp: number, year: number): number {
 }
 
 /**
+ * Drivetrain loss factor based on transmission type and era.
+ * Modern DCTs and autos are efficient; old slushboxes lose significant power.
+ */
+function drivetrainFactor(trans: string, gears: number, year: number): number {
+  const t = trans.toLowerCase();
+  if (t === "electric" || t === "ev") return 0.95; // instant torque, no shift losses
+  if (t === "dct" || t === "semi-auto") return 1.0;
+  if (t === "cvt") return 1.04;
+  if (t === "manual") return 1.03;
+  // Automatic — penalty depends on era and gear count
+  if (t === "automatic" || t === "auto") {
+    if (gears <= 2) return 1.15; // 2-speed Dynaflow, Powerglide
+    if (gears <= 3 && year < 1975) return 1.10; // early 3-speed slushbox
+    if (gears <= 4) return 1.06; // 4-speed auto
+    return 1.02; // modern 6/8/10-speed auto
+  }
+  return 1.03; // unknown, assume manual-like
+}
+
+/**
  * Realistic quarter-mile elapsed time (seconds).
  * Uses the standard empirical formula: ET = 5.825 × (weight / hp)^(1/3)
  * HP is first converted to SAE Net equivalent for pre-1972 cars.
+ * Drivetrain losses are applied based on transmission type.
  */
-function quarterMileET(hp: number, weightLbs: number, year: number = 2000): number {
-  return 5.825 * Math.pow(weightLbs / netHP(hp, year), 1 / 3);
+function quarterMileET(hp: number, weightLbs: number, year: number = 2000, trans: string = "Manual", gears: number = 5): number {
+  const base = 5.825 * Math.pow(weightLbs / netHP(hp, year), 1 / 3);
+  return base * drivetrainFactor(trans, gears, year);
 }
 
 /**
@@ -392,8 +415,8 @@ function RacePage() {
     jumpedRef.current = false;
 
     // Compute realistic target quarter-mile times and trap speeds
-    const playerTargetET = quarterMileET(playerCar.hp, playerCar.weight, playerCar.year);
-    const oppTargetET = quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year);
+    const playerTargetET = quarterMileET(playerCar.hp, playerCar.weight, playerCar.year, playerCar.trans, playerCar.gears);
+    const oppTargetET = quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year, opponentCar.trans, opponentCar.gears);
     const playerTopSpeed = topSpeedMPH(playerCar.hp, playerCar.weight, playerCar.year, playerCar.topSpeed);
     const oppTopSpeed = topSpeedMPH(opponentCar.hp, opponentCar.weight, opponentCar.year, opponentCar.topSpeed);
 
@@ -723,7 +746,7 @@ function RacePage() {
               {[
                 { label: "HP", p: playerCar.hp, o: opponentCar.hp },
                 { label: "LBS", p: playerCar.weight, o: opponentCar.weight },
-                { label: "1/4 MI", p: quarterMileET(playerCar.hp, playerCar.weight, playerCar.year).toFixed(1) + "s", o: quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year).toFixed(1) + "s" },
+                { label: "1/4 MI", p: quarterMileET(playerCar.hp, playerCar.weight, playerCar.year, playerCar.trans, playerCar.gears).toFixed(1) + "s", o: quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year, opponentCar.trans, opponentCar.gears).toFixed(1) + "s" },
               ].map((s) => (
                 <div key={s.label} style={{ textAlign: "center", padding: "0.6rem", background: "rgba(255,215,0,0.05)", border: `1px solid ${C.border}` }}>
                   <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.midGray, marginBottom: "0.3rem" }}>{s.label}</div>
