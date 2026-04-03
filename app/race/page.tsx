@@ -46,6 +46,8 @@ type RaceCar = {
   era: string;
   production: number;
   redline: number;
+  topSpeed: number;
+  gears: number;
   pixelArt: string | null;
   pixelDash: string | null;
   pixelRear: string | null;
@@ -88,11 +90,11 @@ function trapSpeedMPH(hp: number, weightLbs: number, year: number = 2000): numbe
 }
 
 /**
- * Estimated top speed (MPH).
- * Empirical: top speed ≈ trap speed × 1.35 for most cars.
- * Gives realistic values (e.g., Mustang GT: 94×1.35 ≈ 127mph, Ferrari 360: 117×1.35 ≈ 158mph).
+ * Top speed (MPH). Uses stored value if available, otherwise estimates
+ * from trap speed × 1.35.
  */
-function topSpeedMPH(hp: number, weightLbs: number, year: number = 2000): number {
+function topSpeedMPH(hp: number, weightLbs: number, year: number = 2000, stored: number = 0): number {
+  if (stored > 0) return stored;
   return trapSpeedMPH(hp, weightLbs, year) * 1.35;
 }
 
@@ -102,18 +104,19 @@ function topSpeedMPH(hp: number, weightLbs: number, year: number = 2000): number
  * the actual acceleration model (player holding space perfectly,
  * or opponent AI curve) to account for gear shifts, RPM ramp, etc.
  */
-function calibratePlayer(targetET: number, redline: number = 6500): number {
+function calibratePlayer(targetET: number, redline: number = 6500, maxGears: number = 5): number {
   const shiftPoint = Math.round(redline * 0.92);
+  const gearPenalty = 0.20 / (maxGears / 5); // scale penalty so more gears = less penalty per gear
   const test = (factor: number) => {
     const maxSpeed = 1000 / (targetET * 60 * factor);
     let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0;
     while (pos < 1000 && frames < 60 * 30) {
       rpm = Math.min(rpm + 80, redline);
-      const gf = 1 - (gear - 1) * 0.20;
+      const gf = 1 - (gear - 1) * gearPenalty;
       const rf = Math.min(rpm / (redline * 0.7), 1.2);
-      const atLimiter = rpm >= redline && gear >= 5;
+      const atLimiter = rpm >= redline && gear >= maxGears;
       if (!atLimiter) speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, maxSpeed);
-      if (rpm >= shiftPoint && gear < 5) { gear++; rpm = Math.round(redline * 0.45); }
+      if (rpm >= shiftPoint && gear < maxGears) { gear++; rpm = Math.round(redline * 0.45); }
       pos += speed * (1/60) * 60;
       frames++;
     }
@@ -387,12 +390,12 @@ function RacePage() {
     // Compute realistic target quarter-mile times and trap speeds
     const playerTargetET = quarterMileET(playerCar.hp, playerCar.weight, playerCar.year);
     const oppTargetET = quarterMileET(opponentCar.hp, opponentCar.weight, opponentCar.year);
-    const playerTopSpeed = topSpeedMPH(playerCar.hp, playerCar.weight, playerCar.year);
-    const oppTopSpeed = topSpeedMPH(opponentCar.hp, opponentCar.weight, opponentCar.year);
+    const playerTopSpeed = topSpeedMPH(playerCar.hp, playerCar.weight, playerCar.year, playerCar.topSpeed);
+    const oppTopSpeed = topSpeedMPH(opponentCar.hp, opponentCar.weight, opponentCar.year, opponentCar.topSpeed);
 
     // Calibrate maxSpeed per car by simulating the exact physics model,
     // so perfect play finishes at the predicted ET
-    const playerFactor = calibratePlayer(playerTargetET, playerCar.redline || 6500);
+    const playerFactor = calibratePlayer(playerTargetET, playerCar.redline || 6500, playerCar.gears || 5);
     const oppFactor = calibrateOpponent(oppTargetET);
     const playerMaxSpeed = 1000 / (playerTargetET * 60 * playerFactor);
     const oppMaxSpeed = 1000 / (oppTargetET * 60 * oppFactor);
@@ -456,17 +459,18 @@ function RacePage() {
           }
 
           const pRedline = playerCar.redline || 6500;
-          const pShiftPoint = Math.round(pRedline * 0.92); // shift at 92% of redline
+          const pMaxGears = playerCar.gears || 5;
+          const pShiftPoint = Math.round(pRedline * 0.92);
+          const pGearPenalty = 0.20 / (pMaxGears / 5); // scale: more gears = less penalty per gear
 
           if (accel && !pFinish) {
             pRpm = Math.min(pRpm + 80, pRedline);
-            const gearFactor = 1 - (pGear - 1) * 0.20;
+            const gearFactor = 1 - (pGear - 1) * pGearPenalty;
             const rpmFactor = Math.min(pRpm / (pRedline * 0.7), 1.2);
 
             // Rev limiter: at redline in top gear, cut acceleration
-            const atRevLimit = pRpm >= pRedline && pGear >= 5;
+            const atRevLimit = pRpm >= pRedline && pGear >= pMaxGears;
             if (atRevLimit) {
-              // Bouncing off limiter — hold speed, no more acceleration
               pSpeed = Math.min(pSpeed, playerMaxSpeed);
             } else {
               pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, playerMaxSpeed);
@@ -477,7 +481,7 @@ function RacePage() {
           }
 
           // Auto shift at shift point (92% of redline)
-          if (pRpm >= pShiftPoint && pGear < 5) {
+          if (pRpm >= pShiftPoint && pGear < pMaxGears) {
             pGear++;
             pRpm = Math.round(pRedline * 0.45);
             playGearShift();
