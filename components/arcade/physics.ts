@@ -143,6 +143,7 @@ export class PlayerState {
   gear = 1;
   rpm = 800;
   finishTime = 0;
+  frames = 0; // physics frame counter — used for timing (frames/60 = seconds)
   maxSpeed: number;
   peakSpeed: number;
   mphScale: number;
@@ -150,6 +151,10 @@ export class PlayerState {
   maxGears: number;
   shiftPoint: number;
   rpmRate: number;
+  // Lateral steering
+  laneX = 0;        // -1.0 (left edge) to +1.0 (right edge), 0 = center
+  lateralVel = 0;   // current lateral velocity
+  onGrass = false;   // true when |laneX| > 1.0
 
   constructor(car: RaceCar) {
     const targetET = quarterMileET(car);
@@ -171,9 +176,11 @@ export class PlayerState {
     return this.finishTime > 0;
   }
 
-  update(accel: boolean, elapsed: number): boolean /* shifted */ {
+  update(accel: boolean): boolean /* shifted */ {
     if (this.finished) return false;
+    this.frames++;
 
+    // Fixed dt = 1/60 per frame — matches calibration exactly
     let shifted = false;
     if (accel) {
       this.rpm = Math.min(this.rpm + this.rpmRate, this.redline);
@@ -196,10 +203,29 @@ export class PlayerState {
     this.pos += this.speed * (1 / 60) * 60;
 
     if (this.pos >= 1000 && !this.finished) {
-      this.finishTime = elapsed;
+      // Time = physics frames / 60, converted to ms
+      this.finishTime = Math.round(this.frames / 60 * 1000);
     }
 
     return shifted;
+  }
+
+  updateSteering(steerLeft: boolean, steerRight: boolean) {
+    const LATERAL_ACCEL = 0.04;
+    const LATERAL_FRICTION = 0.92;
+    const MAX_LATERAL_VEL = 0.08;
+    if (steerLeft) this.lateralVel -= LATERAL_ACCEL;
+    if (steerRight) this.lateralVel += LATERAL_ACCEL;
+    this.lateralVel *= LATERAL_FRICTION;
+    this.lateralVel = Math.max(-MAX_LATERAL_VEL, Math.min(MAX_LATERAL_VEL, this.lateralVel));
+    this.laneX += this.lateralVel;
+    this.onGrass = Math.abs(this.laneX) > 1.0;
+    if (this.onGrass) {
+      this.speed *= 0.97;
+      const pushBack = this.laneX > 0 ? -0.01 : 0.01;
+      this.lateralVel += pushBack;
+    }
+    this.laneX = Math.max(-1.3, Math.min(1.3, this.laneX));
   }
 }
 
@@ -207,15 +233,25 @@ export class OpponentState {
   pos = 0;
   speed = 0;
   finishTime = 0;
+  frames = 0; // physics frame counter
   maxSpeed: number;
   reactionTime: number;
+  reactionFrames: number;
   mphScale: number;
+  // Lateral steering AI
+  laneX = 0;
+  lateralVel = 0;
+  targetLaneX = 0;
+  onGrass = false;
+  private lastPlayerLaneX = 0;
+  private blockingDelay = 0;
 
   constructor(car: RaceCar) {
     const targetET = quarterMileET(car);
     const factor = calibrateOpponent(targetET);
     this.maxSpeed = 1000 / (targetET * 60 * factor);
     this.reactionTime = 150 + Math.random() * 250;
+    this.reactionFrames = Math.round(this.reactionTime / (1000 / 60)); // convert ms to frames
     this.mphScale = topSpeedMPH(car) / this.maxSpeed;
   }
 
@@ -227,10 +263,13 @@ export class OpponentState {
     return this.finishTime > 0;
   }
 
-  update(elapsed: number) {
+  update() {
     if (this.finished) return;
+    this.frames++;
 
-    const oppElapsed = elapsed - this.reactionTime;
+    // Opponent uses frame-based elapsed (converted to ms for the acceleration curve)
+    const elapsedMs = this.frames * (1000 / 60);
+    const oppElapsed = elapsedMs - this.reactionTime;
     if (oppElapsed < 0) { this.speed = 0; return; }
 
     const curve = Math.min(oppElapsed / 8000, 1);
@@ -240,7 +279,73 @@ export class OpponentState {
     this.pos += this.speed * (1 / 60) * 60;
 
     if (this.pos >= 1000 && !this.finished) {
-      this.finishTime = elapsed;
+      this.finishTime = Math.round(this.frames / 60 * 1000);
     }
   }
+
+  updateSteering(playerLaneX: number, playerPos: number) {
+    const LATERAL_ACCEL = 0.04;
+    const LATERAL_FRICTION = 0.92;
+    const MAX_LATERAL_VEL = 0.048;
+    this.blockingDelay = Math.max(0, this.blockingDelay - 1);
+    const elapsedMs = this.frames * (1000 / 60);
+    const baseLane = Math.sin(elapsedMs * 0.0005 * Math.PI * 2 / 4) * 0.2;
+    const delta = Math.abs(this.pos - playerPos);
+    if (delta < 80 && this.blockingDelay <= 0) {
+      this.targetLaneX = playerLaneX;
+      this.blockingDelay = 18;
+    } else if (delta >= 80) {
+      this.targetLaneX = baseLane;
+    }
+    this.targetLaneX = Math.max(-0.95, Math.min(0.95, this.targetLaneX));
+    const diff = this.targetLaneX - this.laneX;
+    if (Math.abs(diff) > 0.02) {
+      this.lateralVel += (diff > 0 ? LATERAL_ACCEL : -LATERAL_ACCEL) * 0.6;
+    }
+    this.lateralVel *= LATERAL_FRICTION;
+    this.lateralVel = Math.max(-MAX_LATERAL_VEL, Math.min(MAX_LATERAL_VEL, this.lateralVel));
+    this.laneX += this.lateralVel;
+    this.onGrass = Math.abs(this.laneX) > 1.0;
+    if (this.onGrass) {
+      this.speed *= 0.97;
+      this.lateralVel += this.laneX > 0 ? -0.01 : 0.01;
+    }
+    this.laneX = Math.max(-1.3, Math.min(1.3, this.laneX));
+  }
+}
+
+export type CollisionResult = {
+  carTocar: boolean;
+  playerOnGrass: boolean;
+  opponentOnGrass: boolean;
+};
+
+export function checkCollision(
+  player: PlayerState,
+  opponent: OpponentState,
+  cooldownFrames: number
+): { result: CollisionResult; newCooldown: number } {
+  const result: CollisionResult = {
+    carTocar: false,
+    playerOnGrass: player.onGrass,
+    opponentOnGrass: opponent.onGrass,
+  };
+  let newCooldown = Math.max(0, cooldownFrames - 1);
+  const lateralDist = Math.abs(player.laneX - opponent.laneX);
+  const depthDist = Math.abs(player.pos - opponent.pos);
+  if (lateralDist < 0.25 && depthDist < 30 && cooldownFrames <= 0) {
+    result.carTocar = true;
+    newCooldown = 12;
+    const bounceForce = 0.12;
+    if (player.laneX < opponent.laneX) {
+      player.lateralVel = -bounceForce;
+      opponent.lateralVel = bounceForce;
+    } else {
+      player.lateralVel = bounceForce;
+      opponent.lateralVel = -bounceForce;
+    }
+    player.speed *= 0.90;
+    opponent.speed *= 0.90;
+  }
+  return { result, newCooldown };
 }
