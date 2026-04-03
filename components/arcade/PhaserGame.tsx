@@ -31,6 +31,9 @@ export default function PhaserGame() {
         },
         scene: [BootScene, TitleScene, SelectScene, MatchupScene, RaceScene],
       });
+
+      // Pass env vars into the game registry so scenes can use them
+      game.registry.set("supabaseUrl", process.env.NEXT_PUBLIC_SUPABASE_URL || "");
     });
 
     return () => {

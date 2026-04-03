@@ -2,14 +2,14 @@ import Phaser from "phaser";
 import { RaceCar } from "../physics";
 
 const COLS = 3;
-const CARD_W = 220;
-const CARD_H = 140;
-const GAP = 15;
+const CARD_W = 230;
+const CARD_H = 190;
+const IMG_H = 100; // 16:9 at ~230px wide ≈ 130px, but leave room. Use objectFit logic.
+const GAP = 12;
 
 export class SelectScene extends Phaser.Scene {
   private scrollY = 0;
   private maxScrollY = 0;
-  private carCards: Phaser.GameObjects.Container[] = [];
   private scrollContainer!: Phaser.GameObjects.Container;
 
   constructor() {
@@ -22,25 +22,27 @@ export class SelectScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#0d0d1a");
 
-    // Header (fixed)
-    this.add.text(width / 2, 20, "CLCC ARCADE", {
-      fontFamily: "'Press Start 2P'", fontSize: "7px", color: "#aaaaaa", letterSpacing: 3,
-    }).setOrigin(0.5).setDepth(10);
+    // Header (fixed, depth 10+)
+    const headerBg = this.add.rectangle(width / 2, 40, width, 80, 0x0d0d1a).setDepth(10);
 
-    this.add.text(width / 2, 38, "REDLINE MOTOR CONDOS", {
-      fontFamily: "'Press Start 2P'", fontSize: "11px", color: "#ffd700",
-    }).setOrigin(0.5).setDepth(10);
+    this.add.text(width / 2, 15, "CLCC ARCADE", {
+      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa", letterSpacing: 3,
+    }).setOrigin(0.5).setDepth(11);
 
-    this.add.text(width / 2, 58, "CHOOSE YOUR RIDE", {
-      fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#ffffff",
-    }).setOrigin(0.5).setDepth(10);
+    this.add.text(width / 2, 32, "REDLINE MOTOR CONDOS", {
+      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#ffd700",
+    }).setOrigin(0.5).setDepth(11);
 
-    this.add.text(width / 2, 75, `${cars.length} VEHICLES`, {
-      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa",
-    }).setOrigin(0.5).setDepth(10);
+    this.add.text(width / 2, 50, "CHOOSE YOUR RIDE", {
+      fontFamily: "'Press Start 2P'", fontSize: "8px", color: "#ffffff",
+    }).setOrigin(0.5).setDepth(11);
+
+    this.add.text(width / 2, 66, `${cars.length} VEHICLES`, {
+      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#aaaaaa",
+    }).setOrigin(0.5).setDepth(11);
 
     // Scrollable car grid
-    const headerH = 90;
+    const headerH = 82;
     this.scrollContainer = this.add.container(0, headerH);
 
     const rows = Math.ceil(cars.length / COLS);
@@ -53,20 +55,19 @@ export class SelectScene extends Phaser.Scene {
       const x = startX + col * (CARD_W + GAP) + CARD_W / 2;
       const y = row * (CARD_H + GAP) + CARD_H / 2;
 
-      const card = this.createCarCard(car, x, y);
-      this.scrollContainer.add(card);
-      this.carCards.push(card);
+      this.createCarCard(car, x, y);
     });
 
     this.maxScrollY = Math.max(0, rows * (CARD_H + GAP) - (height - headerH) + 20);
+    this.scrollY = 0;
 
-    // Scroll with mouse wheel
+    // Mouse wheel scroll
     this.input.on("wheel", (_pointer: Phaser.Input.Pointer, _go: unknown[], _dx: number, dy: number) => {
       this.scrollY = Phaser.Math.Clamp(this.scrollY + dy * 0.5, 0, this.maxScrollY);
       this.scrollContainer.setY(headerH - this.scrollY);
     });
 
-    // Scroll with touch drag
+    // Touch drag scroll
     let dragStartY = 0;
     let dragScrollStart = 0;
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
@@ -80,82 +81,91 @@ export class SelectScene extends Phaser.Scene {
         this.scrollContainer.setY(headerH - this.scrollY);
       }
     });
-
-    // Back link
-    const backText = this.add.text(width / 2, height - 15, "BACK", {
-      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#555555",
-    }).setOrigin(0.5).setDepth(10).setInteractive({ useHandCursor: true });
-    backText.on("pointerdown", () => this.scene.start("TitleScene"));
   }
 
-  private createCarCard(car: RaceCar, x: number, y: number): Phaser.GameObjects.Container {
-    const container = this.add.container(x, y);
-
+  private createCarCard(car: RaceCar, x: number, y: number) {
     // Card background
-    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, 0x1a1a2e)
+    const bg = this.add.rectangle(x, y, CARD_W, CARD_H, 0x1a1a2e)
       .setStrokeStyle(2, 0x333333)
       .setInteractive({ useHandCursor: true });
-    container.add(bg);
+    this.scrollContainer.add(bg);
 
-    // Car image area (top portion)
-    const imgH = CARD_H * 0.5;
-    container.add(this.add.rectangle(0, -CARD_H / 2 + imgH / 2, CARD_W - 4, imgH, 0x000000));
+    // Image area — black box at top of card
+    const imgY = y - CARD_H / 2 + IMG_H / 2 + 2;
+    const imgBg = this.add.rectangle(x, imgY, CARD_W - 4, IMG_H, 0x000000);
+    this.scrollContainer.add(imgBg);
 
-    // If car has pixel art, load and display it
+    // Load and display car pixel art
     if (car.pixelArt) {
-      const imgKey = `car-${car.id}`;
+      const imgKey = `car-select-${car.id}`;
       if (!this.textures.exists(imgKey)) {
         this.load.image(imgKey, car.pixelArt);
         this.load.once("complete", () => {
           if (this.textures.exists(imgKey)) {
-            const img = this.add.image(0, -CARD_H / 2 + imgH / 2, imgKey)
-              .setDisplaySize(CARD_W - 8, imgH - 4);
-            container.add(img);
+            const img = this.add.image(x, imgY, imgKey);
+            // Scale to fit within the box while maintaining aspect ratio
+            const maxW = CARD_W - 8;
+            const maxH = IMG_H - 4;
+            const scaleX = maxW / img.width;
+            const scaleY = maxH / img.height;
+            const scale = Math.min(scaleX, scaleY);
+            img.setScale(scale);
+            this.scrollContainer.add(img);
           }
         });
         this.load.start();
       } else {
-        const img = this.add.image(0, -CARD_H / 2 + imgH / 2, imgKey)
-          .setDisplaySize(CARD_W - 8, imgH - 4);
-        container.add(img);
+        const img = this.add.image(x, imgY, imgKey);
+        const maxW = CARD_W - 8;
+        const maxH = IMG_H - 4;
+        const scaleX = maxW / img.width;
+        const scaleY = maxH / img.height;
+        img.setScale(Math.min(scaleX, scaleY));
+        this.scrollContainer.add(img);
       }
     }
 
-    // Category label
-    const catY = imgH / 2 - CARD_H / 2 + imgH + 6;
-    container.add(this.add.text(-CARD_W / 2 + 8, catY - CARD_H / 2 + imgH + 4, car.category || car.era || "", {
+    // Text area below image
+    const textStartY = y - CARD_H / 2 + IMG_H + 8;
+
+    // Category
+    const catText = this.add.text(x - CARD_W / 2 + 8, textStartY, car.category || car.era || "", {
       fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#ffd700",
-    }));
+    });
+    this.scrollContainer.add(catText);
 
     // Car name
-    container.add(this.add.text(-CARD_W / 2 + 8, catY - CARD_H / 2 + imgH + 16, car.name, {
+    const nameText = this.add.text(x - CARD_W / 2 + 8, textStartY + 12, car.name, {
       fontFamily: "'Press Start 2P'", fontSize: "7px", color: "#ffffff",
       wordWrap: { width: CARD_W - 16 },
-    }));
+    });
+    this.scrollContainer.add(nameText);
 
-    // Stats row
-    const statsY = CARD_H / 2 - 14;
-    const statsText = `${car.hp}HP  ${car.weight}LB  ${car.engineType}`;
-    container.add(this.add.text(-CARD_W / 2 + 8, statsY, statsText, {
-      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#aaaaaa",
-    }));
+    // Stats
+    const statsY = y + CARD_H / 2 - 22;
+    const line1 = `HP ${car.hp}   WT ${car.weight.toLocaleString()}`;
+    const line2 = `${car.engineType || ""}   ${car.displacement ? car.displacement + "L" : ""}   ${car.driveType || ""}`;
+    const stats1 = this.add.text(x - CARD_W / 2 + 8, statsY, line1, {
+      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#cccccc",
+    });
+    this.scrollContainer.add(stats1);
+    const stats2 = this.add.text(x - CARD_W / 2 + 8, statsY + 10, line2, {
+      fontFamily: "'Press Start 2P'", fontSize: "4px", color: "#aaaaaa",
+    });
+    this.scrollContainer.add(stats2);
 
-    // Click to select
+    // Click handler
     bg.on("pointerover", () => bg.setStrokeStyle(2, 0xffd700));
     bg.on("pointerout", () => bg.setStrokeStyle(2, 0x333333));
     bg.on("pointerdown", () => {
-      // Pick random opponent
       const cars: RaceCar[] = this.registry.get("cars") || [];
       const others = cars.filter((c) => c.id !== car.id);
       const opponent = others.length > 0
         ? others[Math.floor(Math.random() * others.length)]
         : car;
-
       this.registry.set("playerCar", car);
       this.registry.set("opponentCar", opponent);
       this.scene.start("MatchupScene");
     });
-
-    return container;
   }
 }

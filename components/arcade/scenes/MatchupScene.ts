@@ -82,13 +82,17 @@ export class MatchupScene extends Phaser.Scene {
       }
     });
 
-    // Pick different car link
-    const pickText = this.add.text(width / 2, height * 0.92, "PICK DIFFERENT CAR", {
-      fontFamily: "'Press Start 2P'", fontSize: "7px", color: "#555555",
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    pickText.on("pointerover", () => pickText.setColor("#aaaaaa"));
-    pickText.on("pointerout", () => pickText.setColor("#555555"));
-    pickText.on("pointerdown", () => this.scene.start("SelectScene"));
+    // Pick different car — use a rectangle button for reliable click target
+    const pickBtnY = height * 0.92;
+    const pickBtn = this.add.rectangle(width / 2, pickBtnY, 200, 28, 0x0d0d1a)
+      .setStrokeStyle(1, 0x333333)
+      .setInteractive({ useHandCursor: true });
+    const pickText = this.add.text(width / 2, pickBtnY, "PICK DIFFERENT CAR", {
+      fontFamily: "'Press Start 2P'", fontSize: "7px", color: "#777777",
+    }).setOrigin(0.5);
+    pickBtn.on("pointerover", () => { pickBtn.setStrokeStyle(1, 0xffd700); pickText.setColor("#aaaaaa"); });
+    pickBtn.on("pointerout", () => { pickBtn.setStrokeStyle(1, 0x333333); pickText.setColor("#777777"); });
+    pickBtn.on("pointerdown", () => this.scene.start("SelectScene"));
 
     // Keyboard shortcut
     this.input.keyboard!.once("keydown-SPACE", () => {

@@ -27,6 +27,12 @@ export class BootScene extends Phaser.Scene {
     this.load.on("progress", (value: number) => {
       fill.setSize(barW * value, barH);
     });
+
+    // Load the Redline Motor Condos garage background image
+    const supabaseUrl = this.registry.get("supabaseUrl") || "";
+    if (supabaseUrl) {
+      this.load.image("garage-bg", `${supabaseUrl}/storage/v1/object/public/pixel-art/8bit/redline-garage.png?v=2`);
+    }
   }
 
   create() {
@@ -50,7 +56,6 @@ export class BootScene extends Phaser.Scene {
           aiImage: c.aiImage || null,
         }));
 
-        // Store cars in the registry so all scenes can access them
         this.registry.set("cars", cars);
         this.scene.start("TitleScene");
       })
