@@ -9,6 +9,15 @@ function getCtx(): AudioContext {
   return ctx;
 }
 
+/**
+ * Call from a user-gesture handler (click/tap) to ensure the
+ * AudioContext is created and resumed before any async callbacks
+ * (setInterval, requestAnimationFrame) try to use it.
+ */
+export function initAudio() {
+  getCtx();
+}
+
 // ─── COUNTDOWN BEEPS ─────────────────────────────────────────────────────────
 
 export function playCountdownBeep(isGo: boolean) {
@@ -202,9 +211,92 @@ export function stopMusic() {
   }
 }
 
+// ─── SELECT SCREEN MUSIC (chill garage vibe) ────────────────────────────────
+
+let selectInterval: ReturnType<typeof setInterval> | null = null;
+let selectGainNode: GainNode | null = null;
+
+// Mellow pentatonic melody — relaxed browsing feel
+const SELECT_BASS = [98, 98, 131, 131, 110, 110, 98, 98]; // G2, C3, A2, G2
+const SELECT_MELODY = [392, 0, 330, 0, 294, 0, 262, 0]; // G4, E4, D4, C4
+const SELECT_ARPEGGIO = [0, 523, 0, 440, 0, 392, 0, 330]; // off-beat sparkles
+
+export function startSelectMusic() {
+  const c = getCtx();
+  if (selectInterval) stopSelectMusic();
+
+  selectGainNode = c.createGain();
+  selectGainNode.gain.value = 0.04;
+  selectGainNode.connect(c.destination);
+
+  let beat = 0;
+  const BPM = 100;
+  const beatMs = (60 / BPM) * 1000;
+
+  selectInterval = setInterval(() => {
+    const idx = beat % 8;
+
+    const bassFreq = SELECT_BASS[idx];
+    if (bassFreq) {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = bassFreq;
+      g.gain.value = 0.8;
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.8);
+      osc.connect(g);
+      g.connect(selectGainNode!);
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime + beatMs / 1000);
+    }
+
+    const melFreq = SELECT_MELODY[idx];
+    if (melFreq) {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = "square";
+      osc.frequency.value = melFreq;
+      g.gain.value = 0.4;
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.6);
+      osc.connect(g);
+      g.connect(selectGainNode!);
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime + beatMs / 1000);
+    }
+
+    const arpFreq = SELECT_ARPEGGIO[idx];
+    if (arpFreq) {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = "sine";
+      osc.frequency.value = arpFreq;
+      g.gain.value = 0.3;
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.4);
+      osc.connect(g);
+      g.connect(selectGainNode!);
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime + beatMs / 1000);
+    }
+
+    beat++;
+  }, beatMs);
+}
+
+export function stopSelectMusic() {
+  if (selectInterval) {
+    clearInterval(selectInterval);
+    selectInterval = null;
+  }
+  if (selectGainNode) {
+    selectGainNode.disconnect();
+    selectGainNode = null;
+  }
+}
+
 // ─── CLEANUP ─────────────────────────────────────────────────────────────────
 
 export function stopAll() {
   stopEngine();
   stopMusic();
+  stopSelectMusic();
 }

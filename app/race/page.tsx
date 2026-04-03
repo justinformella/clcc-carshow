@@ -5,9 +5,10 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
+  initAudio,
   playCountdownBeep, startEngine, updateEngine, stopEngine,
   playGearShift, playWinJingle, playLoseJingle,
-  startMusic, stopAll,
+  startMusic, startSelectMusic, stopSelectMusic, stopAll,
 } from "@/lib/race-audio";
 
 // ─── 8-BIT PALETTE ───
@@ -35,13 +36,22 @@ type RaceCar = {
   hp: number;
   weight: number;
   pwr: number;
+  displacement: number;
+  cylinders: number;
+  engineType: string;
+  category: string;
+  driveType: string;
+  bodyStyle: string;
+  origin: string;
+  era: string;
+  production: number;
   pixelArt: string | null;
   pixelDash: string | null;
   pixelRear: string | null;
   aiImage: string | null;
 };
 
-type Phase = "loading" | "select" | "countdown" | "racing" | "finished";
+type Phase = "loading" | "title" | "select" | "countdown" | "racing" | "finished";
 
 /**
  * Convert advertised HP to SAE Net equivalent.
@@ -194,9 +204,9 @@ function RacePage() {
             setOpponentCar(opp);
           }
         }
-        setPhase("select");
+        setPhase("title");
       })
-      .catch(() => setPhase("select"));
+      .catch(() => setPhase("title"));
   }, [preselectedCarId]);
 
   // Keyboard
@@ -345,6 +355,8 @@ function RacePage() {
 
   const startRace = useCallback(() => {
     if (!playerCar || !opponentCar) return;
+    initAudio();
+    stopSelectMusic();
     setPhase("countdown");
     setCountdown(3);
     setPlayerPos(0);
@@ -553,6 +565,38 @@ function RacePage() {
     return <div style={pageStyle}><p style={{ color: C.midGray, textAlign: "center", paddingTop: "40vh", fontFamily: FONT, fontSize: "0.75rem" }}>LOADING GARAGE...</p></div>;
   }
 
+  // ─── TITLE SCREEN ───
+  if (phase === "title") {
+    return (
+      <div style={{ ...pageStyle, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", textAlign: "center", gap: "1.5rem" }}>
+        {/* Garage image */}
+        <div style={{ maxWidth: "500px", width: "90%", border: `2px solid ${C.border}`, boxShadow: `4px 4px 0 ${C.goldDark}`, overflow: "hidden", lineHeight: 0 }}>
+          <img
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png`}
+            alt="Redline Motor Condos"
+            style={{ display: "block", width: "100%", imageRendering: "pixelated" }}
+          />
+        </div>
+        <div>
+          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.75rem" }}>CLCC ARCADE</p>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(0.9rem, 3vw, 1.4rem)", color: C.gold, marginBottom: "0.5rem" }}>REDLINE MOTOR CONDOS</h1>
+          <p style={{ fontFamily: FONT, fontSize: "0.7rem", color: C.midGray, lineHeight: 2 }}>{cars.length} VEHICLES IN THE GARAGE</p>
+        </div>
+        <button
+          onClick={() => {
+            initAudio();
+            startSelectMusic();
+            setPhase("select");
+          }}
+          style={{ ...goldBtnStyle, fontSize: "1rem", padding: "1rem 3rem" }}
+        >
+          ENTER GARAGE
+        </button>
+        <Link href="/" style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.border, textDecoration: "none" }}>BACK TO SITE</Link>
+      </div>
+    );
+  }
+
   // ─── CAR SELECT ───
   if (phase === "select") {
     return (
@@ -612,7 +656,7 @@ function RacePage() {
                 </button>
               </div>
               <br />
-              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "1rem", cursor: "pointer", textDecoration: "underline" }}>
+              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); stopSelectMusic(); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "1rem", cursor: "pointer", textDecoration: "underline" }}>
                 PICK DIFFERENT CAR
               </button>
             </div>
@@ -623,7 +667,7 @@ function RacePage() {
           </div>
         ) : (
           /* Car grid */
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "0.75rem", maxWidth: "1000px", margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "0.75rem", maxWidth: "1100px", margin: "0 auto" }}>
             {cars.map((car) => (
               <button
                 key={car.id}
@@ -640,20 +684,31 @@ function RacePage() {
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}
               >
-                <div style={{ width: "100%", aspectRatio: "16/9", background: "#111", overflow: "hidden" }}>
+                <div style={{ width: "100%", aspectRatio: "16/9", background: "#000", overflow: "hidden", lineHeight: 0 }}>
                   {car.pixelArt ? (
-                    <img src={car.pixelArt} alt={car.name} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" }} />
+                    <img src={car.pixelArt} alt={car.name} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center", imageRendering: "pixelated" }} />
                   ) : car.aiImage ? (
-                    <img src={car.aiImage} alt={car.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={car.aiImage} alt={car.name} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }} />
                   ) : (
                     <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: C.border, fontFamily: FONT, fontSize: "0.75rem" }}>NO IMAGE</div>
                   )}
                 </div>
-                <div style={{ padding: "0.5rem 0.6rem" }}>
-                  <p style={{ color: C.white, fontSize: "0.85rem", fontFamily: FONT, marginBottom: "0.2rem", lineHeight: 1.6 }}>{car.name}</p>
-                  <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.75rem", fontFamily: FONT, color: C.midGray }}>
-                    <span>{car.hp} HP</span>
-                    <span>{quarterMileET(car.hp, car.weight, car.year).toFixed(1)}s</span>
+                <div style={{ padding: "0.6rem 0.7rem" }}>
+                  <p style={{ color: C.gold, fontSize: "0.65rem", fontFamily: FONT, marginBottom: "0.15rem" }}>{car.category || car.era}</p>
+                  <p style={{ color: C.white, fontSize: "0.85rem", fontFamily: FONT, marginBottom: "0.4rem", lineHeight: 1.6 }}>{car.name}</p>
+                  {/* Stat grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.3rem 0.6rem", fontSize: "0.6rem", fontFamily: FONT }}>
+                    <div><span style={{ color: C.midGray }}>HP </span><span style={{ color: C.white }}>{car.hp}</span></div>
+                    <div><span style={{ color: C.midGray }}>WT </span><span style={{ color: C.white }}>{car.weight.toLocaleString()}</span></div>
+                    {car.engineType && car.engineType !== "Unknown" && (
+                      <div><span style={{ color: C.midGray }}>ENG </span><span style={{ color: C.white }}>{car.engineType}</span></div>
+                    )}
+                    {car.displacement > 0 && (
+                      <div><span style={{ color: C.midGray }}>DSP </span><span style={{ color: C.white }}>{car.displacement}L</span></div>
+                    )}
+                    {car.driveType && car.driveType !== "Unknown" && (
+                      <div><span style={{ color: C.midGray }}>DRV </span><span style={{ color: C.white }}>{car.driveType}</span></div>
+                    )}
                   </div>
                 </div>
               </button>
@@ -809,7 +864,7 @@ function RacePage() {
               </div>
               <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
                 <button onClick={startRace} style={goldBtnStyle}>REMATCH</button>
-                <button onClick={() => { setPlayerCar(null); setOpponentCar(null); setPhase("select"); }} style={pixelBtnStyle}>
+                <button onClick={() => { setPlayerCar(null); setOpponentCar(null); startSelectMusic(); setPhase("select"); }} style={pixelBtnStyle}>
                   NEW CAR
                 </button>
               </div>

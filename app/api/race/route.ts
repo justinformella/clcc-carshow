@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: specs } = await supabase
       .from("vehicle_specs")
-      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type");
+      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type, body_style, country_of_origin, era, production_numbers");
 
     if (!registrations || registrations.length === 0) {
       return NextResponse.json({ cars: [] });
@@ -43,6 +43,10 @@ export async function GET() {
           engineType: spec.engine_type || "Unknown",
           category: spec.category || "Unknown",
           driveType: spec.drive_type || "RWD",
+          bodyStyle: spec.body_style || "",
+          origin: spec.country_of_origin || "",
+          era: spec.era || "",
+          production: spec.production_numbers || 0,
           pwr: Math.round(pwr * 10) / 10,
           pixelArt: r.pixel_art_url || null,
           pixelDash: r.pixel_dashboard_url || null,
