@@ -568,31 +568,49 @@ function RacePage() {
   // ─── TITLE SCREEN ───
   if (phase === "title") {
     return (
-      <div style={{ ...pageStyle, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", textAlign: "center", gap: "1.5rem" }}>
-        {/* Garage image */}
-        <div style={{ maxWidth: "500px", width: "90%", border: `2px solid ${C.border}`, boxShadow: `4px 4px 0 ${C.goldDark}`, overflow: "hidden", lineHeight: 0 }}>
-          <img
-            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png?v=2`}
-            alt="Redline Motor Condos"
-            style={{ display: "block", width: "100%", imageRendering: "pixelated" }}
-          />
-        </div>
-        <div>
-          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.75rem" }}>CLCC ARCADE</p>
-          <h1 style={{ fontFamily: FONT, fontSize: "clamp(0.9rem, 3vw, 1.4rem)", color: C.gold, marginBottom: "0.5rem" }}>REDLINE MOTOR CONDOS</h1>
+      <div style={{
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        textAlign: "center",
+        padding: "2rem 1.5rem 3rem",
+        overflow: "hidden",
+      }}>
+        {/* Full-screen background image */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `url(${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png?v=2)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          imageRendering: "pixelated",
+        }} />
+        {/* Gradient overlay for text readability */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(to bottom, rgba(13,13,26,0.2) 0%, rgba(13,13,26,0.5) 40%, rgba(13,13,26,0.92) 75%, rgba(13,13,26,1) 100%)",
+        }} />
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem" }}>
+          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em" }}>CLCC ARCADE</p>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1.1rem, 4vw, 1.8rem)", color: C.gold, textShadow: "0 0 20px rgba(255,215,0,0.3)" }}>REDLINE MOTOR CONDOS</h1>
           <p style={{ fontFamily: FONT, fontSize: "0.7rem", color: C.midGray, lineHeight: 2 }}>{cars.length} VEHICLES IN THE GARAGE</p>
+          <button
+            onClick={() => {
+              initAudio();
+              startSelectMusic();
+              setPhase("select");
+            }}
+            style={{ ...goldBtnStyle, fontSize: "1rem", padding: "1rem 3rem", marginTop: "0.5rem" }}
+          >
+            ENTER GARAGE
+          </button>
+          <Link href="/" style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.border, textDecoration: "none" }}>BACK TO SITE</Link>
         </div>
-        <button
-          onClick={() => {
-            initAudio();
-            startSelectMusic();
-            setPhase("select");
-          }}
-          style={{ ...goldBtnStyle, fontSize: "1rem", padding: "1rem 3rem" }}
-        >
-          ENTER GARAGE
-        </button>
-        <Link href="/" style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.border, textDecoration: "none" }}>BACK TO SITE</Link>
       </div>
     );
   }
