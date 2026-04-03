@@ -1,10 +1,6 @@
 import Phaser from "phaser";
 import { RaceCar } from "../physics";
 
-const COLS = 3;
-const CARD_W = 230;
-const CARD_H = 190;
-const IMG_H = 100; // 16:9 at ~230px wide ≈ 130px, but leave room. Use objectFit logic.
 const GAP = 12;
 
 export class SelectScene extends Phaser.Scene {
@@ -12,6 +8,7 @@ export class SelectScene extends Phaser.Scene {
   private maxScrollY = 0;
   private scrollContainer!: Phaser.GameObjects.Container;
   private isDragging = false;
+  private inputEnabled = false; // prevent passthrough click from previous scene
 
   constructor() {
     super({ key: "SelectScene" });
@@ -22,9 +19,20 @@ export class SelectScene extends Phaser.Scene {
     const cars: RaceCar[] = this.registry.get("cars") || [];
 
     this.cameras.main.setBackgroundColor("#0d0d1a");
+    this.isDragging = false;
+    this.inputEnabled = false;
 
-    // Header (fixed, depth 10+)
-    const headerBg = this.add.rectangle(width / 2, 40, width, 80, 0x0d0d1a).setDepth(10);
+    // Delay input activation to prevent click passthrough from TitleScene
+    this.time.delayedCall(300, () => { this.inputEnabled = true; });
+
+    // Responsive columns: 1 on narrow, 2 on medium, 3 on wide
+    const cols = width < 500 ? 1 : width < 700 ? 2 : 3;
+    const cardW = Math.min(230, (width - GAP * (cols + 1)) / cols);
+    const imgH = cardW * 0.45; // maintain roughly 16:9
+    const cardH = imgH + 90; // image + text area
+
+    // Header
+    this.add.rectangle(width / 2, 40, width, 80, 0x0d0d1a).setDepth(10);
 
     this.add.text(width / 2, 15, "CLCC ARCADE", {
       fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa", letterSpacing: 3,
@@ -46,20 +54,20 @@ export class SelectScene extends Phaser.Scene {
     const headerH = 82;
     this.scrollContainer = this.add.container(0, headerH);
 
-    const rows = Math.ceil(cars.length / COLS);
-    const gridW = COLS * CARD_W + (COLS - 1) * GAP;
+    const rows = Math.ceil(cars.length / cols);
+    const gridW = cols * cardW + (cols - 1) * GAP;
     const startX = (width - gridW) / 2;
 
     cars.forEach((car, i) => {
-      const col = i % COLS;
-      const row = Math.floor(i / COLS);
-      const x = startX + col * (CARD_W + GAP) + CARD_W / 2;
-      const y = row * (CARD_H + GAP) + CARD_H / 2;
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + col * (cardW + GAP) + cardW / 2;
+      const y = row * (cardH + GAP) + cardH / 2;
 
-      this.createCarCard(car, x, y);
+      this.createCarCard(car, x, y, cardW, cardH, imgH);
     });
 
-    this.maxScrollY = Math.max(0, rows * (CARD_H + GAP) - (height - headerH) + 20);
+    this.maxScrollY = Math.max(0, rows * (cardH + GAP) - (height - headerH) + 20);
     this.scrollY = 0;
 
     // Mouse wheel scroll
@@ -68,10 +76,9 @@ export class SelectScene extends Phaser.Scene {
       this.scrollContainer.setY(headerH - this.scrollY);
     });
 
-    // Touch/mouse drag scroll with click-vs-drag detection
+    // Touch/mouse drag scroll
     let dragStartY = 0;
     let dragScrollStart = 0;
-    this.isDragging = false;
 
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       dragStartY = pointer.y;
@@ -81,91 +88,74 @@ export class SelectScene extends Phaser.Scene {
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
       if (pointer.isDown) {
         const dy = dragStartY - pointer.y;
-        if (Math.abs(dy) > 5) this.isDragging = true; // threshold: 5px = drag, not click
+        if (Math.abs(dy) > 8) this.isDragging = true;
         this.scrollY = Phaser.Math.Clamp(dragScrollStart + dy, 0, this.maxScrollY);
         this.scrollContainer.setY(headerH - this.scrollY);
       }
     });
   }
 
-  private createCarCard(car: RaceCar, x: number, y: number) {
+  private createCarCard(car: RaceCar, x: number, y: number, cardW: number, cardH: number, imgH: number) {
     // Card background
-    const bg = this.add.rectangle(x, y, CARD_W, CARD_H, 0x1a1a2e)
+    const bg = this.add.rectangle(x, y, cardW, cardH, 0x1a1a2e)
       .setStrokeStyle(2, 0x333333)
       .setInteractive({ useHandCursor: true });
     this.scrollContainer.add(bg);
 
-    // Image area — black box at top of card
-    const imgY = y - CARD_H / 2 + IMG_H / 2 + 2;
-    const imgBg = this.add.rectangle(x, imgY, CARD_W - 4, IMG_H, 0x000000);
-    this.scrollContainer.add(imgBg);
+    // Image area
+    const imgY = y - cardH / 2 + imgH / 2 + 2;
+    this.scrollContainer.add(this.add.rectangle(x, imgY, cardW - 4, imgH, 0x000000));
 
-    // Load and display car pixel art
+    // Load pixel art
     if (car.pixelArt) {
       const imgKey = `car-select-${car.id}`;
-      if (!this.textures.exists(imgKey)) {
-        this.load.image(imgKey, car.pixelArt);
-        this.load.once("complete", () => {
-          if (this.textures.exists(imgKey)) {
-            const img = this.add.image(x, imgY, imgKey);
-            // Scale to fit within the box while maintaining aspect ratio
-            const maxW = CARD_W - 8;
-            const maxH = IMG_H - 4;
-            const scaleX = maxW / img.width;
-            const scaleY = maxH / img.height;
-            const scale = Math.min(scaleX, scaleY);
-            img.setScale(scale);
-            this.scrollContainer.add(img);
-          }
-        });
-        this.load.start();
+      const addImage = () => {
+        if (this.textures.exists(imgKey)) {
+          const img = this.add.image(x, imgY, imgKey);
+          const scaleX = (cardW - 8) / img.width;
+          const scaleY = (imgH - 4) / img.height;
+          img.setScale(Math.min(scaleX, scaleY));
+          this.scrollContainer.add(img);
+        }
+      };
+      if (this.textures.exists(imgKey)) {
+        addImage();
       } else {
-        const img = this.add.image(x, imgY, imgKey);
-        const maxW = CARD_W - 8;
-        const maxH = IMG_H - 4;
-        const scaleX = maxW / img.width;
-        const scaleY = maxH / img.height;
-        img.setScale(Math.min(scaleX, scaleY));
-        this.scrollContainer.add(img);
+        this.load.image(imgKey, car.pixelArt);
+        this.load.once("complete", addImage);
+        this.load.start();
       }
     }
 
-    // Text area below image
-    const textStartY = y - CARD_H / 2 + IMG_H + 8;
+    // Text below image
+    const textStartY = y - cardH / 2 + imgH + 8;
 
-    // Category
-    const catText = this.add.text(x - CARD_W / 2 + 8, textStartY, car.category || car.era || "", {
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, textStartY, car.category || car.era || "", {
       fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#ffd700",
-    });
-    this.scrollContainer.add(catText);
+    }));
 
-    // Car name
-    const nameText = this.add.text(x - CARD_W / 2 + 8, textStartY + 12, car.name, {
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, textStartY + 12, car.name, {
       fontFamily: "'Press Start 2P'", fontSize: "7px", color: "#ffffff",
-      wordWrap: { width: CARD_W - 16 },
-    });
-    this.scrollContainer.add(nameText);
+      wordWrap: { width: cardW - 16 },
+    }));
 
-    // Stats
-    const statsY = y + CARD_H / 2 - 22;
-    const line1 = `HP ${car.hp}   WT ${car.weight.toLocaleString()}`;
-    const line2 = `${car.engineType || ""}   ${car.displacement ? car.displacement + "L" : ""}   ${car.driveType || ""}`;
-    const stats1 = this.add.text(x - CARD_W / 2 + 8, statsY, line1, {
+    const statsY = y + cardH / 2 - 22;
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, statsY,
+      `HP ${car.hp}   WT ${car.weight.toLocaleString()}`, {
       fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#cccccc",
-    });
-    this.scrollContainer.add(stats1);
-    const stats2 = this.add.text(x - CARD_W / 2 + 8, statsY + 10, line2, {
+    }));
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, statsY + 10,
+      `${car.engineType || ""}  ${car.displacement ? car.displacement + "L" : ""}  ${car.driveType || ""}`, {
       fontFamily: "'Press Start 2P'", fontSize: "4px", color: "#aaaaaa",
-    });
-    this.scrollContainer.add(stats2);
+    }));
 
-    // Click handler
+    // Click handler — only on pointerup, only if not dragging, only after delay
     bg.on("pointerover", () => bg.setStrokeStyle(2, 0xffd700));
     bg.on("pointerout", () => bg.setStrokeStyle(2, 0x333333));
     bg.on("pointerup", () => {
-      if (this.isDragging) return; // was a scroll, not a click
-      const cars: RaceCar[] = this.registry.get("cars") || [];
-      const others = cars.filter((c) => c.id !== car.id);
+      if (this.isDragging || !this.inputEnabled) return;
+      const allCars: RaceCar[] = this.registry.get("cars") || [];
+      const others = allCars.filter((c) => c.id !== car.id);
       const opponent = others.length > 0
         ? others[Math.floor(Math.random() * others.length)]
         : car;
