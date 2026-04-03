@@ -135,8 +135,8 @@ function calibratePlayer(targetET: number, redline: number = 6500, maxGears: num
     let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0, peak = 0;
     while (pos < 1000 && frames < 60 * 30) {
       rpm = Math.min(rpm + 30, redline);
-      const gearCeiling = maxSpeed * (0.35 + 0.65 * (gear / maxGears));
-      const gearFloor = gear === 1 ? 0 : maxSpeed * (0.35 + 0.65 * ((gear - 1) / maxGears));
+      const gearCeiling = maxSpeed * (0.20 + 0.80 * Math.pow(gear / maxGears, 1.4));
+      const gearFloor = gear === 1 ? 0 : maxSpeed * (0.20 + 0.80 * Math.pow((gear - 1) / maxGears, 1.4));
       const rpmPct = (rpm - 800) / (redline - 800);
       const target = gearFloor + (gearCeiling - gearFloor) * rpmPct;
       speed += (target - speed) * 0.15;
@@ -497,8 +497,8 @@ function RacePage() {
             // Speed is directly tied to RPM within each gear.
             // Each gear has a speed range: gear 1 covers 0→cap1, gear 2 covers cap1→cap2, etc.
             // At redline in any gear, speed = that gear's ceiling. Shifting drops RPM, not speed.
-            const gearCeiling = playerMaxSpeed * (0.35 + 0.65 * (pGear / pMaxGears));
-            const gearFloor = pGear === 1 ? 0 : playerMaxSpeed * (0.35 + 0.65 * ((pGear - 1) / pMaxGears));
+            const gearCeiling = playerMaxSpeed * (0.20 + 0.80 * Math.pow(pGear / pMaxGears, 1.4));
+            const gearFloor = pGear === 1 ? 0 : playerMaxSpeed * (0.20 + 0.80 * Math.pow((pGear - 1) / pMaxGears, 1.4));
             const rpmPct = (pRpm - 800) / (pRedline - 800); // 0 at idle, 1 at redline
             const targetSpeed = gearFloor + (gearCeiling - gearFloor) * rpmPct;
             // Smoothly approach target speed (don't snap instantly)
