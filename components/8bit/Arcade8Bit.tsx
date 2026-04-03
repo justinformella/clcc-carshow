@@ -30,7 +30,7 @@ export default function Arcade8Bit() {
 
   return (
     <section id="arcade" style={{ ...sectionStyle(COLORS.bgDark), textAlign: "center" }}>
-      <h2 style={sectionTitleStyle()}>ARCADE</h2>
+      <h2 style={sectionTitleStyle()}>CLCC ARCADE</h2>
 
       <div
         style={{
@@ -78,7 +78,7 @@ export default function Arcade8Bit() {
           lineHeight: 2,
         }}
       >
-        Try out the show car lineup
+        Check out the Redline Motor Condos garage and race the registered cars
       </p>
 
       <Link href="/race" style={{ ...goldButtonStyle(), textDecoration: "none" }}>
