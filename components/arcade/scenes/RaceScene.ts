@@ -58,6 +58,10 @@ export class RaceScene extends Phaser.Scene {
     this.input.keyboard!.on("keyup-SPACE", () => { this.accelHeld = false; });
     this.input.keyboard!.on("keydown-UP", () => { this.accelHeld = true; });
     this.input.keyboard!.on("keyup-UP", () => { this.accelHeld = false; });
+
+    // Touch input for mobile
+    this.input.on("pointerdown", () => { this.accelHeld = true; });
+    this.input.on("pointerup", () => { this.accelHeld = false; });
   }
 
   private createScenery(width: number, height: number) {
