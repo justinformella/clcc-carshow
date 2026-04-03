@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import { drawRoad } from "../road";
 import { createHorizonTexture } from "../horizon";
 
