@@ -179,6 +179,44 @@ function calibrateOpponent(targetET: number): number {
   return (lo + hi) / 2;
 }
 
+// ─── TRACK SKINS ───
+type TrackSkin = {
+  skyTop: string; skyBottom: string;
+  stars: boolean;
+  treeColor: string;
+  grassA: string; grassB: string;
+  roadA: string; roadB: string;
+  shoulderA: string; shoulderB: string;
+  centerLine: string;
+};
+
+const TRACK_SKINS: TrackSkin[] = [
+  { // Night (default)
+    skyTop: "#050510", skyBottom: "#0d0d2a", stars: true, treeColor: "#0a1a0a",
+    grassA: "#0a3a0a", grassB: "#0d4a0d", roadA: "#1a1a2e", roadB: "#222240",
+    shoulderA: C.red, shoulderB: C.white, centerLine: C.gold,
+  },
+  { // Dusk
+    skyTop: "#1a0a2e", skyBottom: "#3d1a4a", stars: true, treeColor: "#1a0d1a",
+    grassA: "#1a3a1a", grassB: "#1d4a1d", roadA: "#2a2a3e", roadB: "#333348",
+    shoulderA: "#ff6600", shoulderB: C.white, centerLine: "#ff9900",
+  },
+  { // Dawn
+    skyTop: "#1a1a3a", skyBottom: "#4a2a1a", stars: false, treeColor: "#0d1a0a",
+    grassA: "#1a4a0a", grassB: "#2a5a1a", roadA: "#252535", roadB: "#2e2e40",
+    shoulderA: C.red, shoulderB: "#ffcc00", centerLine: "#ffcc00",
+  },
+  { // Midnight blue
+    skyTop: "#000008", skyBottom: "#000020", stars: true, treeColor: "#050510",
+    grassA: "#061a06", grassB: "#082a08", roadA: "#111122", roadB: "#181830",
+    shoulderA: "#cc2222", shoulderB: "#cccccc", centerLine: C.gold,
+  },
+];
+
+function pickRandomSkin(): TrackSkin {
+  return TRACK_SKINS[Math.floor(Math.random() * TRACK_SKINS.length)];
+}
+
 export default function RacePageWrapper() {
   return (
     <Suspense fallback={<div style={{ background: C.bgDark, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: C.midGray, fontFamily: FONT, fontSize: "0.75rem" }}>LOADING...</div>}>
@@ -208,6 +246,8 @@ function RacePage() {
   const [oppReactionTime, setOppReactionTime] = useState(0);
   const [jumped, setJumped] = useState(false); // true if player launched before green
   const [generating, setGenerating] = useState(false);
+  const [trackSkin, setTrackSkin] = useState<TrackSkin>(TRACK_SKINS[0]);
+  const [finishFlash, setFinishFlash] = useState(false);
 
   const animRef = useRef<number>(0);
   const startRef = useRef(0);
@@ -300,7 +340,7 @@ function RacePage() {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  const drawRoad = useCallback((canvas: HTMLCanvasElement, roadOffset: number) => {
+  const drawRoad = useCallback((canvas: HTMLCanvasElement, roadOffset: number, skin: TrackSkin) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -311,22 +351,24 @@ function RacePage() {
 
     // Sky
     const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
-    skyGrad.addColorStop(0, "#050510");
-    skyGrad.addColorStop(1, "#0d0d2a");
+    skyGrad.addColorStop(0, skin.skyTop);
+    skyGrad.addColorStop(1, skin.skyBottom);
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, W, horizonY);
 
     // Pixel stars
-    ctx.fillStyle = C.white;
-    for (let i = 0; i < 30; i++) {
-      const sx = (Math.sin(i * 127.1) * 0.5 + 0.5) * W;
-      const sy = (Math.sin(i * 269.5) * 0.5 + 0.5) * horizonY * 0.8;
-      const size = i % 3 === 0 ? 2 : 1;
-      ctx.fillRect(Math.floor(sx), Math.floor(sy), size, size);
+    if (skin.stars) {
+      ctx.fillStyle = C.white;
+      for (let i = 0; i < 30; i++) {
+        const sx = (Math.sin(i * 127.1) * 0.5 + 0.5) * W;
+        const sy = (Math.sin(i * 269.5) * 0.5 + 0.5) * horizonY * 0.8;
+        const size = i % 3 === 0 ? 2 : 1;
+        ctx.fillRect(Math.floor(sx), Math.floor(sy), size, size);
+      }
     }
 
     // Horizon tree line (blocky pixel trees)
-    ctx.fillStyle = "#0a1a0a";
+    ctx.fillStyle = skin.treeColor;
     for (let x = 0; x < W; x += 20) {
       const treeH = 10 + ((x * 7) % 11);
       ctx.fillRect(x, horizonY - treeH, 16, treeH);
@@ -353,24 +395,24 @@ function RacePage() {
       const stripePhase = (z + roadOffset * 0.3) % 20;
       const stripeBand = stripePhase < 10;
 
-      // Grass — alternating green bands
-      ctx.fillStyle = stripeBand ? "#0a3a0a" : "#0d4a0d";
+      // Grass
+      ctx.fillStyle = stripeBand ? skin.grassA : skin.grassB;
       ctx.fillRect(0, y, roadLeft - shoulderW, 1);
       ctx.fillRect(roadRight + shoulderW, y, W - (roadRight + shoulderW), 1);
 
       // Shoulder rumble strips
-      ctx.fillStyle = stripeBand ? C.red : C.white;
+      ctx.fillStyle = stripeBand ? skin.shoulderA : skin.shoulderB;
       ctx.fillRect(roadLeft - shoulderW, y, shoulderW, 1);
       ctx.fillRect(roadRight, y, shoulderW, 1);
 
       // Road surface
-      ctx.fillStyle = stripeBand ? "#1a1a2e" : "#222240";
+      ctx.fillStyle = stripeBand ? skin.roadA : skin.roadB;
       ctx.fillRect(roadLeft, y, roadW, 1);
 
-      // Center dashed line (gold)
+      // Center dashed line
       if (stripePhase > 2 && stripePhase < 8) {
         const lineW = Math.max(2, 4 * perspective);
-        ctx.fillStyle = C.gold;
+        ctx.fillStyle = skin.centerLine;
         ctx.fillRect(vanishX - lineW / 2, y, lineW, 1);
       }
 
@@ -378,7 +420,7 @@ function RacePage() {
       const laneOffset = roadW / 4;
       if (stripePhase > 3 && stripePhase < 6) {
         const lineW = Math.max(1, 2 * perspective);
-        ctx.fillStyle = "rgba(255,215,0,0.15)";
+        ctx.fillStyle = skin.centerLine + "26"; // 15% opacity
         ctx.fillRect(vanishX - laneOffset - lineW / 2, y, lineW, 1);
         ctx.fillRect(vanishX + laneOffset - lineW / 2, y, lineW, 1);
       }
@@ -396,6 +438,8 @@ function RacePage() {
     if (!playerCar || !opponentCar) return;
     initAudio();
     stopSelectMusic();
+    setTrackSkin(pickRandomSkin());
+    setFinishFlash(false);
     setPhase("countdown");
     setCountdown(3);
     setPlayerPos(0);
@@ -535,7 +579,7 @@ function RacePage() {
           // Draw road
           roadOffset = (roadOffset + pSpeed * 0.5 * (actualDt * 60)) % STRIPE_CYCLE;
           if (canvasRef.current) {
-            drawRoad(canvasRef.current, roadOffset);
+            drawRoad(canvasRef.current, roadOffset, trackSkin);
           }
 
           // Opponent overlay positioning
@@ -598,9 +642,11 @@ function RacePage() {
             setWinner(w);
             setPlayerTime(pT);
             setOpponentTime(oT);
-            setPhase("finished");
             stopAll();
             if (w === "player") playWinJingle(); else playLoseJingle();
+            // Flash + flag then show results
+            setFinishFlash(true);
+            setTimeout(() => { setFinishFlash(false); setPhase("finished"); }, 600);
           };
 
           if (pFinish && oFinish) {
@@ -627,7 +673,7 @@ function RacePage() {
         animRef.current = requestAnimationFrame(animate);
       }
     }, 1000);
-  }, [playerCar, opponentCar, drawRoad]);
+  }, [playerCar, opponentCar, drawRoad, trackSkin]);
 
   useEffect(() => () => { cancelAnimationFrame(animRef.current); stopAll(); }, []);
 
@@ -984,6 +1030,33 @@ function RacePage() {
             )}
           </div>
         )}
+
+        {/* Finish flash + checkered flag */}
+        {finishFlash && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 15, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: "finishFlashAnim 0.6s ease-out forwards" }}>
+            {/* White flash */}
+            <div style={{ position: "absolute", inset: 0, background: "white", animation: "flashFade 0.3s ease-out forwards" }} />
+            {/* Checkered flag */}
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{
+                width: "120px",
+                height: "80px",
+                background: `repeating-conic-gradient(#fff 0% 25%, #111 0% 50%) 0 0 / 24px 20px`,
+                border: `3px solid ${C.gold}`,
+                boxShadow: `0 0 30px rgba(255,215,0,0.5)`,
+                animation: "flagDrop 0.4s ease-out forwards",
+              }} />
+              <p style={{ fontFamily: FONT, fontSize: "1.2rem", color: C.gold, marginTop: "0.8rem", textShadow: "0 0 20px rgba(255,215,0,0.6)" }}>
+                FINISH!
+              </p>
+            </div>
+          </div>
+        )}
+        <style>{`
+          @keyframes flashFade { 0%{opacity:0.9} 100%{opacity:0} }
+          @keyframes flagDrop { 0%{transform:translateY(-60px) scale(0.5);opacity:0} 60%{transform:translateY(5px) scale(1.05);opacity:1} 100%{transform:translateY(0) scale(1);opacity:1} }
+          @keyframes finishFlashAnim { 0%{opacity:1} 80%{opacity:1} 100%{opacity:1} }
+        `}</style>
 
         {/* Finish overlay */}
         {phase === "finished" && (
