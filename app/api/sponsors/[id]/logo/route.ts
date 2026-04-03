@@ -41,7 +41,7 @@ export async function POST(
       .from("public-assets")
       .getPublicUrl(filePath);
 
-    const logoUrl = urlData.publicUrl;
+    const logoUrl = `${urlData.publicUrl}?v=${Date.now()}`;
 
     // Update the sponsor record
     const { error: updateError } = await supabase
