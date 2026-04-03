@@ -588,11 +588,11 @@ function RacePage() {
           backgroundPosition: "center",
           imageRendering: "pixelated",
         }} />
-        {/* Gradient overlay for text readability */}
+        {/* Gradient overlay — only fades in the bottom 30% for text readability */}
         <div style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(to bottom, rgba(13,13,26,0.2) 0%, rgba(13,13,26,0.5) 40%, rgba(13,13,26,0.92) 75%, rgba(13,13,26,1) 100%)",
+          background: "linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(13,13,26,0.85) 80%, rgba(13,13,26,1) 100%)",
         }} />
         {/* Content */}
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem" }}>
