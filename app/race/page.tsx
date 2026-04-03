@@ -111,12 +111,13 @@ function calibratePlayer(targetET: number, redline: number = 6500, maxGears: num
     const maxSpeed = 1000 / (targetET * 60 * factor);
     let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0, peak = 0;
     while (pos < 1000 && frames < 60 * 30) {
-      const gearSpeedCap = maxSpeed * (0.35 + 0.65 * (gear / maxGears));
       rpm = Math.min(rpm + 30, redline);
-      const gf = 1 - (gear - 1) * gearPenalty;
-      const rf = Math.min(rpm / (redline * 0.7), 1.2);
-      if (rpm >= redline) { speed = Math.min(speed, gearSpeedCap); }
-      else { speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, gearSpeedCap); }
+      const gearCeiling = maxSpeed * (0.35 + 0.65 * (gear / maxGears));
+      const gearFloor = gear === 1 ? 0 : maxSpeed * (0.35 + 0.65 * ((gear - 1) / maxGears));
+      const rpmPct = (rpm - 800) / (redline - 800);
+      const target = gearFloor + (gearCeiling - gearFloor) * rpmPct;
+      speed += (target - speed) * 0.15;
+      if (speed > peak) peak = speed;
       if (rpm >= shiftPoint && gear < maxGears) { gear++; rpm = Math.round(redline * 0.45); }
       pos += speed * (1/60) * 60;
       if (speed > peak) peak = speed;
@@ -468,20 +469,17 @@ function RacePage() {
           const pGearPenalty = 0.20 / (pMaxGears / 5); // scale: more gears = less penalty per gear
 
           if (accel && !pFinish) {
-            // Per-gear speed cap: each gear can only reach a fraction of max speed
-            // Top gear = 100%, first gear = ~40-50% depending on gear count
-            const gearSpeedCap = playerMaxSpeed * (0.35 + 0.65 * (pGear / pMaxGears));
-
             pRpm = Math.min(pRpm + 30, pRedline);
-            const gearFactor = 1 - (pGear - 1) * pGearPenalty;
-            const rpmFactor = Math.min(pRpm / (pRedline * 0.7), 1.2);
 
-            // At redline in current gear, hold speed (waiting for shift or at top gear)
-            if (pRpm >= pRedline) {
-              pSpeed = Math.min(pSpeed, gearSpeedCap);
-            } else {
-              pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, gearSpeedCap);
-            }
+            // Speed is directly tied to RPM within each gear.
+            // Each gear has a speed range: gear 1 covers 0→cap1, gear 2 covers cap1→cap2, etc.
+            // At redline in any gear, speed = that gear's ceiling. Shifting drops RPM, not speed.
+            const gearCeiling = playerMaxSpeed * (0.35 + 0.65 * (pGear / pMaxGears));
+            const gearFloor = pGear === 1 ? 0 : playerMaxSpeed * (0.35 + 0.65 * ((pGear - 1) / pMaxGears));
+            const rpmPct = (pRpm - 800) / (pRedline - 800); // 0 at idle, 1 at redline
+            const targetSpeed = gearFloor + (gearCeiling - gearFloor) * rpmPct;
+            // Smoothly approach target speed (don't snap instantly)
+            pSpeed += (targetSpeed - pSpeed) * 0.15;
           } else {
             pRpm = Math.max(pRpm - 40, 800);
             pSpeed = Math.max(pSpeed - 0.3, 0);
