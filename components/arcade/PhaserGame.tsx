@@ -10,7 +10,10 @@ export default function PhaserGame() {
 
     let game: Phaser.Game | null = null;
 
-    import("phaser").then((Phaser) => {
+    Promise.all([
+      import("phaser"),
+      import("@/components/arcade/scenes/RaceScene"),
+    ]).then(([Phaser, { RaceScene }]) => {
       game = new Phaser.Game({
         type: Phaser.AUTO,
         width: 800,
@@ -22,7 +25,7 @@ export default function PhaserGame() {
           mode: Phaser.Scale.FIT,
           autoCenter: Phaser.Scale.CENTER_BOTH,
         },
-        scene: [],
+        scene: [RaceScene],
       });
     });
 
