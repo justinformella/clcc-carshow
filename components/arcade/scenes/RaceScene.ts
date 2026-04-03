@@ -1,17 +1,62 @@
 import Phaser from "phaser";
 import { drawRoad } from "../road";
 import { createHorizonTexture } from "../horizon";
+import { RaceCar, PlayerState, OpponentState } from "../physics";
+
+type RacePhase = "countdown" | "racing" | "finished";
+
+// Test cars for sub-project 2 (replaced by real data in SP5)
+const TEST_PLAYER: RaceCar = {
+  id: "test-1", carNumber: 17, year: 1966, name: "1966 Ford Mustang GT",
+  color: "Red", owner: "Test", hp: 225, weight: 2800, pwr: 80.4,
+  displacement: 4.7, cylinders: 8, engineType: "V8", category: "Pony Car",
+  driveType: "RWD", bodyStyle: "Coupe", origin: "American", era: "1960s-70s",
+  production: 0, redline: 6000, topSpeed: 130, gears: 4, trans: "Manual",
+  pixelArt: null, pixelDash: null, pixelRear: null, aiImage: null,
+};
+
+const TEST_OPPONENT: RaceCar = {
+  id: "test-2", carNumber: 19, year: 2000, name: "2000 Ferrari 360",
+  color: "Red", owner: "CPU", hp: 400, weight: 3197, pwr: 125.1,
+  displacement: 3.6, cylinders: 8, engineType: "V8", category: "Exotic",
+  driveType: "RWD", bodyStyle: "Coupe", origin: "Italian", era: "2000s",
+  production: 0, redline: 8500, topSpeed: 183, gears: 6, trans: "Semi-Auto",
+  pixelArt: null, pixelDash: null, pixelRear: null, aiImage: null,
+};
 
 export class RaceScene extends Phaser.Scene {
   private roadTexture!: Phaser.Textures.CanvasTexture;
   private roadOffset = 0;
-  private speed = 0;
-  private maxSpeed = 5;
   private accelHeld = false;
-
-  private sceneryItems: { sprite: Phaser.GameObjects.Rectangle; baseX: number; z: number; side: number }[] = [];
-
   private horizonImage!: Phaser.GameObjects.TileSprite;
+  private sceneryItems: { sprite: Phaser.GameObjects.Rectangle; z: number; side: number }[] = [];
+
+  // Race state
+  private phase: RacePhase = "countdown";
+  private countdown = 3;
+  private raceStartTime = 0;
+  private playerState!: PlayerState;
+  private opponentState!: OpponentState;
+  private jumped = false;
+  private reactionTime = 0;
+  private reacted = false;
+
+  // Opponent sprite
+  private oppSprite!: Phaser.GameObjects.Rectangle;
+
+  // HUD texts
+  private speedText!: Phaser.GameObjects.Text;
+  private rpmText!: Phaser.GameObjects.Text;
+  private gearText!: Phaser.GameObjects.Text;
+  private countdownText!: Phaser.GameObjects.Text;
+  private resultText!: Phaser.GameObjects.Text;
+  private progressBar!: Phaser.GameObjects.Rectangle;
+  private progressFill!: Phaser.GameObjects.Rectangle;
+  private oppProgressFill!: Phaser.GameObjects.Rectangle;
+
+  // Christmas tree lights
+  private treeLights: Phaser.GameObjects.Arc[] = [];
+  private greenLight!: Phaser.GameObjects.Arc;
 
   constructor() {
     super({ key: "RaceScene" });
@@ -20,70 +65,244 @@ export class RaceScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    // Create a Phaser CanvasTexture and draw road onto its own context
-    this.roadTexture = this.textures.createCanvas("road", width, height)!;
-    this.add.image(width / 2, height / 2, "road").setDepth(0);
+    // Reset state
+    this.phase = "countdown";
+    this.countdown = 3;
+    this.jumped = false;
+    this.reactionTime = 0;
+    this.reacted = false;
+    this.roadOffset = 0;
+    this.accelHeld = false;
 
-    // Horizon — parallax city/tree skyline
+    // Init physics
+    this.playerState = new PlayerState(TEST_PLAYER);
+    this.opponentState = new OpponentState(TEST_OPPONENT);
+
+    // Road texture
+    this.roadTexture = this.textures.createCanvas("road-" + Date.now(), width, height)!;
+    this.add.image(width / 2, height / 2, this.roadTexture.key).setDepth(0);
+
+    // Horizon
     const horizonY = height * 0.35;
     const horizonHeight = 50;
     const horizonCanvas = createHorizonTexture(width, horizonHeight);
-    this.textures.addCanvas("horizon", horizonCanvas);
+    const hKey = "horizon-" + Date.now();
+    this.textures.addCanvas(hKey, horizonCanvas);
     this.horizonImage = this.add.tileSprite(
-      width / 2, horizonY - horizonHeight / 2, width, horizonHeight, "horizon"
+      width / 2, horizonY - horizonHeight / 2, width, horizonHeight, hKey
     ).setDepth(1);
 
-    // Trackside scenery
+    // Scenery
+    this.sceneryItems = [];
     this.createScenery(width, height);
 
-    // Player car placeholder
-    this.add.rectangle(width / 2, height * 0.78, 60, 30, 0xdc2626).setDepth(10);
+    // Opponent car (rectangle placeholder — in the left lane, ahead)
+    this.oppSprite = this.add.rectangle(width * 0.38, height * 0.55, 40, 20, 0x3b82f6).setDepth(5);
+
+    // Player car placeholder (right lane)
+    this.add.rectangle(width * 0.58, height * 0.78, 60, 30, 0xdc2626).setDepth(10);
 
     // Dashboard area
-    this.add.rectangle(width / 2, height * 0.93, width, height * 0.15, 0x111111).setDepth(9);
-    this.add.text(width / 2, height * 0.93, "DASHBOARD", {
-      fontFamily: "'Press Start 2P'",
-      fontSize: "10px",
-      color: "#555555",
-    }).setOrigin(0.5).setDepth(11);
+    const dashY = height * 0.93;
+    this.add.rectangle(width / 2, dashY, width, height * 0.15, 0x111111).setDepth(9);
 
-    // Speed display
-    this.add.text(16, height - 30, "SPEED: 0", {
-      fontFamily: "'Press Start 2P'",
-      fontSize: "12px",
-      color: "#ffd700",
-    }).setDepth(12).setName("speedText");
+    // HUD — Speed, RPM, Gear
+    this.speedText = this.add.text(width * 0.15, dashY - 8, "0", {
+      fontFamily: "'Press Start 2P'", fontSize: "18px", color: "#ffd700",
+    }).setOrigin(0.5).setDepth(12);
 
-    // Keyboard input
+    this.add.text(width * 0.15, dashY + 12, "MPH", {
+      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa",
+    }).setOrigin(0.5).setDepth(12);
+
+    this.rpmText = this.add.text(width * 0.5, dashY - 8, "800", {
+      fontFamily: "'Press Start 2P'", fontSize: "14px", color: "#cccccc",
+    }).setOrigin(0.5).setDepth(12);
+
+    this.add.text(width * 0.5, dashY + 12, "RPM", {
+      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa",
+    }).setOrigin(0.5).setDepth(12);
+
+    this.gearText = this.add.text(width * 0.85, dashY - 8, "1", {
+      fontFamily: "'Press Start 2P'", fontSize: "18px", color: "#00ff00",
+    }).setOrigin(0.5).setDepth(12);
+
+    this.add.text(width * 0.85, dashY + 12, "GEAR", {
+      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa",
+    }).setOrigin(0.5).setDepth(12);
+
+    // Progress bar (top of screen)
+    const barW = width * 0.6;
+    const barX = width / 2;
+    const barY = 12;
+    this.progressBar = this.add.rectangle(barX, barY, barW, 6, 0x333333).setDepth(15);
+    this.progressFill = this.add.rectangle(barX - barW / 2, barY, 0, 6, 0xffd700).setOrigin(0, 0.5).setDepth(16);
+    this.oppProgressFill = this.add.rectangle(barX - barW / 2, barY + 8, 0, 4, 0x3b82f6).setOrigin(0, 0.5).setDepth(16);
+
+    // P1 / CPU labels on progress bar
+    this.add.text(barX - barW / 2 - 30, barY, "P1", {
+      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#ffd700",
+    }).setOrigin(0.5).setDepth(16);
+    this.add.text(barX - barW / 2 - 30, barY + 8, "CPU", {
+      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#3b82f6",
+    }).setOrigin(0.5).setDepth(16);
+
+    // Christmas tree lights (centered overlay)
+    const treeX = width / 2;
+    const treeBaseY = height * 0.3;
+    for (let i = 0; i < 3; i++) {
+      const light = this.add.circle(treeX, treeBaseY + i * 30, 12, 0x222222)
+        .setStrokeStyle(2, 0x333333).setDepth(20);
+      this.treeLights.push(light);
+    }
+    this.greenLight = this.add.circle(treeX, treeBaseY + 3 * 30, 15, 0x222222)
+      .setStrokeStyle(2, 0x333333).setDepth(20);
+
+    // Countdown / result text
+    this.countdownText = this.add.text(width / 2, height * 0.2, "", {
+      fontFamily: "'Press Start 2P'", fontSize: "20px", color: "#ffd700",
+    }).setOrigin(0.5).setDepth(21).setAlpha(0);
+
+    this.resultText = this.add.text(width / 2, height * 0.35, "", {
+      fontFamily: "'Press Start 2P'", fontSize: "24px", color: "#ffd700",
+    }).setOrigin(0.5).setDepth(21).setAlpha(0);
+
+    // Input
     this.input.keyboard!.on("keydown-SPACE", () => { this.accelHeld = true; });
     this.input.keyboard!.on("keyup-SPACE", () => { this.accelHeld = false; });
     this.input.keyboard!.on("keydown-UP", () => { this.accelHeld = true; });
     this.input.keyboard!.on("keyup-UP", () => { this.accelHeld = false; });
-
-    // Touch input for mobile
     this.input.on("pointerdown", () => { this.accelHeld = true; });
     this.input.on("pointerup", () => { this.accelHeld = false; });
 
-    // Draw initial road frame
+    // Draw initial road
     this.drawRoadFrame();
+
+    // Start countdown sequence
+    this.startCountdown();
+  }
+
+  private startCountdown() {
+    this.countdown = 3;
+    this.updateTreeLights();
+
+    this.time.addEvent({
+      delay: 1000,
+      repeat: 3,
+      callback: () => {
+        this.countdown--;
+        this.updateTreeLights();
+
+        // Jump detection: holding accel during amber
+        if (this.countdown > 0 && this.accelHeld) {
+          this.jumped = true;
+        }
+
+        if (this.countdown <= 0) {
+          // GO!
+          this.phase = "racing";
+          this.raceStartTime = this.time.now;
+          if (this.jumped) {
+            // Add 500ms penalty
+            this.raceStartTime -= 500;
+          }
+        }
+      },
+    });
+  }
+
+  private updateTreeLights() {
+    // Light up amber lights progressively
+    for (let i = 0; i < 3; i++) {
+      const lit = this.countdown <= (3 - i) && this.countdown > 0;
+      const isGreen = this.countdown === 0;
+      this.treeLights[i].setFillStyle(lit ? 0xf59e0b : isGreen ? 0x00ff00 : 0x222222);
+    }
+    this.greenLight.setFillStyle(this.countdown === 0 ? 0x00ff00 : 0x222222);
+
+    if (this.countdown === 0) {
+      // Flash green then fade tree
+      this.time.delayedCall(500, () => {
+        this.treeLights.forEach(l => l.setAlpha(0));
+        this.greenLight.setAlpha(0);
+      });
+    }
   }
 
   private createScenery(width: number, height: number) {
-    const horizonY = height * 0.35;
     for (let i = 0; i < 16; i++) {
       const z = 0.05 + (i / 16) * 0.95;
       const side = i % 2 === 0 ? -1 : 1;
-
       const color = i % 3 === 0 ? 0x0a4a0a : i % 3 === 1 ? 0x0d5a0d : 0x084008;
       const sprite = this.add.rectangle(0, 0, 4, 8, color).setDepth(3);
-
-      this.sceneryItems.push({ sprite, baseX: 0, z, side });
+      this.sceneryItems.push({ sprite, z, side });
     }
-    this.updateSceneryPositions(width, height, horizonY);
   }
 
-  private updateSceneryPositions(width: number, height: number, horizonY: number) {
+  private drawRoadFrame() {
+    const ctx = this.roadTexture.getContext();
+    drawRoad(ctx, this.roadTexture.width, this.roadTexture.height, this.roadOffset);
+    this.roadTexture.refresh();
+  }
+
+  update(_time: number, delta: number) {
+    const dt = delta / 1000;
+    const { width, height } = this.scale;
+    const horizonY = height * 0.35;
+    const elapsed = this.phase === "racing" ? this.time.now - this.raceStartTime : 0;
+
+    // --- RACING PHASE ---
+    if (this.phase === "racing") {
+      // Track reaction time
+      if (this.accelHeld && !this.reacted) {
+        this.reacted = true;
+        this.reactionTime = this.jumped ? 0 : Math.round(this.time.now - (this.raceStartTime + (this.jumped ? 500 : 0)));
+      }
+
+      // Update player physics
+      const shifted = this.playerState.update(this.accelHeld, elapsed);
+      if (shifted) {
+        // Could play shift sound here in SP4
+      }
+
+      // Update opponent
+      this.opponentState.update(elapsed);
+
+      // Check finish
+      if (this.playerState.finished && this.opponentState.finished) {
+        this.finishRace();
+      } else if (this.playerState.finished && !this.opponentState.finished) {
+        // Estimate opponent remaining time
+        const oppRemaining = (1000 - this.opponentState.pos) / (this.opponentState.speed || 0.01);
+        this.opponentState.finishTime = Math.round(this.playerState.finishTime + oppRemaining * 1000 / 60);
+        this.finishRace();
+      } else if (this.opponentState.finished && !this.playerState.finished) {
+        const pRemaining = (1000 - this.playerState.pos) / (this.playerState.speed || 0.01);
+        this.playerState.finishTime = Math.round(this.opponentState.finishTime + pRemaining * 1000 / 60);
+        this.finishRace();
+      } else if (elapsed > 30000) {
+        // Timeout
+        this.playerState.finishTime = elapsed;
+        this.opponentState.finishTime = elapsed;
+        this.finishRace();
+      }
+    }
+
+    // --- VISUAL UPDATES (all phases) ---
+    const visualSpeed = this.phase === "racing" ? this.playerState.speed : 0;
+
+    // Scroll road
+    this.roadOffset += visualSpeed * dt * 30;
+    this.drawRoadFrame();
+
+    // Parallax horizon
+    this.horizonImage.tilePositionX += visualSpeed * dt * 6;
+
+    // Scenery
     for (const item of this.sceneryItems) {
+      item.z += visualSpeed * dt * 0.15;
+      if (item.z > 1.15) item.z = 0.02 + Math.random() * 0.08;
+
       const perspective = item.z * item.z;
       const roadW = width * 0.08 + (width * 0.85 - width * 0.08) * perspective;
       const shoulderW = 2 + 40 * perspective;
@@ -96,49 +315,81 @@ export class RaceScene extends Phaser.Scene {
       item.sprite.setSize(w, h);
       item.sprite.setAlpha(Math.min(1, item.z * 2.5));
     }
-  }
 
-  private drawRoadFrame() {
-    // Get the CanvasTexture's own context and draw directly onto it
-    const ctx = this.roadTexture.getContext();
-    const width = this.roadTexture.width;
-    const height = this.roadTexture.height;
-    drawRoad(ctx, width, height, this.roadOffset);
-    this.roadTexture.refresh();
-  }
-
-  update(_time: number, delta: number) {
-    const dt = delta / 1000;
-
-    // Acceleration
-    if (this.accelHeld) {
-      this.speed = Math.min(this.speed + this.maxSpeed * dt * 0.8, this.maxSpeed);
-    } else {
-      this.speed = Math.max(this.speed - this.maxSpeed * dt * 0.5, 0);
-    }
-
-    // Scroll road
-    this.roadOffset += this.speed * dt * 30;
-    this.drawRoadFrame();
-
-    // Scroll horizon parallax
-    this.horizonImage.tilePositionX += this.speed * dt * 6;
-
-    // Animate scenery
-    const { width, height } = this.scale;
-    const horizonY = height * 0.35;
-    for (const item of this.sceneryItems) {
-      item.z += this.speed * dt * 0.15;
-      if (item.z > 1.15) {
-        item.z = 0.02 + Math.random() * 0.08;
+    // Opponent sprite positioning based on relative position
+    if (this.phase === "racing") {
+      const delta2 = this.opponentState.pos - this.playerState.pos;
+      if (delta2 >= 0) {
+        // Opponent ahead — shrink toward horizon
+        const tOpp = Math.min(1, delta2 / 200);
+        const scale = 1.0 - tOpp * 0.8;
+        const topPct = 0.35 + (1 - tOpp) * 0.45;
+        this.oppSprite.setPosition(width * 0.38, height * topPct);
+        this.oppSprite.setSize(40 * scale, 20 * scale);
+        this.oppSprite.setAlpha(1);
+      } else {
+        // Opponent behind — grow and slide off
+        const behind = Math.min(Math.abs(delta2), 100) / 100;
+        const scale = 1.0 + behind * 0.6;
+        this.oppSprite.setPosition(width * 0.25, height * (0.8 + behind * 0.2));
+        this.oppSprite.setSize(40 * scale, 20 * scale);
+        this.oppSprite.setAlpha(Math.max(0, 1 - behind * 1.5));
       }
     }
-    this.updateSceneryPositions(width, height, horizonY);
 
-    // Update speed display
-    const speedText = this.children.getByName("speedText") as Phaser.GameObjects.Text;
-    if (speedText) {
-      speedText.setText(`SPEED: ${Math.round(this.speed * 40)}`);
+    // HUD updates
+    if (this.phase === "racing" || this.phase === "finished") {
+      this.speedText.setText(`${this.playerState.mph}`);
+      this.rpmText.setText(`${Math.round(this.playerState.rpm)}`);
+      this.rpmText.setColor(this.playerState.rpm > this.playerState.redline * 0.88 ? "#ff0000" : "#cccccc");
+      this.gearText.setText(`${this.playerState.gear}`);
+
+      // Progress bars
+      const barW = width * 0.6;
+      this.progressFill.setSize(barW * Math.min(this.playerState.pos / 1000, 1), 6);
+      this.oppProgressFill.setSize(barW * Math.min(this.opponentState.pos / 1000, 1), 4);
     }
+  }
+
+  private finishRace() {
+    if (this.phase === "finished") return;
+    this.phase = "finished";
+
+    const { width, height } = this.scale;
+    const playerWon = this.playerState.finishTime <= this.opponentState.finishTime;
+
+    // Flash effect
+    const flash = this.add.rectangle(width / 2, height / 2, width, height, 0xffffff).setDepth(25).setAlpha(0.9);
+    this.tweens.add({ targets: flash, alpha: 0, duration: 300, onComplete: () => flash.destroy() });
+
+    // Result text
+    this.resultText.setText(playerWon ? "YOU WIN!" : "YOU LOSE");
+    this.resultText.setColor(playerWon ? "#ffd700" : "#ff0000");
+    this.resultText.setAlpha(1);
+
+    // Times
+    const pTime = (this.playerState.finishTime / 1000).toFixed(2);
+    const oTime = (this.opponentState.finishTime / 1000).toFixed(2);
+    const rt = this.jumped ? "JUMP +0.5s" : `RT: ${(this.reactionTime / 1000).toFixed(3)}s`;
+
+    this.add.text(width / 2, height * 0.48, `P1: ${pTime}s  |  CPU: ${oTime}s`, {
+      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#ffffff",
+    }).setOrigin(0.5).setDepth(21);
+
+    this.add.text(width / 2, height * 0.55, rt, {
+      fontFamily: "'Press Start 2P'", fontSize: "8px", color: this.jumped ? "#ff0000" : "#00ff00",
+    }).setOrigin(0.5).setDepth(21);
+
+    this.add.text(width / 2, height * 0.65, "PRESS SPACE TO RESTART", {
+      fontFamily: "'Press Start 2P'", fontSize: "8px", color: "#aaaaaa",
+    }).setOrigin(0.5).setDepth(21);
+
+    // Restart on space
+    this.input.keyboard!.once("keydown-SPACE", () => {
+      this.scene.restart();
+    });
+    this.input.once("pointerdown", () => {
+      this.scene.restart();
+    });
   }
 }
