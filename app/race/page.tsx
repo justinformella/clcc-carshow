@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   initAudio,
   playCountdownBeep, startEngine, updateEngine, stopEngine,
-  playGearShift, playWinJingle, playLoseJingle,
+  playGearShift, playWinJingle, playLoseJingle, playFoulBuzzer,
   startMusic, startSelectMusic, stopSelectMusic, stopAll,
 } from "@/lib/race-audio";
 
@@ -171,10 +171,16 @@ function RacePage() {
   const [winner, setWinner] = useState<"player" | "opponent" | null>(null);
   const [playerTime, setPlayerTime] = useState(0);
   const [opponentTime, setOpponentTime] = useState(0);
+  const [reactionTime, setReactionTime] = useState(0); // ms, 0=not yet measured
+  const [oppReactionTime, setOppReactionTime] = useState(0);
+  const [jumped, setJumped] = useState(false); // true if player launched before green
   const [generating, setGenerating] = useState(false);
 
   const animRef = useRef<number>(0);
   const startRef = useRef(0);
+  const greenRef = useRef(0); // timestamp when green light fires
+  const reactedRef = useRef(false); // has player's first input been recorded
+  const jumpedRef = useRef(false); // did player hold accel before green
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keyRef = useRef<Set<string>>(new Set());
   const opponentOverlayRef = useRef<HTMLDivElement>(null);
@@ -368,6 +374,12 @@ function RacePage() {
     setWinner(null);
     setPlayerTime(0);
     setOpponentTime(0);
+    setReactionTime(0);
+    setOppReactionTime(0);
+    setJumped(false);
+    greenRef.current = 0;
+    reactedRef.current = false;
+    jumpedRef.current = false;
 
     // Compute realistic target quarter-mile times and trap speeds
     const playerTargetET = quarterMileET(playerCar.hp, playerCar.weight, playerCar.year);
@@ -386,18 +398,36 @@ function RacePage() {
     const playerMPHScale = playerTopSpeed / playerMaxSpeed;
     const oppMPHScale = oppTopSpeed / oppMaxSpeed;
 
+    // Christmas tree countdown: 3 amber stages → green
+    // If player holds accel during amber, it's a jump (0.5s penalty)
     playCountdownBeep(false);
     let c = 3;
     const interval = setInterval(() => {
       c--;
       setCountdown(c);
       playCountdownBeep(c <= 0);
+
+      // Check for jump: if player is holding accel during amber countdown
+      if (c > 0 && (keyRef.current.has(" ") || keyRef.current.has("arrowup"))) {
+        jumpedRef.current = true;
+        setJumped(true);
+        playFoulBuzzer();
+      }
+
       if (c <= 0) {
         clearInterval(interval);
+        greenRef.current = performance.now();
         setPhase("racing");
         startEngine();
         startMusic();
-        startRef.current = performance.now();
+
+        // Opponent reaction time: random 0.15-0.40s
+        const oppRT = 150 + Math.random() * 250;
+        setOppReactionTime(Math.round(oppRT));
+
+        // If player jumped, add 0.5s penalty to their start
+        const jumpPenalty = jumpedRef.current ? 500 : 0;
+        startRef.current = performance.now() - jumpPenalty; // negative offset = later start
 
         const FINISH = 1000;
         let pPos = 0, oPos = 0, pSpeed = 0, oSpeed = 0;
@@ -413,8 +443,14 @@ function RacePage() {
           prevTime = now;
           const dt = 1 / 60;
 
-          // Player acceleration
+          // Player acceleration — measure reaction time on first input
           const accel = keyRef.current.has(" ") || keyRef.current.has("arrowup");
+
+          if (accel && !reactedRef.current && greenRef.current > 0) {
+            reactedRef.current = true;
+            const rt = jumpedRef.current ? 0 : Math.round(now - greenRef.current);
+            setReactionTime(rt);
+          }
 
           if (accel && !pFinish) {
             pRpm = Math.min(pRpm + 80, 7000);
@@ -433,11 +469,14 @@ function RacePage() {
             playGearShift();
           }
 
-          // Opponent AI
+          // Opponent AI — delayed by their reaction time
           if (!oFinish) {
-            const oppAccelCurve = Math.min(elapsed / 8000, 1);
-            const wobble = Math.sin(elapsed * 0.002) * 0.05;
+            const oppElapsed = elapsed - oppRT; // ms since opponent started
+            if (oppElapsed < 0) { oSpeed = 0; } else {
+            const oppAccelCurve = Math.min(oppElapsed / 8000, 1);
+            const wobble = Math.sin(oppElapsed * 0.002) * 0.05;
             oSpeed = oppMaxSpeed * oppAccelCurve * (0.85 + wobble);
+            }
           }
 
           pPos += pSpeed * dt * 60;
@@ -852,12 +891,50 @@ function RacePage() {
           </div>
         </div>
 
-        {/* Countdown overlay */}
+        {/* Christmas tree countdown overlay */}
         {phase === "countdown" && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(13,13,26,0.7)", zIndex: 10 }}>
-            <div style={{ fontFamily: FONT, fontSize: "5rem", color: countdown === 0 ? C.green : C.gold, textShadow: `0 0 40px ${countdown === 0 ? "rgba(0,255,0,0.6)" : "rgba(255,215,0,0.6)"}` }}>
-              {countdown === 0 ? "GO!" : countdown}
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(13,13,26,0.7)", zIndex: 10, gap: "1rem" }}>
+            {/* Tree lights */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+              {[3, 2, 1].map((n) => (
+                <div key={n} style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  border: `2px solid ${C.border}`,
+                  background: countdown <= n && countdown > 0
+                    ? "#f59e0b"
+                    : countdown === 0
+                    ? C.green
+                    : "#222",
+                  boxShadow: countdown <= n && countdown > 0
+                    ? "0 0 20px rgba(245,158,11,0.6)"
+                    : countdown === 0
+                    ? `0 0 20px rgba(0,255,0,0.6)`
+                    : "none",
+                  transition: "all 0.15s",
+                }} />
+              ))}
+              {/* Green light */}
+              <div style={{
+                width: "50px",
+                height: "50px",
+                borderRadius: "50%",
+                border: `2px solid ${C.border}`,
+                background: countdown === 0 ? C.green : "#222",
+                boxShadow: countdown === 0 ? "0 0 30px rgba(0,255,0,0.8)" : "none",
+                transition: "all 0.15s",
+              }} />
             </div>
+            {/* Jump warning */}
+            {jumped && (
+              <p style={{ fontFamily: FONT, fontSize: "0.8rem", color: C.red, textShadow: "0 0 10px rgba(255,0,0,0.5)" }}>
+                JUMPED! +0.5s PENALTY
+              </p>
+            )}
+            {countdown === 0 && !jumped && (
+              <p style={{ fontFamily: FONT, fontSize: "1.5rem", color: C.green, textShadow: "0 0 20px rgba(0,255,0,0.6)" }}>GO!</p>
+            )}
           </div>
         )}
 
@@ -883,6 +960,9 @@ function RacePage() {
                   )}
                   <p style={{ color: C.gray, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.3rem" }}>{playerCar?.name}</p>
                   <p style={{ color: C.white, fontFamily: FONT, fontSize: "1rem" }}>{(playerTime / 1000).toFixed(2)}s</p>
+                  <p style={{ color: jumped ? C.red : C.green, fontFamily: FONT, fontSize: "0.6rem", marginTop: "0.3rem" }}>
+                    {jumped ? "JUMP +0.5s" : `RT: ${(reactionTime / 1000).toFixed(3)}s`}
+                  </p>
                 </div>
                 <div style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.border }}>VS</div>
                 <div style={{ textAlign: "center" }}>
@@ -892,6 +972,9 @@ function RacePage() {
                   )}
                   <p style={{ color: C.gray, fontFamily: FONT, fontSize: "0.75rem", marginBottom: "0.3rem" }}>{opponentCar?.name}</p>
                   <p style={{ color: C.white, fontFamily: FONT, fontSize: "1rem" }}>{(opponentTime / 1000).toFixed(2)}s</p>
+                  <p style={{ color: C.midGray, fontFamily: FONT, fontSize: "0.6rem", marginTop: "0.3rem" }}>
+                    RT: {(oppReactionTime / 1000).toFixed(3)}s
+                  </p>
                 </div>
               </div>
               <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>

@@ -211,6 +211,22 @@ export function stopMusic() {
   }
 }
 
+// ─── FOUL BUZZER (jumped the green) ─────────────────────────────────────────
+
+export function playFoulBuzzer() {
+  const c = getCtx();
+  const osc = c.createOscillator();
+  const gain = c.createGain();
+  osc.type = "square";
+  osc.frequency.value = 110;
+  gain.gain.value = 0.2;
+  gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
+  osc.connect(gain);
+  gain.connect(c.destination);
+  osc.start(c.currentTime);
+  osc.stop(c.currentTime + 0.5);
+}
+
 // ─── SELECT SCREEN MUSIC (chill garage vibe) ────────────────────────────────
 
 let selectInterval: ReturnType<typeof setInterval> | null = null;
