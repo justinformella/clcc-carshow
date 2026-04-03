@@ -141,7 +141,8 @@ export class RaceScene extends Phaser.Scene {
       const row = screenY - horizonY;
       const t = row / totalRoadRows;
       const perspective = t * t;
-      const roadW = width * (0.08 + (1.10 - 0.08) * perspective);
+      const isDesktop = width >= 768;
+      const roadW = width * (0.08 + ((isDesktop ? 1.30 : 1.10) - 0.08) * perspective);
       return {
         leftLaneX: width / 2 - roadW * 0.22,
         rightLaneX: width / 2 + roadW * 0.22,
@@ -609,7 +610,8 @@ export class RaceScene extends Phaser.Scene {
       const row = item.z * totalRoadRows;
       const t = row / totalRoadRows;
       const perspective = t * t;
-      const roadW = width * (0.08 + (1.10 - 0.08) * perspective);
+      const isDesktop = width >= 768;
+      const roadW = width * (0.08 + ((isDesktop ? 1.30 : 1.10) - 0.08) * perspective);
       const shoulderW = 2 + (width * 0.10) * perspective;
       // Place just outside the shoulder with a small random offset
       const offset = shoulderW + 8 + 20 * perspective;
@@ -663,7 +665,8 @@ export class RaceScene extends Phaser.Scene {
         const row = oppY - horizonY;
         const t = row / totalRows;
         const perspective = t * t;
-        const roadW = width * (0.08 + (1.10 - 0.08) * perspective);
+        const isDesktop = width >= 768;
+        const roadW = width * (0.08 + ((isDesktop ? 1.30 : 1.10) - 0.08) * perspective);
         const leftLaneX = width / 2 + this.opponentState.laneX * (roadW * 0.35);
         // Scale sprite based on distance
         const spriteScale = 1.0 - aheadT * 0.75;
