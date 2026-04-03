@@ -107,7 +107,7 @@ function calibratePlayer(targetET: number): number {
     let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0;
     while (pos < 1000 && frames < 60 * 30) {
       rpm = Math.min(rpm + 80, 7000);
-      const gf = 1 - (gear - 1) * 0.12;
+      const gf = 1 - (gear - 1) * 0.20;
       const rf = Math.min(rpm / 5000, 1.2);
       speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, maxSpeed);
       if (rpm > 6500 && gear < 5) { gear++; rpm = 3000; }
@@ -116,8 +116,8 @@ function calibratePlayer(targetET: number): number {
     }
     return frames / 60;
   };
-  let lo = 0.5, hi = 1.0;
-  for (let i = 0; i < 20; i++) {
+  let lo = 0.3, hi = 1.5;
+  for (let i = 0; i < 25; i++) {
     const mid = (lo + hi) / 2;
     if (test(mid) < targetET) lo = mid; else hi = mid;
   }
@@ -454,7 +454,7 @@ function RacePage() {
 
           if (accel && !pFinish) {
             pRpm = Math.min(pRpm + 80, 7000);
-            const gearFactor = 1 - (pGear - 1) * 0.12;
+            const gearFactor = 1 - (pGear - 1) * 0.20;
             const rpmFactor = Math.min(pRpm / 5000, 1.2);
             pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, playerMaxSpeed);
           } else {
@@ -726,7 +726,7 @@ function RacePage() {
                 </button>
               </div>
               <br />
-              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); stopSelectMusic(); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "1rem", cursor: "pointer", textDecoration: "underline" }}>
+              <button onClick={() => { setPlayerCar(null); setOpponentCar(null); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "1rem", cursor: "pointer", textDecoration: "underline" }}>
                 PICK DIFFERENT CAR
               </button>
             </div>
