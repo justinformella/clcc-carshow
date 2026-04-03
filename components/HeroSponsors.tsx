@@ -60,14 +60,15 @@ export default function HeroSponsors() {
                   {tier.sponsors.map((s) => (
                     <SponsorLink key={s.company} sponsor={s}>
                       <div className="hero-sponsors-bar-logo" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                        {getLogoSrc(s) && (
+                        {getLogoSrc(s) ? (
                           <img
                             src={getLogoSrc(s)!}
                             alt={s.company}
                             style={{ maxHeight: "56px", maxWidth: "200px", objectFit: "contain" }}
                           />
+                        ) : (
+                          <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>{s.company}</span>
                         )}
-                        <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>{s.company}</span>
                       </div>
                     </SponsorLink>
                   ))}
