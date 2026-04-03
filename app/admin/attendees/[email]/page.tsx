@@ -5,6 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import type { Registration, HelpRequest, EmailLog } from "@/types/database";
+import dynamic from "next/dynamic";
+
+const LocationMap = dynamic(() => import("@/components/LocationMap"), { ssr: false });
 
 type GravatarProfile = {
   hash: string;
@@ -430,16 +433,9 @@ export default function AttendeeDetailPage() {
 
             {(first.address_street || first.address_city) && (() => {
               const addressParts = [first.address_street, first.address_city, first.address_state, first.address_zip].filter(Boolean).join(", ");
-              const mapQuery = encodeURIComponent(addressParts);
               return (
                 <div style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                  <iframe
-                    src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${mapQuery}&zoom=11`}
-                    style={{ width: "100%", height: "100%", minHeight: "220px", border: "none", display: "block" }}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Attendee location"
-                  />
+                  <LocationMap address={addressParts} height="220px" />
                 </div>
               );
             })()}

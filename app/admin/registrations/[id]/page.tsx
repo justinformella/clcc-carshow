@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase";
 import type { Registration, EmailLog, AuditLogEntry, StripePaymentDetails } from "@/types/database";
 import { AWARD_CATEGORIES } from "@/types/database";
 import { openPlacardPrintWindow } from "@/lib/placard-print";
+import dynamic from "next/dynamic";
+
+const LocationMap = dynamic(() => import("@/components/LocationMap"), { ssr: false });
 
 type EditForm = {
   first_name: string;
@@ -797,20 +800,9 @@ export default function RegistrationDetailPage() {
               {/* Map */}
               {(r.address_street || r.address_city) && (() => {
                 const addressParts = [r.address_street, r.address_city, r.address_state, r.address_zip].filter(Boolean).join(", ");
-                const mapQuery = encodeURIComponent(addressParts);
                 return (
                   <DetailSection title="Location">
-                    <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${mapQuery}&zoom=11`}
-                      style={{
-                        width: "100%",
-                        height: "250px",
-                        border: "1px solid #eee",
-                      }}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      title="Registrant location"
-                    />
+                    <LocationMap address={addressParts} height="300px" />
                   </DetailSection>
                 );
               })()}

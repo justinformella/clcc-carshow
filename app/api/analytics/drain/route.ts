@@ -38,84 +38,34 @@ export async function POST(request: NextRequest) {
       referrerCounts[referrerKey] = (referrerCounts[referrerKey] ?? 0) + 1;
     }
 
-    // Upsert daily counts — use device IDs to deduplicate visitors across batches
+    // Atomic upsert daily counts — row-level lock prevents concurrent batch races
     for (const [date, data] of Object.entries(dailyCounts)) {
-      const { data: existing } = await supabase
-        .from("page_views")
-        .select("id, views, visitors, seen_devices")
-        .eq("date", date)
-        .maybeSingle();
-
-      if (existing) {
-        // Merge new device IDs with previously seen ones
-        const previousDevices: string[] = existing.seen_devices || [];
-        const previousSet = new Set(previousDevices);
-        let newVisitors = 0;
-        for (const deviceId of data.deviceIds) {
-          if (!previousSet.has(deviceId)) {
-            previousSet.add(deviceId);
-            newVisitors++;
-          }
-        }
-
-        await supabase
-          .from("page_views")
-          .update({
-            views: existing.views + data.views,
-            visitors: existing.visitors + newVisitors,
-            seen_devices: Array.from(previousSet),
-          })
-          .eq("id", existing.id);
-      } else {
-        await supabase.from("page_views").insert({
-          date,
-          views: data.views,
-          visitors: data.deviceIds.size,
-          seen_devices: Array.from(data.deviceIds),
-        });
-      }
+      const deviceIds = Array.from(data.deviceIds);
+      await supabase.rpc("upsert_page_views", {
+        p_date: date,
+        p_views: data.views,
+        p_device_ids: deviceIds,
+      });
     }
 
-    // Upsert per-path counts
+    // Atomic upsert per-path counts
     for (const [key, count] of Object.entries(pathCounts)) {
       const [date, path] = key.split("||");
-      const { data: existing } = await supabase
-        .from("page_view_paths")
-        .select("id, views")
-        .eq("date", date)
-        .eq("path", path)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from("page_view_paths")
-          .update({ views: existing.views + count })
-          .eq("id", existing.id);
-      } else {
-        await supabase.from("page_view_paths").insert({ date, path, views: count });
-      }
+      await supabase.rpc("upsert_page_view_paths", {
+        p_date: date,
+        p_path: path,
+        p_views: count,
+      });
     }
 
-    // Upsert per-referrer counts
+    // Atomic upsert per-referrer counts
     for (const [key, count] of Object.entries(referrerCounts)) {
       const [date, referrer] = key.split("||");
-      const { data: existing } = await supabase
-        .from("page_view_referrers")
-        .select("id, visitors")
-        .eq("date", date)
-        .eq("referrer", referrer)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from("page_view_referrers")
-          .update({ visitors: existing.visitors + count })
-          .eq("id", existing.id);
-      } else {
-        await supabase
-          .from("page_view_referrers")
-          .insert({ date, referrer, visitors: count });
-      }
+      await supabase.rpc("upsert_page_view_referrers", {
+        p_date: date,
+        p_referrer: referrer,
+        p_visitors: count,
+      });
     }
 
     return NextResponse.json({ ok: true, processed: events.length });
