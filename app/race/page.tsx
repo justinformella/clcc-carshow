@@ -111,11 +111,12 @@ function calibratePlayer(targetET: number, redline: number = 6500, maxGears: num
     const maxSpeed = 1000 / (targetET * 60 * factor);
     let pos = 0, speed = 0, gear = 1, rpm = 800, frames = 0, peak = 0;
     while (pos < 1000 && frames < 60 * 30) {
+      const gearSpeedCap = maxSpeed * (0.35 + 0.65 * (gear / maxGears));
       rpm = Math.min(rpm + 30, redline);
       const gf = 1 - (gear - 1) * gearPenalty;
       const rf = Math.min(rpm / (redline * 0.7), 1.2);
-      const atLimiter = rpm >= redline && gear >= maxGears;
-      if (!atLimiter) speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, maxSpeed);
+      if (rpm >= redline) { speed = Math.min(speed, gearSpeedCap); }
+      else { speed = Math.min(speed + maxSpeed * (1/60) * gf * rf * 0.25, gearSpeedCap); }
       if (rpm >= shiftPoint && gear < maxGears) { gear++; rpm = Math.round(redline * 0.45); }
       pos += speed * (1/60) * 60;
       if (speed > peak) peak = speed;
@@ -467,16 +468,19 @@ function RacePage() {
           const pGearPenalty = 0.20 / (pMaxGears / 5); // scale: more gears = less penalty per gear
 
           if (accel && !pFinish) {
+            // Per-gear speed cap: each gear can only reach a fraction of max speed
+            // Top gear = 100%, first gear = ~40-50% depending on gear count
+            const gearSpeedCap = playerMaxSpeed * (0.35 + 0.65 * (pGear / pMaxGears));
+
             pRpm = Math.min(pRpm + 30, pRedline);
             const gearFactor = 1 - (pGear - 1) * pGearPenalty;
             const rpmFactor = Math.min(pRpm / (pRedline * 0.7), 1.2);
 
-            // Rev limiter: at redline in top gear, cut acceleration
-            const atRevLimit = pRpm >= pRedline && pGear >= pMaxGears;
-            if (atRevLimit) {
-              pSpeed = Math.min(pSpeed, playerMaxSpeed);
+            // At redline in current gear, hold speed (waiting for shift or at top gear)
+            if (pRpm >= pRedline) {
+              pSpeed = Math.min(pSpeed, gearSpeedCap);
             } else {
-              pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, playerMaxSpeed);
+              pSpeed = Math.min(pSpeed + playerMaxSpeed * dt * gearFactor * rpmFactor * 0.25, gearSpeedCap);
             }
           } else {
             pRpm = Math.max(pRpm - 40, 800);
