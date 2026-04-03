@@ -316,22 +316,36 @@ export class RaceScene extends Phaser.Scene {
       item.sprite.setAlpha(Math.min(1, item.z * 2.5));
     }
 
-    // Opponent sprite positioning based on relative position
+    // Opponent sprite positioning — placed in left lane relative to road width at depth
     if (this.phase === "racing") {
       const delta2 = this.opponentState.pos - this.playerState.pos;
+      const roadWidthBottom = width * 0.85;
+      const roadWidthTop = width * 0.08;
+
       if (delta2 >= 0) {
         // Opponent ahead — shrink toward horizon
         const tOpp = Math.min(1, delta2 / 200);
-        const scale = 1.0 - tOpp * 0.8;
-        const topPct = 0.35 + (1 - tOpp) * 0.45;
-        this.oppSprite.setPosition(width * 0.38, height * topPct);
+        const depthT = 1 - tOpp; // 1 = near (bottom), 0 = far (horizon)
+        const perspective = depthT * depthT;
+        const roadW = roadWidthTop + (roadWidthBottom - roadWidthTop) * perspective;
+        const scale = 0.2 + 0.8 * depthT;
+
+        // Left lane = center - roadW/4 (quarter of road left of center line)
+        const oppX = width / 2 - roadW * 0.22;
+        const oppY = horizonY + (height * 0.8 - horizonY) * depthT;
+
+        this.oppSprite.setPosition(oppX, oppY);
         this.oppSprite.setSize(40 * scale, 20 * scale);
-        this.oppSprite.setAlpha(1);
+        this.oppSprite.setAlpha(Math.min(1, scale * 1.5));
       } else {
-        // Opponent behind — grow and slide off
+        // Opponent behind — grow and slide left/down off screen
         const behind = Math.min(Math.abs(delta2), 100) / 100;
         const scale = 1.0 + behind * 0.6;
-        this.oppSprite.setPosition(width * 0.25, height * (0.8 + behind * 0.2));
+        const roadW = roadWidthBottom;
+        const oppX = width / 2 - roadW * 0.22 - behind * width * 0.15;
+        const oppY = height * 0.8 + behind * height * 0.15;
+
+        this.oppSprite.setPosition(oppX, oppY);
         this.oppSprite.setSize(40 * scale, 20 * scale);
         this.oppSprite.setAlpha(Math.max(0, 1 - behind * 1.5));
       }
