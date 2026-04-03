@@ -103,67 +103,109 @@ export class RaceScene extends Phaser.Scene {
     this.sceneryItems = [];
     this.createScenery(width, height);
 
-    // Opponent car (rectangle placeholder — in the left lane, ahead)
-    this.oppSprite = this.add.rectangle(width * 0.38, height * 0.55, 40, 20, 0x3b82f6).setDepth(5);
+    // Load car sprites if available
+    const pCar = playerCar || fallbackCar;
+    const oCar = opponentCar || fallbackCar;
 
-    // Player car placeholder (right lane)
-    this.add.rectangle(width * 0.58, height * 0.78, 60, 30, 0xdc2626).setDepth(10);
+    // Opponent car sprite
+    this.oppSprite = this.add.rectangle(width * 0.38, height * 0.55, 60, 30, 0x3b82f6).setDepth(5);
+    if (oCar.pixelRear) {
+      const oppKey = `opp-rear-${Date.now()}`;
+      this.load.image(oppKey, oCar.pixelRear);
+      this.load.once("complete", () => {
+        if (this.textures.exists(oppKey)) {
+          this.oppSprite.destroy();
+          this.oppSprite = this.add.image(width * 0.38, height * 0.55, oppKey)
+            .setDisplaySize(80, 50).setDepth(5) as unknown as Phaser.GameObjects.Rectangle;
+        }
+      });
+      this.load.start();
+    }
 
-    // Dashboard area
-    const dashY = height * 0.93;
-    this.add.rectangle(width / 2, dashY, width, height * 0.15, 0x111111).setDepth(9);
+    // Player car rear sprite (right lane)
+    if (pCar.pixelRear) {
+      const pKey = `player-rear-${Date.now()}`;
+      this.load.image(pKey, pCar.pixelRear);
+      this.load.once("complete", () => {
+        if (this.textures.exists(pKey)) {
+          this.add.image(width * 0.58, height * 0.76, pKey)
+            .setDisplaySize(120, 75).setDepth(10);
+        }
+      });
+      this.load.start();
+    } else {
+      this.add.rectangle(width * 0.58, height * 0.78, 80, 40, 0xdc2626).setDepth(10);
+    }
 
-    // HUD — Speed, RPM, Gear
-    this.speedText = this.add.text(width * 0.15, dashY - 8, "0", {
-      fontFamily: "'Press Start 2P'", fontSize: "18px", color: "#ffd700",
+    // Dashboard — use pixelDash if available
+    const dashY = height * 0.92;
+    const dashH = height * 0.17;
+    if (pCar.pixelDash) {
+      const dashKey = `player-dash-${Date.now()}`;
+      this.load.image(dashKey, pCar.pixelDash);
+      this.load.once("complete", () => {
+        if (this.textures.exists(dashKey)) {
+          const dash = this.add.image(width / 2, dashY, dashKey).setDepth(9);
+          const scale = Math.max(width / dash.width, dashH / dash.height);
+          dash.setScale(scale).setAlpha(0.7);
+        }
+      });
+      this.load.start();
+    } else {
+      this.add.rectangle(width / 2, dashY, width, dashH, 0x111111).setDepth(9);
+    }
+
+    // HUD — Speed, RPM, Gear (larger fonts for native resolution)
+    this.speedText = this.add.text(width * 0.15, dashY - 10, "0", {
+      fontFamily: "'Press Start 2P'", fontSize: "36px", color: "#ffd700",
     }).setOrigin(0.5).setDepth(12);
 
-    this.add.text(width * 0.15, dashY + 12, "MPH", {
-      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa",
+    this.add.text(width * 0.15, dashY + 18, "MPH", {
+      fontFamily: "'Press Start 2P'", fontSize: "12px", color: "#aaaaaa",
     }).setOrigin(0.5).setDepth(12);
 
-    this.rpmText = this.add.text(width * 0.5, dashY - 8, "800", {
-      fontFamily: "'Press Start 2P'", fontSize: "14px", color: "#cccccc",
+    this.rpmText = this.add.text(width * 0.5, dashY - 10, "800", {
+      fontFamily: "'Press Start 2P'", fontSize: "24px", color: "#cccccc",
     }).setOrigin(0.5).setDepth(12);
 
-    this.add.text(width * 0.5, dashY + 12, "RPM", {
-      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa",
+    this.add.text(width * 0.5, dashY + 18, "RPM", {
+      fontFamily: "'Press Start 2P'", fontSize: "12px", color: "#aaaaaa",
     }).setOrigin(0.5).setDepth(12);
 
-    this.gearText = this.add.text(width * 0.85, dashY - 8, "1", {
-      fontFamily: "'Press Start 2P'", fontSize: "18px", color: "#00ff00",
+    this.gearText = this.add.text(width * 0.85, dashY - 10, "1", {
+      fontFamily: "'Press Start 2P'", fontSize: "36px", color: "#00ff00",
     }).setOrigin(0.5).setDepth(12);
 
-    this.add.text(width * 0.85, dashY + 12, "GEAR", {
-      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa",
+    this.add.text(width * 0.85, dashY + 18, "GEAR", {
+      fontFamily: "'Press Start 2P'", fontSize: "12px", color: "#aaaaaa",
     }).setOrigin(0.5).setDepth(12);
 
-    // Progress bar (top of screen)
+    // Progress bar
     const barW = width * 0.6;
     const barX = width / 2;
-    const barY = 12;
-    this.progressBar = this.add.rectangle(barX, barY, barW, 6, 0x333333).setDepth(15);
-    this.progressFill = this.add.rectangle(barX - barW / 2, barY, 0, 6, 0xffd700).setOrigin(0, 0.5).setDepth(16);
-    this.oppProgressFill = this.add.rectangle(barX - barW / 2, barY + 8, 0, 4, 0x3b82f6).setOrigin(0, 0.5).setDepth(16);
+    const barY = 16;
+    this.progressBar = this.add.rectangle(barX, barY, barW, 10, 0x333333).setDepth(15);
+    this.progressFill = this.add.rectangle(barX - barW / 2, barY, 0, 10, 0xffd700).setOrigin(0, 0.5).setDepth(16);
+    this.oppProgressFill = this.add.rectangle(barX - barW / 2, barY + 14, 0, 7, 0x3b82f6).setOrigin(0, 0.5).setDepth(16);
 
-    // P1 / CPU labels on progress bar
-    this.add.text(barX - barW / 2 - 30, barY, "P1", {
-      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#ffd700",
+    this.add.text(barX - barW / 2 - 40, barY, "P1", {
+      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#ffd700",
     }).setOrigin(0.5).setDepth(16);
-    this.add.text(barX - barW / 2 - 30, barY + 8, "CPU", {
-      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#3b82f6",
+    this.add.text(barX - barW / 2 - 40, barY + 14, "CPU", {
+      fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#3b82f6",
     }).setOrigin(0.5).setDepth(16);
 
-    // Christmas tree lights (centered overlay)
+    // Christmas tree lights
     const treeX = width / 2;
-    const treeBaseY = height * 0.3;
+    const treeBaseY = height * 0.25;
+    const lightGap = 45;
     for (let i = 0; i < 3; i++) {
-      const light = this.add.circle(treeX, treeBaseY + i * 30, 12, 0x222222)
-        .setStrokeStyle(2, 0x333333).setDepth(20);
+      const light = this.add.circle(treeX, treeBaseY + i * lightGap, 18, 0x222222)
+        .setStrokeStyle(3, 0x333333).setDepth(20);
       this.treeLights.push(light);
     }
-    this.greenLight = this.add.circle(treeX, treeBaseY + 3 * 30, 15, 0x222222)
-      .setStrokeStyle(2, 0x333333).setDepth(20);
+    this.greenLight = this.add.circle(treeX, treeBaseY + 3 * lightGap, 22, 0x222222)
+      .setStrokeStyle(3, 0x333333).setDepth(20);
 
     // Speed lines (appear at high speed on screen edges)
     for (let i = 0; i < 8; i++) {
@@ -178,12 +220,12 @@ export class RaceScene extends Phaser.Scene {
     }
 
     // Countdown / result text
-    this.countdownText = this.add.text(width / 2, height * 0.2, "", {
-      fontFamily: "'Press Start 2P'", fontSize: "20px", color: "#ffd700",
+    this.countdownText = this.add.text(width / 2, height * 0.15, "", {
+      fontFamily: "'Press Start 2P'", fontSize: "36px", color: "#ffd700",
     }).setOrigin(0.5).setDepth(21).setAlpha(0);
 
-    this.resultText = this.add.text(width / 2, height * 0.35, "", {
-      fontFamily: "'Press Start 2P'", fontSize: "24px", color: "#ffd700",
+    this.resultText = this.add.text(width / 2, height * 0.3, "", {
+      fontFamily: "'Press Start 2P'", fontSize: "48px", color: "#ffd700",
     }).setOrigin(0.5).setDepth(21).setAlpha(0);
 
     // Input
@@ -395,8 +437,8 @@ export class RaceScene extends Phaser.Scene {
 
       // Progress bars
       const barW = width * 0.6;
-      this.progressFill.setSize(barW * Math.min(this.playerState.pos / 1000, 1), 6);
-      this.oppProgressFill.setSize(barW * Math.min(this.opponentState.pos / 1000, 1), 4);
+      this.progressFill.setSize(barW * Math.min(this.playerState.pos / 1000, 1), 10);
+      this.oppProgressFill.setSize(barW * Math.min(this.opponentState.pos / 1000, 1), 7);
     }
   }
 
@@ -428,27 +470,27 @@ export class RaceScene extends Phaser.Scene {
     const oTime = (this.opponentState.finishTime / 1000).toFixed(2);
     const rt = this.jumped ? "JUMP +0.5s" : `RT: ${(this.reactionTime / 1000).toFixed(3)}s`;
 
-    this.add.text(width / 2, height * 0.48, `P1: ${pTime}s  |  CPU: ${oTime}s`, {
-      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#ffffff",
+    this.add.text(width / 2, height * 0.45, `P1: ${pTime}s  |  CPU: ${oTime}s`, {
+      fontFamily: "'Press Start 2P'", fontSize: "18px", color: "#ffffff",
     }).setOrigin(0.5).setDepth(21);
 
-    this.add.text(width / 2, height * 0.55, rt, {
-      fontFamily: "'Press Start 2P'", fontSize: "8px", color: this.jumped ? "#ff0000" : "#00ff00",
+    this.add.text(width / 2, height * 0.52, rt, {
+      fontFamily: "'Press Start 2P'", fontSize: "14px", color: this.jumped ? "#ff0000" : "#00ff00",
     }).setOrigin(0.5).setDepth(21);
 
     // REMATCH button
-    const rematchBtn = this.add.rectangle(width * 0.35, height * 0.65, 140, 35, 0xffd700)
+    const rematchBtn = this.add.rectangle(width * 0.35, height * 0.62, 200, 48, 0xffd700)
       .setDepth(22).setInteractive({ useHandCursor: true });
-    this.add.text(width * 0.35, height * 0.65, "REMATCH", {
-      fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#0d0d1a",
+    this.add.text(width * 0.35, height * 0.62, "REMATCH", {
+      fontFamily: "'Press Start 2P'", fontSize: "16px", color: "#0d0d1a",
     }).setOrigin(0.5).setDepth(23);
     rematchBtn.on("pointerdown", () => this.scene.restart());
 
     // NEW CAR button
-    const newCarBtn = this.add.rectangle(width * 0.65, height * 0.65, 140, 35, 0x1a1a2e)
+    const newCarBtn = this.add.rectangle(width * 0.65, height * 0.62, 200, 48, 0x1a1a2e)
       .setStrokeStyle(2, 0x333333).setDepth(22).setInteractive({ useHandCursor: true });
-    this.add.text(width * 0.65, height * 0.65, "NEW CAR", {
-      fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#cccccc",
+    this.add.text(width * 0.65, height * 0.62, "NEW CAR", {
+      fontFamily: "'Press Start 2P'", fontSize: "16px", color: "#cccccc",
     }).setOrigin(0.5).setDepth(23);
     newCarBtn.on("pointerdown", () => {
       import("@/lib/race-audio").then(({ startSelectMusic }) => startSelectMusic());

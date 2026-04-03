@@ -1,14 +1,14 @@
 import Phaser from "phaser";
 import { RaceCar } from "../physics";
 
-const GAP = 12;
+const GAP = 16;
 
 export class SelectScene extends Phaser.Scene {
   private scrollY = 0;
   private maxScrollY = 0;
   private scrollContainer!: Phaser.GameObjects.Container;
   private isDragging = false;
-  private inputEnabled = false; // prevent passthrough click from previous scene
+  private inputEnabled = false;
 
   constructor() {
     super({ key: "SelectScene" });
@@ -22,36 +22,35 @@ export class SelectScene extends Phaser.Scene {
     this.isDragging = false;
     this.inputEnabled = false;
 
-    // Delay input activation to prevent click passthrough from TitleScene
     this.time.delayedCall(300, () => { this.inputEnabled = true; });
 
-    // Responsive columns: 1 on narrow, 2 on medium, 3 on wide
-    const cols = width < 500 ? 1 : width < 700 ? 2 : 3;
-    const cardW = Math.min(230, (width - GAP * (cols + 1)) / cols);
-    const imgH = cardW * 0.45; // maintain roughly 16:9
-    const cardH = imgH + 90; // image + text area
+    // Responsive columns
+    const cols = width < 600 ? 1 : width < 900 ? 2 : 3;
+    const cardW = Math.min(380, (width - GAP * (cols + 1)) / cols);
+    const imgH = cardW * 0.48;
+    const cardH = imgH + 120;
 
     // Header
-    this.add.rectangle(width / 2, 40, width, 80, 0x0d0d1a).setDepth(10);
+    const headerH = 110;
+    this.add.rectangle(width / 2, headerH / 2, width, headerH, 0x0d0d1a).setDepth(10);
 
-    this.add.text(width / 2, 15, "CLCC ARCADE", {
-      fontFamily: "'Press Start 2P'", fontSize: "6px", color: "#aaaaaa", letterSpacing: 3,
+    this.add.text(width / 2, 18, "CLCC ARCADE", {
+      fontFamily: "'Press Start 2P'", fontSize: "12px", color: "#aaaaaa", letterSpacing: 4,
     }).setOrigin(0.5).setDepth(11);
 
-    this.add.text(width / 2, 32, "REDLINE MOTOR CONDOS", {
-      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#ffd700",
+    this.add.text(width / 2, 45, "REDLINE MOTOR CONDOS", {
+      fontFamily: "'Press Start 2P'", fontSize: "20px", color: "#ffd700",
     }).setOrigin(0.5).setDepth(11);
 
-    this.add.text(width / 2, 50, "CHOOSE YOUR RIDE", {
-      fontFamily: "'Press Start 2P'", fontSize: "8px", color: "#ffffff",
+    this.add.text(width / 2, 72, "CHOOSE YOUR RIDE", {
+      fontFamily: "'Press Start 2P'", fontSize: "16px", color: "#ffffff",
     }).setOrigin(0.5).setDepth(11);
 
-    this.add.text(width / 2, 66, `${cars.length} VEHICLES`, {
-      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#aaaaaa",
+    this.add.text(width / 2, 95, `${cars.length} VEHICLES`, {
+      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#aaaaaa",
     }).setOrigin(0.5).setDepth(11);
 
     // Scrollable car grid
-    const headerH = 82;
     this.scrollContainer = this.add.container(0, headerH);
 
     const rows = Math.ceil(cars.length / cols);
@@ -63,11 +62,10 @@ export class SelectScene extends Phaser.Scene {
       const row = Math.floor(i / cols);
       const x = startX + col * (cardW + GAP) + cardW / 2;
       const y = row * (cardH + GAP) + cardH / 2;
-
       this.createCarCard(car, x, y, cardW, cardH, imgH);
     });
 
-    this.maxScrollY = Math.max(0, rows * (cardH + GAP) - (height - headerH) + 20);
+    this.maxScrollY = Math.max(0, rows * (cardH + GAP) - (height - headerH) + 30);
     this.scrollY = 0;
 
     // Mouse wheel scroll
@@ -79,7 +77,6 @@ export class SelectScene extends Phaser.Scene {
     // Touch/mouse drag scroll
     let dragStartY = 0;
     let dragScrollStart = 0;
-
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       dragStartY = pointer.y;
       dragScrollStart = this.scrollY;
@@ -96,7 +93,6 @@ export class SelectScene extends Phaser.Scene {
   }
 
   private createCarCard(car: RaceCar, x: number, y: number, cardW: number, cardH: number, imgH: number) {
-    // Card background
     const bg = this.add.rectangle(x, y, cardW, cardH, 0x1a1a2e)
       .setStrokeStyle(2, 0x333333)
       .setInteractive({ useHandCursor: true });
@@ -106,7 +102,6 @@ export class SelectScene extends Phaser.Scene {
     const imgY = y - cardH / 2 + imgH / 2 + 2;
     this.scrollContainer.add(this.add.rectangle(x, imgY, cardW - 4, imgH, 0x000000));
 
-    // Load pixel art
     if (car.pixelArt) {
       const imgKey = `car-select-${car.id}`;
       const addImage = () => {
@@ -127,29 +122,27 @@ export class SelectScene extends Phaser.Scene {
       }
     }
 
-    // Text below image
-    const textStartY = y - cardH / 2 + imgH + 8;
+    const textStartY = y - cardH / 2 + imgH + 10;
 
-    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, textStartY, car.category || car.era || "", {
-      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#ffd700",
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 12, textStartY, car.category || car.era || "", {
+      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#ffd700",
     }));
 
-    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, textStartY + 12, car.name, {
-      fontFamily: "'Press Start 2P'", fontSize: "7px", color: "#ffffff",
-      wordWrap: { width: cardW - 16 },
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 12, textStartY + 18, car.name, {
+      fontFamily: "'Press Start 2P'", fontSize: "14px", color: "#ffffff",
+      wordWrap: { width: cardW - 24 },
     }));
 
-    const statsY = y + cardH / 2 - 22;
-    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, statsY,
+    const statsY = y + cardH / 2 - 35;
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 12, statsY,
       `HP ${car.hp}   WT ${car.weight.toLocaleString()}`, {
-      fontFamily: "'Press Start 2P'", fontSize: "5px", color: "#cccccc",
+      fontFamily: "'Press Start 2P'", fontSize: "10px", color: "#cccccc",
     }));
-    this.scrollContainer.add(this.add.text(x - cardW / 2 + 8, statsY + 10,
+    this.scrollContainer.add(this.add.text(x - cardW / 2 + 12, statsY + 16,
       `${car.engineType || ""}  ${car.displacement ? car.displacement + "L" : ""}  ${car.driveType || ""}`, {
-      fontFamily: "'Press Start 2P'", fontSize: "4px", color: "#aaaaaa",
+      fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#aaaaaa",
     }));
 
-    // Click handler — only on pointerup, only if not dragging, only after delay
     bg.on("pointerover", () => bg.setStrokeStyle(2, 0xffd700));
     bg.on("pointerout", () => bg.setStrokeStyle(2, 0x333333));
     bg.on("pointerup", () => {

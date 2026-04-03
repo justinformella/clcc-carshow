@@ -10,17 +10,17 @@ export class BootScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Loading bar
-    const barW = 300;
-    const barH = 16;
+    const barW = width * 0.4;
+    const barH = 20;
     const barX = (width - barW) / 2;
     const barY = height / 2;
 
     this.add.rectangle(width / 2, barY, barW + 4, barH + 4, 0x333333);
     const fill = this.add.rectangle(barX + 2, barY, 0, barH, 0xffd700).setOrigin(0, 0.5);
 
-    this.add.text(width / 2, barY - 30, "LOADING...", {
+    this.add.text(width / 2, barY - 40, "LOADING...", {
       fontFamily: "'Press Start 2P'",
-      fontSize: "10px",
+      fontSize: "18px",
       color: "#aaaaaa",
     }).setOrigin(0.5);
 
@@ -40,7 +40,7 @@ export class BootScene extends Phaser.Scene {
 
     this.add.text(width / 2, height / 2, "LOADING CARS...", {
       fontFamily: "'Press Start 2P'",
-      fontSize: "10px",
+      fontSize: "18px",
       color: "#ffd700",
     }).setOrigin(0.5);
 

@@ -18,15 +18,18 @@ export default function PhaserGame() {
       import("@/components/arcade/scenes/MatchupScene"),
       import("@/components/arcade/scenes/RaceScene"),
     ]).then(([Phaser, { BootScene }, { TitleScene }, { SelectScene }, { MatchupScene }, { RaceScene }]) => {
+      // Use actual screen size so text renders crisp at native resolution
+      const w = containerRef.current!.clientWidth;
+      const h = containerRef.current!.clientHeight;
+
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width: 800,
-        height: 600,
+        width: w,
+        height: h,
         parent: containerRef.current!,
         backgroundColor: "#0d0d1a",
-        pixelArt: true,
         scale: {
-          mode: Phaser.Scale.FIT,
+          mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
         },
         scene: [BootScene, TitleScene, SelectScene, MatchupScene, RaceScene],
