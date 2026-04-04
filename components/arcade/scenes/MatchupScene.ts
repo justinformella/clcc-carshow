@@ -15,6 +15,7 @@ export class MatchupScene extends Phaser.Scene {
     const opponents = shuffled.slice(0, Math.min(3, shuffled.length));
     this.registry.set("opponentCars", opponents);
     const opponentCar = opponents[0] || playerCar;
+    const selectedTrack = this.registry.get("selectedTrack");
 
     this.cameras.main.setBackgroundColor("#0d0d1a");
 
@@ -38,6 +39,15 @@ export class MatchupScene extends Phaser.Scene {
     this.add.text(width / 2, 65, "Choose Your Ride", {
       fontFamily: "'Press Start 2P'", fontSize: "12px", color: "#ffffff",
     }).setOrigin(0.5);
+
+    if (selectedTrack) {
+      this.add.text(width / 2, 82, selectedTrack.name.toUpperCase(), {
+        fontFamily: "'Press Start 2P'", fontSize: "14px", color: "#ffd700",
+      }).setOrigin(0.5);
+      this.add.text(width / 2, 100, selectedTrack.subtitle, {
+        fontFamily: "'Press Start 2P'", fontSize: "9px", color: "#666666",
+      }).setOrigin(0.5);
+    }
 
     // --- Car cards: P1 (left) | VS | CPU (right) ---
     const cardCenterY = height * 0.30;
