@@ -972,7 +972,7 @@ function RacePage() {
               <div style={{ textAlign: "center" }}>
                 <span style={{ fontFamily: FONT, fontSize: "1rem", color: C.gold }}>VS</span>
               </div>
-              <CarCard car={opponentCar} label="CPU" isPlayer={false} />
+              <CarCard key={opponentCar.id} car={opponentCar} label="CPU" isPlayer={false} />
             </div>
 
             {/* Spec comparison */}
