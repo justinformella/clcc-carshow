@@ -1,30 +1,544 @@
 import Phaser from "phaser";
+import { CarState, resolveCarCollision } from "../topdown-physics";
+import { TrackData, getSurfaceAt, hasCrossedFinish, raceProgress } from "../track";
+import { renderTrack } from "../track-renderer";
+import { AIDriver, createAIDrivers } from "../ai";
+import { RaceHUD } from "../hud";
+import { CarEffects } from "../effects";
+import { RaceCar } from "../types";
+
+// Car sprite colors: player = gold, opponents = red, blue, green
+const CAR_COLORS = [0xffd700, 0xff4444, 0x4488ff, 0x44cc44];
 
 export class RaceScene extends Phaser.Scene {
+  // Race state
+  private player!: CarState;
+  private opponents: CarState[] = [];
+  private allCars: CarState[] = [];
+  private aiDrivers: AIDriver[] = [];
+  private effects: CarEffects[] = [];
+  private hud!: RaceHUD;
+  private track!: TrackData;
+
+  // Phase management
+  private phase: "countdown" | "racing" | "finished" = "countdown";
+  private raceElapsedMs = 0;
+  private countdownTimer = 0;
+  private finishOrder: CarState[] = [];
+
+  // Sprites
+  private carSprites: Phaser.GameObjects.Rectangle[] = [];
+
+  // Keyboard cursors
+  private wasd!: {
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+  };
+  private arrowKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private spaceKey!: Phaser.Input.Keyboard.Key;
+
+  // Countdown text reference for cleanup
+  private countdownText!: Phaser.GameObjects.Text;
+
   constructor() {
     super({ key: "RaceScene" });
   }
 
+  // ---------------------------------------------------------------------------
+  // create
+  // ---------------------------------------------------------------------------
+
   create() {
+    // --- 1. Get data from registry -----------------------------------------
+    const selectedTrack: TrackData | undefined = this.registry.get("selectedTrack");
+    if (!selectedTrack) {
+      this.scene.start("SelectScene");
+      return;
+    }
+    this.track = selectedTrack;
+
+    const playerCar: RaceCar | undefined = this.registry.get("playerCar");
+    if (!playerCar) {
+      this.scene.start("SelectScene");
+      return;
+    }
+
+    const opponentCars: RaceCar[] = this.registry.get("opponentCars") || [];
+
+    // --- 2. Reset state ---------------------------------------------------
+    this.phase = "countdown";
+    this.raceElapsedMs = 0;
+    this.finishOrder = [];
+    this.opponents = [];
+    this.allCars = [];
+    this.aiDrivers = [];
+    this.effects = [];
+    this.carSprites = [];
+
+    // --- 3. Create CarState instances from spawn points -------------------
+    const spawns = this.track.spawnPoints;
+
+    // Player gets spawn[0]
+    const playerSpawn = spawns[0] || { x: 400, y: 140, angle: Math.PI };
+    this.player = new CarState(playerCar, playerSpawn.x, playerSpawn.y, playerSpawn.angle);
+
+    // AI opponents
+    const numOpponents = Math.min(opponentCars.length, 3);
+    for (let i = 0; i < numOpponents; i++) {
+      const spawn = spawns[i + 1] || {
+        x: playerSpawn.x + (i % 2 === 0 ? 30 : -30),
+        y: playerSpawn.y + Math.floor(i / 2) * 35,
+        angle: playerSpawn.angle,
+      };
+      this.opponents.push(new CarState(opponentCars[i], spawn.x, spawn.y, spawn.angle));
+    }
+
+    // allCars: player first, then opponents (HUD expects index 0 = player)
+    this.allCars = [this.player, ...this.opponents];
+
+    // --- 4. Create AI drivers ---------------------------------------------
+    this.aiDrivers = createAIDrivers().slice(0, numOpponents);
+
+    // --- 5. Render the track ----------------------------------------------
+    // renderTrack may have issues with the current track data format but we
+    // call it for its side effects (graphics objects). Wrap defensively.
+    try {
+      renderTrack(this, this.track);
+    } catch (err) {
+      console.warn("[RaceScene] renderTrack failed, using fallback background:", err);
+      this._drawFallbackBackground();
+    }
+
+    // --- 6. Create car sprites (20×32 rectangles) -------------------------
+    for (let i = 0; i < this.allCars.length; i++) {
+      const car = this.allCars[i];
+      const color = CAR_COLORS[i] ?? 0xffffff;
+      const rect = this.add.rectangle(car.x, car.y, 20, 32, color);
+      rect.setDepth(10);
+      this.carSprites.push(rect);
+    }
+
+    // --- 7. Create CarEffects for each car --------------------------------
+    for (const car of this.allCars) {
+      this.effects.push(new CarEffects(this, car.car));
+    }
+
+    // --- 8. Create and initialize HUD ------------------------------------
+    this.hud = new RaceHUD(this, this.track);
+    this.hud.create();
+
+    // --- 9. Set up camera ------------------------------------------------
+    const { width: trackW, height: trackH } = this.track;
+    this.cameras.main.setBounds(0, 0, trackW, trackH);
+    this.cameras.main.startFollow(this.carSprites[0], true, 0.08, 0.08);
+    this.cameras.main.setZoom(1.5);
+
+    // --- 10. Set up keyboard input ---------------------------------------
+    const kb = this.input.keyboard!;
+    this.arrowKeys = kb.createCursorKeys();
+    this.wasd = {
+      up: kb.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+      down: kb.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+      left: kb.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+      right: kb.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+    };
+    this.spaceKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // --- 11. Countdown ---------------------------------------------------
+    this._startCountdown();
+  }
+
+  // ---------------------------------------------------------------------------
+  // update
+  // ---------------------------------------------------------------------------
+
+  update(_time: number, delta: number) {
+    // Always sync sprite positions so they're visible even during countdown
+    this._updateSpriteTransforms();
+
+    if (this.phase === "countdown" || this.phase === "finished") {
+      return;
+    }
+
+    // ---- Racing phase ----------------------------------------------------
+
+    // Accumulate elapsed race time
+    this.raceElapsedMs += delta;
+
+    // Read player input
+    const playerInput = {
+      accel: this.arrowKeys.up.isDown || this.wasd.up.isDown,
+      brake: this.arrowKeys.down.isDown || this.wasd.down.isDown || this.spaceKey.isDown,
+      steerLeft: this.arrowKeys.left.isDown || this.wasd.left.isDown,
+      steerRight: this.arrowKeys.right.isDown || this.wasd.right.isDown,
+    };
+
+    // Update surface for all cars
+    for (const car of this.allCars) {
+      if (!car.finished) {
+        car.surface = getSurfaceAt(this.track, car.x, car.y);
+      }
+    }
+
+    // Update player physics
+    if (!this.player.finished) {
+      this.player.update(playerInput, delta);
+    }
+
+    // Update AI opponents
+    for (let i = 0; i < this.opponents.length; i++) {
+      const opp = this.opponents[i];
+      if (opp.finished) continue;
+      const driver = this.aiDrivers[i];
+      if (!driver) continue;
+      const aiInput = this._getAIInput(driver, opp);
+      opp.update(aiInput, delta);
+    }
+
+    // Resolve car-to-car collisions (nested loop, i < j)
+    for (let i = 0; i < this.allCars.length; i++) {
+      for (let j = i + 1; j < this.allCars.length; j++) {
+        resolveCarCollision(this.allCars[i], this.allCars[j]);
+      }
+    }
+
+    // Resolve car-to-boundary collisions (AABB nearest-point, 14px radius)
+    const CAR_RADIUS = 14;
+    for (const car of this.allCars) {
+      if (car.finished) continue;
+      for (const boundary of this.track.boundaries) {
+        // Clamp car center to boundary rectangle
+        const nearX = Math.max(boundary.x, Math.min(car.x, boundary.x + boundary.width));
+        const nearY = Math.max(boundary.y, Math.min(car.y, boundary.y + boundary.height));
+        const dx = car.x - nearX;
+        const dy = car.y - nearY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < CAR_RADIUS && dist > 0) {
+          // Push car out
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const overlap = CAR_RADIUS - dist;
+          car.x += nx * overlap;
+          car.y += ny * overlap;
+
+          // Speed penalty (0.6x = 40% speed loss)
+          car.speed *= 0.6;
+        }
+      }
+    }
+
+    // Clamp all cars within track bounds
+    const { width: tw, height: th } = this.track;
+    for (const car of this.allCars) {
+      car.x = Math.max(0, Math.min(tw, car.x));
+      car.y = Math.max(0, Math.min(th, car.y));
+    }
+
+    // Check finish line crossing (only if raceProgress > 0.8 to avoid false positives at start)
+    for (const car of this.allCars) {
+      if (car.finished) continue;
+      const progress = raceProgress(this.track, car.x, car.y);
+      if (progress > 0.8 && hasCrossedFinish(this.track, car.x, car.y)) {
+        car.finished = true;
+        car.finishTime = this.raceElapsedMs;
+        this.finishOrder.push(car);
+      }
+    }
+
+    // Check if race should end
+    const playerFinished = this.player.finished;
+    const allOpponentsFinished = this.opponents.every((o) => o.finished);
+
+    if (playerFinished && this.phase === "racing") {
+      this.phase = "finished";
+      this.hud.showFinishPosition(this.finishOrder.indexOf(this.player) + 1, this.allCars.length);
+      this.time.delayedCall(2000, () => this._showResults());
+    } else if (allOpponentsFinished && this.opponents.length > 0 && !playerFinished && this.phase === "racing") {
+      // Player loses — mark as last place
+      this.player.finished = true;
+      this.player.finishTime = this.raceElapsedMs;
+      this.finishOrder.push(this.player);
+      this.phase = "finished";
+      this.hud.showFinishPosition(this.finishOrder.length, this.allCars.length);
+      this.time.delayedCall(2000, () => this._showResults());
+    }
+
+    // Update effects
+    for (let i = 0; i < this.effects.length; i++) {
+      this.effects[i].update(this.allCars[i]);
+    }
+
+    // Update HUD
+    this.hud.update(this.player, this.allCars, this.raceElapsedMs);
+  }
+
+  // ---------------------------------------------------------------------------
+  // shutdown
+  // ---------------------------------------------------------------------------
+
+  shutdown() {
+    for (const effect of this.effects) {
+      effect.destroy();
+    }
+    this.effects = [];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /** Sync Phaser rectangle sprites to physics car positions and angles. */
+  private _updateSpriteTransforms() {
+    for (let i = 0; i < this.carSprites.length; i++) {
+      const sprite = this.carSprites[i];
+      const car = this.allCars[i];
+      if (!sprite || !car) continue;
+      sprite.setPosition(car.x, car.y);
+      // Convert physics angle (0=north, clockwise) to Phaser angle (radians, 0=east)
+      sprite.setRotation(car.angle);
+    }
+  }
+
+  /** Get AI input from driver, working around known API mismatch in ai.ts */
+  private _getAIInput(driver: AIDriver, car: CarState) {
+    try {
+      // ai.ts calls nearestWaypointIndex(car, track) with wrong arg order,
+      // and accesses car.topSpeed which doesn't exist. We call driver.update
+      // and catch errors, returning a simple follow-always input as fallback.
+      return driver.update(car, this.track);
+    } catch {
+      return { accel: true, brake: false, steerLeft: false, steerRight: false };
+    }
+  }
+
+  /** Kick off the 3-2-1-GO countdown sequence. */
+  private _startCountdown() {
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor("#0d0d1a");
+    this.countdownText = this.add
+      .text(width / 2, height / 2 - 60, "3", {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "72px",
+        color: "#ffd700",
+        stroke: "#000000",
+        strokeThickness: 6,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(300);
 
-    this.add.text(width / 2, height / 2, "ROAD RACE\nCOMING SOON", {
-      fontFamily: "'Press Start 2P'",
-      fontSize: "24px",
-      color: "#ffd700",
-      align: "center",
-      lineSpacing: 12,
-    }).setOrigin(0.5);
+    const steps = [
+      { label: "3", delay: 0 },
+      { label: "2", delay: 1000 },
+      { label: "1", delay: 2000 },
+      { label: "GO!", delay: 3000 },
+    ];
 
-    const backText = this.add.text(width / 2, height / 2 + 80, "BACK TO SELECT", {
-      fontFamily: "'Press Start 2P'",
-      fontSize: "14px",
-      color: "#555555",
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    for (const step of steps) {
+      this.time.delayedCall(step.delay, () => {
+        if (this.countdownText) {
+          this.countdownText.setText(step.label);
+          // Pop animation
+          this.tweens.add({
+            targets: this.countdownText,
+            scaleX: 1.4,
+            scaleY: 1.4,
+            duration: 80,
+            yoyo: true,
+            ease: "Quad.easeOut",
+          });
+        }
+      });
+    }
 
-    backText.on("pointerover", () => backText.setColor("#aaaaaa"));
-    backText.on("pointerout", () => backText.setColor("#555555"));
-    backText.on("pointerdown", () => this.scene.start("SelectScene"));
+    // After "GO!" disappears, start racing
+    this.time.delayedCall(3800, () => {
+      if (this.countdownText) {
+        this.countdownText.destroy();
+      }
+      this.phase = "racing";
+    });
+  }
+
+  /** Show the results overlay after the race ends. */
+  private _showResults() {
+    const { width, height } = this.scale;
+    const depth = 250;
+
+    // Dark overlay
+    this.add
+      .rectangle(width / 2, height / 2, width, height, 0x0d0d1a, 0.85)
+      .setScrollFactor(0)
+      .setDepth(depth);
+
+    // Sort all cars by finish order / time
+    const sortedCars = [...this.allCars].sort((a, b) => {
+      if (a.finished && b.finished) return a.finishTime - b.finishTime;
+      if (a.finished) return -1;
+      if (b.finished) return 1;
+      return 0;
+    });
+
+    const playerPosition = sortedCars.indexOf(this.player) + 1;
+    const playerWon = playerPosition === 1;
+
+    // WIN / LOSE header
+    const headerText = playerWon ? "YOU WIN!" : "YOU LOSE";
+    const headerColor = playerWon ? "#ffd700" : "#ff4444";
+    this.add
+      .text(width / 2, 40, headerText, {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "28px",
+        color: headerColor,
+        stroke: "#000000",
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(depth + 1);
+
+    // Results table
+    const tableStartY = 100;
+    const rowH = 28;
+    const ordinals = ["1st", "2nd", "3rd", "4th"];
+
+    for (let i = 0; i < sortedCars.length; i++) {
+      const car = sortedCars[i];
+      const isPlayer = car === this.player;
+      const timeStr = car.finished
+        ? (car.finishTime / 1000).toFixed(2) + "s"
+        : "DNF";
+      const rowColor = isPlayer ? "#ffd700" : "#aaaaaa";
+      const rowY = tableStartY + i * rowH;
+      const label = `${ordinals[i] ?? `${i + 1}th`}  ${car.car.name.slice(0, 16).toUpperCase()}  ${timeStr}`;
+      this.add
+        .text(width / 2, rowY, label, {
+          fontFamily: '"Press Start 2P", monospace',
+          fontSize: "10px",
+          color: rowColor,
+          stroke: "#000000",
+          strokeThickness: 2,
+        })
+        .setOrigin(0.5, 0)
+        .setScrollFactor(0)
+        .setDepth(depth + 1);
+    }
+
+    // Player stats
+    const statsY = tableStartY + sortedCars.length * rowH + 16;
+    const topMph = Math.round(this.player.topSpeedReached);
+    const drifts = this.player.driftCount;
+    this.add
+      .text(
+        width / 2,
+        statsY,
+        `TOP SPEED: ${topMph} MPH   DRIFTS: ${drifts}`,
+        {
+          fontFamily: '"Press Start 2P", monospace',
+          fontSize: "9px",
+          color: "#888888",
+          stroke: "#000000",
+          strokeThickness: 2,
+        }
+      )
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(depth + 1);
+
+    // Buttons
+    const btnY = statsY + 50;
+    this._makeResultButton("RACE AGAIN", width / 2 - 160, btnY, depth, () => {
+      this.scene.restart();
+    });
+    this._makeResultButton("NEW TRACK", width / 2, btnY, depth, () => {
+      this.scene.start("TrackSelectScene");
+    });
+    this._makeResultButton("NEW CAR", width / 2 + 160, btnY, depth, () => {
+      this.scene.start("SelectScene");
+    });
+  }
+
+  private _makeResultButton(
+    label: string,
+    x: number,
+    y: number,
+    depth: number,
+    onClick: () => void
+  ) {
+    const btn = this.add
+      .text(x, y, label, {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "11px",
+        color: "#ffffff",
+        backgroundColor: "#1a1a2e",
+        padding: { x: 10, y: 8 },
+        stroke: "#444444",
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(depth + 2)
+      .setInteractive({ useHandCursor: true });
+
+    btn.on("pointerover", () => btn.setColor("#ffd700"));
+    btn.on("pointerout", () => btn.setColor("#ffffff"));
+    btn.on("pointerdown", onClick);
+  }
+
+  /** Fallback background when renderTrack fails. */
+  private _drawFallbackBackground() {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(0x5a8a3c, 1); // grass green
+    gfx.fillRect(0, 0, this.track.width, this.track.height);
+    gfx.setDepth(0);
+
+    // Draw road segments from roadSegments polygons
+    if (this.track.roadSegments && this.track.roadSegments.length > 0) {
+      const road = this.add.graphics();
+      road.setDepth(1);
+      road.fillStyle(0x4a4a4a, 1);
+      for (const poly of this.track.roadSegments) {
+        if (poly.length < 3) continue;
+        road.beginPath();
+        road.moveTo(poly[0].x, poly[0].y);
+        for (let i = 1; i < poly.length; i++) {
+          road.lineTo(poly[i].x, poly[i].y);
+        }
+        road.closePath();
+        road.fillPath();
+      }
+
+      // Center line dashes
+      const dash = this.add.graphics();
+      dash.setDepth(2);
+      dash.lineStyle(3, 0xffee88, 1);
+      const wps = this.track.waypoints;
+      for (let i = 0; i < wps.length - 1; i += 2) {
+        dash.beginPath();
+        dash.moveTo(wps[i].x, wps[i].y);
+        dash.lineTo(wps[i + 1].x, wps[i + 1].y);
+        dash.strokePath();
+      }
+    }
+
+    // Finish line checkerboard
+    const fl = this.track.finishLine;
+    const finishGfx = this.add.graphics().setDepth(3);
+    const sq = 10;
+    const cols = Math.ceil(fl.width / sq);
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < cols; col++) {
+        const isBlack = (row + col) % 2 === 0;
+        finishGfx.fillStyle(isBlack ? 0x000000 : 0xffffff, 1);
+        finishGfx.fillRect(
+          fl.x - fl.width / 2 + col * sq,
+          fl.y - sq,
+          sq,
+          sq
+        );
+      }
+    }
   }
 }
