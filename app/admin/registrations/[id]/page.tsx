@@ -40,6 +40,7 @@ export default function RegistrationDetailPage() {
   const [saving, setSaving] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [generatingPixelArt, setGeneratingPixelArt] = useState(false);
   const [form, setForm] = useState<EditForm | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailLog, setEmailLog] = useState<EmailLog[]>([]);
@@ -405,6 +406,27 @@ export default function RegistrationDetailPage() {
     }
   };
 
+  const handleRegeneratePixelArt = async () => {
+    if (!registration) return;
+    setGeneratingPixelArt(true);
+    try {
+      const res = await fetch("/api/registrations/pixel-art", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration_id: registration.id }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Pixel art generation failed");
+      }
+      await fetchRegistration();
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : "Pixel art generation failed");
+    } finally {
+      setGeneratingPixelArt(false);
+    }
+  };
+
   if (loading) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
@@ -560,6 +582,17 @@ export default function RegistrationDetailPage() {
                   <DropdownItem
                     label="Race This Car"
                     onClick={() => { setMenuOpen(false); window.open(`/race?car=${r.id}`, "_blank"); }}
+                  />
+                  <DropdownItem
+                    label={
+                      generatingPixelArt
+                        ? "Generating Race Assets..."
+                        : r.pixel_art_url
+                        ? "Regenerate Race Assets"
+                        : "Generate Race Assets"
+                    }
+                    onClick={() => { handleRegeneratePixelArt(); setMenuOpen(false); }}
+                    disabled={generatingPixelArt}
                   />
                   <DropdownItem
                     label={vehicleSpec ? "Re-enrich Specs" : "Enrich Specs"}
