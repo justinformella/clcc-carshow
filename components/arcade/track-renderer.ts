@@ -1,6 +1,11 @@
 import Phaser from "phaser";
 import type { TrackData } from "./track";
 
+/** Convert a CSS hex string like "#cc4444" or "cc4444" to a Phaser number. */
+function hexToNum(hex: string): number {
+  return parseInt(hex.replace(/^#/, ""), 16);
+}
+
 export function renderTrack(
   scene: Phaser.Scene,
   track: TrackData
@@ -92,7 +97,7 @@ export function renderTrack(
 
   if (track.scenery) {
     for (const obj of track.scenery) {
-      const { x, y, type, width: w = 40, height: h = 40, label } = obj;
+      const { x, y, type, width: w = 40, height: h = 40, label, color } = obj;
 
       switch (type) {
         case "tree": {
@@ -188,6 +193,77 @@ export function renderTrack(
           pier.fillStyle(0xc8a96e, 1);
           pier.fillRect(x - w / 2, y - h / 2, w, h);
           sceneryObjects.push(pier);
+          break;
+        }
+
+        case "awning": {
+          const awning = scene.add.graphics();
+          awning.setDepth(5);
+          awning.fillStyle(color ? hexToNum(color) : 0xcc4444, 0.8);
+          awning.fillRect(x - w / 2, y - h / 2, w, h);
+          const stripeGfx = scene.add.graphics();
+          stripeGfx.setDepth(5);
+          stripeGfx.fillStyle(0xffffff, 0.15);
+          for (let sx = 0; sx < w; sx += 8) {
+            stripeGfx.fillRect(x - w / 2 + sx, y - h / 2, 4, h);
+          }
+          sceneryObjects.push(awning, stripeGfx);
+          break;
+        }
+
+        case "parked-car": {
+          const pcar = scene.add.graphics();
+          pcar.setDepth(4);
+          pcar.fillStyle(color ? hexToNum(color) : 0x444466, 1);
+          pcar.fillRoundedRect(x - w / 2, y - h / 2, w, h, 3);
+          const windshield = scene.add.graphics();
+          windshield.setDepth(5);
+          windshield.fillStyle(0x88bbdd, 0.5);
+          windshield.fillRect(x - w / 4, y - h / 2 + 2, w / 2, h * 0.25);
+          sceneryObjects.push(pcar, windshield);
+          break;
+        }
+
+        case "traffic-light": {
+          const tlPole = scene.add.graphics();
+          tlPole.setDepth(5);
+          tlPole.fillStyle(0x333333, 1);
+          tlPole.fillRect(x - 2, y - h, 4, h);
+          tlPole.fillStyle(0x222222, 1);
+          tlPole.fillRect(x - 5, y - h - 16, 10, 16);
+          tlPole.fillStyle(0xff0000, 0.8);
+          tlPole.fillCircle(x, y - h - 12, 2);
+          tlPole.fillStyle(0xffff00, 0.8);
+          tlPole.fillCircle(x, y - h - 8, 2);
+          tlPole.fillStyle(0x00ff00, 0.8);
+          tlPole.fillCircle(x, y - h - 4, 2);
+          sceneryObjects.push(tlPole);
+          break;
+        }
+
+        case "gas-station": {
+          const canopy = scene.add.graphics();
+          canopy.setDepth(4);
+          canopy.fillStyle(color ? hexToNum(color) : 0xeeeeee, 0.9);
+          canopy.fillRect(x - w / 2, y - h / 2, w, h);
+          canopy.fillStyle(0x888888, 1);
+          canopy.fillRect(x - w / 2 + 4, y - h / 2, 4, h);
+          canopy.fillRect(x + w / 2 - 8, y - h / 2, 4, h);
+          const glowGfx = scene.add.graphics();
+          glowGfx.setDepth(4);
+          glowGfx.fillStyle(0xffffff, 0.12);
+          glowGfx.fillRect(x - w / 2, y + h / 2, w, h * 0.6);
+          sceneryObjects.push(canopy, glowGfx);
+          break;
+        }
+
+        case "power-pole": {
+          const pole = scene.add.graphics();
+          pole.setDepth(4);
+          pole.fillStyle(0x6b4226, 1);
+          pole.fillRect(x - 2, y - h, 4, h);
+          pole.fillRect(x - 12, y - h, 24, 3);
+          sceneryObjects.push(pole);
           break;
         }
 

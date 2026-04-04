@@ -12,12 +12,13 @@ export interface Waypoint {
 export type Polygon = { x: number; y: number }[];
 
 export interface SceneryItem {
-  type: "tree" | "lamp" | "building" | "water" | "bench" | "pier";
+  type: "tree" | "lamp" | "building" | "water" | "bench" | "pier" | "awning" | "parked-car" | "traffic-light" | "gas-station" | "sign" | "fence" | "power-pole";
   x: number;
   y: number;
   label?: string;
   width?: number;
   height?: number;
+  color?: string;
 }
 
 export interface Boundary {
