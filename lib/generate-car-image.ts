@@ -1,5 +1,58 @@
 import { createServerClient } from "@/lib/supabase-server";
 
+/**
+ * Ask Gemini Flash to describe the car's visual appearance so the image
+ * generation prompt is accurate even for obscure models (e.g. Jaguar Project 7).
+ */
+async function describeCarWithGemini(
+  apiKey: string,
+  year: string,
+  make: string,
+  model: string,
+  color: string | null
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text:
+                    `You are an automotive expert. Describe the visual appearance of a ${year} ${make} ${model}` +
+                    `${color ? ` in ${color}` : ""} in 2-3 sentences. ` +
+                    `Focus on distinctive body shape, design cues, proportions, and any unique styling features ` +
+                    `that would help an image generator accurately depict this specific vehicle. ` +
+                    `Do NOT include any preamble — just the description.`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            maxOutputTokens: 200,
+            temperature: 0.2,
+          },
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      console.error("Gemini describe failed:", await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
+  } catch (err) {
+    console.error("Gemini describe error:", err);
+    return null;
+  }
+}
+
 export async function generateCarImage(registrationId: string): Promise<string> {
   const supabase = createServerClient();
 
@@ -13,11 +66,28 @@ export async function generateCarImage(registrationId: string): Promise<string> 
     throw new Error("Registration not found");
   }
 
+  const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
+
+  // Pre-call: ask Gemini to describe the car so the image prompt is accurate
+  const carLabel = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
+  const carDescription = geminiKey
+    ? await describeCarWithGemini(
+        geminiKey,
+        reg.vehicle_year,
+        reg.vehicle_make,
+        reg.vehicle_model,
+        reg.vehicle_color
+      )
+    : null;
+
   const parts = [
-    `A photorealistic photograph of a ${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`,
+    `A photorealistic photograph of a ${carLabel}`,
   ];
   if (reg.vehicle_color) {
     parts[0] += ` in ${reg.vehicle_color}`;
+  }
+  if (carDescription) {
+    parts.push(carDescription);
   }
   parts.push(
     "facing left in a three-quarter front view, parked at an outdoor car show on a sunny day, on green grass with other classic and modern cars softly blurred in the background."
@@ -30,7 +100,6 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
   // Generate image — Imagen 4.0 first, fall back to OpenAI
   let buffer: Buffer;
-  const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
   if (geminiKey) {
     try {
@@ -81,7 +150,7 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
 async function generateWithImagen(apiKey: string, prompt: string): Promise<Buffer> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

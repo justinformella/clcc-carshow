@@ -1,7 +1,53 @@
 import { createServerClient } from "@/lib/supabase-server";
 
-export function buildRearPrompt(carDesc: string, color: string): string {
-  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}. The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Black background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
+/**
+ * Ask Gemini Flash to describe the car so pixel art prompts are accurate
+ * even for obscure models.
+ */
+async function describeCarForPixelArt(
+  apiKey: string,
+  carDesc: string,
+  color: string
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text:
+                    `You are an automotive expert. Describe the visual appearance of a ${carDesc} in ${color} in 1-2 sentences. ` +
+                    `Focus on the silhouette, body shape, and most distinctive styling features ` +
+                    `that would help an 8-bit pixel artist accurately depict this specific vehicle. ` +
+                    `Do NOT include any preamble — just the description.`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            maxOutputTokens: 150,
+            temperature: 0.2,
+          },
+        }),
+      }
+    );
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function buildRearPrompt(carDesc: string, color: string, visualDetails?: string): string {
+  const detail = visualDetails ? ` ${visualDetails}` : "";
+  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Black background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
 }
 
 export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
@@ -18,20 +64,27 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
   const carDesc = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
   const color = reg.vehicle_color || "silver";
 
+  // Pre-call: get a visual description to enrich prompts
+  const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
+  const visualDetails = geminiKey
+    ? await describeCarForPixelArt(geminiKey, carDesc, color)
+    : null;
+  const detail = visualDetails ? ` ${visualDetails}` : "";
+
   // Generate all three images in parallel
   const [sideBuffer, dashBuffer, rearBuffer] = await Promise.all([
     generateImage(
-      `8-bit retro pixel art side profile view of a ${carDesc} in ${color}. ` +
+      `8-bit retro pixel art side profile view of a ${carDesc} in ${color}.${detail} ` +
       `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
       `Black background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
-      `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}. ` +
+      `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
       `Show the steering wheel, instrument cluster with speedometer and tachometer, and windshield. ` +
       `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
       `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`
     ),
-    generateImage(buildRearPrompt(carDesc, color)),
+    generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
   ]);
 
   // Upload all three to storage

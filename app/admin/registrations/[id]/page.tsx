@@ -1394,7 +1394,8 @@ export default function RegistrationDetailPage() {
                   <img
                     src={r.ai_image_url}
                     alt={`AI generated ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}`}
-                    style={{ width: "100%", height: "auto", display: "block" }}
+                    onClick={() => setLightboxUrl(r.ai_image_url)}
+                    style={{ width: "100%", height: "auto", display: "block", cursor: "zoom-in" }}
                   />
                 ) : (
                   <div style={{
@@ -1491,13 +1492,13 @@ export default function RegistrationDetailPage() {
             >
               <img
                 src={lightboxUrl}
-                alt="Pixel art preview"
+                alt="Image preview"
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   maxWidth: "90vw",
                   maxHeight: "85vh",
                   objectFit: "contain",
-                  imageRendering: "pixelated",
+                  ...(lightboxUrl.includes("pixel-art") ? { imageRendering: "pixelated" as const } : {}),
                   borderRadius: "8px",
                   boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
                 }}
