@@ -102,14 +102,7 @@ export class RaceScene extends Phaser.Scene {
     this.aiDrivers = createAIDrivers().slice(0, numOpponents);
 
     // --- 5. Render the track ----------------------------------------------
-    // renderTrack may have issues with the current track data format but we
-    // call it for its side effects (graphics objects). Wrap defensively.
-    try {
-      renderTrack(this, this.track);
-    } catch (err) {
-      console.warn("[RaceScene] renderTrack failed, using fallback background:", err);
-      this._drawFallbackBackground();
-    }
+    renderTrack(this, this.track);
 
     // --- 6. Create car sprites (20×32 rectangles) -------------------------
     for (let i = 0; i < this.allCars.length; i++) {
@@ -302,16 +295,9 @@ export class RaceScene extends Phaser.Scene {
     }
   }
 
-  /** Get AI input from driver, working around known API mismatch in ai.ts */
+  /** Get AI input from driver for the given car state. */
   private _getAIInput(driver: AIDriver, car: CarState) {
-    try {
-      // ai.ts calls nearestWaypointIndex(car, track) with wrong arg order,
-      // and accesses car.topSpeed which doesn't exist. We call driver.update
-      // and catch errors, returning a simple follow-always input as fallback.
-      return driver.update(car, this.track);
-    } catch {
-      return { accel: true, brake: false, steerLeft: false, steerRight: false };
-    }
+    return driver.update(car, this.track);
   }
 
   /** Kick off the 3-2-1-GO countdown sequence. */
@@ -487,58 +473,4 @@ export class RaceScene extends Phaser.Scene {
     btn.on("pointerdown", onClick);
   }
 
-  /** Fallback background when renderTrack fails. */
-  private _drawFallbackBackground() {
-    const gfx = this.add.graphics();
-    gfx.fillStyle(0x5a8a3c, 1); // grass green
-    gfx.fillRect(0, 0, this.track.width, this.track.height);
-    gfx.setDepth(0);
-
-    // Draw road segments from roadSegments polygons
-    if (this.track.roadSegments && this.track.roadSegments.length > 0) {
-      const road = this.add.graphics();
-      road.setDepth(1);
-      road.fillStyle(0x4a4a4a, 1);
-      for (const poly of this.track.roadSegments) {
-        if (poly.length < 3) continue;
-        road.beginPath();
-        road.moveTo(poly[0].x, poly[0].y);
-        for (let i = 1; i < poly.length; i++) {
-          road.lineTo(poly[i].x, poly[i].y);
-        }
-        road.closePath();
-        road.fillPath();
-      }
-
-      // Center line dashes
-      const dash = this.add.graphics();
-      dash.setDepth(2);
-      dash.lineStyle(3, 0xffee88, 1);
-      const wps = this.track.waypoints;
-      for (let i = 0; i < wps.length - 1; i += 2) {
-        dash.beginPath();
-        dash.moveTo(wps[i].x, wps[i].y);
-        dash.lineTo(wps[i + 1].x, wps[i + 1].y);
-        dash.strokePath();
-      }
-    }
-
-    // Finish line checkerboard
-    const fl = this.track.finishLine;
-    const finishGfx = this.add.graphics().setDepth(3);
-    const sq = 10;
-    const cols = Math.ceil(fl.width / sq);
-    for (let row = 0; row < 2; row++) {
-      for (let col = 0; col < cols; col++) {
-        const isBlack = (row + col) % 2 === 0;
-        finishGfx.fillStyle(isBlack ? 0x000000 : 0xffffff, 1);
-        finishGfx.fillRect(
-          fl.x - fl.width / 2 + col * sq,
-          fl.y - sq,
-          sq,
-          sq
-        );
-      }
-    }
-  }
 }

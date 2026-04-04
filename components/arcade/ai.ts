@@ -51,11 +51,11 @@ export class AIDriver {
       return noInput;
     }
 
-    const nearestIdx = nearestWaypointIndex(car, track);
+    const nearestIdx = nearestWaypointIndex(track, car.x, car.y);
 
     // Look further ahead at higher speeds
     const speed = car.speed ?? 0;
-    const topSpeed = car.topSpeed ?? 200;
+    const topSpeed = car.stats.topSpeed ?? 200;
     const speedRatio = speed / topSpeed;
     const lookAhead = speedRatio > 0.5 ? 3 : 2;
 

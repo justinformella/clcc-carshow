@@ -1,10 +1,6 @@
 import Phaser from "phaser";
 import type { TrackData } from "./track";
 
-function hexToNum(hex: string): number {
-  return Phaser.Display.Color.HexStringToColor(hex).color;
-}
-
 export function renderTrack(
   scene: Phaser.Scene,
   track: TrackData
@@ -17,7 +13,7 @@ export function renderTrack(
 
   // 1. Ground fill — full-size rectangle in grass color, depth 0
   const groundGraphics = scene.add.graphics();
-  groundGraphics.fillStyle(hexToNum(palette.grass), 1);
+  groundGraphics.fillStyle(palette.grass, 1);
   groundGraphics.fillRect(0, 0, width, height);
   groundGraphics.setDepth(0);
 
@@ -25,9 +21,9 @@ export function renderTrack(
   const roadGraphics = scene.add.graphics();
   roadGraphics.setDepth(1);
 
-  if (track.road && track.road.segments) {
-    roadGraphics.fillStyle(hexToNum(palette.road), 1);
-    for (const segment of track.road.segments) {
+  if (track.roadSegments && track.roadSegments.length > 0) {
+    roadGraphics.fillStyle(palette.road, 1);
+    for (const segment of track.roadSegments) {
       if (!segment || segment.length < 3) continue;
       roadGraphics.beginPath();
       roadGraphics.moveTo(segment[0].x, segment[0].y);
@@ -42,10 +38,10 @@ export function renderTrack(
   // 3. Center line dashes along waypoints, depth 2
   const dashGraphics = scene.add.graphics();
   dashGraphics.setDepth(2);
-  dashGraphics.lineStyle(3, hexToNum(palette.roadLine), 1);
+  dashGraphics.lineStyle(3, palette.roadLine, 1);
 
-  if (track.road && track.road.waypoints && track.road.waypoints.length >= 2) {
-    const wps = track.road.waypoints;
+  if (track.waypoints && track.waypoints.length >= 2) {
+    const wps = track.waypoints;
     // draw every other segment as a dash
     for (let i = 0; i < wps.length - 1; i += 2) {
       dashGraphics.beginPath();
@@ -87,7 +83,7 @@ export function renderTrack(
 
     container.add(checkerGraphics);
     if (typeof fl.angle === "number") {
-      container.setRotation(Phaser.Math.DegToRad(fl.angle));
+      container.setRotation(fl.angle);
     }
   }
 
@@ -96,7 +92,7 @@ export function renderTrack(
 
   if (track.scenery) {
     for (const obj of track.scenery) {
-      const { x, y, type, color, width: w = 40, height: h = 40, detail } = obj;
+      const { x, y, type, width: w = 40, height: h = 40, label } = obj;
 
       switch (type) {
         case "tree": {
@@ -110,7 +106,7 @@ export function renderTrack(
           // canopy circle depth 5
           const canopy = scene.add.graphics();
           canopy.setDepth(5);
-          canopy.fillStyle(color ? hexToNum(color) : 0x228b22, 1);
+          canopy.fillStyle(0x228b22, 1);
           canopy.fillCircle(x, y, Math.min(w, h) / 2);
           sceneryObjects.push(canopy);
           break;
@@ -120,7 +116,7 @@ export function renderTrack(
           // building rectangle depth 4
           const bldg = scene.add.graphics();
           bldg.setDepth(4);
-          bldg.fillStyle(color ? hexToNum(color) : 0x888888, 1);
+          bldg.fillStyle(0x888888, 1);
           bldg.fillRect(x - w / 2, y - h / 2, w, h);
           sceneryObjects.push(bldg);
 
@@ -143,13 +139,13 @@ export function renderTrack(
           }
           sceneryObjects.push(windows);
 
-          // optional detail label depth 5
-          if (detail) {
-            const label = scene.add.text(x, y + h / 2 + 4, detail, {
+          // optional label text depth 5
+          if (label) {
+            const labelText = scene.add.text(x, y + h / 2 + 4, label, {
               fontSize: "8px",
               color: "#ffffff",
             }).setOrigin(0.5, 0).setDepth(5);
-            sceneryObjects.push(label);
+            sceneryObjects.push(labelText);
           }
           break;
         }
@@ -158,7 +154,7 @@ export function renderTrack(
           // pole depth 4
           const lamp = scene.add.graphics();
           lamp.setDepth(4);
-          lamp.fillStyle(color ? hexToNum(color) : 0x888888, 1);
+          lamp.fillStyle(0x888888, 1);
           lamp.fillRect(x - 2, y - h / 2, 4, h);
 
           // glow circle depth 4
@@ -168,29 +164,10 @@ export function renderTrack(
           break;
         }
 
-        case "sign": {
-          // sign rectangle depth 5
-          const sign = scene.add.graphics();
-          sign.setDepth(5);
-          sign.fillStyle(color ? hexToNum(color) : 0x228b22, 1);
-          sign.fillRect(x - w / 2, y - h / 2, w, h);
-          sceneryObjects.push(sign);
-
-          // detail text depth 6
-          if (detail) {
-            const signText = scene.add.text(x, y, detail, {
-              fontSize: "8px",
-              color: "#ffffff",
-            }).setOrigin(0.5).setDepth(6);
-            sceneryObjects.push(signText);
-          }
-          break;
-        }
-
         case "water": {
           const water = scene.add.graphics();
           water.setDepth(1);
-          water.fillStyle(color ? hexToNum(color) : 0x1e90ff, 0.7);
+          water.fillStyle(0x1e90ff, 0.7);
           water.fillRect(x - w / 2, y - h / 2, w, h);
           sceneryObjects.push(water);
           break;
@@ -199,7 +176,7 @@ export function renderTrack(
         case "bench": {
           const bench = scene.add.graphics();
           bench.setDepth(4);
-          bench.fillStyle(color ? hexToNum(color) : 0x8b6914, 1);
+          bench.fillStyle(0x8b6914, 1);
           bench.fillRect(x - w / 2, y - h / 2, w, h);
           sceneryObjects.push(bench);
           break;
@@ -208,25 +185,16 @@ export function renderTrack(
         case "pier": {
           const pier = scene.add.graphics();
           pier.setDepth(4);
-          pier.fillStyle(color ? hexToNum(color) : 0xc8a96e, 1);
+          pier.fillStyle(0xc8a96e, 1);
           pier.fillRect(x - w / 2, y - h / 2, w, h);
           sceneryObjects.push(pier);
-          break;
-        }
-
-        case "fence": {
-          const fence = scene.add.graphics();
-          fence.setDepth(4);
-          fence.fillStyle(color ? hexToNum(color) : 0xaaaaaa, 0.6);
-          fence.fillRect(x - w / 2, y - h / 2, w, h);
-          sceneryObjects.push(fence);
           break;
         }
 
         default: {
           const generic = scene.add.graphics();
           generic.setDepth(4);
-          generic.fillStyle(color ? hexToNum(color) : 0x777777, 1);
+          generic.fillStyle(0x777777, 1);
           generic.fillRect(x - w / 2, y - h / 2, w, h);
           sceneryObjects.push(generic);
           break;
