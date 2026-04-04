@@ -335,8 +335,7 @@ export default function AnalyticsPage() {
       ...r,
       ptw: Math.round((toNetHP(r.spec!.horsepower!, r.vehicle_year) / r.spec!.weight_lbs!) * 1000) / 1000,
     }))
-    .sort((a, b) => b.ptw - a.ptw)
-    .slice(0, 8);
+    .sort((a, b) => b.ptw - a.ptw);
 
   // Additional fun stats
   const heaviest = regsWithSpecs.filter((r) => r.spec?.weight_lbs).sort((a, b) => (b.spec?.weight_lbs || 0) - (a.spec?.weight_lbs || 0))[0] || null;
@@ -377,7 +376,7 @@ export default function AnalyticsPage() {
     if (leaderboard === "hp") return items.sort((a, b) => toNetHP(b.spec?.horsepower || 0, b.vehicle_year) - toNetHP(a.spec?.horsepower || 0, a.vehicle_year));
     if (leaderboard === "rare") return items.filter((r) => r.spec?.production_numbers && r.spec.production_numbers > 0).sort((a, b) => (a.spec?.production_numbers || Infinity) - (b.spec?.production_numbers || Infinity));
     return items.filter((r) => r.spec?.msrp_adjusted || r.spec?.original_msrp).sort((a, b) => (b.spec?.msrp_adjusted || b.spec?.original_msrp || 0) - (a.spec?.msrp_adjusted || a.spec?.original_msrp || 0));
-  })().slice(0, 8);
+  })();
 
   // Site analytics computations
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -982,6 +981,7 @@ export default function AnalyticsPage() {
                     <th style={thLight}></th>
                     <th style={thLight}>Vehicle</th>
                     <th style={thLight}>Category</th>
+                    {leaderboard === "value" && <th style={{ ...thLight, textAlign: "right" }}>Original MSRP</th>}
                     <th style={{ ...thLight, textAlign: "right" }}>{leaderboard === "hp" ? "SAE Net HP" : leaderboard === "rare" ? "Production" : "2026 Dollars"}</th>
                   </tr>
                 </thead>
@@ -997,6 +997,11 @@ export default function AnalyticsPage() {
                         <span style={{ color: "#999", marginLeft: "0.5rem", fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" }}>#{r.car_number}</span>
                       </td>
                       <td style={{ ...tdLight, color: "#999" }}>{r.spec?.category || "\u2014"}</td>
+                      {leaderboard === "value" && (
+                        <td style={{ ...tdLight, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#999" }}>
+                          {r.spec?.original_msrp ? `$${r.spec.original_msrp.toLocaleString()}` : "\u2014"}
+                        </td>
+                      )}
                       <td style={{ ...tdLight, textAlign: "right", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.1rem", fontWeight: 600, color: "#1a1a1a", fontVariantNumeric: "tabular-nums" }}>
                         {leaderboard === "hp" ? `${r.spec?.horsepower ? toNetHP(r.spec.horsepower, r.vehicle_year).toLocaleString() : "\u2014"}` :
                          leaderboard === "rare" ? `${r.spec?.production_numbers?.toLocaleString() || "\u2014"}` :
@@ -1005,7 +1010,7 @@ export default function AnalyticsPage() {
                     </tr>
                   ))}
                   {leaderboardData.length === 0 && (
-                    <tr><td colSpan={4} style={{ ...tdLight, textAlign: "center", color: "#999", padding: "2rem" }}>Enrich vehicles to unlock the leaderboard</td></tr>
+                    <tr><td colSpan={leaderboard === "value" ? 5 : 4} style={{ ...tdLight, textAlign: "center", color: "#999", padding: "2rem" }}>Enrich vehicles to unlock the leaderboard</td></tr>
                   )}
                 </tbody>
               </table>

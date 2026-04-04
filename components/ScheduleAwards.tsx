@@ -38,6 +38,7 @@ export default function ScheduleAwards() {
           <div className="schedule-card">
             <h3>Award Categories</h3>
             <ul className="awards-list">
+              <li>Best of Show</li>
               <li>Best Classic (Pre-2000)</li>
               <li>Best Modern (2000+)</li>
               <li>Best European</li>

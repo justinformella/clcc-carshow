@@ -10,6 +10,7 @@ const schedule = [
 ];
 
 const awards = [
+  "BEST OF SHOW",
   "BEST CLASSIC (PRE-2000)",
   "BEST MODERN (2000+)",
   "BEST EUROPEAN",
