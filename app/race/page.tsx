@@ -178,8 +178,10 @@ function calibrateOpponent(targetET: number): number {
   return (lo + hi) / 2;
 }
 
-// ─── TRACK SKINS ───
+// ─── TRACK THEMES — Crystal Lake, IL ───
+type SceneryDef = { type: string; color: string; w: number; h: number; rare?: boolean };
 type TrackSkin = {
+  name: string; subtitle: string;
   skyTop: string; skyBottom: string;
   stars: boolean;
   treeColor: string;
@@ -187,28 +189,55 @@ type TrackSkin = {
   roadA: string; roadB: string;
   shoulderA: string; shoulderB: string;
   centerLine: string;
+  horizonStyle: "lakeside" | "downtown" | "commercial";
+  scenery: SceneryDef[];
 };
 
 const TRACK_SKINS: TrackSkin[] = [
-  { // Night (default)
-    skyTop: "#050510", skyBottom: "#0d0d2a", stars: true, treeColor: "#0a1a0a",
-    grassA: "#0a3a0a", grassB: "#0d4a0d", roadA: "#1a1a2e", roadB: "#222240",
-    shoulderA: C.red, shoulderB: C.white, centerLine: C.gold,
+  { // Lakeside Drive — golden hour past Main Beach
+    name: "LAKESIDE DRIVE", subtitle: "Lakeshore Dr — Main Beach",
+    skyTop: "#4a3520", skyBottom: "#d4956b", stars: false, treeColor: "#1a5a1a",
+    grassA: "#1a6a1a", grassB: "#2a7a2a", roadA: "#3a3530", roadB: "#4a4540",
+    shoulderA: C.white, shoulderB: "#c9a84c", centerLine: C.gold,
+    horizonStyle: "lakeside",
+    scenery: [
+      { type: "willow", color: "#2a7a2a", w: 20, h: 35 },
+      { type: "bench", color: "#8b6914", w: 12, h: 6 },
+      { type: "lamp", color: "#888888", w: 4, h: 30 },
+      { type: "umbrella", color: "#cc4444", w: 14, h: 14 },
+      { type: "dock-post", color: "#8b7355", w: 6, h: 10 },
+      { type: "bandshell", color: "#555555", w: 40, h: 25, rare: true },
+    ],
   },
-  { // Dusk
-    skyTop: "#1a0a2e", skyBottom: "#3d1a4a", stars: true, treeColor: "#1a0d1a",
-    grassA: "#1a3a1a", grassB: "#1d4a1d", roadA: "#2a2a3e", roadB: "#333348",
-    shoulderA: "#ff6600", shoulderB: C.white, centerLine: "#ff9900",
+  { // Downtown Williams Street — night drag past Raue Center
+    name: "DOWNTOWN WILLIAMS ST", subtitle: "Historic Downtown Crystal Lake",
+    skyTop: "#060820", skyBottom: "#1a1a2a", stars: true, treeColor: "#1a1a1a",
+    grassA: "#2a2a2a", grassB: "#333333", roadA: "#181820", roadB: "#1e1e28",
+    shoulderA: "#666666", shoulderB: "#ccaa00", centerLine: C.white,
+    horizonStyle: "downtown",
+    scenery: [
+      { type: "brick-bldg", color: "#5a4a3a", w: 30, h: 50 },
+      { type: "lamp", color: "#888888", w: 4, h: 28 },
+      { type: "awning", color: "#cc4444", w: 16, h: 8 },
+      { type: "parked-car", color: "#333355", w: 14, h: 22 },
+      { type: "marquee", color: "#ffd700", w: 28, h: 16, rare: true },
+      { type: "crossing-gate", color: "#cc0000", w: 20, h: 18, rare: true },
+    ],
   },
-  { // Dawn
-    skyTop: "#1a1a3a", skyBottom: "#4a2a1a", stars: false, treeColor: "#0d1a0a",
-    grassA: "#1a4a0a", grassB: "#2a5a1a", roadA: "#252535", roadB: "#2e2e40",
-    shoulderA: C.red, shoulderB: "#ffcc00", centerLine: "#ffcc00",
-  },
-  { // Midnight blue
-    skyTop: "#000008", skyBottom: "#000020", stars: true, treeColor: "#050510",
-    grassA: "#061a06", grassB: "#082a08", roadA: "#111122", roadB: "#181830",
-    shoulderA: "#cc2222", shoulderB: "#cccccc", centerLine: C.gold,
+  { // Route 14 Strip — midnight commercial corridor
+    name: "ROUTE 14 STRIP", subtitle: "Northwest Hwy — Commercial Corridor",
+    skyTop: "#020208", skyBottom: "#0a0820", stars: true, treeColor: "#0a0a0a",
+    grassA: "#0a1a0a", grassB: "#151a10", roadA: "#111118", roadB: "#181822",
+    shoulderA: "#cccccc", shoulderB: "#cc2222", centerLine: "#ffcc00",
+    horizonStyle: "commercial",
+    scenery: [
+      { type: "lot-light", color: "#cccccc", w: 4, h: 40 },
+      { type: "gas-canopy", color: "#dddddd", w: 36, h: 12, rare: true },
+      { type: "traffic-light", color: "#333333", w: 6, h: 32 },
+      { type: "power-pole", color: "#6b4226", w: 4, h: 36 },
+      { type: "store-sign", color: "#ff4444", w: 20, h: 8 },
+      { type: "parked-car", color: "#333355", w: 14, h: 22 },
+    ],
   },
 ];
 
@@ -366,11 +395,164 @@ function RacePage() {
       }
     }
 
-    // Horizon tree line (blocky pixel trees)
-    ctx.fillStyle = skin.treeColor;
-    for (let x = 0; x < W; x += 20) {
-      const treeH = 10 + ((x * 7) % 11);
-      ctx.fillRect(x, horizonY - treeH, 16, treeH);
+    // ─── Horizon features (track-specific) ───
+    if (skin.horizonStyle === "lakeside") {
+      // Lake shimmer band (left 60% of screen)
+      const lakeGrad = ctx.createLinearGradient(0, horizonY - 8, 0, horizonY + 4);
+      lakeGrad.addColorStop(0, "#2255aa44");
+      lakeGrad.addColorStop(0.5, "#4488cc66");
+      lakeGrad.addColorStop(1, "#d4956b33");
+      ctx.fillStyle = lakeGrad;
+      ctx.fillRect(0, horizonY - 8, W * 0.6, 12);
+      // Distant shore silhouette
+      ctx.fillStyle = "#1a4a1a";
+      for (let x = 0; x < W * 0.55; x += 12) {
+        const h = 4 + Math.sin(x * 0.03) * 3;
+        ctx.fillRect(x, horizonY - 8 - h, 10, h);
+      }
+      // Lush tree canopy (right side)
+      ctx.fillStyle = skin.treeColor;
+      for (let x = Math.floor(W * 0.55); x < W; x += 14) {
+        const treeH = 12 + ((x * 7) % 14);
+        ctx.fillRect(x, horizonY - treeH, 12, treeH);
+        ctx.fillRect(x + 2, horizonY - treeH - 4, 8, 4);
+      }
+    } else if (skin.horizonStyle === "downtown") {
+      // Building roofline silhouettes
+      ctx.fillStyle = "#1a1a22";
+      for (let x = 0; x < W; x += 18) {
+        const bH = 12 + ((x * 13 + 5) % 30);
+        ctx.fillRect(x, horizonY - bH, 16, bH);
+      }
+      // Warm window glow
+      ctx.fillStyle = "#ffcc4488";
+      for (let x = 0; x < W; x += 18) {
+        const bH = 12 + ((x * 13 + 5) % 30);
+        for (let wy = horizonY - bH + 4; wy < horizonY - 2; wy += 6) {
+          if ((x * 7 + wy) % 11 < 5) {
+            ctx.fillRect(x + 3, wy, 3, 3);
+            ctx.fillRect(x + 9, wy, 3, 3);
+          }
+        }
+      }
+      // Raue Center marquee glow (center)
+      ctx.fillStyle = "#ffd70066";
+      ctx.fillRect(W * 0.45, horizonY - 28, W * 0.1, 6);
+      ctx.fillStyle = "#ffd700aa";
+      ctx.fillRect(W * 0.46, horizonY - 27, W * 0.08, 4);
+    } else if (skin.horizonStyle === "commercial") {
+      // Flat commercial roofline
+      ctx.fillStyle = "#0a0a14";
+      for (let x = 0; x < W; x += 24) {
+        const bH = 6 + ((x * 11 + 3) % 12);
+        ctx.fillRect(x, horizonY - bH, 22, bH);
+      }
+      // Harsh parking lot lights
+      ctx.fillStyle = "#ffffff55";
+      for (let x = 30; x < W; x += 60) {
+        if ((x * 7) % 13 < 6) {
+          ctx.fillRect(x, horizonY - 3, 2, 2);
+          // Light glow below
+          ctx.fillStyle = "#ffffff18";
+          ctx.fillRect(x - 4, horizonY - 1, 10, 4);
+          ctx.fillStyle = "#ffffff55";
+        }
+      }
+      // Colored sign glow (red, blue, green commercial signage)
+      const signColors = ["#ff444466", "#4488ff66", "#44cc4466", "#ffcc0066"];
+      for (let x = 50; x < W; x += 80) {
+        const ci = ((x * 3) >> 0) % signColors.length;
+        ctx.fillStyle = signColors[ci];
+        const sW = 14 + ((x * 5) % 16);
+        ctx.fillRect(x, horizonY - 10 - ((x * 7) % 8), sW, 5);
+      }
+    } else {
+      // Fallback: generic tree line
+      ctx.fillStyle = skin.treeColor;
+      for (let x = 0; x < W; x += 20) {
+        const treeH = 10 + ((x * 7) % 11);
+        ctx.fillRect(x, horizonY - treeH, 16, treeH);
+      }
+    }
+
+    // ─── Roadside scenery objects (parallax scrolling) ───
+    if (skin.scenery.length > 0) {
+      const SCENERY_COUNT = 24;
+      for (let i = 0; i < SCENERY_COUNT; i++) {
+        // Deterministic pseudo-random placement based on index + roadOffset
+        const seed = i * 137.5 + 42;
+        const z = 0.08 + (((seed * 1.3) % 1) * 0.92); // depth 0.08-1.0
+        const side = i % 2 === 0 ? -1 : 1; // alternate left/right
+
+        // Pick scenery item (deterministic per slot)
+        const itemIdx = Math.floor(((seed * 7.1) % 1) * skin.scenery.length);
+        const item = skin.scenery[itemIdx];
+        if (item.rare && (i % 5 !== 0)) continue; // rare items only every 5th slot
+
+        // Perspective calculations
+        const perspective = z * z;
+        const scale = 0.3 + (1 - z) * 2.5;
+        const screenY = horizonY + (H - horizonY) * perspective;
+
+        // Road width at this depth
+        const roadWidthBottom = W * 0.95;
+        const roadWidthTop = W * 0.08;
+        const roadW = roadWidthTop + (roadWidthBottom - roadWidthTop) * perspective;
+        const shoulderWidthBottom = W * 0.12;
+        const shoulderWidthTop = 2;
+        const shoulderW = shoulderWidthTop + (shoulderWidthBottom - shoulderWidthTop) * perspective;
+
+        // Position just outside the road + shoulder
+        const offset = roadW / 2 + shoulderW + 10 * scale + ((seed * 3.7) % 1) * 30 * scale;
+        const scrollShift = ((roadOffset * z * 0.15 + seed * 100) % (H * 2)) - H * 0.5;
+        const screenX = vanishX + side * offset;
+        const adjustedY = screenY + (scrollShift % 60) * perspective;
+
+        if (adjustedY < horizonY || adjustedY > H) continue;
+
+        const sw = item.w * scale;
+        const sh = item.h * scale;
+
+        ctx.fillStyle = item.color;
+        ctx.fillRect(screenX - sw / 2, adjustedY - sh, sw, sh);
+
+        // Extra detail per type
+        if (item.type === "lamp" || item.type === "lot-light") {
+          ctx.fillStyle = "#ffd70033";
+          ctx.beginPath();
+          ctx.arc(screenX, adjustedY - sh, 6 * scale, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (item.type === "brick-bldg") {
+          // Windows
+          ctx.fillStyle = "#ffd70044";
+          const winS = 3 * scale;
+          for (let wy = adjustedY - sh + winS; wy < adjustedY - winS; wy += winS * 2.5) {
+            ctx.fillRect(screenX - sw / 3, wy, winS, winS);
+            ctx.fillRect(screenX + sw / 6, wy, winS, winS);
+          }
+        } else if (item.type === "traffic-light") {
+          const r = 1.5 * scale;
+          ctx.fillStyle = "#ff000088"; ctx.beginPath(); ctx.arc(screenX, adjustedY - sh - r * 6, r, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#ffff0088"; ctx.beginPath(); ctx.arc(screenX, adjustedY - sh - r * 3, r, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#00ff0088"; ctx.beginPath(); ctx.arc(screenX, adjustedY - sh, r, 0, Math.PI * 2); ctx.fill();
+        } else if (item.type === "gas-canopy") {
+          ctx.fillStyle = "#ffffff18";
+          ctx.fillRect(screenX - sw / 2, adjustedY, sw, sh * 0.5);
+        } else if (item.type === "power-pole") {
+          ctx.fillRect(screenX - 8 * scale, adjustedY - sh, 16 * scale, 2 * scale);
+        } else if (item.type === "marquee") {
+          ctx.fillStyle = "#ffd700aa";
+          ctx.fillRect(screenX - sw / 2 + 2, adjustedY - sh + 2, sw - 4, sh - 4);
+          ctx.fillStyle = "#0d0d1a";
+          ctx.font = `${Math.max(4, 6 * scale)}px 'Press Start 2P'`;
+          ctx.textAlign = "center";
+          ctx.fillText("RAUE", screenX, adjustedY - sh / 2 + 3 * scale);
+        } else if (item.type === "umbrella") {
+          ctx.beginPath();
+          ctx.arc(screenX, adjustedY - sh, sw / 2, Math.PI, 0);
+          ctx.fill();
+        }
+      }
     }
 
     // Road (perspective, row by row)
@@ -431,6 +613,7 @@ function RacePage() {
     const others = cars.filter((c) => c.id !== car.id);
     const opp = others[Math.floor(Math.random() * others.length)] || car;
     setOpponentCar(opp);
+    setTrackSkin(pickRandomSkin());
   }, [cars]);
 
   const startRace = useCallback(() => {
@@ -779,6 +962,11 @@ function RacePage() {
         {playerCar && opponentCar ? (
           /* Matchup screen */
           <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+            {/* Track name */}
+            <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+              <p style={{ fontFamily: FONT, fontSize: "0.9rem", color: C.gold, margin: "0 0 0.25rem" }}>{trackSkin.name}</p>
+              <p style={{ fontFamily: FONT, fontSize: "0.55rem", color: "#666666", margin: 0 }}>{trackSkin.subtitle}</p>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "1.5rem", alignItems: "center", marginBottom: "2rem" }}>
               <CarCard car={playerCar} label="P1" isPlayer />
               <div style={{ textAlign: "center" }}>
