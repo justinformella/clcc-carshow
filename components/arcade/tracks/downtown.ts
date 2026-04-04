@@ -1,22 +1,4 @@
-import type { TrackData, Waypoint, Polygon } from "../track";
-
-function roadFromCenter(centerline: Waypoint[], halfWidth: number): Polygon {
-  if (centerline.length < 2) return [];
-  const left: Waypoint[] = [];
-  const right: Waypoint[] = [];
-  for (let i = 0; i < centerline.length; i++) {
-    const prev = centerline[Math.max(0, i - 1)];
-    const next = centerline[Math.min(centerline.length - 1, i + 1)];
-    const tx = next.x - prev.x;
-    const ty = next.y - prev.y;
-    const len = Math.sqrt(tx * tx + ty * ty) || 1;
-    const nx = -ty / len;
-    const ny = tx / len;
-    left.push({ x: centerline[i].x + nx * halfWidth, y: centerline[i].y + ny * halfWidth });
-    right.push({ x: centerline[i].x - nx * halfWidth, y: centerline[i].y - ny * halfWidth });
-  }
-  return [...left, ...right.reverse()];
-}
+import { type TrackData, type Waypoint, type Polygon, roadFromCenter } from "../track";
 
 const HALF_ROAD = 36;
 
