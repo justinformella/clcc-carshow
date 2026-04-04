@@ -212,6 +212,9 @@ export default function AnalyticsPage() {
   const [referrerData, setReferrerData] = useState<{ referrer: string; visitors: number }[]>([]);
   const [insights, setInsights] = useState<{ trend: string; insights: string[]; recommendations: string[] } | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [emailsByDay, setEmailsByDay] = useState<{ date: string; emails: number }[]>([]);
+  const [prospectCount, setProspectCount] = useState(0);
+  const [prospectsRegistered, setProspectsRegistered] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -244,6 +247,30 @@ export default function AnalyticsPage() {
       const refMap: Record<string, number> = {};
       (referrerRes.data || []).forEach((r: { referrer: string; visitors: number }) => { refMap[r.referrer] = (refMap[r.referrer] || 0) + r.visitors; });
       setReferrerData(Object.entries(refMap).map(([referrer, visitors]) => ({ referrer, visitors })).sort((a, b) => b.visitors - a.visitors));
+
+      // Fetch email log data (aggregated by day) and prospect stats
+      const [emailLogRes, prospectRes] = await Promise.all([
+        supabase.from("email_log").select("sent_at").gte("sent_at", thirtyDaysAgo),
+        supabase.from("marketing_prospects").select("email, unsubscribed"),
+      ]);
+      // Aggregate emails by day
+      const emailDayMap: Record<string, number> = {};
+      (emailLogRes.data || []).forEach((e: { sent_at: string }) => {
+        const day = e.sent_at?.split("T")[0];
+        if (day) emailDayMap[day] = (emailDayMap[day] || 0) + 1;
+      });
+      setEmailsByDay(Object.entries(emailDayMap).map(([date, emails]) => ({ date, emails })).sort((a, b) => a.date.localeCompare(b.date)));
+
+      // Count prospects and how many have registered
+      const prospects = prospectRes.data || [];
+      setProspectCount(prospects.length);
+      if (prospects.length > 0) {
+        const prospectEmails = new Set(prospects.map((p: { email: string }) => p.email.toLowerCase().trim()));
+        const registeredFromList = (regRes.data || []).filter((r: Registration) =>
+          r.email && prospectEmails.has(r.email.toLowerCase().trim())
+        ).length;
+        setProspectsRegistered(registeredFromList);
+      }
 
       setLoading(false);
     };
@@ -296,7 +323,26 @@ export default function AnalyticsPage() {
   const byCountry = countBy(specs, (s) => s.country_of_origin);
   const byCategory = countBy(specs, (s) => s.category);
   const byEra = countBy(specs, (s) => s.era);
+  const byDriveType = countBy(specs, (s) => s.drive_type);
+  const byEngineType = countBy(specs, (s) => s.engine_type);
+  const byBodyStyle = countBy(specs, (s) => s.body_style);
   const treemapData = { name: "makes", children: byMake.slice(0, 15).map((m) => ({ name: m.id, value: m.value })) };
+
+  // Power-to-weight ratio
+  const ptwData = regsWithSpecs
+    .filter((r) => r.spec?.horsepower && r.spec?.weight_lbs && r.spec.weight_lbs > 0)
+    .map((r) => ({
+      ...r,
+      ptw: Math.round((toNetHP(r.spec!.horsepower!, r.vehicle_year) / r.spec!.weight_lbs!) * 1000) / 1000,
+    }))
+    .sort((a, b) => b.ptw - a.ptw)
+    .slice(0, 8);
+
+  // Additional fun stats
+  const heaviest = regsWithSpecs.filter((r) => r.spec?.weight_lbs).sort((a, b) => (b.spec?.weight_lbs || 0) - (a.spec?.weight_lbs || 0))[0] || null;
+  const lightest = regsWithSpecs.filter((r) => r.spec?.weight_lbs && r.spec.weight_lbs > 0).sort((a, b) => (a.spec?.weight_lbs || 0) - (b.spec?.weight_lbs || 0))[0] || null;
+  const mostExpensive = regsWithSpecs.filter((r) => r.spec?.msrp_adjusted).sort((a, b) => (b.spec?.msrp_adjusted || 0) - (a.spec?.msrp_adjusted || 0))[0] || null;
+  const bestPtw = ptwData[0] || null;
 
   // Fun stats
   const oldest = registrations.length > 0 ? registrations.reduce((m, r) => r.vehicle_year < m.vehicle_year ? r : m, registrations[0]) : null;
@@ -352,14 +398,21 @@ export default function AnalyticsPage() {
     return map;
   }, [registrations]);
 
+  const emailDayMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    emailsByDay.forEach((e) => { m[e.date] = e.emails; });
+    return m;
+  }, [emailsByDay]);
+
   const mergedDailyData = useMemo(() => {
     return trafficData.map((d) => ({
       date: d.date,
       visitors: d.visitors,
       registrations: dailyRegCounts[d.date] || 0,
+      emails: emailDayMap[d.date] || 0,
       conversionRate: d.visitors > 0 ? Number(((dailyRegCounts[d.date] || 0) / d.visitors * 100).toFixed(1)) : 0,
     }));
-  }, [trafficData, dailyRegCounts]);
+  }, [trafficData, dailyRegCounts, emailDayMap]);
 
   // Conversion funnel
   const totalVisitors = trafficData.reduce((s, d) => s + d.visitors, 0);
@@ -566,6 +619,57 @@ export default function AnalyticsPage() {
               </table>
             </Card>
           </div>
+
+          {/* Email Activity & Registrations */}
+          {mergedDailyData.some((d) => d.emails > 0) && (
+            <Card title="Emails Sent & Registrations by Day">
+              <div style={{ height: 280 }}>
+                <ResponsiveBar
+                  data={mergedDailyData.filter((d) => d.emails > 0 || d.registrations > 0).map((d) => ({ date: d.date.slice(5), emails: d.emails, registrations: d.registrations }))}
+                  keys={["emails", "registrations"]}
+                  indexBy="date"
+                  theme={nivoTheme}
+                  colors={["#7c3aed", "#0d9488"]}
+                  groupMode="grouped"
+                  borderRadius={2}
+                  padding={0.3}
+                  margin={{ top: 8, right: 16, bottom: 36, left: 48 }}
+                  axisBottom={{ tickSize: 0, tickPadding: 6, tickRotation: -45 }}
+                  axisLeft={{ tickSize: 0, tickPadding: 6 }}
+                  enableLabel={false}
+                  legends={[
+                    { dataFrom: "keys", anchor: "top-right", direction: "row", translateY: -4, itemWidth: 110, itemHeight: 20, symbolSize: 10, symbolShape: "square" },
+                  ]}
+                  animate
+                  motionConfig="gentle"
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* Email List Conversion */}
+          {prospectCount > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "1rem" }}>
+              <Card>
+                <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#999", marginBottom: "0.4rem" }}>Email List Size</p>
+                <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "2rem", fontWeight: 600, color: "#7c3aed", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                  <AnimNum target={prospectCount} />
+                </p>
+              </Card>
+              <Card>
+                <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#999", marginBottom: "0.4rem" }}>From Email List → Registered</p>
+                <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "2rem", fontWeight: 600, color: "#0d9488", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                  <AnimNum target={prospectsRegistered} />
+                </p>
+              </Card>
+              <Card>
+                <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#999", marginBottom: "0.4rem" }}>Email List Conversion</p>
+                <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "2rem", fontWeight: 600, color: "#c9a84c", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                  {prospectCount > 0 ? ((prospectsRegistered / prospectCount) * 100).toFixed(1) : "0.0"}%
+                </p>
+              </Card>
+            </div>
+          )}
         </>
       )}
 
@@ -624,13 +728,12 @@ export default function AnalyticsPage() {
                   if (!confirm("Re-enrich all vehicles? This will refresh specs for every registration.")) return;
                   setEnriching(true);
                   setEnrichResult(null);
-                  const supabase = createClient();
-                  await supabase.from("vehicle_specs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
                   setSpecs([]);
                   try {
-                    const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true }) });
+                    const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true, force: true }) });
                     const data = await res.json();
                     setEnrichResult(`${data.enriched} re-enriched`);
+                    const supabase = createClient();
                     const { data: newSpecs } = await supabase.from("vehicle_specs").select("*");
                     setSpecs((newSpecs as VehicleSpec[]) || []);
                   } catch { setEnrichResult("Failed"); }
@@ -688,14 +791,6 @@ export default function AnalyticsPage() {
                       ))}
                     </div>
                   </div>
-                  {radarData.length > 0 && (
-                    <>
-                      <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#999", marginTop: "1rem", marginBottom: "0.5rem" }}>Show Profile</p>
-                      <div style={{ height: 200 }}>
-                        <ResponsiveRadar data={radarData} keys={["value"]} indexBy="stat" theme={nivoTheme} colors={["#c9a84c"]} fillOpacity={0.15} borderWidth={2} borderColor="#c9a84c" dotSize={6} dotColor="#c9a84c" dotBorderWidth={0} gridLevels={3} gridShape="linear" margin={{ top: 20, right: 50, bottom: 20, left: 50 }} animate motionConfig="gentle" />
-                      </div>
-                    </>
-                  )}
                 </Card>
 
                 <Card title="Era">
@@ -703,6 +798,81 @@ export default function AnalyticsPage() {
                     <ResponsiveBar data={byEra.map((d) => ({ id: d.id, value: d.value }))} keys={["value"]} indexBy="id" theme={nivoTheme} colors={["#0d9488"]} borderRadius={2} padding={0.35} margin={{ top: 8, right: 8, bottom: 56, left: 36 }} axisBottom={{ tickSize: 0, tickPadding: 6, tickRotation: -30 }} axisLeft={{ tickSize: 0, tickPadding: 6 }} enableLabel={false} animate motionConfig="gentle" />
                   </div>
                 </Card>
+              </div>
+
+              {/* Show Averages — replaces confusing radar */}
+              {radarData.length > 0 && (() => {
+                const specsHP = regsWithSpecs.filter((r) => r.spec?.horsepower && r.spec?.weight_lbs);
+                const avgHP = specsHP.length > 0 ? Math.round(specsHP.reduce((s, r) => s + toNetHP(r.spec!.horsepower!, r.vehicle_year), 0) / specsHP.length) : 0;
+                const avgWeight = specsWithData.length > 0 ? Math.round(specsWithData.reduce((s, sp) => s + (sp.weight_lbs || 0), 0) / specsWithData.length) : 0;
+                const displacementSpecs = specs.filter((s) => s.displacement_liters);
+                const avgDispl = displacementSpecs.length > 0 ? Math.round(displacementSpecs.reduce((s, sp) => s + (Number(sp.displacement_liters) || 0), 0) / displacementSpecs.length * 10) / 10 : 0;
+                const prodSpecs = specs.filter((s) => s.production_numbers);
+                const avgProd = prodSpecs.length > 0 ? Math.round(prodSpecs.reduce((s, sp) => s + Math.min(sp.production_numbers || 100000, 100000), 0) / prodSpecs.length) : 0;
+                const priceSpecs = specs.filter((s) => s.msrp_adjusted || s.original_msrp);
+                const avgPrice = priceSpecs.length > 0 ? Math.round(priceSpecs.reduce((s, sp) => s + (sp.msrp_adjusted || sp.original_msrp || 0), 0) / priceSpecs.length) : 0;
+                return (
+                  <Card title="Show Averages">
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "1rem" }}>
+                      {[
+                        { label: "Avg HP (SAE Net)", value: `${avgHP.toLocaleString()}`, unit: "hp", color: "#e11d48" },
+                        { label: "Avg Weight", value: `${avgWeight.toLocaleString()}`, unit: "lbs", color: "#4f46e5" },
+                        { label: "Avg Displacement", value: `${avgDispl}`, unit: "L", color: "#0d9488" },
+                        { label: "Avg Production", value: `${avgProd.toLocaleString()}`, unit: "units", color: "#7c3aed" },
+                        { label: "Avg Value (2026$)", value: `$${avgPrice.toLocaleString()}`, unit: "", color: "#c9a84c" },
+                      ].map((s) => (
+                        <div key={s.label} style={{ textAlign: "center" }}>
+                          <p style={{ fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.8rem", fontWeight: 600, color: s.color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                            {s.value}
+                          </p>
+                          <p style={{ fontSize: "0.7rem", color: "#999", marginTop: "0.2rem" }}>{s.unit}</p>
+                          <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#bbb", marginTop: "0.3rem" }}>{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                );
+              })()}
+
+              {/* Drive Type + Engine Type + Body Style */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+                {byDriveType.length > 0 && (
+                  <Card title="Drive Type">
+                    <div style={{ height: 220 }}>
+                      <ResponsivePie data={byDriveType} theme={nivoTheme} colors={ACCENT_COLORS} innerRadius={0.55} padAngle={2} cornerRadius={3} margin={{ top: 15, right: 70, bottom: 15, left: 70 }} arcLinkLabelsColor={{ from: "color" }} arcLinkLabelsTextColor="#666" arcLinkLabelsThickness={1.5} enableArcLabels={false} animate motionConfig="gentle" />
+                    </div>
+                  </Card>
+                )}
+                {byEngineType.length > 0 && (
+                  <Card title="Engine Type">
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "0.5rem 0" }}>
+                      <StackedBar data={byEngineType} />
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                        {byEngineType.map((c, i) => (
+                          <span key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#999" }}>
+                            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: ACCENT_COLORS[i % ACCENT_COLORS.length] }} />
+                            {c.id} ({c.value})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+                )}
+                {byBodyStyle.length > 0 && (
+                  <Card title="Body Style">
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "0.5rem 0" }}>
+                      <StackedBar data={byBodyStyle} />
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                        {byBodyStyle.map((c, i) => (
+                          <span key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#999" }}>
+                            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: ACCENT_COLORS[i % ACCENT_COLORS.length] }} />
+                            {c.id} ({c.value})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+                )}
               </div>
 
               {/* HP Distribution */}
@@ -714,6 +884,37 @@ export default function AnalyticsPage() {
                 </Card>
               )}
 
+              {/* Power-to-Weight Ratio */}
+              {ptwData.length > 0 && (
+                <Card title="Best Power-to-Weight Ratio">
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                    <thead>
+                      <tr>
+                        <th style={thLight}></th>
+                        <th style={thLight}>Vehicle</th>
+                        <th style={{ ...thLight, textAlign: "right" }}>HP</th>
+                        <th style={{ ...thLight, textAlign: "right" }}>Weight</th>
+                        <th style={{ ...thLight, textAlign: "right" }}>HP/lb</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ptwData.map((r, i) => (
+                        <tr key={r.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+                          <td style={{ ...tdLight, width: "32px", fontWeight: 700, color: i < 3 ? "#c9a84c" : "#999" }}>{i + 1}</td>
+                          <td style={tdLight}>
+                            <span style={{ color: "#1a1a1a" }}>{r.vehicle_year} {r.vehicle_make} {r.vehicle_model}</span>
+                            <span style={{ color: "#999", marginLeft: "0.5rem", fontSize: "0.75rem" }}>#{r.car_number}</span>
+                          </td>
+                          <td style={{ ...tdLight, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{toNetHP(r.spec!.horsepower!, r.vehicle_year).toLocaleString()}</td>
+                          <td style={{ ...tdLight, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.spec!.weight_lbs!.toLocaleString()}</td>
+                          <td style={{ ...tdLight, textAlign: "right", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontSize: "1.1rem", fontWeight: 600, color: "#1a1a1a", fontVariantNumeric: "tabular-nums" }}>{r.ptw.toFixed(3)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Card>
+              )}
+
               {/* Fun Stats */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
                 {([
@@ -721,6 +922,10 @@ export default function AnalyticsPage() {
                   newest ? { label: "Newest", value: `${newest.vehicle_year} ${newest.vehicle_make}`, detail: newest.vehicle_model } : null,
                   mostPowerful?.spec?.horsepower ? { label: "Most Powerful (SAE Net)", value: `${mostPowerful.vehicle_make} ${mostPowerful.vehicle_model}`, detail: `${toNetHP(mostPowerful.spec.horsepower, mostPowerful.vehicle_year)} HP${mostPowerful.vehicle_year < 1972 ? ` (${mostPowerful.spec.horsepower} gross)` : ""}` } : null,
                   rarest?.spec?.production_numbers ? { label: "Rarest", value: `${rarest.vehicle_make} ${rarest.vehicle_model}`, detail: `${rarest.spec.production_numbers.toLocaleString()} built` } : null,
+                  heaviest?.spec?.weight_lbs ? { label: "Heaviest", value: `${heaviest.vehicle_make} ${heaviest.vehicle_model}`, detail: `${heaviest.spec.weight_lbs.toLocaleString()} lbs` } : null,
+                  lightest?.spec?.weight_lbs ? { label: "Lightest", value: `${lightest.vehicle_make} ${lightest.vehicle_model}`, detail: `${lightest.spec.weight_lbs.toLocaleString()} lbs` } : null,
+                  mostExpensive?.spec?.msrp_adjusted ? { label: "Most Expensive (2026$)", value: `${mostExpensive.vehicle_make} ${mostExpensive.vehicle_model}`, detail: `$${mostExpensive.spec.msrp_adjusted.toLocaleString()}` } : null,
+                  bestPtw ? { label: "Best Power-to-Weight", value: `${bestPtw.vehicle_make} ${bestPtw.vehicle_model}`, detail: `${bestPtw.ptw.toFixed(3)} HP/lb` } : null,
                 ] as ({ label: string; value: string; detail: string } | null)[]).filter((s): s is { label: string; value: string; detail: string } => s !== null).map((s) => (
                   <div key={s.label} style={{ background: "var(--white)", border: "1px solid rgba(0,0,0,0.08)", borderLeft: "2px solid #c9a84c", padding: "0.8rem 1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
                     <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#c9a84c", marginBottom: "0.3rem" }}>{s.label}</p>

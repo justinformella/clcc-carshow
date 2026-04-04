@@ -47,7 +47,7 @@ const SPEC_SCHEMA = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { registration_id, batch } = await request.json();
+    const { registration_id, batch, force } = await request.json();
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -60,6 +60,11 @@ export async function POST(request: NextRequest) {
     // Get registrations to enrich
     let registrations;
     if (batch) {
+      // Force mode: delete all existing specs first so every vehicle gets re-enriched
+      if (force) {
+        await supabase.from("vehicle_specs").delete().neq("registration_id", "00000000-0000-0000-0000-000000000000");
+      }
+
       // Batch mode: enrich all registrations that don't have specs yet
       const { data } = await supabase
         .from("registrations")
