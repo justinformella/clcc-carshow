@@ -295,21 +295,9 @@ function PresentingSponsorTier({ tier }: { tier: SponsorTier }) {
                     maxHeight: "120px",
                     maxWidth: "320px",
                     objectFit: "contain",
-                    marginBottom: "1.5rem",
                   }}
                 />
               )}
-              <h3
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: "1.8rem",
-                  fontWeight: 400,
-                  color: "var(--charcoal)",
-                  margin: 0,
-                }}
-              >
-                {s.company}
-              </h3>
             </div>
           </SponsorLink>
         );
@@ -367,21 +355,9 @@ function StandardSponsorTier({ tier }: { tier: SponsorTier }) {
                       maxHeight: "80px",
                       maxWidth: "240px",
                       objectFit: "contain",
-                      marginBottom: "1.25rem",
                     }}
                   />
                 )}
-                <h4
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: "1.25rem",
-                    fontWeight: 400,
-                    color: "var(--charcoal)",
-                    margin: 0,
-                  }}
-                >
-                  {s.company}
-                </h4>
               </div>
             </SponsorLink>
           );
