@@ -6,6 +6,7 @@ import { AIDriver, createAIDrivers } from "../ai";
 import { RaceHUD } from "../hud";
 import { CarEffects } from "../effects";
 import { RaceCar } from "../types";
+import { initRaceAudio, EngineSound } from "../road-race-audio";
 
 const CSS_COLORS: Record<string, number> = {
   red: 0xff0000, blue: 0x0000ff, green: 0x008000, black: 0x222222, white: 0xeeeeee,
@@ -58,6 +59,9 @@ export class RaceScene extends Phaser.Scene {
 
   // Countdown text reference for cleanup
   private countdownText!: Phaser.GameObjects.Text;
+
+  // Engine audio
+  private engineSound: EngineSound | null = null;
 
   constructor() {
     super({ key: "RaceScene" });
@@ -159,6 +163,19 @@ export class RaceScene extends Phaser.Scene {
 
     // --- 11. Countdown ---------------------------------------------------
     this._startCountdown();
+
+    // --- 12. Start engine audio -----------------------------------------
+    try {
+      initRaceAudio();
+      this.engineSound = new EngineSound(
+        playerCar.engineType ?? "v8",
+        playerCar.cylinders ?? 8
+      );
+      this.engineSound.start();
+    } catch {
+      // Web Audio unavailable — continue without audio
+      this.engineSound = null;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -196,6 +213,14 @@ export class RaceScene extends Phaser.Scene {
     // Update player physics
     if (!this.player.finished) {
       this.player.update(playerInput, delta);
+    }
+
+    // Update engine audio
+    if (this.engineSound) {
+      const speedNorm = this.player.stats
+        ? this.player.speed / this.player.stats.topSpeed
+        : 0;
+      this.engineSound.update(speedNorm, playerInput.accel);
     }
 
     // Update AI opponents
@@ -291,6 +316,8 @@ export class RaceScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
 
   shutdown() {
+    this.engineSound?.stop();
+    this.engineSound = null;
     for (const effect of this.effects) {
       effect.destroy();
     }
@@ -368,6 +395,9 @@ export class RaceScene extends Phaser.Scene {
 
   /** Show the results overlay after the race ends. */
   private _showResults() {
+    // Stop engine audio when results are shown
+    this.engineSound?.stop();
+    this.engineSound = null;
     const { width, height } = this.scale;
     const depth = 250;
 
