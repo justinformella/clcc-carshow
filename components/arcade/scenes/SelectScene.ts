@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { RaceCar } from "../physics";
+import { RaceCar } from "../types";
 
 const GAP = 16;
 

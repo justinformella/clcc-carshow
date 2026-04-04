@@ -30,6 +30,8 @@ Instead of drawing the road row-by-row on a 2D canvas, use Phaser's built-in cam
 
 - Create a road texture (a repeating pixel art strip with lane markings, shoulders, and center line) as a tileable image
 - Render it on a large plane, then use Phaser's camera perspective transform to create the vanishing-point illusion
+- Support various scenenry and objects on the side of the track to give the illusion of speed and depth
+- Support two lanes on the road, one for you and one for the opponent. The opponents car should be able to be rendered in the other lane and pull away, get closer and allow for them to fall off behind you as if you passed them
 - Alternative simpler approach: use a pre-rendered road sprite that scrolls vertically, with scale/position tricks for the pseudo-3D effect. This is how many SNES games actually worked — not true Mode 7, but a layered sprite trick.
 
 **Recommended approach:** The layered sprite approach is more reliable in Phaser 3 (true Mode 7 requires shader work). Stack 3 layers:
@@ -44,6 +46,7 @@ The road image would be a pre-made pixel art asset (or generated at runtime on a
 - A pixel art sprite at the bottom-center of the screen (the dashboard view is replaced by seeing your car from behind, like OutRun or F-Zero)
 - The car sprite is the existing `pixelRear` image from the registration data
 - Car sways left/right slightly based on steering input (visual only — no lane mechanics in sub-project 1)
+- The car dashboard should still be rendered and visable at the bottom of the screen in the same location as the current `/race` page to bring in an element of uniqueness to each different car
 
 ### What This Sub-Project Produces
 
