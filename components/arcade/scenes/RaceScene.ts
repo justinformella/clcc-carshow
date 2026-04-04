@@ -7,8 +7,25 @@ import { RaceHUD } from "../hud";
 import { CarEffects } from "../effects";
 import { RaceCar } from "../types";
 
-// Car sprite colors: player = gold, opponents = red, blue, green
-const CAR_COLORS = [0xffd700, 0xff4444, 0x4488ff, 0x44cc44];
+const CSS_COLORS: Record<string, number> = {
+  red: 0xff0000, blue: 0x0000ff, green: 0x008000, black: 0x222222, white: 0xeeeeee,
+  silver: 0xcccccc, grey: 0x888888, gray: 0x888888, yellow: 0xffff00, orange: 0xff8800,
+  purple: 0x880088, gold: 0xffd700, brown: 0x8b4513, maroon: 0x800000, navy: 0x000080,
+  burgundy: 0x800020, bronze: 0xcd7f32, beige: 0xf5f5dc, cream: 0xfffdd0,
+  charcoal: 0x36454f, midnight: 0x191970,
+};
+
+function cssColorToHex(color: string): number | null {
+  if (!color) return null;
+  const lower = color.toLowerCase().trim();
+  for (const [name, hex] of Object.entries(CSS_COLORS)) {
+    if (lower.includes(name)) return hex;
+  }
+  if (lower.startsWith("#") && lower.length >= 7) {
+    return parseInt(lower.slice(1, 7), 16);
+  }
+  return null;
+}
 
 export class RaceScene extends Phaser.Scene {
   // Race state
@@ -107,7 +124,8 @@ export class RaceScene extends Phaser.Scene {
     // --- 6. Create car sprites (20×32 rectangles) -------------------------
     for (let i = 0; i < this.allCars.length; i++) {
       const car = this.allCars[i];
-      const color = CAR_COLORS[i] ?? 0xffffff;
+      const isPlayer = i === 0;
+      const color = cssColorToHex(car.car.color) ?? (isPlayer ? 0xffd700 : 0x888888);
       const rect = this.add.rectangle(car.x, car.y, 20, 32, color);
       rect.setDepth(10);
       this.carSprites.push(rect);
@@ -125,8 +143,8 @@ export class RaceScene extends Phaser.Scene {
     // --- 9. Set up camera ------------------------------------------------
     const { width: trackW, height: trackH } = this.track;
     this.cameras.main.setBounds(0, 0, trackW, trackH);
-    this.cameras.main.startFollow(this.carSprites[0], true, 0.08, 0.08);
-    this.cameras.main.setZoom(1.5);
+    this.cameras.main.startFollow(this.carSprites[0], true, 0.12, 0.12);
+    this.cameras.main.setZoom(1.8);
 
     // --- 10. Set up keyboard input ---------------------------------------
     const kb = this.input.keyboard!;
