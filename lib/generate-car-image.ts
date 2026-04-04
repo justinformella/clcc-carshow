@@ -150,7 +150,7 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
 async function generateWithImagen(apiKey: string, prompt: string): Promise<Buffer> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
