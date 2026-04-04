@@ -169,6 +169,7 @@ export default function SponsorsPage() {
         >
           <thead>
             <tr style={{ background: "var(--cream)", textAlign: "left" }}>
+              <th style={{ ...thStyle, width: "60px" }}></th>
               <th style={thStyle}>Company</th>
               <th style={thStyle}>Contact</th>
               <th style={thStyle}>Level</th>
@@ -179,41 +180,78 @@ export default function SponsorsPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((s) => (
-              <tr
-                key={s.id}
-                onClick={() => router.push(`/admin/sponsors/${s.id}`)}
-                style={{
-                  borderBottom: "1px solid #eee",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--cream)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-              >
-                <td style={tdStyle}>{s.company}</td>
-                <td style={tdStyle}>
-                  <div>{s.name}</div>
-                  <div style={{ fontSize: "0.78rem", color: "var(--text-light)" }}>{s.email}</div>
-                </td>
-                <td style={tdStyle}>{s.sponsorship_level}</td>
-                <td style={tdStyle}>
-                  <SponsorStatusBadge status={s.status} />
-                </td>
-                <td style={tdStyle}>
-                  {s.assigned_to ? (admins.find((a) => a.id === s.assigned_to)?.name || "—") : "—"}
-                </td>
-                <td style={tdStyle}>
-                  {s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
-                </td>
-                <td style={tdStyle}>
-                  {new Date(s.created_at).toLocaleDateString()}
-                </td>
-              </tr>
-            ))}
+            {filtered.map((s) => {
+              const logoSrc = getLogoSrc(s);
+              return (
+                <tr
+                  key={s.id}
+                  onClick={() => router.push(`/admin/sponsors/${s.id}`)}
+                  style={{
+                    borderBottom: "1px solid #eee",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--cream)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                >
+                  <td style={{ ...tdStyle, width: "60px", textAlign: "center" }}>
+                    {logoSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logoSrc}
+                        alt={s.company}
+                        style={{
+                          width: "44px",
+                          height: "44px",
+                          objectFit: "contain",
+                          borderRadius: "4px",
+                          background: "var(--cream)",
+                          verticalAlign: "middle",
+                        }}
+                      />
+                    ) : (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: "44px",
+                          height: "44px",
+                          borderRadius: "4px",
+                          background: "var(--cream)",
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: "0.85rem",
+                          color: "var(--text-light)",
+                        }}
+                      >
+                        {s.company.charAt(0)}
+                      </span>
+                    )}
+                  </td>
+                  <td style={tdStyle}>{s.company}</td>
+                  <td style={tdStyle}>
+                    <div>{s.name}</div>
+                    <div style={{ fontSize: "0.78rem", color: "var(--text-light)" }}>{s.email}</div>
+                  </td>
+                  <td style={tdStyle}>{s.sponsorship_level}</td>
+                  <td style={tdStyle}>
+                    <SponsorStatusBadge status={s.status} />
+                  </td>
+                  <td style={tdStyle}>
+                    {s.assigned_to ? (admins.find((a) => a.id === s.assigned_to)?.name || "—") : "—"}
+                  </td>
+                  <td style={tdStyle}>
+                    {s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
+                  </td>
+                  <td style={tdStyle}>
+                    {new Date(s.created_at).toLocaleDateString()}
+                  </td>
+                </tr>
+              );
+            })}
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   style={{
                     ...tdStyle,
                     textAlign: "center",
@@ -257,6 +295,15 @@ function SponsorStatusBadge({ status }: { status: SponsorStatus }) {
       {label}
     </span>
   );
+}
+
+function getLogoSrc(sponsor: Sponsor): string | null {
+  if (sponsor.logo_url) return sponsor.logo_url;
+  if (sponsor.website) {
+    const domain = sponsor.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  }
+  return null;
 }
 
 const thStyle: React.CSSProperties = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { APIProvider, Map, Marker, ControlPosition, MapTypeControlStyle, useMapsLibrary } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, Marker, ControlPosition, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { useState, useEffect } from "react";
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
@@ -68,7 +68,7 @@ function LocationMapInner({
       zoomControl={true}
       zoomControlOptions={{ position: ControlPosition.RIGHT_BOTTOM }}
       mapTypeControl={true}
-      mapTypeControlOptions={{ style: MapTypeControlStyle.DROPDOWN_MENU }}
+      mapTypeControlOptions={{ style: 2 as google.maps.MapTypeControlStyle }}
       streetViewControl={true}
       fullscreenControl={true}
     >
