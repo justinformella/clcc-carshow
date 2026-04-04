@@ -1,8 +1,10 @@
 import Phaser from "phaser";
 import { TrackData } from "../track";
 import { lakefrontTrack } from "../tracks/lakefront";
+import { downtownTrack } from "../tracks/downtown";
+import { route14Track } from "../tracks/route14";
 
-const TRACKS: TrackData[] = [lakefrontTrack];
+const TRACKS: TrackData[] = [lakefrontTrack, downtownTrack, route14Track];
 const TOTAL_SLOTS = 3;
 
 export class TrackSelectScene extends Phaser.Scene {
