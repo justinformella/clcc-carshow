@@ -220,8 +220,8 @@ const TRACK_SKINS: TrackSkin[] = [
       { type: "lamp", color: "#888888", w: 4, h: 28 },
       { type: "awning", color: "#cc4444", w: 16, h: 8 },
       { type: "parked-car", color: "#333355", w: 14, h: 22 },
-      { type: "marquee", color: "#ffd700", w: 28, h: 16, rare: true },
-      { type: "crossing-gate", color: "#cc0000", w: 20, h: 18, rare: true },
+      { type: "theater", color: "#4a3a2a", w: 32, h: 45, rare: true },
+      { type: "bench", color: "#5a4a3a", w: 10, h: 5 },
     ],
   },
   { // Route 14 Strip — midnight commercial corridor
@@ -476,81 +476,158 @@ function RacePage() {
     }
 
     // ─── Roadside scenery objects (parallax scrolling) ───
-    if (skin.scenery.length > 0) {
-      const SCENERY_COUNT = 24;
-      for (let i = 0; i < SCENERY_COUNT; i++) {
-        // Deterministic pseudo-random placement based on index + roadOffset
-        const seed = i * 137.5 + 42;
-        const z = 0.08 + (((seed * 1.3) % 1) * 0.92); // depth 0.08-1.0
-        const side = i % 2 === 0 ? -1 : 1; // alternate left/right
+    // TODO: revisit rendering quality before re-enabling
+    if (false && skin.scenery.length > 0) {
+      const SCENERY_COUNT = 10;
 
-        // Pick scenery item (deterministic per slot)
+      for (let i = 0; i < SCENERY_COUNT; i++) {
+        const seed = i * 137.5 + 42;
+        const side = i % 2 === 0 ? -1 : 1;
+
+        // Pick scenery item deterministically per slot
         const itemIdx = Math.floor(((seed * 7.1) % 1) * skin.scenery.length);
         const item = skin.scenery[itemIdx];
-        if (item.rare && (i % 5 !== 0)) continue; // rare items only every 5th slot
+        if (item.rare && (i % 5 !== 0)) continue;
 
-        // Perspective calculations
-        const perspective = z * z;
-        const scale = 0.3 + (1 - z) * 2.5;
+        // Each object cycles through depth. Phase spreads them evenly.
+        // roadOffset drives the scroll — multiply by 0.04 for visible movement.
+        const phase = i / SCENERY_COUNT;
+        const raw = ((phase + roadOffset * 0.04) % 1.0 + 1.0) % 1.0;
+        if (raw < 0.08 || raw > 0.92) continue; // hide near recycle seam
+
+        // Map raw 0→1 to road row position (0=horizon, 1=bottom of screen)
+        const t = raw;
+        const perspective = t * t; // same quadratic as road renderer
         const screenY = horizonY + (H - horizonY) * perspective;
 
-        // Road width at this depth
-        const roadWidthBottom = W * 0.95;
-        const roadWidthTop = W * 0.08;
-        const roadW = roadWidthTop + (roadWidthBottom - roadWidthTop) * perspective;
-        const shoulderWidthBottom = W * 0.12;
-        const shoulderWidthTop = 2;
-        const shoulderW = shoulderWidthTop + (shoulderWidthBottom - shoulderWidthTop) * perspective;
+        if (screenY < horizonY + 2 || screenY > H - 5) continue;
 
-        // Position just outside the road + shoulder
-        const offset = roadW / 2 + shoulderW + 10 * scale + ((seed * 3.7) % 1) * 30 * scale;
-        const scrollShift = ((roadOffset * z * 0.15 + seed * 100) % (H * 2)) - H * 0.5;
-        const screenX = vanishX + side * offset;
-        const adjustedY = screenY + (scrollShift % 60) * perspective;
+        // Scale: tiny at horizon, full size near camera
+        const scale = 0.15 + t * 1.8;
 
-        if (adjustedY < horizonY || adjustedY > H) continue;
+        // Road width at this depth (matches road renderer exactly)
+        const roadW = (W * 0.08) + (W * 0.95 - W * 0.08) * perspective;
+        const shoulderW = 2 + (W * 0.12 - 2) * perspective;
+
+        // Place just outside road+shoulder with small jitter
+        const lateralJitter = ((seed * 3.7) % 1) * 15 * scale;
+        const baseOffset = roadW / 2 + shoulderW + 5 * scale + lateralJitter;
+        const screenX = vanishX + side * baseOffset;
 
         const sw = item.w * scale;
         const sh = item.h * scale;
+        const baseY = screenY; // ground level for this object
 
+        // ─── Draw each scenery type ───
         ctx.fillStyle = item.color;
-        ctx.fillRect(screenX - sw / 2, adjustedY - sh, sw, sh);
 
-        // Extra detail per type
         if (item.type === "lamp" || item.type === "lot-light") {
-          ctx.fillStyle = "#ffd70033";
-          ctx.beginPath();
-          ctx.arc(screenX, adjustedY - sh, 6 * scale, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (item.type === "brick-bldg") {
-          // Windows
+          // Thin pole + glow circle at top
+          ctx.fillRect(screenX - 1 * scale, baseY - sh, 2 * scale, sh);
           ctx.fillStyle = "#ffd70044";
-          const winS = 3 * scale;
-          for (let wy = adjustedY - sh + winS; wy < adjustedY - winS; wy += winS * 2.5) {
-            ctx.fillRect(screenX - sw / 3, wy, winS, winS);
-            ctx.fillRect(screenX + sw / 6, wy, winS, winS);
-          }
-        } else if (item.type === "traffic-light") {
-          const r = 1.5 * scale;
-          ctx.fillStyle = "#ff000088"; ctx.beginPath(); ctx.arc(screenX, adjustedY - sh - r * 6, r, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "#ffff0088"; ctx.beginPath(); ctx.arc(screenX, adjustedY - sh - r * 3, r, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = "#00ff0088"; ctx.beginPath(); ctx.arc(screenX, adjustedY - sh, r, 0, Math.PI * 2); ctx.fill();
-        } else if (item.type === "gas-canopy") {
-          ctx.fillStyle = "#ffffff18";
-          ctx.fillRect(screenX - sw / 2, adjustedY, sw, sh * 0.5);
-        } else if (item.type === "power-pole") {
-          ctx.fillRect(screenX - 8 * scale, adjustedY - sh, 16 * scale, 2 * scale);
-        } else if (item.type === "marquee") {
-          ctx.fillStyle = "#ffd700aa";
-          ctx.fillRect(screenX - sw / 2 + 2, adjustedY - sh + 2, sw - 4, sh - 4);
-          ctx.fillStyle = "#0d0d1a";
-          ctx.font = `${Math.max(4, 6 * scale)}px 'Press Start 2P'`;
-          ctx.textAlign = "center";
-          ctx.fillText("RAUE", screenX, adjustedY - sh / 2 + 3 * scale);
-        } else if (item.type === "umbrella") {
           ctx.beginPath();
-          ctx.arc(screenX, adjustedY - sh, sw / 2, Math.PI, 0);
+          ctx.arc(screenX, baseY - sh, 5 * scale, 0, Math.PI * 2);
           ctx.fill();
+        } else if (item.type === "willow") {
+          // Trunk + rounded canopy
+          ctx.fillStyle = "#4a3520";
+          ctx.fillRect(screenX - 1.5 * scale, baseY - sh * 0.4, 3 * scale, sh * 0.4);
+          ctx.fillStyle = item.color;
+          ctx.beginPath();
+          ctx.arc(screenX, baseY - sh * 0.6, sw * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+          // Drooping branches
+          ctx.fillStyle = item.color + "88";
+          ctx.beginPath();
+          ctx.ellipse(screenX, baseY - sh * 0.35, sw * 0.5, sh * 0.35, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (item.type === "brick-bldg" || item.type === "theater") {
+          // Building rectangle
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh);
+          // Windows (warm glow)
+          ctx.fillStyle = "#ffcc4455";
+          const winS = Math.max(2, 3 * scale);
+          const gap = winS * 2;
+          for (let wy = baseY - sh + winS; wy < baseY - winS; wy += gap) {
+            for (let wx = screenX - sw / 3; wx < screenX + sw / 3; wx += gap) {
+              ctx.fillRect(wx, wy, winS, winS);
+            }
+          }
+          if (item.type === "theater") {
+            // Lit canopy at base
+            ctx.fillStyle = "#ffd70066";
+            ctx.fillRect(screenX - sw / 2 - 2 * scale, baseY - 4 * scale, sw + 4 * scale, 4 * scale);
+          }
+        } else if (item.type === "awning") {
+          // Colored rectangle with stripe
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh);
+          ctx.fillStyle = "#ffffff22";
+          for (let sx = 0; sx < sw; sx += Math.max(4, 6 * scale)) {
+            ctx.fillRect(screenX - sw / 2 + sx, baseY - sh, Math.max(2, 3 * scale), sh);
+          }
+        } else if (item.type === "parked-car") {
+          // Small rounded rectangle
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh);
+          // Windshield highlight
+          ctx.fillStyle = "#88bbdd44";
+          ctx.fillRect(screenX - sw / 4, baseY - sh + 1, sw / 2, sh * 0.3);
+        } else if (item.type === "traffic-light") {
+          // Pole + signal box with colored dots
+          ctx.fillRect(screenX - 1 * scale, baseY - sh, 2 * scale, sh);
+          ctx.fillStyle = "#222222";
+          const boxW = 4 * scale;
+          const boxH = 10 * scale;
+          ctx.fillRect(screenX - boxW / 2, baseY - sh - boxH, boxW, boxH);
+          const dotR = Math.max(1, 1.2 * scale);
+          const cx = screenX;
+          ctx.fillStyle = "#ff000099"; ctx.beginPath(); ctx.arc(cx, baseY - sh - boxH + dotR * 2, dotR, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#ffff0099"; ctx.beginPath(); ctx.arc(cx, baseY - sh - boxH / 2, dotR, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#00ff0099"; ctx.beginPath(); ctx.arc(cx, baseY - sh - dotR * 2, dotR, 0, Math.PI * 2); ctx.fill();
+        } else if (item.type === "gas-canopy") {
+          // Wide flat canopy with support poles and under-glow
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh);
+          ctx.fillStyle = "#88888888";
+          ctx.fillRect(screenX - sw / 2 + 2 * scale, baseY - sh, 2 * scale, sh);
+          ctx.fillRect(screenX + sw / 2 - 4 * scale, baseY - sh, 2 * scale, sh);
+          ctx.fillStyle = "#ffffff15";
+          ctx.fillRect(screenX - sw / 2, baseY, sw, sh * 0.4);
+        } else if (item.type === "power-pole") {
+          // Tall pole with crossbar
+          ctx.fillRect(screenX - 1 * scale, baseY - sh, 2 * scale, sh);
+          ctx.fillRect(screenX - 8 * scale, baseY - sh, 16 * scale, 2 * scale);
+        } else if (item.type === "store-sign") {
+          // Colored rectangle sign on pole
+          ctx.fillStyle = "#44444488";
+          ctx.fillRect(screenX - 1 * scale, baseY - sh, 2 * scale, sh * 0.6);
+          ctx.fillStyle = item.color;
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh * 0.35);
+        } else if (item.type === "bench") {
+          // Low wide rectangle
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh);
+        } else if (item.type === "umbrella") {
+          // Half-circle on thin pole
+          ctx.fillStyle = "#66666688";
+          ctx.fillRect(screenX - 0.5 * scale, baseY - sh * 0.8, 1 * scale, sh * 0.8);
+          ctx.fillStyle = item.color;
+          ctx.beginPath();
+          ctx.arc(screenX, baseY - sh * 0.8, sw / 2, Math.PI, 0);
+          ctx.fill();
+        } else if (item.type === "dock-post") {
+          // Short thick post
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh);
+        } else if (item.type === "crossing-gate") {
+          // Pole + diagonal arm
+          ctx.fillRect(screenX - 1 * scale, baseY - sh, 2 * scale, sh);
+          ctx.fillStyle = "#ffffff88";
+          ctx.fillRect(screenX, baseY - sh + 2 * scale, sw * 0.8, 2 * scale);
+          // Red stripes on arm
+          ctx.fillStyle = "#ff000088";
+          for (let sx = 0; sx < sw * 0.8; sx += 6 * scale) {
+            ctx.fillRect(screenX + sx, baseY - sh + 2 * scale, 3 * scale, 2 * scale);
+          }
+        } else {
+          // Fallback: simple rectangle
+          ctx.fillRect(screenX - sw / 2, baseY - sh, sw, sh);
         }
       }
     }
