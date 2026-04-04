@@ -67,7 +67,7 @@ function LocationMapInner({
       disableDefaultUI={false}
       zoomControl={true}
       zoomControlOptions={{ position: ControlPosition.RIGHT_BOTTOM }}
-      mapTypeControl={false}
+      mapTypeControl={true}
       streetViewControl={false}
       fullscreenControl={true}
     >
