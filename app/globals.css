@@ -898,6 +898,7 @@ section {
 /* Sponsors Section */
 .sponsors {
     background: var(--white);
+    padding-top: 4rem;
 }
 
 .sponsor-tier {
