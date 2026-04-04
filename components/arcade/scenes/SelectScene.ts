@@ -147,14 +147,8 @@ export class SelectScene extends Phaser.Scene {
     bg.on("pointerout", () => bg.setStrokeStyle(2, 0x333333));
     bg.on("pointerup", () => {
       if (this.isDragging || !this.inputEnabled) return;
-      const allCars: RaceCar[] = this.registry.get("cars") || [];
-      const others = allCars.filter((c) => c.id !== car.id);
-      const opponent = others.length > 0
-        ? others[Math.floor(Math.random() * others.length)]
-        : car;
       this.registry.set("playerCar", car);
-      this.registry.set("opponentCar", opponent);
-      this.scene.start("MatchupScene");
+      this.scene.start("TrackSelectScene");
     });
   }
 }

@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { RaceCar } from "./types";
 
-export default function PhaserGame() {
+type Props = {
+  selectedCar?: RaceCar;
+};
+
+export default function PhaserGame({ selectedCar }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -15,10 +20,10 @@ export default function PhaserGame() {
       import("@/components/arcade/scenes/BootScene"),
       import("@/components/arcade/scenes/TitleScene"),
       import("@/components/arcade/scenes/SelectScene"),
+      import("@/components/arcade/scenes/TrackSelectScene"),
       import("@/components/arcade/scenes/MatchupScene"),
       import("@/components/arcade/scenes/RaceScene"),
-    ]).then(([Phaser, { BootScene }, { TitleScene }, { SelectScene }, { MatchupScene }, { RaceScene }]) => {
-      // Use actual screen size so text renders crisp at native resolution
+    ]).then(([Phaser, { BootScene }, { TitleScene }, { SelectScene }, { TrackSelectScene }, { MatchupScene }, { RaceScene }]) => {
       const w = containerRef.current!.clientWidth;
       const h = containerRef.current!.clientHeight;
 
@@ -32,17 +37,21 @@ export default function PhaserGame() {
           mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
         },
-        scene: [BootScene, TitleScene, SelectScene, MatchupScene, RaceScene],
+        scene: [BootScene, TitleScene, SelectScene, TrackSelectScene, MatchupScene, RaceScene],
       });
 
-      // Pass env vars into the game registry so scenes can use them
       game.registry.set("supabaseUrl", process.env.NEXT_PUBLIC_SUPABASE_URL || "");
+
+      if (selectedCar) {
+        game.registry.set("playerCar", selectedCar);
+        game.registry.set("skipToTrackSelect", true);
+      }
     });
 
     return () => {
       if (game) game.destroy(true);
     };
-  }, []);
+  }, [selectedCar]);
 
   return (
     <div

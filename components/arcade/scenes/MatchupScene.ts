@@ -9,7 +9,12 @@ export class MatchupScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
     const playerCar: RaceCar = this.registry.get("playerCar");
-    const opponentCar: RaceCar = this.registry.get("opponentCar");
+    const allCars: RaceCar[] = this.registry.get("cars") || [];
+    const others = allCars.filter((c) => c.id !== playerCar.id);
+    const shuffled = [...others].sort(() => Math.random() - 0.5);
+    const opponents = shuffled.slice(0, Math.min(3, shuffled.length));
+    this.registry.set("opponentCars", opponents);
+    const opponentCar = opponents[0] || playerCar;
 
     this.cameras.main.setBackgroundColor("#0d0d1a");
 
@@ -100,12 +105,7 @@ export class MatchupScene extends Phaser.Scene {
     shuffleBtn.on("pointerover", () => shuffleBtn.setStrokeStyle(2, 0xffd700));
     shuffleBtn.on("pointerout", () => shuffleBtn.setStrokeStyle(2, 0x333333));
     shuffleBtn.on("pointerdown", () => {
-      const cars: RaceCar[] = this.registry.get("cars") || [];
-      const others = cars.filter((c) => c.id !== playerCar.id && c.id !== opponentCar.id);
-      if (others.length > 0) {
-        this.registry.set("opponentCar", others[Math.floor(Math.random() * others.length)]);
-        this.scene.restart();
-      }
+      this.scene.restart();
     });
 
     // PICK DIFFERENT CAR
