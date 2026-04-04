@@ -1,6 +1,6 @@
 "use client";
 
-import { APIProvider, Map, AdvancedMarker, InfoWindow, useMap, ControlPosition } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker, InfoWindow, useMap, ControlPosition, MapTypeControlStyle } from "@vis.gl/react-google-maps";
 import { useState, useEffect } from "react";
 
 type MapPin = {
@@ -67,7 +67,8 @@ export default function RegistrantMap({ pins }: { pins: MapPin[] }) {
         zoomControl={true}
         zoomControlOptions={{ position: ControlPosition.RIGHT_BOTTOM }}
         mapTypeControl={true}
-        streetViewControl={false}
+        mapTypeControlOptions={{ style: MapTypeControlStyle.DROPDOWN_MENU }}
+        streetViewControl={true}
         fullscreenControl={true}
       >
         <FitBounds pins={pins} />
