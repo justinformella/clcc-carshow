@@ -13,6 +13,7 @@ export async function GET() {
     checkOpenAI(),
     checkSupabase(),
     checkStripe(),
+    checkModal(),
   ]);
 
   return NextResponse.json({
@@ -76,6 +77,28 @@ async function checkSupabase(): Promise<ServiceStatus> {
     return { name: "Supabase", status: "error", latencyMs, error: `HTTP ${res.status}` };
   } catch (err) {
     return { name: "Supabase", status: "error", latencyMs: Date.now() - start, error: String(err) };
+  }
+}
+
+async function checkModal(): Promise<ServiceStatus> {
+  const url = process.env.MODAL_REMBG_URL;
+  if (!url) return { name: "Modal (rembg)", status: "missing", error: "MODAL_REMBG_URL not set" };
+
+  const start = Date.now();
+  try {
+    // Send a tiny 1x1 transparent PNG to test the endpoint is alive
+    const tinyPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: tinyPng }),
+      signal: AbortSignal.timeout(30000),
+    });
+    const latencyMs = Date.now() - start;
+    if (res.ok) return { name: "Modal (rembg)", status: "ok", latencyMs };
+    return { name: "Modal (rembg)", status: "error", latencyMs, error: `HTTP ${res.status}` };
+  } catch (err) {
+    return { name: "Modal (rembg)", status: "error", latencyMs: Date.now() - start, error: String(err) };
   }
 }
 
