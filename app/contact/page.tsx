@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export default function ContactPage() {
+  return (
+    <Suspense>
+      <ContactPageInner />
+    </Suspense>
+  );
+}
+
+function ContactPageInner() {
   const searchParams = useSearchParams();
   const prefillSubject = searchParams.get("subject") || "";
   const prefillMessage = searchParams.get("message") || "";
