@@ -171,6 +171,17 @@ The action menu CRUISE ROUTE 14 button navigates to the external racer-classic g
 
 No phase, no component — just a link to the existing game with the car's registration UUID.
 
+When the racer-classic game exits/quits, it should redirect back to the action menu with the car pre-selected: `/race?car={carId}`.
+
+## Navigation Rule
+
+All mini-games return to the action menu when done. The action menu is the hub — players always come back here to pick another activity with the same car.
+
+- DragRace finished → `onBack()` → action menu
+- DynoRoom back → `onBack()` → action menu
+- DetailTech back → `onBack()` → action menu
+- Cruise Route 14 quit → `window.location = /race?car={id}` → action menu (via preselect)
+
 ## Migration Rules
 
 1. **Pure extraction** — no behavior changes. Cut and paste, fix imports.
