@@ -1578,11 +1578,9 @@
 
       // Prevent iOS rubber-banding / scroll while playing
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.height = '100%';
+      // Note: don't set position:fixed — it breaks the flex letterbox layout
 
-      // Also add viewport meta for mobile if missing
+      // Viewport meta already in <head>, but add if missing
       if (!document.querySelector('meta[name="viewport"]')) {
         var meta = document.createElement('meta');
         meta.name = 'viewport';
