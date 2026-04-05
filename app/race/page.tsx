@@ -56,7 +56,7 @@ type RaceCar = {
   flipped: boolean;
 };
 
-type Phase = "loading" | "title" | "select" | "countdown" | "racing" | "finished";
+type Phase = "loading" | "title" | "select" | "action-menu" | "dyno" | "countdown" | "racing" | "finished";
 
 /**
  * Convert advertised HP to SAE Net equivalent.
@@ -505,11 +505,16 @@ function RacePage() {
 
   const selectCar = useCallback((car: RaceCar) => {
     setPlayerCar(car);
-    const others = cars.filter((c) => c.id !== car.id);
-    const opp = others[Math.floor(Math.random() * others.length)] || car;
+    setPhase("action-menu");
+  }, []);
+
+  const setupDragRace = useCallback(() => {
+    if (!playerCar) return;
+    const others = cars.filter((c) => c.id !== playerCar.id);
+    const opp = others[Math.floor(Math.random() * others.length)] || playerCar;
     setOpponentCar(opp);
     setTrackSkin(pickRandomSkin());
-  }, [cars]);
+  }, [playerCar, cars]);
 
   const startRace = useCallback(() => {
     if (!playerCar || !opponentCar) return;
@@ -819,6 +824,40 @@ function RacePage() {
             ENTER GARAGE
           </button>
           <Link href="/" style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.border, textDecoration: "none" }}>BACK TO SITE</Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── ACTION MENU ───
+  if (phase === "action-menu" && playerCar) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.5rem" }}>CLCC ARCADE</p>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1rem, 3vw, 1.5rem)", color: C.gold, margin: "0 0 1rem" }}>
+            {playerCar.name}
+          </h1>
+          <div style={{ maxWidth: "300px", margin: "0 auto 2rem", aspectRatio: "16/9", background: "#111", borderRadius: "6px", overflow: "hidden", border: `2px solid ${C.gold}` }}>
+            {playerCar.pixelArt && (
+              <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const, transform: playerCar.flipped ? "scaleX(-1)" : "none" }} />
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", alignItems: "center", maxWidth: "320px", margin: "0 auto" }}>
+          <button onClick={() => { setupDragRace(); setPhase("select"); }} style={{ ...goldBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem" }}>
+            DRAG RACE
+          </button>
+          <button onClick={() => setPhase("dyno")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+            HIT THE DYNO
+          </button>
+          <button disabled style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", opacity: 0.3, cursor: "not-allowed" }}>
+            CRUISE CRYSTAL LAKE
+          </button>
+          <p style={{ fontFamily: FONT, fontSize: "0.55rem", color: C.border, marginTop: "0.5rem" }}>CRUISE — COMING SOON</p>
+          <button onClick={() => { setPlayerCar(null); setOpponentCar(null); setPhase("select"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1rem" }}>
+            PICK DIFFERENT CAR
+          </button>
         </div>
       </div>
     );
