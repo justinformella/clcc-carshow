@@ -910,25 +910,35 @@
       }
 
       // --- Route 14 branded storefronts (dynamic CL assets) ---
-      // Actual businesses along Route 14 / Northwest Hwy in Crystal Lake, IL
-      // Listed roughly west-to-east matching the real commercial corridor
+      // Actual businesses along Route 14 / Northwest Hwy, Crystal Lake, IL
+      // Ordered heading NORTHWEST (east-to-west, matching the real drive)
+      // Each business appears EXACTLY ONCE per lap
       var commercialKeys = [
-        'menards', 'outback', 'chick-fil-a', 'chipotle', 'raising-canes',
-        'target', 'sams-club', 'best-buy', 'tj-maxx', 'ross',
-        'jewel-osco', 'hobby-lobby', 'taco-bell', 'wendys', 'panera',
-        'exceed-flooring', 'gas-station', 'fast-food', 'strip-mall', 'starbucks'
+        // East end — The Commons area (~6100-6600 NW Hwy)
+        'ihop', 'jewel-osco', 'hobby-lobby', 'harbor-freight', 'petsmart',
+        // Crystal Point area (~5800-6000 NW Hwy)
+        'best-buy', 'tj-maxx', 'ross', 'panera', 'starbucks', 'five-guys', 'aldi',
+        // Mid-corridor (~5400-5700 NW Hwy)
+        'target', 'sams-club', 'raising-canes', 'crumbl-cookies', 'exceed-flooring',
+        // West end (~4400-5100 NW Hwy)
+        'menards', 'outback', 'chick-fil-a', 'chipotle', 'noodles', 'jersey-mikes',
+        'wendys', 'taco-bell',
       ];
-      var commIdx = 0;
-      for (n = 200; n < segments.length - 100; n += 80) {
-        var commKey = commercialKeys[commIdx % commercialKeys.length];
+
+      // Space businesses evenly across the track, each appears once
+      var totalComm = commercialKeys.length;
+      var availableSegments = segments.length - 200; // leave buffer at start/end
+      var commSpacing = Math.floor(availableSegments / totalComm);
+      for (var ci = 0; ci < totalComm; ci++) {
+        var commKey = commercialKeys[ci];
         if (clScenery[commKey]) {
           var m = CL_SCENERY_MANIFEST[commKey];
           if (m) {
-            var cSide = (commIdx % 2 === 0) ? -1.05 : 1.05;
-            addDynamicSprite(n, { w: m.w, h: m.h }, cSide, clScenery[commKey]);
+            var seg = 100 + ci * commSpacing;
+            var cSide = (ci % 2 === 0) ? -1.05 : 1.05;
+            addDynamicSprite(seg, { w: m.w, h: m.h }, cSide, clScenery[commKey]);
           }
         }
-        commIdx++;
       }
 
     }
@@ -1017,9 +1027,6 @@
       'dole-mansion':    { path: '8bit/scenery/dole-mansion.png',    w: 220, h: 200, category: 'building' },
 
       // Commercial (Route 14) — branded stores (LARGE, prominent)
-      'strip-mall':      { path: '8bit/scenery/strip-mall.png',      w: 450, h: 200, category: 'commercial' },
-      'gas-station':     { path: '8bit/scenery/gas-station.png',     w: 350, h: 250, category: 'commercial' },
-      'fast-food':       { path: '8bit/scenery/fast-food.png',       w: 320, h: 250, category: 'commercial' },
       'best-buy':        { path: '8bit/scenery/best-buy.png',        w: 450, h: 220, category: 'commercial' },
       'taco-bell':       { path: '8bit/scenery/taco-bell.png',       w: 340, h: 250, category: 'commercial' },
       'chick-fil-a':     { path: '8bit/scenery/chick-fil-a.png',     w: 350, h: 250, category: 'commercial' },
@@ -1037,6 +1044,14 @@
       'wendys':          { path: '8bit/scenery/wendys.png',           w: 340, h: 250, category: 'commercial' },
       'panera':          { path: '8bit/scenery/panera.png',           w: 350, h: 250, category: 'commercial' },
       'starbucks':       { path: '8bit/scenery/starbucks.png',        w: 320, h: 250, category: 'commercial' },
+      'ihop':            { path: '8bit/scenery/ihop.png',             w: 350, h: 250, category: 'commercial' },
+      'five-guys':       { path: '8bit/scenery/five-guys.png',        w: 340, h: 250, category: 'commercial' },
+      'petsmart':        { path: '8bit/scenery/petsmart.png',         w: 420, h: 220, category: 'commercial' },
+      'aldi':            { path: '8bit/scenery/aldi.png',             w: 400, h: 220, category: 'commercial' },
+      'harbor-freight':  { path: '8bit/scenery/harbor-freight.png',   w: 420, h: 200, category: 'commercial' },
+      'crumbl-cookies':  { path: '8bit/scenery/crumbl-cookies.png',   w: 300, h: 240, category: 'commercial' },
+      'jersey-mikes':    { path: '8bit/scenery/jersey-mikes.png',     w: 300, h: 240, category: 'commercial' },
+      'noodles':         { path: '8bit/scenery/noodles.png',          w: 320, h: 240, category: 'commercial' },
 
       // Street furniture — small
       'street-lamp':     { path: '8bit/scenery/street-lamp.png',     w: 20, h: 160, category: 'furniture' },

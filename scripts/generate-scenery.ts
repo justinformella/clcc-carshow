@@ -256,6 +256,62 @@ const ASSETS: AssetDef[] = [
     aspect: "4:3",
     removeBg: true,
   },
+  {
+    key: "ihop",
+    filename: "ihop.png",
+    prompt: `${STYLE_BASE} An IHOP restaurant — blue roof building with the distinctive blue IHOP logo and sign. Pancake house with large windows. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "4:3",
+    removeBg: true,
+  },
+  {
+    key: "five-guys",
+    filename: "five-guys.png",
+    prompt: `${STYLE_BASE} A Five Guys Burgers and Fries restaurant — red and white striped awning, the Five Guys logo in red on a white building. Fast casual burger restaurant. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "4:3",
+    removeBg: true,
+  },
+  {
+    key: "petsmart",
+    filename: "petsmart.png",
+    prompt: `${STYLE_BASE} A PetSmart pet store — large blue and red retail building with the PetSmart logo. Pet supply store with wide entrance. Viewed from across the street. Bright green (#00FF00) solid background.`,
+    aspect: "16:9",
+    removeBg: true,
+  },
+  {
+    key: "aldi",
+    filename: "aldi.png",
+    prompt: `${STYLE_BASE} An ALDI grocery store — compact modern building with the blue and orange ALDI logo. Budget grocery store with simple clean facade. Viewed from across the street. Bright green (#00FF00) solid background.`,
+    aspect: "16:9",
+    removeBg: true,
+  },
+  {
+    key: "harbor-freight",
+    filename: "harbor-freight.png",
+    prompt: `${STYLE_BASE} A Harbor Freight Tools store — commercial building with the red and white Harbor Freight Tools logo and sign. Tool and hardware store. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "16:9",
+    removeBg: true,
+  },
+  {
+    key: "crumbl-cookies",
+    filename: "crumbl-cookies.png",
+    prompt: `${STYLE_BASE} A Crumbl Cookies shop — modern pink and white storefront with the Crumbl logo, signature pink branding. Small trendy bakery. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "4:3",
+    removeBg: true,
+  },
+  {
+    key: "jersey-mikes",
+    filename: "jersey-mikes.png",
+    prompt: `${STYLE_BASE} A Jersey Mike's Subs restaurant — storefront with the red, white and blue Jersey Mike's logo. Sub sandwich shop. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "4:3",
+    removeBg: true,
+  },
+  {
+    key: "noodles",
+    filename: "noodles.png",
+    prompt: `${STYLE_BASE} A Noodles & Company restaurant — modern casual restaurant with the orange Noodles & Company logo on a clean facade. Fast casual noodle restaurant. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "4:3",
+    removeBg: true,
+  },
 
   // ─── Street furniture ───
   {
