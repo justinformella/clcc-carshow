@@ -330,41 +330,41 @@
     var baseMaxSpeed = segmentLength/step;  // store the absolute ceiling
 
     // Maps real car data onto game physics variables.
-    // Called once after car selection. Values are tuned so:
-    //   - A 100hp/4000lb truck feels sluggish (60% of base)
-    //   - A 400hp/3200lb muscle car feels fast (95% of base)
-    //   - A 500hp/3000lb supercar hits the ceiling (100%)
+    // Uses ACTUAL stored stats: topSpeed (mph) and hp from the database.
     //
-    // Power-to-weight ratio (hp per 1000 lbs) is the single input.
-    //   Low:  ~25  (truck)
-    //   Mid:  ~80  (average car)
-    //   High: ~170 (supercar)
+    // Top speed mapping:
+    //   car.topSpeed 80 mph  → 50% of game max (slow truck)
+    //   car.topSpeed 150 mph → 80% of game max (average car)
+    //   car.topSpeed 200 mph → 100% of game max (supercar)
+    //
+    // Acceleration from HP/weight ratio:
+    //   Low pwr  (~25 hp/1000lb) → sluggish accel
+    //   High pwr (~170 hp/1000lb) → rocket accel
     function applyCarStats(car) {
+      // --- Top speed from actual stored value ---
+      var topMph = car.topSpeed || 150;
+      var speedT = Math.max(0, Math.min(1, (topMph - 80) / (200 - 80)));
+      maxSpeed = baseMaxSpeed * (0.50 + 0.50 * speedT);
+
+      // --- Acceleration from HP/weight ratio ---
       var pwr = car.hp / (car.weight / 1000);  // hp per 1000 lbs
-
-      // Clamp to a useful range and normalize 0..1
-      var t = Math.max(0, Math.min(1, (pwr - 25) / (170 - 25)));
-
-      // Top speed: 60%–100% of base max speed
-      maxSpeed  = baseMaxSpeed * (0.60 + 0.40 * t);
-
-      // Acceleration: slower cars take longer to reach top speed
+      var pwrT = Math.max(0, Math.min(1, (pwr - 25) / (170 - 25)));
       // Range: maxSpeed/8 (sluggish) to maxSpeed/3.5 (rocket)
-      accel = maxSpeed / (8 - 4.5 * t);
+      accel = maxSpeed / (8 - 4.5 * pwrT);
 
-      // Braking: lighter/sportier cars stop faster
-      breaking = -(maxSpeed * (0.6 + 0.4 * t));
+      // --- Braking: lighter/sportier cars stop faster ---
+      breaking = -(maxSpeed * (0.6 + 0.4 * pwrT));
 
       // Coast deceleration stays proportional
       decel = -maxSpeed / 5;
 
-      // Off-road: heavy cars bog down more
+      // --- Off-road: heavy cars bog down more ---
       var weightT = Math.max(0, Math.min(1, (car.weight - 2000) / (5000 - 2000)));
       offRoadDecel = -(maxSpeed * (0.4 + 0.2 * weightT));
       offRoadLimit = maxSpeed / (5 + 2 * weightT);
 
       // Store real top speed for HUD display
-      playerTopSpeedMph = car.topSpeed || 150;
+      playerTopSpeedMph = topMph;
     }
 
     var playerTopSpeedMph = 150;  // actual top speed in MPH for HUD
