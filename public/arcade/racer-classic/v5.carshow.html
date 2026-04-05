@@ -674,7 +674,7 @@
           var pIdx = 0;
           for (n = 20; n < segments.length - 50; n += 80) {
             var pImg = presenting[pIdx % presenting.length];
-            var side = (pIdx % 2 === 0) ? -1.1 : 1.1;
+            var side = (pIdx % 2 === 0) ? -2.0 : 2.0;
             addDynamicSprite(n, { w: 350, h: 250 }, side, pImg);  // big billboard
             pIdx++;
           }
@@ -685,7 +685,7 @@
           var prIdx = 0;
           for (n = 60; n < segments.length - 50; n += 120) {
             var prImg = premier[prIdx % premier.length];
-            var prSide = (prIdx % 2 === 0) ? -1.0 : 1.0;
+            var prSide = (prIdx % 2 === 0) ? -1.8 : 1.8;
             addDynamicSprite(n, { w: 300, h: 200 }, prSide, prImg);
             prIdx++;
           }
@@ -696,7 +696,7 @@
           var cIdx = 0;
           for (n = 100; n < segments.length - 50; n += 200) {
             var cImg = community[cIdx % community.length];
-            var cSide = (cIdx % 2 === 0) ? -1.0 : 1.0;
+            var cSide = (cIdx % 2 === 0) ? -1.6 : 1.6;
             addDynamicSprite(n, { w: 250, h: 170 }, cSide, cImg);
             cIdx++;
           }
