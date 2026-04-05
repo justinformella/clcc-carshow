@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { generateImage, buildRearPrompt, removeBackground } from "@/lib/generate-pixel-art";
+import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,16 +69,36 @@ export async function POST(request: NextRequest) {
       mainUrl = `${supabase.storage.from("pixel-art").getPublicUrl(transName).data.publicUrl}?v=${ts}`;
     }
 
+    // Auto-crop dashboard to remove windshield
+    let croppedUrl: string | null = null;
+    if (type === "dashboard") {
+      t0 = Date.now();
+      const metadata = await sharp(rawBuffer).metadata();
+      const cropY = Math.round((metadata.height || 768) * 0.40);
+      const croppedBuffer = await sharp(rawBuffer)
+        .extract({ left: 0, top: cropY, width: metadata.width || 1408, height: (metadata.height || 768) - cropY })
+        .png()
+        .toBuffer();
+      timing.cropMs = Date.now() - t0;
+
+      const croppedName = `dash-${registration_id}-cropped.png`;
+      await supabase.storage.from("pixel-art").upload(croppedName, croppedBuffer, { contentType: "image/png", upsert: true });
+      croppedUrl = `${supabase.storage.from("pixel-art").getPublicUrl(croppedName).data.publicUrl}?v=${ts}`;
+    }
+
     const mainCol = type === "side" ? "pixel_art_url" : type === "rear" ? "pixel_rear_url" : "pixel_dashboard_url";
     const origCol = type === "side" ? "pixel_art_original_url" : type === "rear" ? "pixel_rear_original_url" : "pixel_dashboard_original_url";
 
+    const updateData: Record<string, string> = { [mainCol]: mainUrl, [origCol]: origUrl };
+    if (croppedUrl) updateData.pixel_dash_cropped_url = croppedUrl;
+
     await supabase
       .from("registrations")
-      .update({ [mainCol]: mainUrl, [origCol]: origUrl })
+      .update(updateData)
       .eq("id", registration_id);
 
     console.log(`Regenerate ${type} timing:`, timing);
-    return NextResponse.json({ url: mainUrl, originalUrl: origUrl, timing });
+    return NextResponse.json({ url: mainUrl, originalUrl: origUrl, croppedUrl, timing });
   } catch (err) {
     console.error("Regenerate error:", err);
     return NextResponse.json({ error: "Failed to regenerate" }, { status: 500 });
