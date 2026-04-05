@@ -142,74 +142,40 @@ export function playLoseJingle() {
   });
 }
 
-// ─── BACKGROUND MUSIC (simple chiptune loop) ────────────────────────────────
+// ─── MP3 MUSIC PLAYER ────────────────────────────────────────────────────────
+// CC0 chiptune tracks by Juhani Junkala (Retro Game Music Pack)
+// + "Exploring Town" by Spring Spring (CC0)
 
-let musicInterval: ReturnType<typeof setInterval> | null = null;
-let musicGainNode: GainNode | null = null;
+let currentAudio: HTMLAudioElement | null = null;
+let currentTrack: string | null = null;
 
-// Simple bass line pattern — loops every 8 beats
-const BASS_PATTERN = [131, 131, 165, 165, 175, 175, 131, 131]; // C3, E3, F3, C3
-const MELODY_PATTERN = [523, 0, 659, 0, 784, 659, 523, 0]; // C5 riff, 0 = rest
-
-export function startMusic() {
-  const c = getCtx();
-  if (musicInterval) stopMusic();
-
-  musicGainNode = c.createGain();
-  musicGainNode.gain.value = 0.05;
-  musicGainNode.connect(c.destination);
-
-  let beat = 0;
-  const BPM = 140;
-  const beatMs = (60 / BPM) * 1000;
-
-  musicInterval = setInterval(() => {
-    const idx = beat % 8;
-
-    // Bass note
-    const bassFreq = BASS_PATTERN[idx];
-    if (bassFreq) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = bassFreq;
-      g.gain.value = 1;
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.9);
-      osc.connect(g);
-      g.connect(musicGainNode!);
-      osc.start(c.currentTime);
-      osc.stop(c.currentTime + beatMs / 1000);
-    }
-
-    // Melody note
-    const melFreq = MELODY_PATTERN[idx];
-    if (melFreq) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = "square";
-      osc.frequency.value = melFreq;
-      g.gain.value = 0.6;
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.7);
-      osc.connect(g);
-      g.connect(musicGainNode!);
-      osc.start(c.currentTime);
-      osc.stop(c.currentTime + beatMs / 1000);
-    }
-
-    beat++;
-  }, beatMs);
+function playTrack(src: string, volume = 0.4) {
+  // Don't restart if already playing this track
+  if (currentTrack === src && currentAudio && !currentAudio.paused) return;
+  stopMusicPlayer();
+  const audio = new Audio(src);
+  audio.loop = true;
+  audio.volume = volume;
+  audio.play().catch(() => { /* autoplay blocked — will play on next interaction */ });
+  currentAudio = audio;
+  currentTrack = src;
 }
 
-export function stopMusic() {
-  if (musicInterval) {
-    clearInterval(musicInterval);
-    musicInterval = null;
-  }
-  if (musicGainNode) {
-    musicGainNode.disconnect();
-    musicGainNode = null;
+function stopMusicPlayer() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.src = "";
+    currentAudio = null;
+    currentTrack = null;
   }
 }
+
+export function startSelectMusic() { playTrack("/arcade/music/select.mp3", 0.3); }
+export function stopSelectMusic() { stopMusicPlayer(); }
+export function startMenuMusic() { playTrack("/arcade/music/level-1.mp3", 0.35); }
+export function stopMenuMusic() { stopMusicPlayer(); }
+export function startMusic() { playTrack("/arcade/music/level-3.mp3", 0.3); }
+export function stopMusic() { stopMusicPlayer(); }
 
 // ─── FOUL BUZZER (jumped the green) ─────────────────────────────────────────
 
@@ -227,178 +193,9 @@ export function playFoulBuzzer() {
   osc.stop(c.currentTime + 0.5);
 }
 
-// ─── SELECT SCREEN MUSIC (chill garage vibe) ────────────────────────────────
-
-let selectInterval: ReturnType<typeof setInterval> | null = null;
-let selectGainNode: GainNode | null = null;
-
-// Mellow pentatonic melody — relaxed browsing feel
-const SELECT_BASS = [98, 98, 131, 131, 110, 110, 98, 98]; // G2, C3, A2, G2
-const SELECT_MELODY = [392, 0, 330, 0, 294, 0, 262, 0]; // G4, E4, D4, C4
-const SELECT_ARPEGGIO = [0, 523, 0, 440, 0, 392, 0, 330]; // off-beat sparkles
-
-export function startSelectMusic() {
-  const c = getCtx();
-  if (selectInterval) stopSelectMusic();
-
-  selectGainNode = c.createGain();
-  selectGainNode.gain.value = 0.04;
-  selectGainNode.connect(c.destination);
-
-  let beat = 0;
-  const BPM = 100;
-  const beatMs = (60 / BPM) * 1000;
-
-  selectInterval = setInterval(() => {
-    const idx = beat % 8;
-
-    const bassFreq = SELECT_BASS[idx];
-    if (bassFreq) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = bassFreq;
-      g.gain.value = 0.8;
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.8);
-      osc.connect(g);
-      g.connect(selectGainNode!);
-      osc.start(c.currentTime);
-      osc.stop(c.currentTime + beatMs / 1000);
-    }
-
-    const melFreq = SELECT_MELODY[idx];
-    if (melFreq) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = "square";
-      osc.frequency.value = melFreq;
-      g.gain.value = 0.4;
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.6);
-      osc.connect(g);
-      g.connect(selectGainNode!);
-      osc.start(c.currentTime);
-      osc.stop(c.currentTime + beatMs / 1000);
-    }
-
-    const arpFreq = SELECT_ARPEGGIO[idx];
-    if (arpFreq) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = "sine";
-      osc.frequency.value = arpFreq;
-      g.gain.value = 0.3;
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.4);
-      osc.connect(g);
-      g.connect(selectGainNode!);
-      osc.start(c.currentTime);
-      osc.stop(c.currentTime + beatMs / 1000);
-    }
-
-    beat++;
-  }, beatMs);
-}
-
-export function stopSelectMusic() {
-  if (selectInterval) {
-    clearInterval(selectInterval);
-    selectInterval = null;
-  }
-  if (selectGainNode) {
-    selectGainNode.disconnect();
-    selectGainNode = null;
-  }
-}
-
-// ─── ACTION MENU MUSIC (upbeat garage rock vibe) ─────────────────────────────
-
-let menuInterval: ReturnType<typeof setInterval> | null = null;
-let menuGainNode: GainNode | null = null;
-
-// Driving rock progression — E minor pentatonic, punchy and fun
-const MENU_BASS = [82, 82, 110, 110, 98, 98, 82, 82, 82, 82, 131, 131, 110, 110, 98, 98]; // E2, A2, G2, E2, E2, C3, A2, G2
-const MENU_LEAD = [330, 0, 392, 330, 294, 0, 262, 0, 330, 392, 440, 0, 392, 330, 294, 0]; // syncopated lead
-const MENU_KICK = [1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0]; // kick pattern
-
-export function startMenuMusic() {
-  const c = getCtx();
-  if (menuInterval) stopMenuMusic();
-
-  menuGainNode = c.createGain();
-  menuGainNode.gain.value = 0.05;
-  menuGainNode.connect(c.destination);
-
-  let beat = 0;
-  const BPM = 130;
-  const beatMs = (60 / BPM) * 1000;
-
-  menuInterval = setInterval(() => {
-    const idx = beat % 16;
-
-    // Bass — deep triangle wave
-    const bassFreq = MENU_BASS[idx];
-    if (bassFreq) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = bassFreq;
-      g.gain.value = 0.9;
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.7);
-      osc.connect(g);
-      g.connect(menuGainNode!);
-      osc.start(c.currentTime);
-      osc.stop(c.currentTime + beatMs / 1000);
-    }
-
-    // Lead — punchy square wave
-    const leadFreq = MENU_LEAD[idx];
-    if (leadFreq) {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      osc.type = "square";
-      osc.frequency.value = leadFreq;
-      g.gain.value = 0.35;
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.5);
-      osc.connect(g);
-      g.connect(menuGainNode!);
-      osc.start(c.currentTime);
-      osc.stop(c.currentTime + beatMs / 1000);
-    }
-
-    // Kick drum — short noise burst
-    if (MENU_KICK[idx]) {
-      const bufferSize = c.sampleRate * 0.05;
-      const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
-      const source = c.createBufferSource();
-      source.buffer = buffer;
-      const g = c.createGain();
-      g.gain.value = 0.6;
-      source.connect(g);
-      g.connect(menuGainNode!);
-      source.start(c.currentTime);
-    }
-
-    beat++;
-  }, beatMs);
-}
-
-export function stopMenuMusic() {
-  if (menuInterval) {
-    clearInterval(menuInterval);
-    menuInterval = null;
-  }
-  if (menuGainNode) {
-    menuGainNode.disconnect();
-    menuGainNode = null;
-  }
-}
-
 // ─── CLEANUP ─────────────────────────────────────────────────────────────────
 
 export function stopAll() {
   stopEngine();
-  stopMusic();
-  stopSelectMusic();
-  stopMenuMusic();
+  stopMusicPlayer();
 }
