@@ -48,7 +48,7 @@ async function describeCarForPixelArt(
 
 export function buildRearPrompt(carDesc: string, color: string, visualDetails?: string): string {
   const detail = visualDetails ? ` ${visualDetails}` : "";
-  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Solid bright magenta (#FF00FF) background. All windows must be dark tinted black — not see-through. No shadow, no ground, no floor — the car floats on the flat magenta background. Car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
+  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
 }
 
 export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
@@ -72,13 +72,11 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     : null;
   const detail = visualDetails ? ` ${visualDetails}` : "";
 
-  // Generate all three images in parallel
+  // Generate side + rear with OpenAI transparent background, dashboard with Imagen
   const [sideBuffer, dashBuffer, rearBuffer] = await Promise.all([
-    generateImage(
+    generateTransparentImage(
       `8-bit retro pixel art side profile view of a ${carDesc} in ${color}.${detail} ` +
       `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
-      `Solid bright magenta (#FF00FF) background. All windows must be dark tinted black — not see-through. ` +
-      `No shadow, no ground, no floor — the car floats on the flat magenta background. ` +
       `The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
@@ -87,13 +85,7 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
       `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`
     ),
-    generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
-  ]);
-
-  // Remove green chroma key background from side and rear views
-  const [cleanSide, cleanRear] = await Promise.all([
-    removeChromaKey(sideBuffer),
-    removeChromaKey(rearBuffer),
+    generateTransparentImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
   ]);
 
   // Upload all three to storage
@@ -107,9 +99,9 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
   const rearFileName = `rear-${registrationId}.png`;
 
   await Promise.all([
-    supabase.storage.from("pixel-art").upload(sideFileName, cleanSide, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(sideFileName, sideBuffer, { contentType: "image/png", upsert: true }),
     supabase.storage.from("pixel-art").upload(dashFileName, dashBuffer, { contentType: "image/png", upsert: true }),
-    supabase.storage.from("pixel-art").upload(rearFileName, cleanRear, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(rearFileName, rearBuffer, { contentType: "image/png", upsert: true }),
   ]);
 
   const sideUrl = `${supabase.storage.from("pixel-art").getPublicUrl(sideFileName).data.publicUrl}?v=${Date.now()}`;
@@ -151,6 +143,29 @@ export async function removeChromaKey(input: Buffer): Promise<Buffer> {
   return sharp(data, { raw: { width, height, channels: 4 } })
     .png()
     .toBuffer();
+}
+
+/**
+ * Generate an image via OpenAI with native PNG transparency.
+ * Used for race game car assets (side + rear views) where we need
+ * a clean transparent background without chroma key hacks.
+ */
+export async function generateTransparentImage(prompt: string): Promise<Buffer> {
+  const OpenAI = (await import("openai")).default;
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const response = await openai.images.generate({
+    model: "gpt-image-1",
+    prompt,
+    n: 1,
+    size: "1536x1024",
+    quality: "medium",
+    background: "transparent",
+    output_format: "png",
+  });
+
+  const imageData = response.data?.[0];
+  if (!imageData?.b64_json) throw new Error("No image generated");
+  return Buffer.from(imageData.b64_json, "base64");
 }
 
 export async function generateImage(prompt: string): Promise<Buffer> {
