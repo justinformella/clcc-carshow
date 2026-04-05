@@ -1277,7 +1277,18 @@
       var loaded = 0;
       function onLoad() {
         loaded++;
-        if (loaded >= totalToLoad) showCarSelect();
+        if (loaded >= totalToLoad) {
+          // Check for ?car=ID in URL to skip car select
+          var urlCarId = new URLSearchParams(window.location.search).get('car');
+          if (urlCarId) {
+            var matched = carShowData.find(function(c) { return c.id === urlCarId; });
+            if (matched) {
+              autoSelectCar(matched);
+              return;
+            }
+          }
+          showCarSelect();
+        }
       }
 
       // Load car pixelRear images
@@ -1319,6 +1330,25 @@
           });
         }
       });
+
+    // Auto-select a car (from URL param) — skip the car select overlay
+    function autoSelectCar(car) {
+      playerCarData = car;
+      playerCarImage = carShowImages[car.id] || null;
+
+      if (car.pixelDash) {
+        var dashImg = new Image();
+        dashImg.crossOrigin = 'anonymous';
+        dashImg.onload = function() {
+          playerDashImage = dashImg;
+          startGame();
+        };
+        dashImg.onerror = function() { startGame(); };
+        dashImg.src = car.pixelDash;
+      } else {
+        startGame();
+      }
+    }
 
     function showCarSelect() {
       // Create overlay
