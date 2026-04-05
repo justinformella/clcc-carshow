@@ -58,7 +58,7 @@ export default function CarSelect({ cars, onSelect, generating, onGenerateAll }:
             >
               <div style={{ width: "100%", aspectRatio: "16/9", background: "#000", overflow: "hidden", lineHeight: 0 }}>
                 {car.pixelArt ? (
-                  <img src={car.pixelArt} alt={car.name} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center", imageRendering: "pixelated" }} />
+                  <img src={car.pixelArt} alt={car.name} style={{ display: "block", width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", imageRendering: "pixelated" }} />
                 ) : car.aiImage ? (
                   <img src={car.aiImage} alt={car.name} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }} />
                 ) : (
