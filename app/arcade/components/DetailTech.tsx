@@ -565,9 +565,13 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   return (
     <div style={pageStyle}>
       <div style={{ textAlign: "center", marginBottom: "0.25rem" }}>
-        <p style={{ fontFamily: FONT, fontSize: "0.5rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.2rem" }}>PRESENTED BY</p>
-        <a href="https://www.thedetailtech.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-          <h1 style={{ fontFamily: FONT, fontSize: "clamp(0.9rem, 2.5vw, 1.3rem)", color: C.gold, margin: "0.25rem 0" }}>THE DETAIL TECH</h1>
+        <a href="https://www.thedetailtech.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "inline-block" }}>
+          <img
+            src="https://vuwiucgxxaoygsyxqodk.supabase.co/storage/v1/object/public/pixel-art/8bit/sponsor-9c0e0de3-ab93-4298-a81e-e123360ee911.png"
+            alt="The Detail Tech"
+            style={{ maxWidth: "180px", height: "auto", imageRendering: "pixelated", display: "block", margin: "0 auto 0.3rem" }}
+          />
+          <p style={{ fontFamily: FONT, fontSize: "clamp(0.7rem, 2vw, 1rem)", color: "#7EC8E3", margin: "0" }}>THE DETAIL TECH</p>
         </a>
       </div>
 
