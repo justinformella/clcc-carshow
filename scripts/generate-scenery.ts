@@ -582,7 +582,7 @@ async function main() {
     failed.forEach((f) => console.log(`   - ${f.key}: ${f.error}`));
   }
   console.log(`\nAssets stored at: pixel-art/8bit/scenery/`);
-  console.log(`Refresh the racer at /arcade/racer-classic/v5.carshow.html to see them.\n`);
+  console.log(`Refresh the racer at /games/racer-classic/v5.carshow.html to see them.\n`);
 }
 
 main().catch((err) => {
