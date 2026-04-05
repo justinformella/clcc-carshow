@@ -112,11 +112,10 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       `Black background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
-      `8-bit retro pixel art wide panoramic interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
-      `Show the full width of the dashboard including both A-pillars, steering wheel centered, instrument cluster with speedometer and tachometer. ` +
+      `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
+      `Show the steering wheel, instrument cluster with speedometer and tachometer, and windshield. ` +
       `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
-      `Detailed pixel art with authentic retro video game aesthetic. Wide cinematic view from behind the steering wheel looking forward.`,
-      "16:9"
+      `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`
     ),
     generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
   ]);

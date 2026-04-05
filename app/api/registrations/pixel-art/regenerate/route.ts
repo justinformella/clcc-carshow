@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
     } else if (type === "rear") {
       prompt = buildRearPrompt(carDesc, color);
     } else {
-      prompt = `8-bit retro pixel art wide panoramic interior dashboard view from the driver seat of a ${carDesc}. ` +
-        `Show the full width of the dashboard including both A-pillars, steering wheel centered, instrument cluster with speedometer and tachometer. ` +
+      prompt = `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}. ` +
+        `Show the steering wheel, instrument cluster with speedometer and tachometer, and windshield. ` +
         `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
-        `Detailed pixel art with authentic retro video game aesthetic. Wide cinematic view from behind the steering wheel looking forward.`;
+        `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`;
     }
 
     const aspectRatio = type === "dashboard" ? "16:9" : "16:9";
