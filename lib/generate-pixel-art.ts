@@ -1,5 +1,4 @@
 import { createServerClient } from "@/lib/supabase-server";
-import { spawn } from "child_process";
 
 /**
  * Ask Gemini Flash to describe the car so pixel art prompts are accurate
@@ -88,11 +87,8 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
   ]);
 
-  // Remove backgrounds from side and rear views using rembg
-  const [sideBuffer, rearBuffer] = await Promise.all([
-    removeBackground(sideRaw),
-    removeBackground(rearRaw),
-  ]);
+  const sideBuffer = sideRaw;
+  const rearBuffer = rearRaw;
 
   // Upload all three to storage
   await supabase.storage.createBucket("pixel-art", {
@@ -120,42 +116,6 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     .eq("id", registrationId);
 
   return { sideUrl, dashUrl, rearUrl };
-}
-
-/**
- * Remove background from an image using rembg (Python ML model).
- * Calls rembg as a Python module directly, bypassing the CLI which
- * has Gradio dependency issues on Python 3.9.
- */
-export async function removeBackground(input: Buffer): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const script = `
-import sys
-from rembg.bg import remove
-from PIL import Image
-import io
-
-input_data = sys.stdin.buffer.read()
-input_image = Image.open(io.BytesIO(input_data))
-output_image = remove(input_image)
-buf = io.BytesIO()
-output_image.save(buf, format="PNG")
-sys.stdout.buffer.write(buf.getvalue())
-`;
-    const proc = spawn("python3", ["-c", script]);
-    const chunks: Buffer[] = [];
-
-    proc.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-    proc.stderr.on("data", () => {}); // suppress model loading noise
-    proc.on("close", (code) => {
-      if (code !== 0) return reject(new Error(`rembg python exited with code ${code}`));
-      resolve(Buffer.concat(chunks));
-    });
-    proc.on("error", reject);
-
-    proc.stdin.write(input);
-    proc.stdin.end();
-  });
 }
 
 export async function generateImage(prompt: string): Promise<Buffer> {

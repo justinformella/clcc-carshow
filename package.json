@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "strip-backgrounds": "python3 scripts/strip-backgrounds.py"
   },
   "dependencies": {
     "@nivo/bar": "^0.99.0",
