@@ -855,75 +855,81 @@
       if (hasCLScenery) {
 
         // --- Welcome sign near start ---
-        addCL(15, 'welcome-sign', -1.8, SPRITES.BILLBOARD01);
+        addCL(15, 'welcome-sign', -2.2, SPRITES.BILLBOARD01);
 
-        // --- Street lamps / utility poles along the road ---
-        for (n = 5; n < segments.length; n += 8) {
-          var lampKey = (n % 24 < 12) ? 'street-lamp' : 'lamp-flowers';
-          addCL(n, lampKey, 1.1, SPRITES.COLUMN);
+        // --- Street lamps along the road (one side only, spaced out) ---
+        for (n = 10; n < segments.length; n += 20) {
+          addCL(n, 'street-lamp', 1.15, SPRITES.COLUMN);
         }
 
-        // --- Trees — mix of oaks, maples, pines ---
+        // --- Trees — spaced out, pushed far from road ---
         var treeKeys = ['oak-tree', 'maple-tree', 'maple-fall', 'pine-tree'];
-        for (n = 3; n < segments.length; n += 3) {
+        for (n = 5; n < segments.length; n += 8) {
           var tKey = treeKeys[Math.floor(Math.random() * treeKeys.length)];
           var tSide = Util.randomChoice([1, -1]);
-          addCL(n, tKey, tSide * (2 + Math.random() * 4), Util.randomChoice(SPRITES.PLANTS));
+          addCL(n, tKey, tSide * (3 + Math.random() * 4), Util.randomChoice(SPRITES.PLANTS));
         }
 
-        // --- Downtown section (segments 250–600): brick buildings, Raue Center ---
-        addCL(300, 'raue-center', -1.5, SPRITES.BILLBOARD08);
-        for (n = 250; n < 600; n += 25) {
-          var bldgKey = (n % 50 < 25) ? 'brick-storefront' : 'painted-storefront';
-          var bSide = (n % 50 < 25) ? -1.6 : 1.6;
+        // --- Downtown section (segments 250–500): brick buildings, Raue Center ---
+        addCL(300, 'raue-center', -2.2, SPRITES.BILLBOARD08);
+        for (n = 250; n < 500; n += 50) {
+          var bldgKey = (n % 100 < 50) ? 'brick-storefront' : 'painted-storefront';
+          var bSide = (n % 100 < 50) ? -2.2 : 2.2;
           addCL(n, bldgKey, bSide, SPRITES.BILLBOARD03);
-          // Planters and benches in front of buildings
-          if (n % 50 === 0) addCL(n + 2, 'planter', bSide * 0.8, null);
-          if (n % 75 === 0) addCL(n + 1, 'park-bench', -bSide * 1.3, null);
+        }
+        // Lamp with flowers in downtown only
+        for (n = 250; n < 500; n += 15) {
+          addCL(n, 'lamp-flowers', -1.15, null);
         }
 
         // --- Railroad crossing in downtown ---
-        addCL(400, 'rr-crossing', -1.0, SPRITES.COLUMN);
-        addCL(400, 'rr-crossing', 1.0, SPRITES.COLUMN);
-        if (Math.random() > 0.5) addCL(402, 'metra-train', 2.5, null); // sometimes a train!
+        addCL(420, 'rr-crossing', -1.2, SPRITES.COLUMN);
+        addCL(420, 'rr-crossing', 1.2, SPRITES.COLUMN);
 
         // --- Route 14 commercial section (segments 600–1200) ---
-        for (n = 600; n < 1200; n += 60) {
-          var commKey = Util.randomChoice(['strip-mall', 'gas-station', 'fast-food']);
-          var cSide = (n % 120 < 60) ? -2.0 : 2.0;
+        // Branded stores cycle through, well spaced, alternating sides
+        var commercialKeys = ['best-buy', 'taco-bell', 'chick-fil-a', 'exceed-flooring',
+                              'jewel-osco', 'target', 'strip-mall', 'gas-station', 'fast-food'];
+        var commIdx = 0;
+        for (n = 600; n < 1200; n += 80) {
+          var commKey = commercialKeys[commIdx % commercialKeys.length];
+          var cSide = (commIdx % 2 === 0) ? -2.5 : 2.5;
           addCL(n, commKey, cSide, SPRITES.BILLBOARD06);
-          addCL(n + 5, 'traffic-light', cSide * 0.5, null);
+          if (n % 160 === 0) addCL(n + 10, 'traffic-light', cSide * 0.45, null);
+          commIdx++;
         }
 
-        // --- Lakefront section (segments 1200–1600) ---
-        for (n = 1200; n < 1600; n += 40) {
-          addCL(n, 'lake-water', 2.5 + Math.random(), null);
-          if (n % 80 === 0) addCL(n + 3, 'park-bench', 1.4, null);
-        }
-        addCL(1250, 'boat-dock', 2.0, null);
-        addCL(1300, 'beach-section', 2.2, null);
-        addCL(1400, 'dole-mansion', -2.0, SPRITES.BILLBOARD09);
-        addCL(1450, 'metra-station', -2.2, null);
+        // --- Lakefront section (segments 1200–1500) — sparse, scenic ---
+        addCL(1220, 'lake-water', 3.5, null);
+        addCL(1300, 'lake-water', 4.0, null);
+        addCL(1400, 'lake-water', 3.5, null);
+        addCL(1260, 'boat-dock', 2.5, null);
+        addCL(1340, 'beach-section', 3.0, null);
+        addCL(1250, 'park-bench', 1.6, null);
+        addCL(1350, 'park-bench', 1.6, null);
+        addCL(1420, 'dole-mansion', -2.8, SPRITES.BILLBOARD09);
+        addCL(1480, 'metra-station', -2.8, null);
 
-        // --- Parks section (1600+): prairie grass, picnic pavilions, dense trees ---
-        for (n = 1600; n < segments.length - 50; n += 15) {
-          addCL(n, 'prairie-grass', Util.randomChoice([1, -1]) * (1.5 + Math.random() * 3), null);
-          if (n % 60 === 0) addCL(n, 'picnic-pavilion', Util.randomChoice([-2.0, 2.0]), null);
+        // --- Parks section (1600+): prairie grass, picnic pavilions, sparse ---
+        for (n = 1600; n < segments.length - 50; n += 40) {
+          addCL(n, 'prairie-grass', Util.randomChoice([1, -1]) * (2.5 + Math.random() * 3), null);
+        }
+        addCL(1650, 'picnic-pavilion', -2.5, null);
+        addCL(1800, 'picnic-pavilion', 2.5, null);
+
+        // --- Fences along residential stretches (before downtown) ---
+        for (n = 100; n < 240; n += 30) {
+          addCL(n, 'picket-fence', Util.randomChoice([-1.6, 1.6]), null);
         }
 
-        // --- Fences along residential stretches ---
-        for (n = 100; n < 250; n += 20) {
-          addCL(n, 'picket-fence', Util.randomChoice([-1.3, 1.3]), null);
-        }
-
-        // --- Bushes scattered throughout ---
-        for (n = 50; n < segments.length; n += 12) {
-          addCL(n, 'bush-midwest', Util.randomChoice([1, -1]) * (1.5 + Math.random() * 2), SPRITES.BUSH1);
+        // --- Bushes — sparse, far from road ---
+        for (n = 50; n < segments.length; n += 25) {
+          addCL(n, 'bush-midwest', Util.randomChoice([1, -1]) * (2.5 + Math.random() * 3), SPRITES.BUSH1);
         }
 
         // --- Utility poles on the opposite side of lamps ---
-        for (n = 20; n < segments.length; n += 30) {
-          addCL(n, 'utility-pole', -1.1, null);
+        for (n = 20; n < segments.length; n += 50) {
+          addCL(n, 'utility-pole', -1.15, null);
         }
 
       } else {
@@ -1010,50 +1016,59 @@
     var clSceneryLoaded = false;
 
     // Scenery manifest: key → { path, w, h (reference dimensions for scaling), category }
+    // NOTE: w/h are DISPLAY reference sizes, not image pixel sizes.
+    // These feed into the sprite scaling formula. Keep them small enough
+    // that sprites don't dominate the screen. Original game sprites were ~150-385px wide.
     var CL_SCENERY_MANIFEST = {
-      // Trees (Illinois species)
-      'oak-tree':        { path: '8bit/scenery/oak-tree.png',        w: 360, h: 400, category: 'tree' },
-      'maple-tree':      { path: '8bit/scenery/maple-tree.png',      w: 340, h: 380, category: 'tree' },
-      'maple-fall':      { path: '8bit/scenery/maple-fall.png',      w: 340, h: 380, category: 'tree' },
-      'pine-tree':       { path: '8bit/scenery/pine-tree.png',       w: 200, h: 500, category: 'tree' },
-      'bush-midwest':    { path: '8bit/scenery/bush-midwest.png',    w: 200, h: 140, category: 'plant' },
+      // Trees (Illinois species) — keep modest, they repeat a lot
+      'oak-tree':        { path: '8bit/scenery/oak-tree.png',        w: 180, h: 220, category: 'tree' },
+      'maple-tree':      { path: '8bit/scenery/maple-tree.png',      w: 170, h: 200, category: 'tree' },
+      'maple-fall':      { path: '8bit/scenery/maple-fall.png',      w: 170, h: 200, category: 'tree' },
+      'pine-tree':       { path: '8bit/scenery/pine-tree.png',       w: 120, h: 280, category: 'tree' },
+      'bush-midwest':    { path: '8bit/scenery/bush-midwest.png',    w: 100, h: 70,  category: 'plant' },
 
-      // Downtown buildings
-      'raue-center':     { path: '8bit/scenery/raue-center.png',     w: 300, h: 400, category: 'building' },
-      'brick-storefront':{ path: '8bit/scenery/brick-storefront.png',w: 280, h: 300, category: 'building' },
-      'painted-storefront':{ path: '8bit/scenery/painted-storefront.png', w: 260, h: 280, category: 'building' },
-      'dole-mansion':    { path: '8bit/scenery/dole-mansion.png',    w: 400, h: 350, category: 'building' },
+      // Downtown buildings — medium sized
+      'raue-center':     { path: '8bit/scenery/raue-center.png',     w: 180, h: 240, category: 'building' },
+      'brick-storefront':{ path: '8bit/scenery/brick-storefront.png',w: 160, h: 180, category: 'building' },
+      'painted-storefront':{ path: '8bit/scenery/painted-storefront.png', w: 150, h: 170, category: 'building' },
+      'dole-mansion':    { path: '8bit/scenery/dole-mansion.png',    w: 220, h: 200, category: 'building' },
 
-      // Commercial (Route 14)
-      'strip-mall':      { path: '8bit/scenery/strip-mall.png',      w: 500, h: 200, category: 'commercial' },
-      'gas-station':     { path: '8bit/scenery/gas-station.png',     w: 300, h: 200, category: 'commercial' },
-      'fast-food':       { path: '8bit/scenery/fast-food.png',       w: 250, h: 200, category: 'commercial' },
+      // Commercial (Route 14) — branded stores
+      'strip-mall':      { path: '8bit/scenery/strip-mall.png',      w: 280, h: 120, category: 'commercial' },
+      'gas-station':     { path: '8bit/scenery/gas-station.png',     w: 180, h: 130, category: 'commercial' },
+      'fast-food':       { path: '8bit/scenery/fast-food.png',       w: 160, h: 130, category: 'commercial' },
+      'best-buy':        { path: '8bit/scenery/best-buy.png',        w: 250, h: 130, category: 'commercial' },
+      'taco-bell':       { path: '8bit/scenery/taco-bell.png',       w: 170, h: 130, category: 'commercial' },
+      'chick-fil-a':     { path: '8bit/scenery/chick-fil-a.png',     w: 180, h: 130, category: 'commercial' },
+      'exceed-flooring': { path: '8bit/scenery/exceed-flooring.png',  w: 220, h: 120, category: 'commercial' },
+      'jewel-osco':      { path: '8bit/scenery/jewel-osco.png',      w: 260, h: 130, category: 'commercial' },
+      'target':          { path: '8bit/scenery/target.png',           w: 250, h: 140, category: 'commercial' },
 
-      // Street furniture
-      'street-lamp':     { path: '8bit/scenery/street-lamp.png',     w: 40, h: 320, category: 'furniture' },
-      'lamp-flowers':    { path: '8bit/scenery/lamp-flowers.png',    w: 60, h: 340, category: 'furniture' },
-      'park-bench':      { path: '8bit/scenery/park-bench.png',      w: 150, h: 90, category: 'furniture' },
-      'planter':         { path: '8bit/scenery/planter.png',         w: 80, h: 100, category: 'furniture' },
-      'picnic-pavilion': { path: '8bit/scenery/picnic-pavilion.png', w: 300, h: 200, category: 'furniture' },
+      // Street furniture — small
+      'street-lamp':     { path: '8bit/scenery/street-lamp.png',     w: 20, h: 160, category: 'furniture' },
+      'lamp-flowers':    { path: '8bit/scenery/lamp-flowers.png',    w: 30, h: 170, category: 'furniture' },
+      'park-bench':      { path: '8bit/scenery/park-bench.png',      w: 80, h: 50,  category: 'furniture' },
+      'planter':         { path: '8bit/scenery/planter.png',         w: 40, h: 50,  category: 'furniture' },
+      'picnic-pavilion': { path: '8bit/scenery/picnic-pavilion.png', w: 180, h: 120, category: 'furniture' },
 
-      // Signs
-      'welcome-sign':    { path: '8bit/scenery/welcome-sign.png',    w: 350, h: 200, category: 'sign' },
-      'rr-crossing':     { path: '8bit/scenery/rr-crossing.png',     w: 60, h: 300, category: 'sign' },
-      'traffic-light':   { path: '8bit/scenery/traffic-light.png',   w: 40, h: 200, category: 'sign' },
+      // Signs — small
+      'welcome-sign':    { path: '8bit/scenery/welcome-sign.png',    w: 200, h: 120, category: 'sign' },
+      'rr-crossing':     { path: '8bit/scenery/rr-crossing.png',     w: 30, h: 150, category: 'sign' },
+      'traffic-light':   { path: '8bit/scenery/traffic-light.png',   w: 20, h: 100, category: 'sign' },
 
-      // Lakefront
-      'lake-water':      { path: '8bit/scenery/lake-water.png',      w: 500, h: 200, category: 'lake' },
-      'beach-section':   { path: '8bit/scenery/beach-section.png',   w: 400, h: 150, category: 'lake' },
-      'boat-dock':       { path: '8bit/scenery/boat-dock.png',       w: 180, h: 140, category: 'lake' },
+      // Lakefront — moderate
+      'lake-water':      { path: '8bit/scenery/lake-water.png',      w: 250, h: 100, category: 'lake' },
+      'beach-section':   { path: '8bit/scenery/beach-section.png',   w: 200, h: 80,  category: 'lake' },
+      'boat-dock':       { path: '8bit/scenery/boat-dock.png',       w: 100, h: 80,  category: 'lake' },
 
       // Transit
-      'metra-train':     { path: '8bit/scenery/metra-train.png',     w: 400, h: 200, category: 'transit' },
-      'metra-station':   { path: '8bit/scenery/metra-station.png',   w: 350, h: 180, category: 'transit' },
+      'metra-train':     { path: '8bit/scenery/metra-train.png',     w: 250, h: 120, category: 'transit' },
+      'metra-station':   { path: '8bit/scenery/metra-station.png',   w: 200, h: 100, category: 'transit' },
 
       // Misc
-      'utility-pole':    { path: '8bit/scenery/utility-pole.png',    w: 40, h: 400, category: 'pole' },
-      'picket-fence':    { path: '8bit/scenery/picket-fence.png',    w: 250, h: 100, category: 'fence' },
-      'prairie-grass':   { path: '8bit/scenery/prairie-grass.png',   w: 200, h: 120, category: 'plant' },
+      'utility-pole':    { path: '8bit/scenery/utility-pole.png',    w: 20, h: 200, category: 'pole' },
+      'picket-fence':    { path: '8bit/scenery/picket-fence.png',    w: 140, h: 60,  category: 'fence' },
+      'prairie-grass':   { path: '8bit/scenery/prairie-grass.png',   w: 100, h: 60,  category: 'plant' },
     };
 
     // Fetch car data AND sponsor data in parallel, then show car select
