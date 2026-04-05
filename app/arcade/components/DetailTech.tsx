@@ -303,7 +303,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       }
       return { carX: 0, carY: 0, carW: W, carH: H };
     }
-    const groundY = H * 0.92;
+    const groundY = H * 1.05;
     const carCX = W * 0.5;
     if (img?.complete && img.naturalWidth > 0) {
       // Fixed height so all cars sit at same level regardless of aspect ratio
@@ -331,7 +331,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     // Calculate car bounds for grime overlay
     const carImg = detailCarImgRef.current;
     const W = canvas.width, H = canvas.height;
-    const groundY = H * 0.92;
+    const groundY = H * 1.05;
     let carBounds: { x: number; y: number; w: number; h: number } | undefined;
     if (carImg?.complete && carImg.naturalWidth > 0) {
       const carH = H * 0.55;
@@ -526,7 +526,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       if (bayImg.complete && bayImg.naturalWidth > 0) {
         ctx.globalAlpha = 0.8; ctx.drawImage(bayImg, 0, 0, W, H); ctx.globalAlpha = 1;
       } else { bayImg.onload = () => requestAnimationFrame(drawIdle); return; }
-      const groundY = H * 0.92, carCX = W * 0.5;
+      const groundY = H * 1.05, carCX = W * 0.5;
       if (carImg.complete && carImg.naturalWidth > 0) {
         const carH = H * 0.55;
         const carW = carH * (carImg.width / carImg.height);
@@ -567,7 +567,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     if (!carImg?.complete) return;
     const carH = H * 0.55;
     const carW = carH * (carImg.width / carImg.height);
-    const groundY = H * 0.92;
+    const groundY = H * 1.05;
     const carX = W * 0.5 - carW / 2, carY = groundY - carH;
 
     // Sparkle particles for the reveal
