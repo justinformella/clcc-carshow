@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase-server";
+import { generateImage, buildRearPrompt, removeBackground } from "@/lib/generate-pixel-art";
+
+export async function POST(request: NextRequest) {
+  try {
+    const { registration_id, type } = await request.json();
+
+    if (!registration_id || !["side", "dashboard", "rear"].includes(type)) {
+      return NextResponse.json({ error: "Provide registration_id and type (side|dashboard|rear)" }, { status: 400 });
+    }
+
+    const supabase = createServerClient();
+    const { data: reg, error } = await supabase
+      .from("registrations")
+      .select("vehicle_year, vehicle_make, vehicle_model, vehicle_color")
+      .eq("id", registration_id)
+      .single();
+
+    if (error || !reg) {
+      return NextResponse.json({ error: "Registration not found" }, { status: 404 });
+    }
+
+    const carDesc = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
+    const color = reg.vehicle_color || "silver";
+
+    let prompt: string;
+    if (type === "side") {
+      prompt = `8-bit retro pixel art side profile view of a ${carDesc} in ${color}. ` +
+        `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
+        `Black background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
+    } else if (type === "rear") {
+      prompt = buildRearPrompt(carDesc, color);
+    } else {
+      prompt = `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}. ` +
+        `Show the steering wheel, instrument cluster with speedometer and tachometer, and windshield. ` +
+        `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
+        `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`;
+    }
+
+    const rawBuffer = await generateImage(prompt);
+    const ts = Date.now();
+
+    const origName = `${type}-${registration_id}.png`;
+    await supabase.storage.from("pixel-art").upload(origName, rawBuffer, { contentType: "image/png", upsert: true });
+    const origUrl = `${supabase.storage.from("pixel-art").getPublicUrl(origName).data.publicUrl}?v=${ts}`;
+
+    let mainUrl = origUrl;
+    if (type === "side" || type === "rear") {
+      const cleanBuffer = await removeBackground(rawBuffer);
+      const transName = `${type}-${registration_id}-transparent.png`;
+      await supabase.storage.from("pixel-art").upload(transName, cleanBuffer, { contentType: "image/png", upsert: true });
+      mainUrl = `${supabase.storage.from("pixel-art").getPublicUrl(transName).data.publicUrl}?v=${ts}`;
+    }
+
+    const mainCol = type === "side" ? "pixel_art_url" : type === "rear" ? "pixel_rear_url" : "pixel_dashboard_url";
+    const origCol = type === "side" ? "pixel_art_original_url" : type === "rear" ? "pixel_rear_original_url" : "pixel_dashboard_original_url";
+
+    await supabase
+      .from("registrations")
+      .update({ [mainCol]: mainUrl, [origCol]: origUrl })
+      .eq("id", registration_id);
+
+    return NextResponse.json({ url: mainUrl, originalUrl: origUrl });
+  } catch (err) {
+    console.error("Regenerate error:", err);
+    return NextResponse.json({ error: "Failed to regenerate" }, { status: 500 });
+  }
+}
