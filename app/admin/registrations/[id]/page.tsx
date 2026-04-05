@@ -936,11 +936,11 @@ export default function RegistrationDetailPage() {
 
                 {/* Pixel Art Images */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
-                  {[
-                    { label: "Side", url: r.pixel_art_url },
-                    { label: "Dashboard", url: r.pixel_dashboard_url },
-                    { label: "Rear", url: r.pixel_rear_url },
-                  ].map(({ label, url }) => (
+                  {([
+                    { label: "Side", type: "side" as const, url: r.pixel_art_url, origUrl: r.pixel_art_original_url, hasBgStrip: true },
+                    { label: "Dashboard", type: "dashboard" as const, url: r.pixel_dashboard_url, origUrl: r.pixel_dashboard_original_url, hasBgStrip: false },
+                    { label: "Rear", type: "rear" as const, url: r.pixel_rear_url, origUrl: r.pixel_rear_original_url, hasBgStrip: true },
+                  ]).map(({ label, type, url, origUrl, hasBgStrip }) => (
                     <div key={label}>
                       <div
                         onClick={() => url && setLightboxUrl(url)}
@@ -962,9 +962,10 @@ export default function RegistrationDetailPage() {
                           <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#555", fontSize: "0.75rem" }}>Not generated</div>
                         )}
                       </div>
-                      <p style={{ fontSize: "0.75rem", color: url ? "var(--charcoal)" : "var(--text-light)", fontWeight: 500, textAlign: "center" }}>
+                      <p style={{ fontSize: "0.75rem", color: url ? "var(--charcoal)" : "var(--text-light)", fontWeight: 500, textAlign: "center", marginBottom: "0.4rem" }}>
                         {label}
                       </p>
+                      <PixelArtActions registrationId={r.id} type={type} hasBgStrip={hasBgStrip} hasOriginal={!!origUrl} />
                     </div>
                   ))}
                 </div>
@@ -1678,6 +1679,86 @@ export default function RegistrationDetailPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
+  registrationId: string;
+  type: "side" | "dashboard" | "rear";
+  hasBgStrip: boolean;
+  hasOriginal: boolean;
+}) {
+  const [loading, setLoading] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const btnStyle: React.CSSProperties = {
+    padding: "0.2rem 0.5rem",
+    fontSize: "0.65rem",
+    fontWeight: 600,
+    textTransform: "uppercase",
+    background: "var(--cream)",
+    color: "var(--charcoal)",
+    border: "1px solid #ddd",
+    cursor: "pointer",
+    letterSpacing: "0.04em",
+  };
+
+  const handleRegen = async () => {
+    setLoading("regen");
+    try {
+      const res = await fetch("/api/registrations/pixel-art/regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration_id: registrationId, type }),
+      });
+      if (res.ok) window.location.reload();
+      else alert("Regeneration failed");
+    } finally { setLoading(null); }
+  };
+
+  const handleStrip = async () => {
+    setLoading("strip");
+    try {
+      const res = await fetch("/api/registrations/pixel-art/strip-bg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration_id: registrationId, type }),
+      });
+      if (res.ok) window.location.reload();
+      else alert("Background removal failed");
+    } finally { setLoading(null); }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading("upload");
+    try {
+      const fd = new FormData();
+      fd.append("registration_id", registrationId);
+      fd.append("type", type);
+      fd.append("file", file);
+      const res = await fetch("/api/registrations/pixel-art/upload", { method: "POST", body: fd });
+      if (res.ok) window.location.reload();
+      else alert("Upload failed");
+    } finally { setLoading(null); }
+  };
+
+  return (
+    <div style={{ display: "flex", gap: "0.3rem", justifyContent: "center", flexWrap: "wrap" }}>
+      <button onClick={handleRegen} disabled={!!loading} style={{ ...btnStyle, opacity: loading ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
+        {loading === "regen" ? "..." : "Regen"}
+      </button>
+      {hasBgStrip && hasOriginal && (
+        <button onClick={handleStrip} disabled={!!loading} style={{ ...btnStyle, opacity: loading ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
+          {loading === "strip" ? "..." : "Strip BG"}
+        </button>
+      )}
+      <button onClick={() => fileRef.current?.click()} disabled={!!loading} style={{ ...btnStyle, opacity: loading ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
+        {loading === "upload" ? "..." : "Upload"}
+      </button>
+      <input ref={fileRef} type="file" accept="image/png" style={{ display: "none" }} onChange={handleUpload} />
     </div>
   );
 }
