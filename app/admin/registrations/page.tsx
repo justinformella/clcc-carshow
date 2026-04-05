@@ -638,19 +638,26 @@ export default function RegistrationsPage() {
             >
               {/* Image */}
               {(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url) ? (
-                <img
-                  src={(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url)!}
-                  alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
-                  style={{
-                    width: "100%",
-                    aspectRatio: "16/9",
-                    objectFit: "cover",
-                    display: "block",
-                    imageRendering: show8bit ? "pixelated" as const : "auto",
-                    background: show8bit ? "#0d0d1a" : "transparent",
-                    transform: show8bit && reg.pixel_art_flipped ? "scaleX(-1)" : "none",
-                  }}
-                />
+                <div style={{ position: "relative" }}>
+                  <img
+                    src={(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url)!}
+                    alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
+                    style={{
+                      width: "100%",
+                      aspectRatio: "16/9",
+                      objectFit: "cover",
+                      display: "block",
+                      imageRendering: show8bit ? "pixelated" as const : "auto",
+                      background: show8bit ? "#0d0d1a" : "transparent",
+                      transform: show8bit && reg.pixel_art_flipped ? "scaleX(-1)" : "none",
+                    }}
+                  />
+                  {show8bit && (
+                    <span style={{ position: "absolute", bottom: "4px", right: "6px", fontSize: "0.6rem", color: "rgba(255,255,255,0.7)", pointerEvents: "none" }}>
+                      {reg.pixel_art_flipped ? "\u2190" : "\u2192"}
+                    </span>
+                  )}
+                </div>
               ) : (
                 <div
                   style={{
