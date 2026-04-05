@@ -676,24 +676,28 @@
           spriteY     = segment.p1.screen.y;
           if (sprite.dynamicImage) {
             // Draw dynamic image (sponsor billboard or storefront)
+            // Use the projected road width at this segment to size the sprite
+            // proportionally — this keeps it grounded at all distances
             var bImgW = sprite.dynamicImage.naturalWidth || 300;
             var bImgH = sprite.dynamicImage.naturalHeight || 200;
-            var bRefW = sprite.source.w;
-            var bRefH = Math.round(bRefW * (bImgH / bImgW));
-            var bDestW = (bRefW * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
-            var bDestH = (bRefH * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
-            // Position: use Render.sprite's offset conventions but cap height
-            // to prevent buildings from becoming absurdly tall when close to camera
-            var bOffX = (sprite.offset < 0 ? -1 : 0);
-            // Cap height so buildings never exceed ~40% of viewport height
+            var bImgAspect = bImgH / bImgW;
+
+            // Width = fraction of the road width at this distance (consistent scaling)
+            var roadW = segment.p1.screen.w; // projected half-road-width in pixels
+            var bDestW = roadW * (sprite.source.w / 300); // scale relative to reference 300
+            var bDestH = bDestW * bImgAspect;
+
+            // Cap height at 40% of viewport
             var maxH = height * 0.4;
             if (bDestH > maxH) {
-              var hScale = maxH / bDestH;
-              bDestW *= hScale;
+              bDestW *= maxH / bDestH;
               bDestH = maxH;
             }
+
+            // Position: bottom of sprite sits at spriteY (road surface)
+            var bOffX = (sprite.offset < 0 ? -1 : 0);
             var bDx = spriteX + (bDestW * bOffX);
-            var bDy = spriteY + (bDestH * -1);
+            var bDy = spriteY - bDestH;
             var bClipH = segment.clip ? Math.max(0, bDy + bDestH - segment.clip) : 0;
             if (bClipH < bDestH) {
               if (sprite.isBillboard) {
