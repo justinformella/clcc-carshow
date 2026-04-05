@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase-server";
-import sharp from "sharp";
+import { spawn } from "child_process";
 
 /**
  * Ask Gemini Flash to describe the car so pixel art prompts are accurate
@@ -48,7 +48,7 @@ async function describeCarForPixelArt(
 
 export function buildRearPrompt(carDesc: string, color: string, visualDetails?: string): string {
   const detail = visualDetails ? ` ${visualDetails}` : "";
-  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
+  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Black background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
 }
 
 export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
@@ -72,12 +72,12 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     : null;
   const detail = visualDetails ? ` ${visualDetails}` : "";
 
-  // Generate side + rear with OpenAI transparent background, dashboard with Imagen
-  const [sideBuffer, dashBuffer, rearBuffer] = await Promise.all([
-    generateTransparentImage(
+  // Generate all three images with Imagen
+  const [sideRaw, dashBuffer, rearRaw] = await Promise.all([
+    generateImage(
       `8-bit retro pixel art side profile view of a ${carDesc} in ${color}.${detail} ` +
       `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
-      `The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
+      `Black background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
       `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
@@ -85,7 +85,13 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
       `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`
     ),
-    generateTransparentImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
+    generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
+  ]);
+
+  // Remove backgrounds from side and rear views using rembg
+  const [sideBuffer, rearBuffer] = await Promise.all([
+    removeBackground(sideRaw),
+    removeBackground(rearRaw),
   ]);
 
   // Upload all three to storage
@@ -117,55 +123,39 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
 }
 
 /**
- * Remove magenta (#FF00FF) chroma key background from an image buffer.
- * Magenta never appears naturally in car imagery, so simple per-pixel
- * detection is safe — including through windows and under the car.
+ * Remove background from an image using rembg (Python ML model).
+ * Calls rembg as a Python module directly, bypassing the CLI which
+ * has Gradio dependency issues on Python 3.9.
  */
-export async function removeChromaKey(input: Buffer): Promise<Buffer> {
-  const image = sharp(input).ensureAlpha();
-  const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
-  const { width, height } = info;
+export async function removeBackground(input: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const script = `
+import sys
+from rembg.bg import remove
+from PIL import Image
+import io
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
+input_data = sys.stdin.buffer.read()
+input_image = Image.open(io.BytesIO(input_data))
+output_image = remove(input_image)
+buf = io.BytesIO()
+output_image.save(buf, format="PNG")
+sys.stdout.buffer.write(buf.getvalue())
+`;
+    const proc = spawn("python3", ["-c", script]);
+    const chunks: Buffer[] = [];
 
-    // Core magenta: R and B high, G low
-    if (r > 180 && b > 180 && g < 100) {
-      data[i + 3] = 0;
-    }
-    // Near-magenta from anti-aliasing: R and B still dominant, G suppressed
-    else if (r > 140 && b > 140 && g < 130 && (r + b) > g * 3) {
-      const magentaness = (r + b - g * 2) / (r + b);
-      data[i + 3] = Math.round(255 * (1 - magentaness));
-    }
-  }
+    proc.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
+    proc.stderr.on("data", () => {}); // suppress model loading noise
+    proc.on("close", (code) => {
+      if (code !== 0) return reject(new Error(`rembg python exited with code ${code}`));
+      resolve(Buffer.concat(chunks));
+    });
+    proc.on("error", reject);
 
-  return sharp(data, { raw: { width, height, channels: 4 } })
-    .png()
-    .toBuffer();
-}
-
-/**
- * Generate an image via OpenAI with native PNG transparency.
- * Used for race game car assets (side + rear views) where we need
- * a clean transparent background without chroma key hacks.
- */
-export async function generateTransparentImage(prompt: string): Promise<Buffer> {
-  const OpenAI = (await import("openai")).default;
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const response = await openai.images.generate({
-    model: "gpt-image-1",
-    prompt,
-    n: 1,
-    size: "1536x1024",
-    quality: "medium",
-    background: "transparent",
-    output_format: "png",
+    proc.stdin.write(input);
+    proc.stdin.end();
   });
-
-  const imageData = response.data?.[0];
-  if (!imageData?.b64_json) throw new Error("No image generated");
-  return Buffer.from(imageData.b64_json, "base64");
 }
 
 export async function generateImage(prompt: string): Promise<Buffer> {

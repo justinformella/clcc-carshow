@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
-import { generatePixelArt, generateTransparentImage, buildRearPrompt } from "@/lib/generate-pixel-art";
+import { generatePixelArt, generateImage, buildRearPrompt, removeBackground } from "@/lib/generate-pixel-art";
 
 async function generateRearOnly(registrationId: string): Promise<void> {
   const supabase = createServerClient();
@@ -16,7 +16,8 @@ async function generateRearOnly(registrationId: string): Promise<void> {
   const carDesc = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
   const color = reg.vehicle_color || "silver";
 
-  const rearBuffer = await generateTransparentImage(buildRearPrompt(carDesc, color));
+  const rearRaw = await generateImage(buildRearPrompt(carDesc, color));
+  const rearBuffer = await removeBackground(rearRaw);
 
   const rearFileName = `rear-${registrationId}.png`;
   await supabase.storage.from("pixel-art").upload(rearFileName, rearBuffer, { contentType: "image/png", upsert: true });
