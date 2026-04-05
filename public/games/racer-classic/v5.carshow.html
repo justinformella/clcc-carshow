@@ -684,44 +684,34 @@
             var dynSprite = { x: 0, y: 0, w: sprite.source.w, h: sprite.source.h };
             var bOffX = (sprite.offset < 0 ? -1 : 0);
 
-            if (sprite.isBillboard) {
-              // Billboard: use Render.sprite positioning math, then draw frame + logo
-              var bbScale = spriteScale;
-              var bbW = (dynSprite.w * bbScale * width/2) * (SPRITES.SCALE * roadWidth);
-              var bbH = (dynSprite.h * bbScale * width/2) * (SPRITES.SCALE * roadWidth);
-              var bbX = spriteX + (bbW * bOffX);
-              var bbY = spriteY + (bbH * -1);
-              var bbClip = segment.clip ? Math.max(0, bbY + bbH - segment.clip) : 0;
+            var stW = (dynSprite.w * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
+            var stH = (dynSprite.h * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
+            var stX = spriteX + (stW * bOffX);
+            var stY = spriteY + (stH * -1);
+            var stClip = segment.clip ? Math.max(0, stY + stH - segment.clip) : 0;
 
-              if (bbClip < bbH) {
-                var postW = Math.max(2, bbW * 0.03);
-                var postH = bbH * 0.30;
-                var boardH = bbH - postH;
-                var pad = Math.max(2, bbW * 0.04);
-
+            if (stClip < stH) {
+              if (sprite.isBillboard) {
+                // Billboard with frame: posts + white backing + logo
+                var postW = Math.max(2, stW * 0.03);
+                var postH = stH * 0.30;
+                var boardH = stH - postH;
+                var pad = Math.max(2, stW * 0.04);
                 // Posts
                 ctx.fillStyle = '#444444';
-                ctx.fillRect(bbX + bbW * 0.25 - postW/2, bbY + boardH, postW, postH);
-                ctx.fillRect(bbX + bbW * 0.75 - postW/2, bbY + boardH, postW, postH);
+                ctx.fillRect(stX + stW * 0.25 - postW/2, stY + boardH, postW, postH);
+                ctx.fillRect(stX + stW * 0.75 - postW/2, stY + boardH, postW, postH);
                 // White backing
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(bbX, bbY, bbW, boardH);
+                ctx.fillRect(stX, stY, stW, boardH);
                 // Border
                 ctx.strokeStyle = '#333333';
                 ctx.lineWidth = Math.max(1, pad * 0.3);
-                ctx.strokeRect(bbX, bbY, bbW, boardH);
+                ctx.strokeRect(stX, stY, stW, boardH);
                 // Logo
-                ctx.drawImage(sprite.dynamicImage, bbX + pad, bbY + pad, bbW - pad*2, boardH - pad*2);
-              }
-            } else {
-              // Storefront: use Render.sprite directly — identical to how trees render
-              // 9-arg drawImage: source is the dynamic image, coords cover full image
-              var stW = (dynSprite.w * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
-              var stH = (dynSprite.h * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
-              var stX = spriteX + (stW * bOffX);
-              var stY = spriteY + (stH * -1); // offsetY = -1, same as trees
-              var stClip = segment.clip ? Math.max(0, stY + stH - segment.clip) : 0;
-              if (stClip < stH) {
+                ctx.drawImage(sprite.dynamicImage, stX + pad, stY + pad, stW - pad*2, boardH - pad*2);
+              } else {
+                // Storefront: flat image
                 var srcClipH = bImgH * stClip / stH;
                 ctx.drawImage(sprite.dynamicImage, 0, 0, bImgW, bImgH - srcClipH, stX, stY, stW, stH - stClip);
               }
@@ -951,36 +941,20 @@
       var hasSponsorBillboards = (presenting.length + premier.length + community.length) > 0;
 
       if (hasSponsorBillboards) {
-        // --- Presenting sponsors: very frequent, both sides, big ---
-        if (presenting.length > 0) {
-          var pIdx = 0;
-          for (n = 10; n < segments.length - 20; n += 30) {
-            var pImg = presenting[pIdx % presenting.length];
-            var side = (pIdx % 2 === 0) ? -2.0 : 2.0;
-            addDynamicSprite(n, { w: 350, h: 250 }, side, pImg, true);
-            pIdx++;
-          }
-        }
+        // Sponsor billboards with frame — evenly spaced, opposite side from storefronts
+        var allSponsors = [];
+        presenting.forEach(function(img) { allSponsors.push({ img: img, w: 350, h: 250 }); });
+        presenting.forEach(function(img) { allSponsors.push({ img: img, w: 350, h: 250 }); }); // presenting twice
+        premier.forEach(function(img) { allSponsors.push({ img: img, w: 300, h: 200 }); });
+        community.forEach(function(img) { allSponsors.push({ img: img, w: 250, h: 170 }); });
 
-        // --- Premier sponsors: regular spacing ---
-        if (premier.length > 0) {
-          var prIdx = 0;
-          for (n = 20; n < segments.length - 20; n += 45) {
-            var prImg = premier[prIdx % premier.length];
-            var prSide = (prIdx % 2 === 0) ? -1.8 : 1.8;
-            addDynamicSprite(n, { w: 300, h: 200 }, prSide, prImg, true);
-            prIdx++;
-          }
-        }
-
-        // --- Community sponsors: moderate spacing ---
-        if (community.length > 0) {
-          var cIdx = 0;
-          for (n = 35; n < segments.length - 20; n += 60) {
-            var cImg = community[cIdx % community.length];
-            var cSide = (cIdx % 2 === 0) ? -1.6 : 1.6;
-            addDynamicSprite(n, { w: 250, h: 170 }, cSide, cImg, true);
-            cIdx++;
+        if (allSponsors.length > 0) {
+          var sponsorSpacing = Math.max(8, Math.floor((segments.length - 40) / allSponsors.length));
+          for (var si = 0; si < allSponsors.length; si++) {
+            var sSeg = 5 + si * sponsorSpacing;
+            // Alternate sides, pushed further out than storefronts
+            var sponsorSide = (si % 2 === 0) ? 2.0 : -2.0;
+            addDynamicSprite(sSeg, { w: allSponsors[si].w, h: allSponsors[si].h }, sponsorSide, allSponsors[si].img, true);
           }
         }
       } else {
