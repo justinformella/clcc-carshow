@@ -815,40 +815,18 @@ function RacePage() {
         ctx.globalAlpha = 1;
       }
 
-      // Dyno rollers
-      const rollerY = H * 0.82;
-      const rollerR = Math.round(H * 0.045);
-      const rollerGap = W * 0.14;
-      const rollerCX = W * 0.55;
-      const angle = (elapsed * rpm / 40000) % (Math.PI * 2);
-
-      for (const dx of [-rollerGap / 2, rollerGap / 2]) {
-        const cx = rollerCX + dx;
-        ctx.fillStyle = "#3a3a3a";
-        ctx.beginPath();
-        ctx.arc(cx, rollerY, rollerR, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#555";
-        ctx.lineWidth = 1.5;
-        for (let s = 0; s < 4; s++) {
-          const a = angle + s * Math.PI / 2;
-          ctx.beginPath();
-          ctx.moveTo(cx, rollerY);
-          ctx.lineTo(cx + Math.cos(a) * rollerR * 0.85, rollerY + Math.sin(a) * rollerR * 0.85);
-          ctx.stroke();
-        }
-      }
-
-      // Car sprite
+      // Car sprite — sits on the dyno floor (background handles the rollers)
+      const groundY = H * 0.78; // bottom of car aligns here
+      const carCX = W * 0.55; // center horizontally on the dyno
       const carImg = dynoCarImgRef.current;
       if (carImg?.complete) {
-        const carW = W * 0.38;
+        const carW = W * 0.4;
         const carH = carW * (carImg.height / carImg.width);
         const vibFreq = 8 + (rpm / redline) * 17;
         const vibAmp = 0.5 + (rpm / redline) * 3.5;
         const vibY = Math.sin(elapsed * vibFreq / 100) * vibAmp;
-        const carX = rollerCX - carW / 2;
-        const carY = rollerY - carH + rollerR * 0.4 + vibY;
+        const carX = carCX - carW / 2;
+        const carY = groundY - carH + vibY;
 
         ctx.save();
         if (playerCar.flipped) {
@@ -867,7 +845,7 @@ function RacePage() {
         if (!done && Math.random() < spawnChance) {
           particles.push({
             x: exhaustX,
-            y: carY + carH * 0.65 + vibY,
+            y: carY + carH * 0.65,
             vx: exhaustDir * (1 + Math.random() * 2.5),
             vy: -(0.3 + Math.random() * 0.8),
             life: 25 + Math.random() * 10,
@@ -961,24 +939,14 @@ function RacePage() {
         return;
       }
 
-      // Rollers
-      const rollerY = H * 0.82;
-      const rollerR = Math.round(H * 0.045);
-      const rollerGap = W * 0.14;
-      const rollerCX = W * 0.55;
-      for (const dx of [-rollerGap / 2, rollerGap / 2]) {
-        ctx.fillStyle = "#3a3a3a";
-        ctx.beginPath();
-        ctx.arc(rollerCX + dx, rollerY, rollerR, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Car
+      // Car — sits on the dyno floor
+      const groundY = H * 0.78;
+      const carCX = W * 0.55;
       if (carImg.complete) {
-        const carW = W * 0.38;
+        const carW = W * 0.4;
         const carH = carW * (carImg.height / carImg.width);
-        const carX = rollerCX - carW / 2;
-        const carY = rollerY - carH + rollerR * 0.4;
+        const carX = carCX - carW / 2;
+        const carY = groundY - carH;
         ctx.save();
         if (playerCar.flipped) {
           ctx.translate(carX + carW, carY);
