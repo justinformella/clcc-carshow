@@ -48,7 +48,7 @@ async function describeCarForPixelArt(
 
 export function buildRearPrompt(carDesc: string, color: string, visualDetails?: string): string {
   const detail = visualDetails ? ` ${visualDetails}` : "";
-  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Solid bright magenta (#FF00FF) background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
+  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Solid bright magenta (#FF00FF) background. All windows must be dark tinted black — not see-through. No shadow, no ground, no floor — the car floats on the flat magenta background. Car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
 }
 
 export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
@@ -77,7 +77,9 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     generateImage(
       `8-bit retro pixel art side profile view of a ${carDesc} in ${color}.${detail} ` +
       `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
-      `Solid bright magenta (#FF00FF) background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
+      `Solid bright magenta (#FF00FF) background. All windows must be dark tinted black — not see-through. ` +
+      `No shadow, no ground, no floor — the car floats on the flat magenta background. ` +
+      `The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
       `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
