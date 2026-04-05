@@ -38,6 +38,7 @@ export type Registration = {
   pixel_dashboard_original_url: string | null;
   pixel_rear_original_url: string | null;
   pixel_dash_cropped_url: string | null;
+  pixel_art_flipped: boolean;
   // Geocoded location
   lat: number | null;
   lng: number | null;

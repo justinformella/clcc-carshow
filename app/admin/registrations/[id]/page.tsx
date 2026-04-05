@@ -970,6 +970,18 @@ export default function RegistrationDetailPage() {
                         {label}
                       </p>
                       <PixelArtActions registrationId={r.id} type={type} hasBgStrip={hasBgStrip} hasOriginal={!!origUrl} />
+                      {type === "side" && (
+                        <button
+                          onClick={async () => {
+                            const supabase = (await import("@/lib/supabase")).createClient();
+                            await supabase.from("registrations").update({ pixel_art_flipped: !r.pixel_art_flipped }).eq("id", r.id);
+                            window.location.reload();
+                          }}
+                          style={{ marginTop: "0.3rem", padding: "0.2rem 0.5rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase" as const, background: r.pixel_art_flipped ? "var(--gold)" : "var(--cream)", color: "var(--charcoal)", border: "1px solid #ddd", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
+                        >
+                          {r.pixel_art_flipped ? "FLIPPED ✓" : "FLIP DIRECTION"}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

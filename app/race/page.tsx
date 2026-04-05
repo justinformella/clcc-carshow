@@ -53,6 +53,7 @@ type RaceCar = {
   pixelDash: string | null;
   pixelRear: string | null;
   aiImage: string | null;
+  flipped: boolean;
 };
 
 type Phase = "loading" | "title" | "select" | "countdown" | "racing" | "finished";
@@ -299,6 +300,7 @@ function RacePage() {
           pixelDash: c.pixelDash || null,
           pixelRear: c.pixelRear || null,
           aiImage: c.aiImage || null,
+          flipped: c.flipped || false,
         }));
         setCars(raceCars);
         if (preselectedCarId) {
