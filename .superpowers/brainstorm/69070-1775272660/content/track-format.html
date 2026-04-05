@@ -1,0 +1,115 @@
+<h2>What's the race format?</h2>
+<p class="subtitle">How does a race play out — pick one</p>
+
+<div class="cards">
+  <div class="card" data-choice="circuit" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #1a1a2e; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 180px;">
+      <svg viewBox="0 0 300 180" width="300" height="180" style="image-rendering: pixelated;">
+        <!-- Circuit track (oval-ish with turns) -->
+        <rect x="0" y="0" width="300" height="180" fill="#2d5a27"/>
+        <!-- Outer track edge -->
+        <rect x="40" y="30" width="220" height="120" rx="40" fill="#555"/>
+        <!-- Inner grass -->
+        <rect x="70" y="55" width="160" height="70" rx="25" fill="#2d5a27"/>
+        <!-- Lane markings -->
+        <rect x="55" y="42" width="190" height="96" rx="32" fill="none" stroke="#FFD700" stroke-width="1" stroke-dasharray="8,8" opacity="0.4"/>
+        <!-- Start/finish line -->
+        <rect x="150" y="30" width="3" height="25" fill="#fff"/>
+        <rect x="153" y="30" width="3" height="25" fill="#000"/>
+        <rect x="150" y="35" width="3" height="3" fill="#000"/>
+        <rect x="153" y="35" width="3" height="3" fill="#fff"/>
+        <!-- Cars racing -->
+        <rect x="155" y="36" width="10" height="16" fill="#e63946" rx="2" transform="rotate(5, 160, 44)"/>
+        <rect x="140" y="38" width="10" height="16" fill="#4488ff" rx="2" transform="rotate(8, 145, 46)"/>
+        <rect x="170" y="40" width="10" height="16" fill="#FFD700" rx="2" transform="rotate(2, 175, 48)"/>
+        <!-- Grandstand -->
+        <rect x="150" y="10" width="50" height="15" fill="#666" rx="2"/>
+        <rect x="152" y="12" width="4" height="3" fill="#e63946"/>
+        <rect x="158" y="12" width="4" height="3" fill="#4488ff"/>
+        <rect x="164" y="12" width="4" height="3" fill="#FFD700"/>
+        <rect x="170" y="12" width="4" height="3" fill="#e63946"/>
+        <text x="175" y="22" fill="#aaa" font-size="6" font-family="monospace">3 LAPS</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A — Circuit Laps</h3>
+      <p>Race 3-5 laps around a closed track. Multiple turns, overtaking opportunities, pit strategy optional. Classic motorsport feel — Daytona, F1, NASCAR. Tracks can be themed (city streets, country roads, night circuit).</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="pointtopoint" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #1a1a2e; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 180px;">
+      <svg viewBox="0 0 300 180" width="300" height="180" style="image-rendering: pixelated;">
+        <!-- Scrolling road -->
+        <rect x="0" y="0" width="300" height="180" fill="#2d5a27"/>
+        <!-- Winding road -->
+        <path d="M 150,180 C 150,150 100,130 120,100 C 140,70 200,80 180,50 C 160,20 140,10 150,0" stroke="#555" stroke-width="50" fill="none" stroke-linecap="round"/>
+        <path d="M 150,180 C 150,150 100,130 120,100 C 140,70 200,80 180,50 C 160,20 140,10 150,0" stroke="#FFD700" stroke-width="1" fill="none" stroke-dasharray="6,6" opacity="0.4"/>
+        <!-- Player car at bottom -->
+        <rect x="143" y="155" width="12" height="18" fill="#e63946" rx="2"/>
+        <!-- Traffic/opponents scattered -->
+        <rect x="125" y="95" width="10" height="15" fill="#4488ff" rx="2" transform="rotate(-15, 130, 102)"/>
+        <rect x="175" y="55" width="10" height="15" fill="#888" rx="2" transform="rotate(10, 180, 62)"/>
+        <!-- Trees along road -->
+        <circle cx="80" cy="90" r="10" fill="#3a7a33"/>
+        <circle cx="220" cy="60" r="8" fill="#3a7a33"/>
+        <circle cx="95" cy="140" r="9" fill="#3a7a33"/>
+        <!-- Finish banner -->
+        <rect x="135" y="2" width="30" height="8" fill="#fff" stroke="#000" stroke-width="1"/>
+        <text x="140" y="9" fill="#000" font-size="6" font-family="monospace">FINISH</text>
+        <!-- START -->
+        <text x="133" y="178" fill="#FFD700" font-size="7" font-family="monospace">START</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B — Point-to-Point Sprint</h3>
+      <p>Start line to finish line, no laps. The track scrolls as you drive — winding roads, elevation changes, obstacles. Like an OutRun stage or a hill climb. Each track is a unique route. Simpler to build — no loop logic needed.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="battle" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #1a1a2e; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 180px;">
+      <svg viewBox="0 0 300 180" width="300" height="180" style="image-rendering: pixelated;">
+        <!-- Arena -->
+        <rect x="0" y="0" width="300" height="180" fill="#222"/>
+        <rect x="20" y="15" width="260" height="150" fill="#333" rx="8"/>
+        <!-- Track oval -->
+        <rect x="40" y="30" width="220" height="120" rx="40" fill="#444"/>
+        <rect x="65" y="50" width="170" height="80" rx="30" fill="#333"/>
+        <!-- Item boxes scattered -->
+        <rect x="80" y="65" width="8" height="8" fill="#FFD700" rx="1" opacity="0.8">
+          <animate attributeName="opacity" values="0.8;0.4;0.8" dur="1.5s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="200" y="100" width="8" height="8" fill="#FFD700" rx="1" opacity="0.8">
+          <animate attributeName="opacity" values="0.8;0.4;0.8" dur="1.2s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="140" y="45" width="8" height="8" fill="#FFD700" rx="1" opacity="0.8">
+          <animate attributeName="opacity" values="0.8;0.4;0.8" dur="1.8s" repeatCount="indefinite"/>
+        </rect>
+        <!-- Cars battling -->
+        <rect x="100" y="40" width="12" height="18" fill="#e63946" rx="2"/>
+        <!-- Oil slick behind red car -->
+        <ellipse cx="106" cy="65" rx="6" ry="4" fill="#111" opacity="0.6"/>
+        <rect x="180" y="110" width="12" height="18" fill="#4488ff" rx="2"/>
+        <!-- Boost trail on blue -->
+        <rect x="183" y="128" width="6" height="10" fill="#4af" opacity="0.4"/>
+        <rect x="184" y="138" width="4" height="6" fill="#4af" opacity="0.2"/>
+        <rect x="130" y="80" width="12" height="18" fill="#44cc44" rx="2"/>
+        <!-- Explosion near green -->
+        <circle cx="145" cy="85" r="8" fill="#FF6600" opacity="0.5"/>
+        <circle cx="145" cy="85" r="5" fill="#FFD700" opacity="0.6"/>
+        <!-- Power-up icons along bottom -->
+        <text x="60" y="175" fill="#888" font-size="7" font-family="monospace">🚀 💨 🛢️ ⚡ 🔥</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C — Battle Race (Mario Kart Style)</h3>
+      <p>Circuit racing PLUS items and power-ups. Pick up crates for boosts, oil slicks, EMPs. Adds chaos and comeback mechanics. Most fun multiplayer potential, most complex to balance.</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); border-radius: 8px;">
+  <p style="color: #FFD700; margin: 0 0 8px 0; font-weight: 600;">My take</p>
+  <p style="color: #ccc; margin: 0;"><strong>Start with A (circuit laps)</strong> — it's the foundation. Once laps work, adding items (C) is just a layer on top. B is a different game entirely. Build A, then layer C on later if you want the Mario Kart chaos.</p>
+</div>

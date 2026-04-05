@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Press Start 2P', monospace;
+    padding: 2rem;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  .cabinet-wrapper {
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .cabinet-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.6rem, 2vw, 0.85rem);
+    color: #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 10px rgba(255,215,0,0.3);
+  }
+
+  /* ─── THE CABINET ─── */
+  .cabinet {
+    position: relative;
+    width: 100%;
+  }
+
+  /* Side panels (trapezoid illusion) */
+  .cabinet::before,
+  .cabinet::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 40px; /* stop before kick plate */
+    width: 12px;
+    z-index: 2;
+  }
+  .cabinet::before {
+    left: -2px;
+    background: linear-gradient(to right, #15152a, #1e1e35);
+    border-left: 2px solid #555;
+    border-radius: 6px 0 0 0;
+  }
+  .cabinet::after {
+    right: -2px;
+    background: linear-gradient(to left, #15152a, #1e1e35);
+    border-right: 2px solid #555;
+    border-radius: 0 6px 0 0;
+  }
+
+  .cabinet-body {
+    background: linear-gradient(175deg, #2d2d48 0%, #1e1e35 40%, #191930 100%);
+    border: 2px solid #555;
+    border-radius: 10px 10px 2px 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* T-molding strip */
+  .cabinet-body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, transparent 5%, #ffd700 20%, #ffd700 80%, transparent 95%);
+    z-index: 3;
+    border-radius: 10px 10px 0 0;
+  }
+
+  /* ─── MARQUEE ─── */
+  .marquee {
+    background: linear-gradient(180deg, #e6c44a 0%, #ffd700 30%, #c9a84c 70%, #b8860b 100%);
+    padding: 0.7rem 1rem;
+    position: relative;
+    border-bottom: 3px solid #8a6d1b;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .marquee-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(0.5rem, 1.5vw, 0.65rem);
+    color: #1a0a00;
+    letter-spacing: 0.12em;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+  }
+  /* Marquee light strip */
+  .marquee::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background: repeating-linear-gradient(to right, #ffd700 0px, #ffd700 4px, transparent 4px, transparent 8px);
+    animation: marquee-lights 0.8s infinite;
+  }
+  @keyframes marquee-lights {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ─── CRT BEZEL ─── */
+  .bezel {
+    margin: 0.8rem;
+    padding: 6px;
+    background: linear-gradient(145deg, #111 0%, #222 50%, #0a0a0a 100%);
+    border: 2px solid #333;
+    border-radius: 4px;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  /* ─── SCREEN ─── */
+  .screen {
+    background: #000;
+    border: 1px solid #1a1a1a;
+    padding: 0.6rem;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Subtle CRT scanline effect */
+  .screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+  /* Screen glow */
+  .screen::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 2px;
+    box-shadow: 0 0 20px rgba(255,215,0,0.05), inset 0 0 30px rgba(0,50,0,0.1);
+    pointer-events: none;
+  }
+
+  .screen-cars {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .screen-car {
+    flex: 1;
+    aspect-ratio: 16/9;
+    background: #0a0a15;
+    border: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  /* Placeholder pixel cars */
+  .pixel-car {
+    width: 70%;
+    height: 40%;
+    border-radius: 2px;
+    position: relative;
+  }
+  .pixel-car::before, .pixel-car::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #444;
+    border: 1px solid #666;
+  }
+  .pixel-car::before { left: 15%; }
+  .pixel-car::after { right: 15%; }
+
+  .screen-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5rem;
+    color: #ffd700;
+    line-height: 2;
+    position: relative;
+    z-index: 2;
+  }
+  .screen-blink {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.4rem;
+    color: #00ff00;
+    animation: blink 1.5s infinite;
+    position: relative;
+    z-index: 2;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ─── SPEAKER GRILLE ─── */
+  .speaker {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    padding: 0.4rem 2rem;
+  }
+  .speaker-line {
+    height: 2px;
+    flex: 1;
+    max-width: 60px;
+    background: #333;
+    border-radius: 1px;
+  }
+
+  /* ─── CONTROL PANEL ─── */
+  .control-panel {
+    background: linear-gradient(175deg, #252540, #1a1a30);
+    border-top: 2px solid #3a3a50;
+    padding: 1rem 1.5rem 0.8rem;
+    position: relative;
+  }
+  /* Angled top edge illusion */
+  .control-panel::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 5%;
+    right: 5%;
+    height: 8px;
+    background: linear-gradient(to bottom, transparent, #252540);
+  }
+
+  .control-panel-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.4rem;
+    color: #aaa;
+    line-height: 2;
+    margin-bottom: 0.7rem;
+  }
+
+  .control-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+
+  /* Joystick */
+  .joystick {
+    width: 28px;
+    height: 28px;
+    background: radial-gradient(circle at 40% 40%, #444, #222);
+    border: 2px solid #555;
+    border-radius: 50%;
+    position: relative;
+  }
+  .joystick::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    background: #333;
+    border-radius: 50%;
+    border: 1px solid #555;
+  }
+
+  /* Play button */
+  .play-btn {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.6rem;
+    color: #0d0d1a;
+    background: linear-gradient(180deg, #ffe066, #ffd700, #c9a84c);
+    border: 2px solid #b8860b;
+    box-shadow: 0 4px 0 #8a6d1b, 0 6px 12px rgba(0,0,0,0.4);
+    padding: 0.55rem 1.8rem;
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .play-btn:hover {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #8a6d1b, 0 3px 6px rgba(0,0,0,0.4);
+  }
+  .play-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0px 0 #8a6d1b;
+  }
+
+  /* Button cluster */
+  .buttons {
+    display: flex;
+    gap: 6px;
+  }
+  .btn-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+  }
+
+  /* ─── COIN DOOR ─── */
+  .coin-door {
+    padding: 0.5rem;
+    display: flex;
+    justify-content: center;
+  }
+  .coin-slot-housing {
+    background: #1a1a2e;
+    border: 2px solid #444;
+    border-radius: 3px;
+    padding: 0.3rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .coin-slot-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.2rem;
+    color: #666;
+    letter-spacing: 0.1em;
+  }
+  .coin-slot {
+    width: 28px;
+    height: 4px;
+    background: #111;
+    border: 1px solid #555;
+    border-radius: 2px;
+  }
+
+  /* ─── KICK PLATE ─── */
+  .kick-plate {
+    background: linear-gradient(to bottom, #151528, #0d0d1a);
+    border-top: 1px solid #333;
+    height: 20px;
+    border-radius: 0 0 2px 2px;
+    margin: 0 -2px -2px;
+    border: 2px solid #555;
+    border-top: none;
+  }
+
+  /* ─── BASE (wider than cabinet) ─── */
+  .cabinet-base {
+    width: 108%;
+    margin-left: -4%;
+    height: 12px;
+    background: linear-gradient(to bottom, #222, #111);
+    border: 2px solid #444;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="cabinet-wrapper">
+  <div class="cabinet-title">Try the CLCC / Redline Motor Condos Arcade</div>
+
+  <div class="cabinet">
+    <div class="cabinet-body">
+      <!-- Marquee -->
+      <div class="marquee">
+        <div class="marquee-text">★ CLCC ARCADE ★</div>
+      </div>
+
+      <!-- CRT Bezel + Screen -->
+      <div class="bezel">
+        <div class="screen">
+          <div class="screen-cars">
+            <div class="screen-car">
+              <div class="pixel-car" style="background:#dc2626;"></div>
+            </div>
+            <div class="screen-car">
+              <div class="pixel-car" style="background:#16a34a;"></div>
+            </div>
+            <div class="screen-car">
+              <div class="pixel-car" style="background:#3b82f6;"></div>
+            </div>
+          </div>
+          <div class="screen-title">REDLINE MOTOR CONDOS</div>
+          <div class="screen-blink">INSERT COIN</div>
+        </div>
+      </div>
+
+      <!-- Speaker Grille -->
+      <div class="speaker">
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+      </div>
+
+      <!-- Control Panel -->
+      <div class="control-panel">
+        <div class="control-panel-text">Race the registered cars</div>
+        <div class="control-layout">
+          <div class="joystick"></div>
+          <a href="/race" class="play-btn">PLAY</a>
+          <div class="buttons">
+            <div class="btn-circle" style="background:radial-gradient(circle at 40% 40%, #ef4444, #991b1b);"></div>
+            <div class="btn-circle" style="background:radial-gradient(circle at 40% 40%, #3b82f6, #1d4ed8);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coin Door -->
+      <div class="coin-door">
+        <div class="coin-slot-housing">
+          <div class="coin-slot-label">COIN</div>
+          <div class="coin-slot"></div>
+        </div>
+      </div>
+
+      <!-- Kick Plate -->
+      <div class="kick-plate"></div>
+    </div>
+
+    <!-- Base -->
+    <div class="cabinet-base"></div>
+  </div>
+</div>
+
+</body>
+</html>

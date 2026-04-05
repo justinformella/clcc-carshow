@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; font-family: -apple-system, sans-serif; color: #d4d4d8; padding: 2rem; }
+  h2 { color: #fff; font-size: 1.3rem; margin-bottom: 0.5rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  .option { border: 2px solid #333; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; cursor: pointer; transition: border-color 0.2s; }
+  .option:hover { border-color: #c9a84c; }
+  .option.selected { border-color: #c9a84c; background: rgba(201,168,76,0.05); }
+  .option h3 { color: #c9a84c; font-size: 1rem; margin-bottom: 0.75rem; }
+  .option p { color: #999; font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.75rem; }
+  .mockup { background: #08090c; border-radius: 6px; padding: 1rem; margin-top: 0.75rem; }
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid #333; margin-bottom: 1rem; }
+  .tab { padding: 0.6rem 1.2rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+  .gauge-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+  .gauge-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); padding: 0.8rem; border-radius: 4px; flex: 1; text-align: center; }
+  .gauge-box .num { font-size: 1.4rem; font-weight: 600; color: #fff; }
+  .gauge-box .label { font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.15em; color: #666; margin-top: 0.2rem; }
+  .chart-placeholder { background: rgba(255,255,255,0.03); border: 1px dashed #333; border-radius: 4px; height: 120px; display: flex; align-items: center; justify-content: center; color: #444; font-size: 0.75rem; margin-bottom: 0.75rem; }
+  .letter { display: inline-block; background: #c9a84c; color: #08090c; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 700; font-size: 0.8rem; margin-right: 0.5rem; }
+</style>
+</head>
+<body>
+
+<h2>How should the tabs be organized?</h2>
+<p class="subtitle">Click the layout that makes the most sense</p>
+
+<!-- Option A -->
+<div class="option" data-choice="a" onclick="document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));this.classList.add('selected')">
+  <h3><span class="letter">A</span> 3 Tabs — Site Analytics | Vehicles | Leaderboard</h3>
+  <p>Clean separation. Site Analytics gets the traffic + registration trend data. Vehicles gets makes/colors/decades/intelligence. Leaderboard stays its own tab. The hero gauges (tachometer + stat grid) stay persistent above the tabs.</p>
+  <div class="mockup">
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+      <div style="width:60px;height:60px;border-radius:50%;border:3px solid #c9a84c;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:#fff;">72%</div>
+      <div class="gauge-row" style="flex:1;margin:0;">
+        <div class="gauge-box"><div class="num" style="color:#00d4ff">18</div><div class="label">Vehicles</div></div>
+        <div class="gauge-box"><div class="num" style="color:#a855f7">12</div><div class="label">Makes</div></div>
+        <div class="gauge-box"><div class="num" style="color:#ff3b5c">4,200</div><div class="label">Combined HP</div></div>
+        <div class="gauge-box"><div class="num" style="color:#00e68a">1998</div><div class="label">Avg Year</div></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active">Site Analytics</div>
+      <div class="tab">Vehicles</div>
+      <div class="tab">Leaderboard</div>
+    </div>
+    <div class="gauge-row">
+      <div class="gauge-box"><div class="num">232</div><div class="label">Visitors (7d)</div></div>
+      <div class="gauge-box"><div class="num">17</div><div class="label">Registrations</div></div>
+      <div class="gauge-box"><div class="num" style="color:#c9a84c">7.3%</div><div class="label">Conversion</div></div>
+      <div class="gauge-box"><div class="num">33</div><div class="label">Avg Daily</div></div>
+    </div>
+    <div class="chart-placeholder">📈 Daily Visitors vs Registrations (line chart)</div>
+    <div class="chart-placeholder">📊 Traffic by Referrer (bar chart)</div>
+  </div>
+</div>
+
+<!-- Option B -->
+<div class="option" data-choice="b" onclick="document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));this.classList.add('selected')">
+  <h3><span class="letter">B</span> 2 Tabs — Site Analytics | Show Data</h3>
+  <p>Simpler. Site Analytics for traffic/conversion. Show Data combines vehicles + leaderboard into one scrolling tab (like it is today, minus the traffic stuff). Hero gauges stay above tabs.</p>
+  <div class="mockup">
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+      <div style="width:60px;height:60px;border-radius:50%;border:3px solid #c9a84c;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:#fff;">72%</div>
+      <div class="gauge-row" style="flex:1;margin:0;">
+        <div class="gauge-box"><div class="num" style="color:#00d4ff">18</div><div class="label">Vehicles</div></div>
+        <div class="gauge-box"><div class="num" style="color:#a855f7">12</div><div class="label">Makes</div></div>
+        <div class="gauge-box"><div class="num" style="color:#ff3b5c">4,200</div><div class="label">Combined HP</div></div>
+        <div class="gauge-box"><div class="num" style="color:#00e68a">1998</div><div class="label">Avg Year</div></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active">Site Analytics</div>
+      <div class="tab">Show Data</div>
+    </div>
+    <div class="gauge-row">
+      <div class="gauge-box"><div class="num">232</div><div class="label">Visitors (7d)</div></div>
+      <div class="gauge-box"><div class="num">17</div><div class="label">Registrations</div></div>
+      <div class="gauge-box"><div class="num" style="color:#c9a84c">7.3%</div><div class="label">Conversion</div></div>
+      <div class="gauge-box"><div class="num">33</div><div class="label">Avg Daily</div></div>
+    </div>
+    <div class="chart-placeholder">📈 Daily Visitors vs Registrations (line chart)</div>
+    <div class="chart-placeholder">📊 Conversion Funnel (visitors → /register → checkout → paid)</div>
+  </div>
+</div>
+
+<!-- Option C -->
+<div class="option" data-choice="c" onclick="document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));this.classList.add('selected')">
+  <h3><span class="letter">C</span> 4 Tabs — Site Analytics | Registration Data | Vehicle Intelligence | Leaderboard</h3>
+  <p>Most granular. Each existing section gets its own tab, plus Site Analytics is new. Registration Data (makes/decades/colors treemap) is separate from Vehicle Intelligence (specs, HP distribution, country/category). More clicks but each tab is focused.</p>
+  <div class="mockup">
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+      <div style="width:60px;height:60px;border-radius:50%;border:3px solid #c9a84c;display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:#fff;">72%</div>
+      <div class="gauge-row" style="flex:1;margin:0;">
+        <div class="gauge-box"><div class="num" style="color:#00d4ff">18</div><div class="label">Vehicles</div></div>
+        <div class="gauge-box"><div class="num" style="color:#a855f7">12</div><div class="label">Makes</div></div>
+        <div class="gauge-box"><div class="num" style="color:#ff3b5c">4,200</div><div class="label">Combined HP</div></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active">Site Analytics</div>
+      <div class="tab">Registration Data</div>
+      <div class="tab">Vehicle Intelligence</div>
+      <div class="tab">Leaderboard</div>
+    </div>
+    <div class="gauge-row">
+      <div class="gauge-box"><div class="num">232</div><div class="label">Visitors (7d)</div></div>
+      <div class="gauge-box"><div class="num">17</div><div class="label">Registrations</div></div>
+      <div class="gauge-box"><div class="num" style="color:#c9a84c">7.3%</div><div class="label">Conversion</div></div>
+    </div>
+    <div class="chart-placeholder">📈 Daily Visitors vs Registrations</div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,109 @@
+<h2>Detail Tech — Design Summary</h2>
+<p class="subtitle">Review this before I write the full spec</p>
+
+<div class="section">
+  <h3>Overview</h3>
+  <p>New "Detail Tech" mini-game accessed from the action menu. Player details their car inside and out using a scratch-off mechanic — click to spray, drag to wipe away a grime overlay. Uses existing side view and dashboard pixel art. Ends with a showroom score and before/after reveal.</p>
+</div>
+
+<div class="section">
+  <h3>Phase Flow</h3>
+  <div class="mockup">
+    <div class="mockup-header">Action Menu (Updated)</div>
+    <div class="mockup-body" style="background:#0d0d1a; color:white; font-family:monospace; padding:2rem; text-align:center;">
+      <div style="margin-bottom:1rem;">
+        <div style="background:#ffd700; color:#0d0d1a; padding:0.8rem; margin:0.4rem 0; font-weight:bold;">DRAG RACE</div>
+        <div style="background:#1a1a2e; color:#ffd700; padding:0.8rem; margin:0.4rem 0; border:2px solid #b8860b;">HIT THE DYNO AT URW</div>
+        <div style="background:#1a1a2e; color:#ffd700; padding:0.8rem; margin:0.4rem 0; border:2px solid #b8860b;">DETAIL TECH</div>
+        <div style="background:#1a1a2e; color:#ffd700; padding:0.8rem; margin:0.4rem 0; border:2px solid #b8860b;">CRUISE ROUTE 14</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Gameplay Phases</h3>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
+    <div class="mockup">
+      <div class="mockup-header">Phase 1: Exterior</div>
+      <div class="mockup-body" style="background:#0d0d1a; padding:1.5rem; text-align:center;">
+        <div style="background:#1a1a2e; border:2px solid #333; padding:2rem 1rem; margin-bottom:0.8rem; position:relative;">
+          <div style="color:#ffd700; font-family:monospace; font-size:0.7rem; margin-bottom:0.5rem;">DETAIL BAY</div>
+          <div style="background:#2a2a3e; padding:1.5rem; border-radius:4px; position:relative;">
+            <span style="font-size:2rem;">🚗</span>
+            <div style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(80,60,30,0.4); border-radius:4px;"></div>
+          </div>
+          <div style="color:#aaa; font-family:monospace; font-size:0.6rem; margin-top:0.5rem;">Click to spray · Drag to wipe</div>
+        </div>
+        <div style="background:#1a1a1a; height:8px; border-radius:4px; overflow:hidden;">
+          <div style="background:#ffd700; width:35%; height:100%;"></div>
+        </div>
+        <div style="color:#aaa; font-family:monospace; font-size:0.55rem; margin-top:0.3rem;">35% CLEAN</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-header">Phase 2: Interior</div>
+      <div class="mockup-body" style="background:#0d0d1a; padding:1.5rem; text-align:center;">
+        <div style="background:#1a1a2e; border:2px solid #333; padding:2rem 1rem; margin-bottom:0.8rem;">
+          <div style="color:#ffd700; font-family:monospace; font-size:0.7rem; margin-bottom:0.5rem;">INTERIOR DETAIL</div>
+          <div style="background:#2a2a3e; padding:1.5rem; border-radius:4px; position:relative;">
+            <span style="font-size:1.2rem;">🎛️ Dashboard View</span>
+            <div style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(80,60,30,0.3); border-radius:4px;"></div>
+          </div>
+          <div style="color:#aaa; font-family:monospace; font-size:0.6rem; margin-top:0.5rem;">Click to spray · Drag to wipe</div>
+        </div>
+        <div style="background:#1a1a1a; height:8px; border-radius:4px; overflow:hidden;">
+          <div style="background:#ffd700; width:70%; height:100%;"></div>
+        </div>
+        <div style="color:#aaa; font-family:monospace; font-size:0.55rem; margin-top:0.3rem;">70% CLEAN</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-header">Phase 3: Reveal</div>
+      <div class="mockup-body" style="background:#0d0d1a; padding:1.5rem; text-align:center;">
+        <div style="background:#1a1a2e; border:2px solid #333; padding:2rem 1rem; margin-bottom:0.8rem;">
+          <div style="color:#ffd700; font-family:monospace; font-size:0.7rem; margin-bottom:0.5rem;">SHOWROOM READY</div>
+          <div style="display:flex; gap:0.5rem;">
+            <div style="flex:1; background:#2a2a3e; padding:1rem; border-radius:4px;">
+              <div style="font-size:0.5rem; color:#666; margin-bottom:0.3rem;">BEFORE</div>
+              <div style="opacity:0.5;">🚗</div>
+            </div>
+            <div style="flex:1; background:#2a2a3e; padding:1rem; border-radius:4px; box-shadow:0 0 10px rgba(255,215,0,0.3);">
+              <div style="font-size:0.5rem; color:#ffd700; margin-bottom:0.3rem;">AFTER</div>
+              <div>🚗✨</div>
+            </div>
+          </div>
+        </div>
+        <div style="color:#ffd700; font-family:monospace; font-size:1.2rem; font-weight:bold;">96/100</div>
+        <div style="color:#aaa; font-family:monospace; font-size:0.55rem;">SHOWROOM SCORE</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Canvas Effects</h3>
+  <ul style="line-height:2;">
+    <li><strong>Grime overlay</strong> — semi-transparent brown/gray layer drawn over the car image. Erased by click (circle) or drag (path) using <code>destination-out</code> compositing.</li>
+    <li><strong>Sparkle particles</strong> — white/gold bursts at wipe contact point. Same particle system as dyno exhaust.</li>
+    <li><strong>Shine sweep</strong> — after cleaning, a diagonal white gradient animates across the car (wax finish effect).</li>
+    <li><strong>Progress bar</strong> — percentage of grime removed, shown below the canvas.</li>
+    <li><strong>Before/after split</strong> — sliding divider showing dirty vs clean side by side.</li>
+    <li><strong>Spray sound</strong> — short noise burst on click. Squeegee/buff sound on drag.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>Assets Needed</h3>
+  <ul style="line-height:2;">
+    <li><strong>Detail bay background</strong> — one-time Imagen generation, stored in Supabase (like dyno room)</li>
+    <li><strong>All car assets already exist</strong> — side view + dashboard view per car</li>
+    <li><strong>No new car-specific art needed</strong></li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>Scoring</h3>
+  <p>Score = percentage of grime removed across both passes (exterior 60% weight, interior 40% weight).
+  Displayed as X/100 with a label: 95+ = "SHOWROOM PERFECT", 80-94 = "SHOW READY", 60-79 = "STREET CLEAN", &lt;60 = "NEEDS WORK".</p>
+</div>

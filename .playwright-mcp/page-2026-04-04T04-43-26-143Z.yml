@@ -1,0 +1,44 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e15]:
+      - generic [ref=e424]: "P1 #17 1966 Ford Mustang GT"
+      - generic [ref=e425]: "CPU #42 2016 Jaguar Project 7"
+    - generic [ref=e16]:
+      - generic [ref=e23]:
+        - generic:
+          - img "opponent"
+      - generic [ref=e28]:
+        - img "dashboard" [ref=e427]
+        - generic [ref=e383]:
+          - generic [ref=e428]:
+            - generic [ref=e429]: "0"
+            - generic [ref=e430]: MPH
+          - generic [ref=e393]:
+            - generic [ref=e431]: "800"
+            - generic [ref=e432]: RPM
+          - generic [ref=e433]:
+            - generic [ref=e434]: "1"
+            - generic [ref=e435]: GEAR
+      - generic [ref=e445]:
+        - generic [ref=e446]: YOU LOSE
+        - generic [ref=e447]:
+          - generic [ref=e448]:
+            - paragraph [ref=e449]: P1
+            - img "1966 Ford Mustang GT" [ref=e450]
+            - paragraph [ref=e451]: 1966 Ford Mustang GT
+            - paragraph [ref=e452]: 1677.60s
+            - paragraph [ref=e453]: "RT: 0.000s"
+          - generic [ref=e454]: VS
+          - generic [ref=e455]:
+            - paragraph [ref=e456]: CPU
+            - img "2016 Jaguar Project 7" [ref=e457]
+            - paragraph [ref=e458]: 2016 Jaguar Project 7
+            - paragraph [ref=e459]: 10.93s
+            - paragraph [ref=e460]: "RT: 0.156s"
+        - generic [ref=e461]:
+          - button "REMATCH" [ref=e462] [cursor=pointer]
+          - button "NEW CAR" [ref=e463] [cursor=pointer]
+    - button "TRY AGAIN" [active] [ref=e464] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e10] [cursor=pointer]:
+    - img [ref=e11]
+  - alert [ref=e14]

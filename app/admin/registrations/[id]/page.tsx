@@ -581,7 +581,7 @@ export default function RegistrationDetailPage() {
                   />
                   <DropdownItem
                     label="Race This Car"
-                    onClick={() => { setMenuOpen(false); window.open(`/race?car=${r.id}`, "_blank"); }}
+                    onClick={() => { setMenuOpen(false); window.open(`/arcade?car=${r.id}`, "_blank"); }}
                   />
                   <DropdownItem
                     label={
@@ -988,7 +988,7 @@ export default function RegistrationDetailPage() {
 
                 <div style={{ textAlign: "center" }}>
                   <button
-                    onClick={() => window.open(`/race?car=${r.id}`, "_blank")}
+                    onClick={() => window.open(`/arcade?car=${r.id}`, "_blank")}
                     style={{
                       padding: "0.6rem 2.5rem",
                       background: "var(--charcoal, #1a1a1e)",

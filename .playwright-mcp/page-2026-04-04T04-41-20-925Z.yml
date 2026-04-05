@@ -1,0 +1,56 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e16]:
+    - generic [ref=e23]:
+      - paragraph [ref=e24]: CLCC ARCADE
+      - heading "Redline Motor Condos" [level=1] [ref=e25]
+      - paragraph [ref=e26]: Choose Your Ride
+      - paragraph [ref=e27]: 27 VEHICLES IN THE GARAGE
+    - generic [ref=e28]:
+      - generic [ref=e380]:
+        - paragraph [ref=e381]: LAKESIDE DRIVE
+        - paragraph [ref=e382]: Lakeshore Dr — Main Beach
+      - generic [ref=e383]:
+        - generic [ref=e384]:
+          - paragraph [ref=e385]: P1
+          - img "1966 Ford Mustang GT" [ref=e387]
+          - paragraph [ref=e388]: "#17"
+          - paragraph [ref=e389]: 1966 Ford Mustang GT
+          - generic [ref=e390]:
+            - generic [ref=e391]: 225 HP
+            - generic [ref=e392]: 2,800 LBS
+        - generic [ref=e393]: VS
+        - generic [ref=e394]:
+          - paragraph [ref=e395]: CPU
+          - img "2016 Jaguar Project 7" [ref=e397]
+          - paragraph [ref=e398]: "#42"
+          - paragraph [ref=e399]: 2016 Jaguar Project 7
+          - generic [ref=e400]:
+            - generic [ref=e401]: 575 HP
+            - generic [ref=e402]: 3,655 LBS
+      - generic [ref=e403]:
+        - generic [ref=e404]:
+          - generic [ref=e405]: HP
+          - generic [ref=e406]: "225"
+          - generic [ref=e407]: "575"
+        - generic [ref=e408]:
+          - generic [ref=e409]: LBS
+          - generic [ref=e410]: 2,800
+          - generic [ref=e411]: 3,655
+        - generic [ref=e412]:
+          - generic [ref=e413]: 1/4 MI
+          - generic [ref=e414]: 15.0s
+          - generic [ref=e415]: 10.8s
+      - generic [ref=e416]:
+        - generic [ref=e417]:
+          - button "RACE!" [ref=e418] [cursor=pointer]
+          - button "SHUFFLE" [ref=e419] [cursor=pointer]
+        - button "PICK DIFFERENT CAR" [ref=e420] [cursor=pointer]
+      - generic [ref=e421]:
+        - text: HOLD
+        - generic [ref=e422]: SPACE
+        - text: OR
+        - generic [ref=e423]: UP
+        - text: TO ACCELERATE
+  - button "Open Next.js Dev Tools" [ref=e10] [cursor=pointer]:
+    - img [ref=e11]
+  - alert [ref=e14]

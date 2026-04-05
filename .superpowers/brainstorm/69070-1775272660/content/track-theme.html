@@ -1,0 +1,132 @@
+<h2>What's the track vibe?</h2>
+<p class="subtitle">Where are these cars racing? Pick one direction.</p>
+
+<div class="cards">
+  <div class="card" data-choice="crystal-lake" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a1e; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 180px;">
+      <svg viewBox="0 0 300 180" width="300" height="180" style="image-rendering: pixelated;">
+        <!-- Night sky -->
+        <rect x="0" y="0" width="300" height="80" fill="#0a0a2e"/>
+        <circle cx="250" cy="25" r="12" fill="#FFD700" opacity="0.3"/>
+        <!-- Stars -->
+        <circle cx="30" cy="15" r="1" fill="#fff"/>
+        <circle cx="80" cy="30" r="1" fill="#fff"/>
+        <circle cx="180" cy="10" r="1" fill="#fff"/>
+        <!-- Lake -->
+        <rect x="0" y="55" width="140" height="40" fill="#1a3a5e" opacity="0.6"/>
+        <line x1="10" y1="65" x2="40" y2="65" stroke="#4488cc" stroke-width="1" opacity="0.3"/>
+        <line x1="60" y1="75" x2="100" y2="75" stroke="#4488cc" stroke-width="1" opacity="0.3"/>
+        <!-- Trees/forest -->
+        <circle cx="20" cy="50" r="12" fill="#1a3a1a"/>
+        <circle cx="45" cy="48" r="14" fill="#1a4a1a"/>
+        <circle cx="70" cy="52" r="11" fill="#1a3a1a"/>
+        <circle cx="160" cy="50" r="13" fill="#1a4a1a"/>
+        <!-- Road winding through -->
+        <path d="M 150,180 C 170,140 200,120 180,90 C 160,60 200,50 220,40 L 300,30" stroke="#444" stroke-width="35" fill="none" stroke-linecap="round"/>
+        <path d="M 150,180 C 170,140 200,120 180,90 C 160,60 200,50 220,40 L 300,30" stroke="#FFD700" stroke-width="1" fill="none" stroke-dasharray="6,6" opacity="0.3"/>
+        <!-- Small town buildings -->
+        <rect x="230" y="60" width="20" height="25" fill="#2a2a3e"/>
+        <rect x="234" y="65" width="5" height="5" fill="#FFD700" opacity="0.5"/>
+        <rect x="241" y="65" width="5" height="5" fill="#FFD700" opacity="0.3"/>
+        <rect x="255" y="55" width="25" height="30" fill="#2a2a4e"/>
+        <rect x="260" y="60" width="5" height="5" fill="#FFD700" opacity="0.4"/>
+        <!-- Car -->
+        <rect x="155" y="158" width="12" height="18" fill="#e63946" rx="2"/>
+        <text x="100" y="178" fill="#4488cc" font-size="7" font-family="monospace">CRYSTAL LAKE</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A — Crystal Lake Hometown</h3>
+      <p>Wind through lakeside roads, small-town main streets, forest back roads, and the motor condo parking lot. Authentic to your actual car show location. Trees, water reflections, street lamps, small-town charm in 8-bit.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="variety" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a1e; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 180px;">
+      <svg viewBox="0 0 300 180" width="300" height="180" style="image-rendering: pixelated;">
+        <!-- 4 mini scenes -->
+        <!-- Desert -->
+        <rect x="5" y="5" width="140" height="80" fill="#c4956a"/>
+        <circle cx="100" cy="25" r="15" fill="#FFD700" opacity="0.6"/>
+        <polygon points="30,65 45,30 60,65" fill="#5a8a3a"/>
+        <rect x="60" y="50" width="40" height="10" fill="#888"/>
+        <rect x="65" y="45" width="10" height="16" fill="#e63946" rx="1"/>
+        <text x="10" y="18" fill="#fff" font-size="7" font-family="monospace">DESERT</text>
+
+        <!-- City night -->
+        <rect x="155" y="5" width="140" height="80" fill="#0a0a2e"/>
+        <rect x="170" y="20" width="15" height="40" fill="#2a2a4e"/>
+        <rect x="173" y="25" width="4" height="4" fill="#FFD700" opacity="0.5"/>
+        <rect x="173" y="32" width="4" height="4" fill="#4af" opacity="0.3"/>
+        <rect x="190" y="15" width="20" height="45" fill="#1a1a3e"/>
+        <rect x="194" y="20" width="5" height="4" fill="#FFD700" opacity="0.4"/>
+        <rect x="194" y="28" width="5" height="4" fill="#e63946" opacity="0.3"/>
+        <rect x="215" y="25" width="18" height="35" fill="#2a2a4e"/>
+        <rect x="165" y="55" width="120" height="8" fill="#555"/>
+        <rect x="200" y="52" width="10" height="14" fill="#4488ff" rx="1"/>
+        <text x="160" y="18" fill="#fff" font-size="7" font-family="monospace">DOWNTOWN</text>
+
+        <!-- Coast -->
+        <rect x="5" y="95" width="140" height="80" fill="#4488cc"/>
+        <rect x="5" y="120" width="140" height="55" fill="#c4a56a"/>
+        <path d="M 5,120 Q 40,115 75,120 Q 110,125 145,118" fill="#4488cc"/>
+        <rect x="30" y="130" width="80" height="8" fill="#888"/>
+        <rect x="60" y="127" width="10" height="14" fill="#FFD700" rx="1"/>
+        <circle cx="120" cy="108" r="8" fill="#3a7a33"/>
+        <text x="10" y="108" fill="#fff" font-size="7" font-family="monospace">COASTAL</text>
+
+        <!-- Mountain -->
+        <rect x="155" y="95" width="140" height="80" fill="#1a2a3e"/>
+        <polygon points="180,170 210,110 240,170" fill="#4a4a6e"/>
+        <polygon points="220,170 255,100 290,170" fill="#3a3a5e"/>
+        <polygon points="210,115 210,108 215,108" fill="#fff"/>
+        <polygon points="255,105 250,95 260,95" fill="#fff"/>
+        <path d="M 160,165 C 180,150 200,155 220,145 C 240,135 260,140 295,130" stroke="#888" stroke-width="6" fill="none"/>
+        <rect x="190" y="147" width="10" height="14" fill="#e63946" rx="1"/>
+        <text x="160" y="108" fill="#fff" font-size="7" font-family="monospace">MOUNTAIN</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B — Multiple Themed Tracks</h3>
+      <p>A variety pack: desert highways, neon city streets, coastal roads, mountain passes. Each track has its own palette, scenery, and hazards. More replay value, more visual variety. Start with 2-3 tracks and add more over time.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="both" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0a0a1e; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 180px;">
+      <svg viewBox="0 0 300 180" width="300" height="180" style="image-rendering: pixelated;">
+        <!-- Crystal Lake center, with route lines branching out -->
+        <rect x="0" y="0" width="300" height="180" fill="#1a2a1e"/>
+
+        <!-- Central hub -->
+        <rect x="110" y="65" width="80" height="50" fill="#2a2a3e" rx="4" stroke="#FFD700" stroke-width="1"/>
+        <text x="120" y="85" fill="#FFD700" font-size="7" font-family="monospace">CRYSTAL</text>
+        <text x="125" y="97" fill="#FFD700" font-size="7" font-family="monospace">LAKE</text>
+        <text x="122" y="109" fill="#888" font-size="6" font-family="monospace">HOME BASE</text>
+
+        <!-- Route lines going out -->
+        <line x1="110" y1="80" x2="40" y2="40" stroke="#e63946" stroke-width="2" stroke-dasharray="4,4"/>
+        <line x1="190" y1="80" x2="260" y2="40" stroke="#4488ff" stroke-width="2" stroke-dasharray="4,4"/>
+        <line x1="150" y1="115" x2="150" y2="165" stroke="#44cc44" stroke-width="2" stroke-dasharray="4,4"/>
+        <line x1="110" y1="100" x2="40" y2="140" stroke="#FFD700" stroke-width="2" stroke-dasharray="4,4"/>
+
+        <!-- Track labels -->
+        <rect x="10" y="25" width="55" height="20" fill="#c4956a" rx="3"/>
+        <text x="15" y="38" fill="#fff" font-size="6" font-family="monospace">DESERT</text>
+
+        <rect x="235" y="25" width="55" height="20" fill="#0a0a4e" rx="3"/>
+        <text x="243" y="38" fill="#fff" font-size="6" font-family="monospace">CITY</text>
+
+        <rect x="120" y="155" width="60" height="20" fill="#4a4a6e" rx="3"/>
+        <text x="125" y="168" fill="#fff" font-size="6" font-family="monospace">MOUNTAIN</text>
+
+        <rect x="10" y="130" width="55" height="20" fill="#1a3a5e" rx="3"/>
+        <text x="15" y="143" fill="#fff" font-size="6" font-family="monospace">LAKESIDE</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C — Crystal Lake Hub + Themed Routes</h3>
+      <p>Crystal Lake is home base. Races start from the motor condos and branch out — lakeside route, downtown route, forest route, highway route. Local flavor as the anchor, with variety in where each race takes you. Best of both worlds.</p>
+    </div>
+  </div>
+</div>

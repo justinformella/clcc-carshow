@@ -1,0 +1,414 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e20]:
+    - generic [ref=e31]:
+      - paragraph [ref=e32]: CLCC ARCADE
+      - heading "Redline Motor Condos" [level=1] [ref=e33]
+      - paragraph [ref=e34]: Choose Your Ride
+      - paragraph [ref=e35]: 31 VEHICLES IN THE GARAGE
+    - generic [ref=e36]:
+      - button "1966 Ford Mustang GT Pony Car 1966 Ford Mustang GT HP 225 WT 2,800 ENG V8 DSP 4.7L DRV RWD" [ref=e37] [cursor=pointer]:
+        - img "1966 Ford Mustang GT" [ref=e39]
+        - generic [ref=e40]:
+          - paragraph [ref=e41]: Pony Car
+          - paragraph [ref=e42]: 1966 Ford Mustang GT
+          - generic [ref=e43]:
+            - generic [ref=e44]: HP 225
+            - generic [ref=e45]: WT 2,800
+            - generic [ref=e46]: ENG V8
+            - generic [ref=e47]:
+              - text: DSP
+              - generic [ref=e48]: 4.7L
+            - generic [ref=e49]: DRV RWD
+      - button "1965 Ford Mustang Pony Car 1965 Ford Mustang HP 120 WT 2,556 ENG Inline-6 DSP 3.3L DRV RWD" [ref=e50] [cursor=pointer]:
+        - img "1965 Ford Mustang" [ref=e52]
+        - generic [ref=e53]:
+          - paragraph [ref=e54]: Pony Car
+          - paragraph [ref=e55]: 1965 Ford Mustang
+          - generic [ref=e56]:
+            - generic [ref=e57]: HP 120
+            - generic [ref=e58]: WT 2,556
+            - generic [ref=e59]: ENG Inline-6
+            - generic [ref=e60]:
+              - text: DSP
+              - generic [ref=e61]: 3.3L
+            - generic [ref=e62]: DRV RWD
+      - button "2000 Ferrari 360 Exotic 2000 Ferrari 360 HP 400 WT 3,197 ENG V8 DSP 3.6L DRV RWD" [ref=e63] [cursor=pointer]:
+        - img "2000 Ferrari 360" [ref=e65]
+        - generic [ref=e66]:
+          - paragraph [ref=e67]: Exotic
+          - paragraph [ref=e68]: 2000 Ferrari 360
+          - generic [ref=e69]:
+            - generic [ref=e70]: HP 400
+            - generic [ref=e71]: WT 3,197
+            - generic [ref=e72]: ENG V8
+            - generic [ref=e73]:
+              - text: DSP
+              - generic [ref=e74]: 3.6L
+            - generic [ref=e75]: DRV RWD
+      - button "2003 Ford SVT Focus Import Tuner 2003 Ford SVT Focus HP 170 WT 2,750 ENG Inline-4 DSP 2L DRV FWD" [ref=e76] [cursor=pointer]:
+        - img "2003 Ford SVT Focus" [ref=e78]
+        - generic [ref=e79]:
+          - paragraph [ref=e80]: Import Tuner
+          - paragraph [ref=e81]: 2003 Ford SVT Focus
+          - generic [ref=e82]:
+            - generic [ref=e83]: HP 170
+            - generic [ref=e84]: WT 2,750
+            - generic [ref=e85]: ENG Inline-4
+            - generic [ref=e86]:
+              - text: DSP
+              - generic [ref=e87]: 2L
+            - generic [ref=e88]: DRV FWD
+      - button "1959 Buick Invicta Flattop Classic 1959 Buick Invicta Flattop HP 325 WT 4,200 ENG V8 DSP 6.6L DRV RWD" [ref=e89] [cursor=pointer]:
+        - img "1959 Buick Invicta Flattop" [ref=e91]
+        - generic [ref=e92]:
+          - paragraph [ref=e93]: Classic
+          - paragraph [ref=e94]: 1959 Buick Invicta Flattop
+          - generic [ref=e95]:
+            - generic [ref=e96]: HP 325
+            - generic [ref=e97]: WT 4,200
+            - generic [ref=e98]: ENG V8
+            - generic [ref=e99]:
+              - text: DSP
+              - generic [ref=e100]: 6.6L
+            - generic [ref=e101]: DRV RWD
+      - button "1959 Cadillac Sedan DeVille Flattop Luxury 1959 Cadillac Sedan DeVille Flattop HP 325 WT 4,800 ENG V8 DSP 6.4L DRV RWD" [ref=e102] [cursor=pointer]:
+        - img "1959 Cadillac Sedan DeVille Flattop" [ref=e104]
+        - generic [ref=e105]:
+          - paragraph [ref=e106]: Luxury
+          - paragraph [ref=e107]: 1959 Cadillac Sedan DeVille Flattop
+          - generic [ref=e108]:
+            - generic [ref=e109]: HP 325
+            - generic [ref=e110]: WT 4,800
+            - generic [ref=e111]: ENG V8
+            - generic [ref=e112]:
+              - text: DSP
+              - generic [ref=e113]: 6.4L
+            - generic [ref=e114]: DRV RWD
+      - button "1967 Austin Healey Sprite Sports Car 1967 Austin Healey Sprite HP 65 WT 1,460 ENG Inline-4 DSP 1.3L DRV RWD" [ref=e115] [cursor=pointer]:
+        - img "1967 Austin Healey Sprite" [ref=e117]
+        - generic [ref=e118]:
+          - paragraph [ref=e119]: Sports Car
+          - paragraph [ref=e120]: 1967 Austin Healey Sprite
+          - generic [ref=e121]:
+            - generic [ref=e122]: HP 65
+            - generic [ref=e123]: WT 1,460
+            - generic [ref=e124]: ENG Inline-4
+            - generic [ref=e125]:
+              - text: DSP
+              - generic [ref=e126]: 1.3L
+            - generic [ref=e127]: DRV RWD
+      - button "2002 Audi TT Sports Car 2002 Audi TT HP 225 WT 3,142 ENG Inline-4 DSP 1.8L DRV AWD" [ref=e128] [cursor=pointer]:
+        - img "2002 Audi TT" [ref=e130]
+        - generic [ref=e131]:
+          - paragraph [ref=e132]: Sports Car
+          - paragraph [ref=e133]: 2002 Audi TT
+          - generic [ref=e134]:
+            - generic [ref=e135]: HP 225
+            - generic [ref=e136]: WT 3,142
+            - generic [ref=e137]: ENG Inline-4
+            - generic [ref=e138]:
+              - text: DSP
+              - generic [ref=e139]: 1.8L
+            - generic [ref=e140]: DRV AWD
+      - button "1974 Plymouth Cuda Muscle Car 1974 Plymouth Cuda HP 245 WT 3,600 ENG V8 DSP 5.9L DRV RWD" [ref=e141] [cursor=pointer]:
+        - img "1974 Plymouth Cuda" [ref=e143]
+        - generic [ref=e144]:
+          - paragraph [ref=e145]: Muscle Car
+          - paragraph [ref=e146]: 1974 Plymouth Cuda
+          - generic [ref=e147]:
+            - generic [ref=e148]: HP 245
+            - generic [ref=e149]: WT 3,600
+            - generic [ref=e150]: ENG V8
+            - generic [ref=e151]:
+              - text: DSP
+              - generic [ref=e152]: 5.9L
+            - generic [ref=e153]: DRV RWD
+      - button "1967 Shelby GT 350 Muscle Car 1967 Shelby GT 350 HP 306 WT 3,200 ENG V8 DSP 4.7L DRV RWD" [ref=e154] [cursor=pointer]:
+        - img "1967 Shelby GT 350" [ref=e156]
+        - generic [ref=e157]:
+          - paragraph [ref=e158]: Muscle Car
+          - paragraph [ref=e159]: 1967 Shelby GT 350
+          - generic [ref=e160]:
+            - generic [ref=e161]: HP 306
+            - generic [ref=e162]: WT 3,200
+            - generic [ref=e163]: ENG V8
+            - generic [ref=e164]:
+              - text: DSP
+              - generic [ref=e165]: 4.7L
+            - generic [ref=e166]: DRV RWD
+      - button "1967 Chevrolet Impala Classic 1967 Chevrolet Impala HP 275 WT 3,600 ENG V8 DSP 5.4L DRV RWD" [ref=e167] [cursor=pointer]:
+        - img "1967 Chevrolet Impala" [ref=e169]
+        - generic [ref=e170]:
+          - paragraph [ref=e171]: Classic
+          - paragraph [ref=e172]: 1967 Chevrolet Impala
+          - generic [ref=e173]:
+            - generic [ref=e174]: HP 275
+            - generic [ref=e175]: WT 3,600
+            - generic [ref=e176]: ENG V8
+            - generic [ref=e177]:
+              - text: DSP
+              - generic [ref=e178]: 5.4L
+            - generic [ref=e179]: DRV RWD
+      - button "1990 Nissan 240sx Import Tuner 1990 Nissan 240sx HP 140 WT 2,700 ENG Inline-4 DSP 2.4L DRV RWD" [ref=e180] [cursor=pointer]:
+        - img "1990 Nissan 240sx" [ref=e182]
+        - generic [ref=e183]:
+          - paragraph [ref=e184]: Import Tuner
+          - paragraph [ref=e185]: 1990 Nissan 240sx
+          - generic [ref=e186]:
+            - generic [ref=e187]: HP 140
+            - generic [ref=e188]: WT 2,700
+            - generic [ref=e189]: ENG Inline-4
+            - generic [ref=e190]:
+              - text: DSP
+              - generic [ref=e191]: 2.4L
+            - generic [ref=e192]: DRV RWD
+      - button "1991 Nissan 240sx Import Tuner 1991 Nissan 240sx HP 155 WT 2,700 ENG Inline-4 DSP 2.4L DRV RWD" [ref=e193] [cursor=pointer]:
+        - img "1991 Nissan 240sx" [ref=e195]
+        - generic [ref=e196]:
+          - paragraph [ref=e197]: Import Tuner
+          - paragraph [ref=e198]: 1991 Nissan 240sx
+          - generic [ref=e199]:
+            - generic [ref=e200]: HP 155
+            - generic [ref=e201]: WT 2,700
+            - generic [ref=e202]: ENG Inline-4
+            - generic [ref=e203]:
+              - text: DSP
+              - generic [ref=e204]: 2.4L
+            - generic [ref=e205]: DRV RWD
+      - button "1948 Lincoln Continental Cabriolet Luxury 1948 Lincoln Continental Cabriolet HP 130 WT 4,200 ENG V12 DSP 5L DRV RWD" [ref=e206] [cursor=pointer]:
+        - img "1948 Lincoln Continental Cabriolet" [ref=e208]
+        - generic [ref=e209]:
+          - paragraph [ref=e210]: Luxury
+          - paragraph [ref=e211]: 1948 Lincoln Continental Cabriolet
+          - generic [ref=e212]:
+            - generic [ref=e213]: HP 130
+            - generic [ref=e214]: WT 4,200
+            - generic [ref=e215]: ENG V12
+            - generic [ref=e216]:
+              - text: DSP
+              - generic [ref=e217]: 5L
+            - generic [ref=e218]: DRV RWD
+      - button "1972 Citroen D Super Luxury 1972 Citroen D Super HP 115 WT 2,700 ENG Inline-4 DSP 2.2L DRV FWD" [ref=e219] [cursor=pointer]:
+        - img "1972 Citroen D Super" [ref=e221]
+        - generic [ref=e222]:
+          - paragraph [ref=e223]: Luxury
+          - paragraph [ref=e224]: 1972 Citroen D Super
+          - generic [ref=e225]:
+            - generic [ref=e226]: HP 115
+            - generic [ref=e227]: WT 2,700
+            - generic [ref=e228]: ENG Inline-4
+            - generic [ref=e229]:
+              - text: DSP
+              - generic [ref=e230]: 2.2L
+            - generic [ref=e231]: DRV FWD
+      - button "1993 Toyota MR2 Turbo Sports Car 1993 Toyota MR2 Turbo HP 200 WT 2,800 ENG Inline-4 DSP 2L DRV RWD" [ref=e232] [cursor=pointer]:
+        - img "1993 Toyota MR2 Turbo" [ref=e234]
+        - generic [ref=e235]:
+          - paragraph [ref=e236]: Sports Car
+          - paragraph [ref=e237]: 1993 Toyota MR2 Turbo
+          - generic [ref=e238]:
+            - generic [ref=e239]: HP 200
+            - generic [ref=e240]: WT 2,800
+            - generic [ref=e241]: ENG Inline-4
+            - generic [ref=e242]:
+              - text: DSP
+              - generic [ref=e243]: 2L
+            - generic [ref=e244]: DRV RWD
+      - button "1989 BMW 325 Touring Luxury 1989 BMW 325 Touring HP 168 WT 2,900 ENG Inline-6 DSP 2.5L DRV RWD" [ref=e245] [cursor=pointer]:
+        - img "1989 BMW 325 Touring" [ref=e247]
+        - generic [ref=e248]:
+          - paragraph [ref=e249]: Luxury
+          - paragraph [ref=e250]: 1989 BMW 325 Touring
+          - generic [ref=e251]:
+            - generic [ref=e252]: HP 168
+            - generic [ref=e253]: WT 2,900
+            - generic [ref=e254]: ENG Inline-6
+            - generic [ref=e255]:
+              - text: DSP
+              - generic [ref=e256]: 2.5L
+            - generic [ref=e257]: DRV RWD
+      - button "1990 Nissan 300zx Sports Car 1990 Nissan 300zx HP 222 WT 3,200 ENG V6 DSP 3L DRV RWD" [ref=e258] [cursor=pointer]:
+        - img "1990 Nissan 300zx" [ref=e260]
+        - generic [ref=e261]:
+          - paragraph [ref=e262]: Sports Car
+          - paragraph [ref=e263]: 1990 Nissan 300zx
+          - generic [ref=e264]:
+            - generic [ref=e265]: HP 222
+            - generic [ref=e266]: WT 3,200
+            - generic [ref=e267]: ENG V6
+            - generic [ref=e268]:
+              - text: DSP
+              - generic [ref=e269]: 3L
+            - generic [ref=e270]: DRV RWD
+      - button "1987 Porsche 911 Sports Car 1987 Porsche 911 HP 217 WT 2,756 ENG Flat-6 DSP 3.2L DRV RWD" [ref=e271] [cursor=pointer]:
+        - img "1987 Porsche 911" [ref=e273]
+        - generic [ref=e274]:
+          - paragraph [ref=e275]: Sports Car
+          - paragraph [ref=e276]: 1987 Porsche 911
+          - generic [ref=e277]:
+            - generic [ref=e278]: HP 217
+            - generic [ref=e279]: WT 2,756
+            - generic [ref=e280]: ENG Flat-6
+            - generic [ref=e281]:
+              - text: DSP
+              - generic [ref=e282]: 3.2L
+            - generic [ref=e283]: DRV RWD
+      - button "1970 Mercury Cyclone Muscle Car 1970 Mercury Cyclone HP 370 WT 3,700 ENG V8 DSP 7L DRV RWD" [ref=e284] [cursor=pointer]:
+        - img "1970 Mercury Cyclone" [ref=e286]
+        - generic [ref=e287]:
+          - paragraph [ref=e288]: Muscle Car
+          - paragraph [ref=e289]: 1970 Mercury Cyclone
+          - generic [ref=e290]:
+            - generic [ref=e291]: HP 370
+            - generic [ref=e292]: WT 3,700
+            - generic [ref=e293]: ENG V8
+            - generic [ref=e294]:
+              - text: DSP
+              - generic [ref=e295]: 7L
+            - generic [ref=e296]: DRV RWD
+      - button "1971 Chevrolet Camaro Pony Car 1971 Chevrolet Camaro HP 275 WT 3,400 ENG V8 DSP 5.7L DRV RWD" [ref=e297] [cursor=pointer]:
+        - img "1971 Chevrolet Camaro" [ref=e299]
+        - generic [ref=e300]:
+          - paragraph [ref=e301]: Pony Car
+          - paragraph [ref=e302]: 1971 Chevrolet Camaro
+          - generic [ref=e303]:
+            - generic [ref=e304]: HP 275
+            - generic [ref=e305]: WT 3,400
+            - generic [ref=e306]: ENG V8
+            - generic [ref=e307]:
+              - text: DSP
+              - generic [ref=e308]: 5.7L
+            - generic [ref=e309]: DRV RWD
+      - button "1931 Ford Model A Classic 1931 Ford Model A HP 40 WT 2,265 ENG Inline-4 DSP 3.3L DRV RWD" [ref=e310] [cursor=pointer]:
+        - img "1931 Ford Model A" [ref=e312]
+        - generic [ref=e313]:
+          - paragraph [ref=e314]: Classic
+          - paragraph [ref=e315]: 1931 Ford Model A
+          - generic [ref=e316]:
+            - generic [ref=e317]: HP 40
+            - generic [ref=e318]: WT 2,265
+            - generic [ref=e319]: ENG Inline-4
+            - generic [ref=e320]:
+              - text: DSP
+              - generic [ref=e321]: 3.3L
+            - generic [ref=e322]: DRV RWD
+      - button "2016 Jaguar F Type Project 7 Sports Car 2016 Jaguar F Type Project 7 HP 575 WT 3,655 ENG V8 DSP 5L DRV RWD" [ref=e323] [cursor=pointer]:
+        - img "2016 Jaguar F Type Project 7" [ref=e325]
+        - generic [ref=e326]:
+          - paragraph [ref=e327]: Sports Car
+          - paragraph [ref=e328]: 2016 Jaguar F Type Project 7
+          - generic [ref=e329]:
+            - generic [ref=e330]: HP 575
+            - generic [ref=e331]: WT 3,655
+            - generic [ref=e332]: ENG V8
+            - generic [ref=e333]:
+              - text: DSP
+              - generic [ref=e334]: 5L
+            - generic [ref=e335]: DRV RWD
+      - button "2025 BMW M4 Competition Sports Car 2025 BMW M4 Competition HP 503 WT 3,900 ENG Inline-6 DSP 3L DRV RWD" [ref=e336] [cursor=pointer]:
+        - img "2025 BMW M4 Competition" [ref=e338]
+        - generic [ref=e339]:
+          - paragraph [ref=e340]: Sports Car
+          - paragraph [ref=e341]: 2025 BMW M4 Competition
+          - generic [ref=e342]:
+            - generic [ref=e343]: HP 503
+            - generic [ref=e344]: WT 3,900
+            - generic [ref=e345]: ENG Inline-6
+            - generic [ref=e346]:
+              - text: DSP
+              - generic [ref=e347]: 3L
+            - generic [ref=e348]: DRV RWD
+      - button "2006 Ford GT Exotic 2006 Ford GT HP 550 WT 3,485 ENG V8 DSP 5.4L DRV RWD" [ref=e349] [cursor=pointer]:
+        - img "2006 Ford GT" [ref=e351]
+        - generic [ref=e352]:
+          - paragraph [ref=e353]: Exotic
+          - paragraph [ref=e354]: 2006 Ford GT
+          - generic [ref=e355]:
+            - generic [ref=e356]: HP 550
+            - generic [ref=e357]: WT 3,485
+            - generic [ref=e358]: ENG V8
+            - generic [ref=e359]:
+              - text: DSP
+              - generic [ref=e360]: 5.4L
+            - generic [ref=e361]: DRV RWD
+      - button "2023 Dodge Challenger Hellcat Last Call Muscle Car 2023 Dodge Challenger Hellcat Last Call HP 717 WT 4,450 ENG V8 DSP 6.2L DRV RWD" [ref=e362] [cursor=pointer]:
+        - img "2023 Dodge Challenger Hellcat Last Call" [ref=e364]
+        - generic [ref=e365]:
+          - paragraph [ref=e366]: Muscle Car
+          - paragraph [ref=e367]: 2023 Dodge Challenger Hellcat Last Call
+          - generic [ref=e368]:
+            - generic [ref=e369]: HP 717
+            - generic [ref=e370]: WT 4,450
+            - generic [ref=e371]: ENG V8
+            - generic [ref=e372]:
+              - text: DSP
+              - generic [ref=e373]: 6.2L
+            - generic [ref=e374]: DRV RWD
+      - button "2014 Ferrari California Exotic 2014 Ferrari California HP 483 WT 3,825 ENG V8 DSP 4.3L DRV RWD" [ref=e375] [cursor=pointer]:
+        - img "2014 Ferrari California" [ref=e377]
+        - generic [ref=e378]:
+          - paragraph [ref=e379]: Exotic
+          - paragraph [ref=e380]: 2014 Ferrari California
+          - generic [ref=e381]:
+            - generic [ref=e382]: HP 483
+            - generic [ref=e383]: WT 3,825
+            - generic [ref=e384]: ENG V8
+            - generic [ref=e385]:
+              - text: DSP
+              - generic [ref=e386]: 4.3L
+            - generic [ref=e387]: DRV RWD
+      - button "1978 Porsche 930 Sports Car 1978 Porsche 930 HP 300 WT 2,954 ENG Flat-6 DSP 3.3L DRV RWD" [ref=e388] [cursor=pointer]:
+        - img "1978 Porsche 930" [ref=e390]
+        - generic [ref=e391]:
+          - paragraph [ref=e392]: Sports Car
+          - paragraph [ref=e393]: 1978 Porsche 930
+          - generic [ref=e394]:
+            - generic [ref=e395]: HP 300
+            - generic [ref=e396]: WT 2,954
+            - generic [ref=e397]: ENG Flat-6
+            - generic [ref=e398]:
+              - text: DSP
+              - generic [ref=e399]: 3.3L
+            - generic [ref=e400]: DRV RWD
+      - button "2006 Ford GT Exotic 2006 Ford GT HP 550 WT 3,485 ENG V8 DSP 5.4L DRV RWD" [ref=e401] [cursor=pointer]:
+        - img "2006 Ford GT" [ref=e403]
+        - generic [ref=e404]:
+          - paragraph [ref=e405]: Exotic
+          - paragraph [ref=e406]: 2006 Ford GT
+          - generic [ref=e407]:
+            - generic [ref=e408]: HP 550
+            - generic [ref=e409]: WT 3,485
+            - generic [ref=e410]: ENG V8
+            - generic [ref=e411]:
+              - text: DSP
+              - generic [ref=e412]: 5.4L
+            - generic [ref=e413]: DRV RWD
+      - button "1975 Maserati Merak Sports Car 1975 Maserati Merak HP 190 WT 3,086 ENG V6 DSP 3L DRV RWD" [ref=e414] [cursor=pointer]:
+        - img "1975 Maserati Merak" [ref=e416]
+        - generic [ref=e417]:
+          - paragraph [ref=e418]: Sports Car
+          - paragraph [ref=e419]: 1975 Maserati Merak
+          - generic [ref=e420]:
+            - generic [ref=e421]: HP 190
+            - generic [ref=e422]: WT 3,086
+            - generic [ref=e423]: ENG V6
+            - generic [ref=e424]:
+              - text: DSP
+              - generic [ref=e425]: 3L
+            - generic [ref=e426]: DRV RWD
+      - button "2001 Chrysler Prowler Other 2001 Chrysler Prowler HP 253 WT 2,838 ENG V6 DSP 3.5L DRV RWD" [ref=e427] [cursor=pointer]:
+        - img "2001 Chrysler Prowler" [ref=e429]
+        - generic [ref=e430]:
+          - paragraph [ref=e431]: Other
+          - paragraph [ref=e432]: 2001 Chrysler Prowler
+          - generic [ref=e433]:
+            - generic [ref=e434]: HP 253
+            - generic [ref=e435]: WT 2,838
+            - generic [ref=e436]: ENG V6
+            - generic [ref=e437]:
+              - text: DSP
+              - generic [ref=e438]: 3.5L
+            - generic [ref=e439]: DRV RWD
+  - button "Open Next.js Dev Tools" [ref=e27] [cursor=pointer]:
+    - img [ref=e28]
+  - alert [ref=e18]

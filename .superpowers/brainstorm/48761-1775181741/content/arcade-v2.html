@@ -1,0 +1,95 @@
+<h2>Arcade Section — Take 2</h2>
+<p class="subtitle">Leading with pixel art cars, minimal text. Which layout feels right?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d0d1a; padding:2rem 1.5rem; font-family:'Courier New',monospace; text-align:center; border-bottom:2px solid #333;">
+      <div style="color:#ffd700; font-size:0.65rem; letter-spacing:0.3em; margin-bottom:1.2rem;">ARCADE</div>
+      <!-- 3 cars in a row like a garage lineup -->
+      <div style="display:flex; justify-content:center; gap:0.3rem; margin-bottom:1.2rem;">
+        <div style="width:90px; height:50px; background:#111; border:1px solid #333; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <div style="width:60px; height:20px; background:#dc2626; border-radius:2px; position:relative;">
+            <div style="position:absolute;bottom:-3px;left:8px;width:8px;height:8px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            <div style="position:absolute;bottom:-3px;right:8px;width:8px;height:8px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            <div style="position:absolute;top:2px;left:12px;width:20px;height:8px;background:rgba(150,200,255,0.3);border-radius:1px;"></div>
+          </div>
+        </div>
+        <div style="width:90px; height:50px; background:#111; border:1px solid #333; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <div style="width:65px; height:18px; background:#ffd700; border-radius:2px; position:relative;">
+            <div style="position:absolute;bottom:-3px;left:10px;width:8px;height:8px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            <div style="position:absolute;bottom:-3px;right:10px;width:8px;height:8px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            <div style="position:absolute;top:2px;left:15px;width:18px;height:7px;background:rgba(150,200,255,0.3);border-radius:1px;"></div>
+          </div>
+        </div>
+        <div style="width:90px; height:50px; background:#111; border:1px solid #333; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <div style="width:55px; height:22px; background:#3b82f6; border-radius:2px; position:relative;">
+            <div style="position:absolute;bottom:-3px;left:7px;width:8px;height:8px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            <div style="position:absolute;bottom:-3px;right:7px;width:8px;height:8px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            <div style="position:absolute;top:2px;left:10px;width:22px;height:9px;background:rgba(150,200,255,0.3);border-radius:1px;"></div>
+          </div>
+        </div>
+      </div>
+      <div style="color:#fff; font-size:0.85rem; font-weight:bold; margin-bottom:0.4rem;">Pick a car. Hit the gas.</div>
+      <div style="display:inline-block; background:#ffd700; color:#0d0d1a; padding:0.5rem 1.8rem; font-size:0.7rem; font-weight:bold; border:2px solid #b8860b; margin-top:0.6rem;">PLAY</div>
+    </div>
+    <div class="card-body">
+      <h3>Garage Lineup</h3>
+      <p>3 pixel art car thumbnails in a row (pulled from actual registered cars' pixel art). Short tagline + PLAY button. Clean, visual, arcade-like.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d0d1a; padding:2rem 1.5rem; font-family:'Courier New',monospace; text-align:center; border-bottom:2px solid #333;">
+      <div style="color:#ffd700; font-size:0.65rem; letter-spacing:0.3em; margin-bottom:1rem;">ARCADE</div>
+      <!-- Single featured car, large -->
+      <div style="width:180px; height:80px; background:#111; border:2px solid #ffd700; margin:0 auto 0.8rem; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:3px 3px 0 #b8860b;">
+        <div style="width:120px; height:40px; background:#dc2626; border-radius:3px; position:relative;">
+          <div style="position:absolute;bottom:-5px;left:15px;width:14px;height:14px;border-radius:50%;background:#444;border:2px solid #666;"></div>
+          <div style="position:absolute;bottom:-5px;right:15px;width:14px;height:14px;border-radius:50%;background:#444;border:2px solid #666;"></div>
+          <div style="position:absolute;top:4px;left:25px;width:40px;height:16px;background:rgba(150,200,255,0.3);border-radius:2px;"></div>
+        </div>
+      </div>
+      <div style="color:#aaa; font-size:0.5rem; margin-bottom:0.8rem;">1966 FORD MUSTANG GT</div>
+      <div style="color:#fff; font-size:0.85rem; font-weight:bold; margin-bottom:0.5rem;">Think you can win?</div>
+      <div style="display:inline-block; background:#ffd700; color:#0d0d1a; padding:0.5rem 1.8rem; font-size:0.7rem; font-weight:bold; border:2px solid #b8860b;">PLAY</div>
+    </div>
+    <div class="card-body">
+      <h3>Featured Challenger</h3>
+      <p>One large pixel art car in a gold-bordered frame with its name underneath. Rotates randomly from registered cars. Feels like an arcade "INSERT COIN" screen.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d0d1a; padding:2rem 1.5rem; font-family:'Courier New',monospace; text-align:center; border-bottom:2px solid #333; position:relative; overflow:hidden;">
+      <div style="color:#ffd700; font-size:0.65rem; letter-spacing:0.3em; margin-bottom:1rem;">ARCADE</div>
+      <!-- Two cars facing off -->
+      <div style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-bottom:1rem;">
+        <div style="text-align:center;">
+          <div style="width:80px; height:45px; background:#111; border:1px solid #ffd700; display:flex; align-items:center; justify-content:center;">
+            <div style="width:55px; height:18px; background:#dc2626; border-radius:2px; position:relative;">
+              <div style="position:absolute;bottom:-3px;left:7px;width:7px;height:7px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+              <div style="position:absolute;bottom:-3px;right:7px;width:7px;height:7px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            </div>
+          </div>
+          <div style="color:#ffd700; font-size:0.4rem; margin-top:0.3rem;">P1</div>
+        </div>
+        <div style="color:#ffd700; font-size:1rem; font-weight:bold;">VS</div>
+        <div style="text-align:center;">
+          <div style="width:80px; height:45px; background:#111; border:1px solid #ff0000; display:flex; align-items:center; justify-content:center;">
+            <div style="width:55px; height:18px; background:#3b82f6; border-radius:2px; position:relative; transform:scaleX(-1);">
+              <div style="position:absolute;bottom:-3px;left:7px;width:7px;height:7px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+              <div style="position:absolute;bottom:-3px;right:7px;width:7px;height:7px;border-radius:50%;background:#444;border:1px solid #666;"></div>
+            </div>
+          </div>
+          <div style="color:#ff0000; font-size:0.4rem; margin-top:0.3rem;">CPU</div>
+        </div>
+      </div>
+      <div style="color:#fff; font-size:0.85rem; font-weight:bold; margin-bottom:0.5rem;">Quarter-mile. You vs CPU.</div>
+      <div style="display:inline-block; background:#ffd700; color:#0d0d1a; padding:0.5rem 1.8rem; font-size:0.7rem; font-weight:bold; border:2px solid #b8860b;">PLAY</div>
+    </div>
+    <div class="card-body">
+      <h3>VS Matchup</h3>
+      <p>Two pixel art cars facing each other with P1 vs CPU labels — mirrors the actual race matchup screen. Immediately communicates "this is a racing game".</p>
+    </div>
+  </div>
+</div>

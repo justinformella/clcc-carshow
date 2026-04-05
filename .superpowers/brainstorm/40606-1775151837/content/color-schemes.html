@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f5f0e8; font-family: 'Inter', -apple-system, sans-serif; color: #1a1a1a; padding: 2rem; }
+  h2 { font-family: Georgia, serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .subtitle { color: #888; margin-bottom: 2rem; font-size: 0.9rem; }
+
+  .option { border: 2px solid #ddd; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; cursor: pointer; transition: border-color 0.2s; background: #fff; }
+  .option:hover { border-color: #c9a84c; }
+  .option.selected { border-color: #c9a84c; box-shadow: 0 0 0 1px #c9a84c; }
+  .option h3 { font-size: 1rem; margin-bottom: 0.75rem; color: #333; }
+  .option p { color: #888; font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.5; }
+
+  .mockup { background: #f5f0e8; border-radius: 6px; padding: 1.25rem; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+  .stat { background: #fff; border: 1px solid rgba(0,0,0,0.06); padding: 1rem; text-align: center; border-radius: 4px; }
+  .stat .num { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .stat .lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: #999; margin-top: 0.3rem; }
+
+  .chart-box { background: #fff; border: 1px solid rgba(0,0,0,0.06); padding: 1rem; border-radius: 4px; margin-bottom: 0.75rem; }
+  .chart-title { font-size: 0.75rem; font-weight: 600; color: #555; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 100px; }
+  .bar-group { flex: 1; display: flex; gap: 3px; align-items: flex-end; justify-content: center; }
+  .bar { width: 45%; border-radius: 2px 2px 0 0; }
+  .legend { display: flex; gap: 1rem; justify-content: center; margin-top: 0.5rem; }
+  .legend span { font-size: 0.65rem; color: #888; display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  .funnel-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.4rem; }
+  .funnel-label { font-size: 0.75rem; color: #666; width: 80px; text-align: right; }
+  .funnel-bar { height: 24px; border-radius: 3px; display: flex; align-items: center; padding: 0 0.6rem; color: #fff; font-size: 0.7rem; font-weight: 600; }
+  .funnel-pct { font-size: 0.7rem; color: #aaa; }
+
+  .letter { display: inline-block; background: #c9a84c; color: #fff; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-weight: 700; font-size: 0.75rem; margin-right: 0.4rem; }
+</style>
+</head>
+<body>
+
+<h2>Pick a color scheme</h2>
+<p class="subtitle">Same layout, different palettes. Click to select.</p>
+
+<!-- Option A: Ocean -->
+<div class="option" data-choice="a" onclick="document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));this.classList.add('selected')">
+  <h3><span class="letter">A</span> Ocean — Cool blues + teal accent</h3>
+  <p>Professional, calm. Visitors in indigo, registrations in teal. Funnel uses a blue gradient.</p>
+  <div class="mockup">
+    <div class="stat-row">
+      <div class="stat"><div class="num" style="color:#4f46e5">232</div><div class="lbl">Visitors</div></div>
+      <div class="stat"><div class="num" style="color:#0d9488">17</div><div class="lbl">Registrations</div></div>
+      <div class="stat"><div class="num" style="color:#c9a84c">7.3%</div><div class="lbl">Conversion</div></div>
+      <div class="stat"><div class="num" style="color:#6366f1">33</div><div class="lbl">Avg Daily</div></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Daily Visitors vs Registrations</div>
+      <div class="bars">
+        <div class="bar-group"><div class="bar" style="height:5%;background:#6366f1;"></div><div class="bar" style="height:3%;background:#14b8a6;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:15%;background:#6366f1;"></div><div class="bar" style="height:8%;background:#14b8a6;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:60%;background:#6366f1;"></div><div class="bar" style="height:25%;background:#14b8a6;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:100%;background:#4f46e5;"></div><div class="bar" style="height:40%;background:#0d9488;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:70%;background:#6366f1;"></div><div class="bar" style="height:18%;background:#14b8a6;"></div></div>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:#4f46e5;"></span> Visitors</span>
+        <span><span class="dot" style="background:#0d9488;"></span> Registrations</span>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Conversion Funnel</div>
+      <div class="funnel-row"><span class="funnel-label">Homepage</span><div class="funnel-bar" style="width:100%;background:#6366f1;">187</div></div>
+      <div class="funnel-row"><span class="funnel-label">/register</span><div class="funnel-bar" style="width:33%;background:#818cf8;">62</div><span class="funnel-pct">33%</span></div>
+      <div class="funnel-row"><span class="funnel-label">Checkout</span><div class="funnel-bar" style="width:15%;background:#14b8a6;">28</div><span class="funnel-pct">45%</span></div>
+      <div class="funnel-row"><span class="funnel-label">Paid</span><div class="funnel-bar" style="width:9%;background:#0d9488;">17</div><span class="funnel-pct">61%</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Option B: Warm Neutral -->
+<div class="option" data-choice="b" onclick="document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));this.classList.add('selected')">
+  <h3><span class="letter">B</span> Warm Neutral — Charcoal + gold + sage</h3>
+  <p>Matches the site's existing brand. Charcoal for visitors, gold for conversion, sage green for registrations.</p>
+  <div class="mockup">
+    <div class="stat-row">
+      <div class="stat"><div class="num" style="color:#1a1a1a">232</div><div class="lbl">Visitors</div></div>
+      <div class="stat"><div class="num" style="color:#5f7a61">17</div><div class="lbl">Registrations</div></div>
+      <div class="stat"><div class="num" style="color:#c9a84c">7.3%</div><div class="lbl">Conversion</div></div>
+      <div class="stat"><div class="num" style="color:#8b7355">33</div><div class="lbl">Avg Daily</div></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Daily Visitors vs Registrations</div>
+      <div class="bars">
+        <div class="bar-group"><div class="bar" style="height:5%;background:#1a1a1a;opacity:0.6;"></div><div class="bar" style="height:3%;background:#5f7a61;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:15%;background:#1a1a1a;opacity:0.6;"></div><div class="bar" style="height:8%;background:#5f7a61;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:60%;background:#1a1a1a;opacity:0.7;"></div><div class="bar" style="height:25%;background:#5f7a61;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:100%;background:#1a1a1a;"></div><div class="bar" style="height:40%;background:#5f7a61;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:70%;background:#1a1a1a;opacity:0.7;"></div><div class="bar" style="height:18%;background:#5f7a61;"></div></div>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:#1a1a1a;"></span> Visitors</span>
+        <span><span class="dot" style="background:#5f7a61;"></span> Registrations</span>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Conversion Funnel</div>
+      <div class="funnel-row"><span class="funnel-label">Homepage</span><div class="funnel-bar" style="width:100%;background:#1a1a1a;">187</div></div>
+      <div class="funnel-row"><span class="funnel-label">/register</span><div class="funnel-bar" style="width:33%;background:#8b7355;">62</div><span class="funnel-pct">33%</span></div>
+      <div class="funnel-row"><span class="funnel-label">Checkout</span><div class="funnel-bar" style="width:15%;background:#c9a84c;">28</div><span class="funnel-pct">45%</span></div>
+      <div class="funnel-row"><span class="funnel-label">Paid</span><div class="funnel-bar" style="width:9%;background:#5f7a61;">17</div><span class="funnel-pct">61%</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Option C: Sunset -->
+<div class="option" data-choice="c" onclick="document.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));this.classList.add('selected')">
+  <h3><span class="letter">C</span> Sunset — Amber + coral + deep purple</h3>
+  <p>More vibrant and energetic. Amber for visitors, coral for highlights, deep purple for registrations.</p>
+  <div class="mockup">
+    <div class="stat-row">
+      <div class="stat"><div class="num" style="color:#d97706">232</div><div class="lbl">Visitors</div></div>
+      <div class="stat"><div class="num" style="color:#7c3aed">17</div><div class="lbl">Registrations</div></div>
+      <div class="stat"><div class="num" style="color:#e11d48">7.3%</div><div class="lbl">Conversion</div></div>
+      <div class="stat"><div class="num" style="color:#d97706">33</div><div class="lbl">Avg Daily</div></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Daily Visitors vs Registrations</div>
+      <div class="bars">
+        <div class="bar-group"><div class="bar" style="height:5%;background:#f59e0b;"></div><div class="bar" style="height:3%;background:#8b5cf6;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:15%;background:#f59e0b;"></div><div class="bar" style="height:8%;background:#8b5cf6;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:60%;background:#f59e0b;"></div><div class="bar" style="height:25%;background:#8b5cf6;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:100%;background:#d97706;"></div><div class="bar" style="height:40%;background:#7c3aed;"></div></div>
+        <div class="bar-group"><div class="bar" style="height:70%;background:#f59e0b;"></div><div class="bar" style="height:18%;background:#8b5cf6;"></div></div>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:#d97706;"></span> Visitors</span>
+        <span><span class="dot" style="background:#7c3aed;"></span> Registrations</span>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Conversion Funnel</div>
+      <div class="funnel-row"><span class="funnel-label">Homepage</span><div class="funnel-bar" style="width:100%;background:#d97706;">187</div></div>
+      <div class="funnel-row"><span class="funnel-label">/register</span><div class="funnel-bar" style="width:33%;background:#f59e0b;">62</div><span class="funnel-pct">33%</span></div>
+      <div class="funnel-row"><span class="funnel-label">Checkout</span><div class="funnel-bar" style="width:15%;background:#e11d48;">28</div><span class="funnel-pct">45%</span></div>
+      <div class="funnel-row"><span class="funnel-label">Paid</span><div class="funnel-bar" style="width:9%;background:#7c3aed;">17</div><span class="funnel-pct">61%</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

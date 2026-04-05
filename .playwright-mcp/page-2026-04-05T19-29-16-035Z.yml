@@ -1,0 +1,12 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e19]:
+      - paragraph [ref=e440]: URW AUTOMOTIVE
+      - heading "DYNO ROOM" [level=1] [ref=e449]
+      - paragraph [ref=e450]: 1966 Ford Mustang GT
+    - generic [ref=e452]:
+      - button "START DYNO" [ref=e453] [cursor=pointer]
+      - button "BACK TO GARAGE" [ref=e454] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e27] [cursor=pointer]:
+    - img [ref=e28]
+  - alert [ref=e18]

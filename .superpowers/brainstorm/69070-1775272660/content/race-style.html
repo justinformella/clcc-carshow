@@ -1,0 +1,125 @@
+<h2>What kind of road race are you imagining?</h2>
+<p class="subtitle">Pick the racing perspective that excites you most</p>
+
+<div class="cards">
+  <div class="card" data-choice="topdown" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #1a1a2e; padding: 24px; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+      <!-- Top-down pixel art mockup -->
+      <svg viewBox="0 0 300 200" width="300" height="200" style="image-rendering: pixelated;">
+        <!-- Track -->
+        <rect x="40" y="0" width="220" height="200" fill="#444" rx="4"/>
+        <rect x="60" y="0" width="180" height="200" fill="#333" rx="4"/>
+        <!-- Lane lines -->
+        <rect x="148" y="10" width="4" height="20" fill="#FFD700" opacity="0.7"/>
+        <rect x="148" y="50" width="4" height="20" fill="#FFD700" opacity="0.7"/>
+        <rect x="148" y="90" width="4" height="20" fill="#FFD700" opacity="0.7"/>
+        <rect x="148" y="130" width="4" height="20" fill="#FFD700" opacity="0.7"/>
+        <rect x="148" y="170" width="4" height="20" fill="#FFD700" opacity="0.7"/>
+        <!-- Player car (top-down) -->
+        <rect x="100" y="120" width="24" height="40" fill="#e63946" rx="3"/>
+        <rect x="96" y="128" width="6" height="12" fill="#333"/>
+        <rect x="122" y="128" width="6" height="12" fill="#333"/>
+        <!-- Opponent car -->
+        <rect x="170" y="60" width="24" height="40" fill="#4488ff" rx="3"/>
+        <rect x="166" y="68" width="6" height="12" fill="#333"/>
+        <rect x="192" y="68" width="6" height="12" fill="#333"/>
+        <!-- Trees/grass -->
+        <rect x="0" y="0" width="40" height="200" fill="#2d5a27"/>
+        <rect x="260" y="0" width="40" height="200" fill="#2d5a27"/>
+        <circle cx="15" cy="40" r="12" fill="#3a7a33"/>
+        <circle cx="25" cy="100" r="10" fill="#3a7a33"/>
+        <circle cx="280" cy="70" r="12" fill="#3a7a33"/>
+        <circle cx="275" cy="150" r="10" fill="#3a7a33"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A — Top-Down Racing</h3>
+      <p>Bird's eye view. Steer around a full circuit track. Think classic arcade racers, Micro Machines, early GTA. Full freedom of movement in 2D.</p>
+      <p style="color: #888; font-size: 0.85em; margin-top: 8px;">New renderer needed — doesn't reuse existing code</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="outrun" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #1a1a2e; padding: 24px; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+      <!-- OutRun-style pseudo-3D mockup -->
+      <svg viewBox="0 0 300 200" width="300" height="200" style="image-rendering: pixelated;">
+        <!-- Sky gradient -->
+        <rect x="0" y="0" width="300" height="80" fill="#1a0a3e"/>
+        <rect x="0" y="80" width="300" height="20" fill="#2a1a4e"/>
+        <!-- Stars -->
+        <circle cx="50" cy="20" r="1.5" fill="#FFD700"/>
+        <circle cx="120" cy="35" r="1" fill="#fff"/>
+        <circle cx="200" cy="15" r="1.5" fill="#e63946"/>
+        <circle cx="260" cy="45" r="1" fill="#fff"/>
+        <!-- Mountains -->
+        <polygon points="0,100 60,60 120,100" fill="#2a2a4e"/>
+        <polygon points="80,100 160,50 240,100" fill="#1a1a3e"/>
+        <polygon points="180,100 260,55 300,100" fill="#2a2a4e"/>
+        <!-- Road (perspective) -->
+        <polygon points="130,100 170,100 250,200 50,200" fill="#444"/>
+        <!-- Lane stripes -->
+        <polygon points="148,100 152,100 165,130 145,130" fill="#FFD700" opacity="0.5"/>
+        <polygon points="143,135 167,135 190,165 120,165" fill="#FFD700" opacity="0.5"/>
+        <!-- Shoulder lines -->
+        <line x1="130" y1="100" x2="50" y2="200" stroke="#fff" stroke-width="2" opacity="0.4"/>
+        <line x1="170" y1="100" x2="250" y2="200" stroke="#fff" stroke-width="2" opacity="0.4"/>
+        <!-- Trees along road -->
+        <rect x="65" y="140" width="4" height="20" fill="#5a3a1a"/>
+        <circle cx="67" cy="135" r="10" fill="#2d5a27"/>
+        <rect x="225" y="130" width="4" height="22" fill="#5a3a1a"/>
+        <circle cx="227" cy="125" r="11" fill="#2d5a27"/>
+        <!-- Player car (behind view) -->
+        <rect x="120" y="160" width="60" height="35" fill="#e63946" rx="4"/>
+        <rect x="125" y="163" width="20" height="12" fill="#222" rx="2"/>
+        <rect x="155" y="163" width="20" height="12" fill="#222" rx="2"/>
+        <rect x="135" y="155" width="30" height="12" fill="#c62836" rx="3"/>
+        <!-- Opponent car (smaller, ahead) -->
+        <rect x="140" y="118" width="20" height="14" fill="#4488ff" rx="2"/>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B — Behind-the-Car Pseudo-3D</h3>
+      <p>Looking down the road from behind your car. Steer left/right, dodge traffic, navigate curves. Think OutRun, Road Rash, Top Gear SNES.</p>
+      <p style="color: #4a4; font-size: 0.85em; margin-top: 8px;">Builds on your existing road renderer in /arcade</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="mode7" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #1a1a2e; padding: 24px; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+      <!-- Mode 7 style mockup -->
+      <svg viewBox="0 0 300 200" width="300" height="200" style="image-rendering: pixelated;">
+        <!-- Sky -->
+        <rect x="0" y="0" width="300" height="80" fill="#4488cc"/>
+        <!-- Clouds -->
+        <ellipse cx="80" cy="30" rx="40" ry="12" fill="#fff" opacity="0.3"/>
+        <ellipse cx="220" cy="50" rx="35" ry="10" fill="#fff" opacity="0.3"/>
+        <!-- Ground plane (Mode 7 perspective - checkerboard) -->
+        <rect x="0" y="80" width="300" height="120" fill="#3a7a33"/>
+        <!-- Track stripes (angled to show rotation) -->
+        <polygon points="100,80 200,80 280,200 0,200" fill="#555"/>
+        <polygon points="120,80 180,80 240,200 40,200" fill="#444"/>
+        <!-- Checkerboard curbs -->
+        <rect x="95" y="140" width="8" height="8" fill="#e63946"/>
+        <rect x="103" y="140" width="8" height="8" fill="#fff"/>
+        <rect x="95" y="148" width="8" height="8" fill="#fff"/>
+        <rect x="103" y="148" width="8" height="8" fill="#e63946"/>
+        <rect x="195" y="130" width="8" height="8" fill="#e63946"/>
+        <rect x="203" y="130" width="8" height="8" fill="#fff"/>
+        <!-- Player kart -->
+        <rect x="130" y="150" width="40" height="30" fill="#e63946" rx="4"/>
+        <circle cx="133" cy="178" r="6" fill="#333"/>
+        <circle cx="167" cy="178" r="6" fill="#333"/>
+        <!-- Item box -->
+        <rect x="155" y="105" width="12" height="12" fill="#FFD700" stroke="#fff" stroke-width="1" rx="2">
+          <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite"/>
+        </rect>
+        <text x="158" y="115" fill="#000" font-size="9" font-weight="bold">?</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C — Mode 7 / Mario Kart Style</h3>
+      <p>Flat track rotates and scales beneath you. Full circuit with turns, item boxes, power-ups. Closest to actual Mario Kart SNES feel.</p>
+      <p style="color: #c84; font-size: 0.85em; margin-top: 8px;">Most complex — needs track editor + rotation math</p>
+    </div>
+  </div>
+</div>

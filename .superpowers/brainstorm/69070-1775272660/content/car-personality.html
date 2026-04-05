@@ -1,0 +1,57 @@
+<h2>How do we make each car feel unique in top-down?</h2>
+<p class="subtitle">The dashboard was the soul of the pseudo-3D version. Here's how we bring that energy to top-down — pick any that excite you (multi-select)</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="cockpit-hud" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Cockpit HUD Overlay</h3>
+      <p>A translucent dashboard strip along the bottom edge — unique per car. Shows the actual gauge cluster, steering wheel silhouette, and interior color. A '69 Camaro gets orange-lit round gauges; a Tesla gets a minimalist screen. You're looking down at the track but your car's personality is always in your peripheral vision.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="topdown-sprites" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>High-Detail Top-Down Sprites</h3>
+      <p>Generate unique 8-bit top-down sprites for every car in your garage. Not generic colored rectangles — actual pixel art showing the body shape, hood scoops, racing stripes, spoilers, convertible tops down. A Corvette looks nothing like a lifted truck. Each one is a tiny work of art on the track.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="exhaust-trails" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Signature Exhaust &amp; Tire Effects</h3>
+      <p>Each car leaves a different trail. Muscle cars belch dark smoke on launch. EVs have a clean blue glow. Diesels roll coal. Tire marks differ by drivetrain — AWD leaves four lines in corners, RWD fishtails. Your car's character shows in how it marks the road.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="engine-audio" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Per-Car Engine Sound Profiles</h3>
+      <p>Procedural audio tuned per car. V8s get a deep rumble with burble on decel. Inline-4 turbos get a high whine with blow-off valve pops. EVs get a sci-fi whir. The existing Web Audio engine can generate these with different waveforms, frequencies, and overtones per engine type.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="select-showcase" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>Pre-Race Car Showcase</h3>
+      <p>Before the race, show a full-screen card for your car: the real photo from your garage, key stats (HP, weight, drivetrain), a pixel art preview of how it'll look on track, and a short personality tagline. Like a fighting game character select — each car has presence before a wheel turns.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="paint-liveries" onclick="toggleSelect(this)">
+    <div class="letter">F</div>
+    <div class="content">
+      <h3>Custom Paint &amp; Liveries</h3>
+      <p>Generate each top-down sprite in the car's actual color from the database. Then layer on era-appropriate details — racing numbers, pin stripes on classics, carbon fiber accents on moderns, matte wraps on exotics. Every car on track is visually distinct at a glance.</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 16px; background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); border-radius: 8px;">
+  <p style="color: #FFD700; margin: 0 0 8px 0; font-weight: 600;">My recommendation</p>
+  <p style="color: #ccc; margin: 0;">B + A + C together. High-detail sprites make the track pop, the cockpit HUD preserves that dashboard feeling you loved, and exhaust/tire effects make every car behave differently on screen. D and E are great add-ons. F is the cherry on top.</p>
+</div>

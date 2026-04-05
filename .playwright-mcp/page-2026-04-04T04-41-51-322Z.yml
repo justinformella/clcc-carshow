@@ -1,0 +1,21 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e15]:
+      - generic [ref=e424]: "P1 #17 1966 Ford Mustang GT"
+      - generic [ref=e425]: "CPU #42 2016 Jaguar Project 7"
+    - generic [ref=e28]:
+      - img "dashboard" [ref=e427]
+      - generic [ref=e383]:
+        - generic [ref=e428]:
+          - generic [ref=e429]: "0"
+          - generic [ref=e430]: MPH
+        - generic [ref=e393]:
+          - generic [ref=e431]: "800"
+          - generic [ref=e432]: RPM
+        - generic [ref=e433]:
+          - generic [ref=e434]: "1"
+          - generic [ref=e435]: GEAR
+    - button "GET READY..." [ref=e443] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e10] [cursor=pointer]:
+    - img [ref=e11]
+  - alert [ref=e14]

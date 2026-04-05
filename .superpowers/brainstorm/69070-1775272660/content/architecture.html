@@ -1,0 +1,79 @@
+<h2>Architecture: Build Standalone, Merge Later</h2>
+<p class="subtitle">How the pieces fit together now and after integration</p>
+
+<div class="section">
+  <h3>Phase 1: Now — Build in /arcade, don't touch /race</h3>
+  <div class="mockup">
+    <div class="mockup-header">Current Architecture</div>
+    <div class="mockup-body" style="font-family: monospace; font-size: 13px; line-height: 1.8; padding: 20px;">
+      <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;">
+        <div style="border: 2px solid #4488ff; border-radius: 8px; padding: 16px; min-width: 200px;">
+          <div style="color: #4488ff; font-weight: bold; margin-bottom: 8px;">/race (DON'T TOUCH)</div>
+          <div style="color: #888; font-size: 12px;">
+            Car Picker UI ✅<br>
+            Drag Race Game ✅<br>
+            Car Data API ✅<br>
+            <span style="color: #FFD700;">↑ This all stays as-is</span>
+          </div>
+        </div>
+        <div style="border: 2px solid #e63946; border-radius: 8px; padding: 16px; min-width: 200px;">
+          <div style="color: #e63946; font-weight: bold; margin-bottom: 8px;">/arcade (REBUILD HERE)</div>
+          <div style="color: #888; font-size: 12px;">
+            Boot Scene (keep) ✅<br>
+            Title Scene (keep) ✅<br>
+            Select Scene (keep) ✅<br>
+            Matchup Scene (keep) ✅<br>
+            <span style="color: #e63946;">Race Scene → DELETE & REWRITE</span><br>
+            <span style="color: #e63946;">physics.ts → NEW top-down physics</span><br>
+            <span style="color: #e63946;">road.ts → DELETE (replaced by tilemap)</span>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 16px; color: #666;">
+        Both use the same <span style="color: #FFD700;">/api/race</span> endpoint for car data
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Phase 2: Later — Merge under /race's car picker</h3>
+  <div class="mockup">
+    <div class="mockup-header">Future Architecture</div>
+    <div class="mockup-body" style="font-family: monospace; font-size: 13px; line-height: 1.8; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 16px;">
+        <div style="display: inline-block; border: 2px solid #FFD700; border-radius: 8px; padding: 12px 24px;">
+          <div style="color: #FFD700; font-weight: bold;">/race — Car Picker</div>
+          <div style="color: #888; font-size: 12px;">Pick your car, then choose your game</div>
+        </div>
+      </div>
+      <div style="text-align: center; color: #666; margin-bottom: 12px;">
+        ┌────────── Pick your mode ──────────┐
+      </div>
+      <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+        <div style="border: 2px solid #4488ff; border-radius: 8px; padding: 16px; min-width: 180px; text-align: center;">
+          <div style="color: #4488ff; font-weight: bold; margin-bottom: 4px;">🏁 DRAG RACE</div>
+          <div style="color: #888; font-size: 12px;">Existing /race game<br>Quarter-mile, head-to-head</div>
+        </div>
+        <div style="border: 2px solid #e63946; border-radius: 8px; padding: 16px; min-width: 180px; text-align: center;">
+          <div style="color: #e63946; font-weight: bold; margin-bottom: 4px;">🏎️ ROAD RACE</div>
+          <div style="color: #888; font-size: 12px;">New Phaser game<br>Top-down, Crystal Lake tracks</div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 16px; color: #666; font-size: 12px;">
+        Road Race loads as embedded Phaser canvas,<br>
+        receives selected car via props/URL params
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Key Architecture Decision</h3>
+  <div style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); border-radius: 8px; padding: 16px;">
+    <p style="color: #ccc; margin: 0 0 12px 0;"><strong style="color: #FFD700;">The bridge:</strong> The Phaser game needs to accept a car selection from outside itself.</p>
+    <p style="color: #ccc; margin: 0 0 12px 0;">Right now /arcade has its own Boot → Title → Select flow. For Phase 2, we need the Phaser game to also accept a car ID as input and skip straight to track select → race.</p>
+    <p style="color: #ccc; margin: 0 0 12px 0;"><strong>Solution:</strong> Build <code>PhaserGame.tsx</code> to accept an optional <code>selectedCar</code> prop. If provided, skip Title/Select and go straight to track selection. If not provided, use its own select flow (standalone /arcade mode).</p>
+    <p style="color: #888; margin: 0; font-size: 0.85em;">This means /arcade keeps working standalone during development, and later /race just passes the car in.</p>
+  </div>
+</div>

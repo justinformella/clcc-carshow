@@ -1,0 +1,51 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e7]:
+    - generic [ref=e14]:
+      - paragraph [ref=e15]: CLCC ARCADE
+      - heading "Redline Motor Condos" [level=1] [ref=e16]
+      - paragraph [ref=e17]: Choose Your Ride
+      - paragraph [ref=e18]: 25 VEHICLES IN THE GARAGE
+    - generic [ref=e19]:
+      - generic [ref=e345]:
+        - generic [ref=e346]:
+          - paragraph [ref=e347]: P1
+          - img "1966 Ford Mustang GT" [ref=e349]
+          - paragraph [ref=e350]: "#17"
+          - paragraph [ref=e351]: 1966 Ford Mustang GT
+          - generic [ref=e352]:
+            - generic [ref=e353]: 225 HP
+            - generic [ref=e354]: 2,800 LBS
+        - generic [ref=e355]: VS
+        - generic [ref=e356]:
+          - paragraph [ref=e357]: CPU
+          - img "1993 Toyota MR2 Turbo" [ref=e359]
+          - paragraph [ref=e360]: "#34"
+          - paragraph [ref=e361]: 1993 Toyota MR2 Turbo
+          - generic [ref=e362]:
+            - generic [ref=e363]: 200 HP
+            - generic [ref=e364]: 2,800 LBS
+      - generic [ref=e365]:
+        - generic [ref=e366]:
+          - generic [ref=e367]: HP
+          - generic [ref=e368]: "225"
+          - generic [ref=e369]: "200"
+        - generic [ref=e370]:
+          - generic [ref=e371]: LBS
+          - generic [ref=e372]: 2,800
+          - generic [ref=e373]: 2,800
+        - generic [ref=e374]:
+          - generic [ref=e375]: 1/4 MI
+          - generic [ref=e376]: 15.0s
+          - generic [ref=e377]: 14.5s
+      - generic [ref=e378]:
+        - generic [ref=e379]:
+          - button "RACE!" [ref=e380] [cursor=pointer]
+          - button "SHUFFLE" [ref=e381] [cursor=pointer]
+        - button "PICK DIFFERENT CAR" [ref=e382] [cursor=pointer]
+      - generic [ref=e383]:
+        - text: HOLD
+        - generic [ref=e384]: SPACE
+        - text: OR
+        - generic [ref=e385]: UP
+        - text: TO ACCELERATE
+  - alert [ref=e5]

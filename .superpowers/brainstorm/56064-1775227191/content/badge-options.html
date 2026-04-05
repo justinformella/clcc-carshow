@@ -1,0 +1,102 @@
+<h2>8-Bit Footer Badge Variations</h2>
+<p class="subtitle">Which badge style feels most like a Nintendo easter egg?</p>
+
+<div class="cards">
+  <!-- Option A: Cartridge -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e; padding:2rem; display:flex; justify-content:center;">
+      <div style="background:#333; border:3px solid #555; border-radius:4px 4px 0 0; padding:1.2rem 1.5rem 1.5rem; width:200px; position:relative; font-family:'Courier New',monospace;">
+        <!-- Cartridge notch -->
+        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:6px;background:#1a1a2e;border-radius:0 0 3px 3px;"></div>
+        <!-- Label area -->
+        <div style="background:#0d0d1a; border:2px solid #ffd700; padding:0.8rem 0.6rem; text-align:center; margin-top:0.3rem;">
+          <div style="color:#ffd700; font-size:0.55rem; letter-spacing:0.15em; margin-bottom:0.3rem;">★ CLCC ★</div>
+          <div style="color:#fff; font-size:0.45rem; line-height:1.8;">CRYSTAL LAKE</div>
+          <div style="color:#fff; font-size:0.45rem; line-height:1.8;">CARS &amp; CAFFEINE</div>
+          <div style="color:#aaa; font-size:0.35rem; margin-top:0.4rem;">© 2026</div>
+        </div>
+        <!-- Bottom ridges -->
+        <div style="display:flex; justify-content:center; gap:3px; margin-top:0.5rem;">
+          <div style="width:4px;height:4px;background:#555;border-radius:1px;"></div>
+          <div style="width:4px;height:4px;background:#555;border-radius:1px;"></div>
+          <div style="width:4px;height:4px;background:#555;border-radius:1px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>NES Cartridge</h3>
+      <p>Styled like an NES game cartridge with a gold-bordered label. Immediately recognizable to anyone who grew up with Nintendo.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Game Boy Screen -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e; padding:2rem; display:flex; justify-content:center;">
+      <div style="background:#8b956d; border:3px solid #6b7353; border-radius:6px; padding:0.5rem; width:200px; font-family:'Courier New',monospace;">
+        <!-- Screen -->
+        <div style="background:#9bbc0f; border:2px inset #6b7353; padding:1rem 0.8rem; text-align:center;">
+          <div style="color:#0f380f; font-size:0.5rem; letter-spacing:0.12em; margin-bottom:0.3rem;">★ CLCC ★</div>
+          <div style="color:#0f380f; font-size:0.38rem; line-height:1.8;">CRYSTAL LAKE</div>
+          <div style="color:#0f380f; font-size:0.38rem; line-height:1.8;">CARS &amp; CAFFEINE</div>
+          <div style="color:#306230; font-size:0.3rem; margin-top:0.4rem;">© 2026 ALL RIGHTS RESERVED</div>
+        </div>
+        <!-- Dot under screen -->
+        <div style="text-align:center; margin-top:0.4rem;">
+          <div style="display:inline-block;width:8px;height:8px;background:#6b7353;border-radius:50%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Game Boy Screen</h3>
+      <p>Classic green-on-green Game Boy LCD look. Nostalgic and unmistakable. The muted colors make it feel like a hidden retro device embedded in the page.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Pixel Shield/Crest -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e; padding:2rem; display:flex; justify-content:center;">
+      <div style="width:180px; text-align:center; font-family:'Courier New',monospace;">
+        <!-- Shield shape using CSS -->
+        <div style="background:#0d0d1a; border:3px solid #ffd700; box-shadow:4px 4px 0 #b8860b, inset 0 0 0 2px rgba(255,215,0,0.15); padding:1.2rem 1rem 1.5rem; clip-path:polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%);">
+          <div style="color:#ffd700; font-size:0.7rem; margin-bottom:0.2rem;">★</div>
+          <div style="color:#ffd700; font-size:0.55rem; letter-spacing:0.15em; margin-bottom:0.3rem;">CLCC</div>
+          <div style="color:#fff; font-size:0.35rem; line-height:1.8;">CRYSTAL LAKE</div>
+          <div style="color:#fff; font-size:0.35rem; line-height:1.8;">CARS &amp; CAFFEINE</div>
+          <div style="color:#aaa; font-size:0.28rem; margin-top:0.3rem;">© 2026</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Pixel Shield Crest</h3>
+      <p>A shield/crest shape with gold border and drop shadow. Feels like an in-game achievement badge or guild emblem. Regal and collectible.</p>
+    </div>
+  </div>
+
+  <!-- Option D: Arcade Cabinet Coin Slot -->
+  <div class="card" data-choice="d" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e; padding:2rem; display:flex; justify-content:center;">
+      <div style="background:linear-gradient(to bottom, #2a2a3e, #1a1a2e); border:3px solid #444; border-radius:8px 8px 4px 4px; padding:1rem; width:200px; font-family:'Courier New',monospace; text-align:center; position:relative;">
+        <!-- Marquee top -->
+        <div style="background:linear-gradient(to right, #c9a84c, #ffd700, #c9a84c); padding:0.3rem; margin:-1rem -1rem 0.8rem; border-radius:5px 5px 0 0;">
+          <div style="color:#0d0d1a; font-size:0.5rem; font-weight:bold; letter-spacing:0.12em;">★ CLCC ★</div>
+        </div>
+        <!-- Screen area -->
+        <div style="background:#000; border:2px solid #333; padding:0.8rem 0.6rem; margin-bottom:0.6rem;">
+          <div style="color:#ffd700; font-size:0.4rem; line-height:1.8;">CRYSTAL LAKE</div>
+          <div style="color:#ffd700; font-size:0.4rem; line-height:1.8;">CARS &amp; CAFFEINE</div>
+          <div style="color:#00ff00; font-size:0.35rem; margin-top:0.4rem; animation: blink 1.5s infinite;">INSERT COIN</div>
+        </div>
+        <!-- Coin slot -->
+        <div style="display:inline-block; background:#222; border:2px solid #555; border-radius:2px; padding:0.15rem 0.8rem;">
+          <div style="width:20px; height:3px; background:#888; border-radius:1px; margin:0.1rem auto;"></div>
+        </div>
+        <div style="color:#666; font-size:0.25rem; margin-top:0.4rem;">© 2026 ALL RIGHTS RESERVED</div>
+      </div>
+    </div>
+    <style>@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }</style>
+    <div class="card-body">
+      <h3>Arcade Cabinet</h3>
+      <p>Mini arcade cabinet with a gold marquee, dark screen, and blinking "INSERT COIN". The coin slot at the bottom makes it feel interactive. Most thematic for a game-adjacent site.</p>
+    </div>
+  </div>
+</div>

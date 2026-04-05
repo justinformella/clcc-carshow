@@ -1,0 +1,15 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e19]:
+      - paragraph [ref=e440]: CLCC ARCADE
+      - heading "1966 Ford Mustang GT" [level=1] [ref=e441]
+      - img "1966 Ford Mustang GT" [ref=e443]
+    - generic [ref=e20]:
+      - button "DRAG RACE" [ref=e444] [cursor=pointer]
+      - button "HIT THE DYNO" [ref=e445] [cursor=pointer]
+      - button "CRUISE CRYSTAL LAKE" [disabled] [ref=e446]
+      - paragraph [ref=e447]: CRUISE — COMING SOON
+      - button "PICK DIFFERENT CAR" [ref=e448] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e27] [cursor=pointer]:
+    - img [ref=e28]
+  - alert [ref=e18]

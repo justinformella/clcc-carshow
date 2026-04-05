@@ -1,0 +1,8 @@
+{"type":"server-started","port":53233,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:53233","screen_dir":"/Users/justinformella/clcc-carshow/.superpowers/brainstorm/7920-1775424706/content","state_dir":"/Users/justinformella/clcc-carshow/.superpowers/brainstorm/7920-1775424706/state"}
+{"type":"screen-added","file":"/Users/justinformella/clcc-carshow/.superpowers/brainstorm/7920-1775424706/content/waiting.html"}
+{"type":"screen-added","file":"/Users/justinformella/clcc-carshow/.superpowers/brainstorm/7920-1775424706/content/test-visible.html"}
+{"type":"screen-added","file":"/Users/justinformella/clcc-carshow/.superpowers/brainstorm/7920-1775424706/content/detail-flow.html"}
+{"source":"user-event","type":"click","text":"A\n    \n      Exterior → Interior (Recommended)\n      Step 1: Wash — Car pulls in dirty. Spray/wipe the side view to remove grime layer.\n      Step 2: Polish — Buff the exterior for shine. Sparkle particles burst on contact.\n      Step 3: Interior — Switch to dashboard view. Wipe down the interior.\n      Step 4: Reveal — Shine sweep animation, showroom score, before/after split.\n      \n        ProsNatural detailing orderUses both views3 distinct phases keep it fresh\n        ConsLonger session (~45-60s)","choice":"a","id":null,"timestamp":1775425015524}
+{"type":"screen-added","file":"/Users/justinformella/clcc-carshow/.superpowers/brainstorm/7920-1775424706/content/detail-spec-preview.html"}
+{"type":"screen-added","file":"/Users/justinformella/clcc-carshow/.superpowers/brainstorm/7920-1775424706/content/waiting-2.html"}
+{"type":"server-stopped","reason":"idle timeout"}
