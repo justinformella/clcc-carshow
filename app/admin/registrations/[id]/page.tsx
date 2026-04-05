@@ -935,10 +935,11 @@ export default function RegistrationDetailPage() {
                 )}
 
                 {/* Pixel Art Images */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
                   {([
                     { label: "Side", type: "side" as const, url: r.pixel_art_url, origUrl: r.pixel_art_original_url, hasBgStrip: true },
                     { label: "Dashboard", type: "dashboard" as const, url: r.pixel_dashboard_url, origUrl: r.pixel_dashboard_original_url, hasBgStrip: false },
+                    { label: "Dash (Cropped)", type: "dashboard" as const, url: r.pixel_dash_cropped_url, origUrl: r.pixel_dashboard_original_url, hasBgStrip: false },
                     { label: "Rear", type: "rear" as const, url: r.pixel_rear_url, origUrl: r.pixel_rear_original_url, hasBgStrip: true },
                   ]).map(({ label, type, url, origUrl, hasBgStrip }) => (
                     <div key={label}>
