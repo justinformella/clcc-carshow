@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase-server";
+import sharp from "sharp";
 
 /**
  * Ask Gemini Flash to describe the car so pixel art prompts are accurate
@@ -161,6 +162,17 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
   const dashUrl = dashOrigUrl;
   const rearUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearTransName).data.publicUrl}?v=${ts}`;
 
+  // Auto-crop dashboard: remove top 40% (windshield area)
+  const metadata = await sharp(dashBuffer).metadata();
+  const cropY = Math.round((metadata.height || 768) * 0.40);
+  const croppedBuffer = await sharp(dashBuffer)
+    .extract({ left: 0, top: cropY, width: metadata.width || 1408, height: (metadata.height || 768) - cropY })
+    .png()
+    .toBuffer();
+  const croppedName = `dash-${registrationId}-cropped.png`;
+  await supabase.storage.from("pixel-art").upload(croppedName, croppedBuffer, { contentType: "image/png", upsert: true });
+  const croppedUrl = `${supabase.storage.from("pixel-art").getPublicUrl(croppedName).data.publicUrl}?v=${ts}`;
+
   await supabase
     .from("registrations")
     .update({
@@ -170,6 +182,7 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       pixel_art_original_url: sideOrigUrl,
       pixel_dashboard_original_url: dashOrigUrl,
       pixel_rear_original_url: rearOrigUrl,
+      pixel_dash_cropped_url: croppedUrl,
       pixel_art_flipped: facingLeft,
     })
     .eq("id", registrationId);

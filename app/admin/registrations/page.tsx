@@ -17,6 +17,7 @@ export default function RegistrationsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [archiving, setArchiving] = useState(false);
   const [sortBy, setSortBy] = useState<"car_number" | "name" | "date" | "vehicle" | "city">("car_number");
+  const [show8bit, setShow8bit] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "cards">(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("registrations-view") as "table" | "cards") || "cards";
@@ -452,6 +453,30 @@ export default function RegistrationsPage() {
             Table
           </button>
         </div>
+
+        {/* 8-bit toggle */}
+        <button
+          onClick={() => setShow8bit(!show8bit)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            padding: "0.5rem 1rem",
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            border: "1px solid #ddd",
+            borderRadius: "6px",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            background: show8bit ? "var(--charcoal)" : "var(--white)",
+            color: show8bit ? "var(--white)" : "var(--text-light)",
+            transition: "all 0.15s ease",
+          }}
+        >
+          {show8bit ? "8-BIT" : "PHOTOS"}
+        </button>
       </div>
 
       {viewMode === "table" ? (
@@ -612,15 +637,18 @@ export default function RegistrationsPage() {
               onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)")}
             >
               {/* Image */}
-              {reg.ai_image_url ? (
+              {(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url) ? (
                 <img
-                  src={reg.ai_image_url}
+                  src={(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url)!}
                   alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
                   style={{
                     width: "100%",
                     aspectRatio: "16/9",
                     objectFit: "cover",
                     display: "block",
+                    imageRendering: show8bit ? "pixelated" as const : "auto",
+                    background: show8bit ? "#0d0d1a" : "transparent",
+                    transform: show8bit && reg.pixel_art_flipped ? "scaleX(-1)" : "none",
                   }}
                 />
               ) : (
