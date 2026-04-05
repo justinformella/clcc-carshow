@@ -852,97 +852,45 @@
         }
       }
 
-      if (hasCLScenery) {
+      // =====================================================================
+      // ROADSIDE SCENERY — Original spritesheet trees + CL commercial buildings
+      // =====================================================================
+      // Use the original game's polished tree/plant sprites for nature.
+      // Only use dynamic CL assets for Route 14 branded storefronts.
 
-        // --- Welcome sign near start ---
-        addCL(15, 'welcome-sign', -2.2, SPRITES.BILLBOARD01);
+      // --- Trees and plants (original spritesheet — these look great) ---
+      for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
+        addSprite(n, SPRITES.PALM_TREE, 0.5 + Math.random()*0.5);
+        addSprite(n, SPRITES.PALM_TREE,   1 + Math.random()*2);
+      }
 
-        // --- Street lamps along the road (one side only, spaced out) ---
-        for (n = 10; n < segments.length; n += 20) {
-          addCL(n, 'street-lamp', 1.15, SPRITES.COLUMN);
+      for(n = 250 ; n < 1000 ; n += 5) {
+        addSprite(n,     SPRITES.COLUMN, 1.1);
+        addSprite(n + Util.randomInt(0,5), SPRITES.TREE1, -1 - (Math.random() * 2));
+        addSprite(n + Util.randomInt(0,5), SPRITES.TREE2, -1 - (Math.random() * 2));
+      }
+
+      for(n = 200 ; n < segments.length ; n += 3) {
+        addSprite(n, Util.randomChoice(SPRITES.PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
+      }
+
+      // --- Route 14 branded storefronts (dynamic CL assets) ---
+      // These are the recognizable Crystal Lake businesses along the commercial strip
+      var commercialKeys = [
+        'best-buy', 'target', 'jewel-osco', 'chick-fil-a',
+        'taco-bell', 'exceed-flooring', 'gas-station', 'fast-food', 'strip-mall'
+      ];
+      var commIdx = 0;
+      for (n = 200; n < segments.length - 100; n += 100) {
+        var commKey = commercialKeys[commIdx % commercialKeys.length];
+        if (clScenery[commKey]) {
+          var m = CL_SCENERY_MANIFEST[commKey];
+          if (m) {
+            var cSide = (commIdx % 2 === 0) ? -2.2 : 2.2;
+            addDynamicSprite(n, { w: m.w, h: m.h }, cSide, clScenery[commKey]);
+          }
         }
-
-        // --- Trees — spaced out, pushed far from road ---
-        var treeKeys = ['oak-tree', 'maple-tree', 'maple-fall', 'pine-tree'];
-        for (n = 5; n < segments.length; n += 8) {
-          var tKey = treeKeys[Math.floor(Math.random() * treeKeys.length)];
-          var tSide = Util.randomChoice([1, -1]);
-          addCL(n, tKey, tSide * (3 + Math.random() * 4), Util.randomChoice(SPRITES.PLANTS));
-        }
-
-        // --- Downtown section (segments 250–500): brick buildings, Raue Center ---
-        addCL(300, 'raue-center', -2.2, SPRITES.BILLBOARD08);
-        for (n = 250; n < 500; n += 50) {
-          var bldgKey = (n % 100 < 50) ? 'brick-storefront' : 'painted-storefront';
-          var bSide = (n % 100 < 50) ? -2.2 : 2.2;
-          addCL(n, bldgKey, bSide, SPRITES.BILLBOARD03);
-        }
-        // Lamp with flowers in downtown only
-        for (n = 250; n < 500; n += 15) {
-          addCL(n, 'lamp-flowers', -1.15, null);
-        }
-
-        // --- Railroad crossing in downtown ---
-        addCL(420, 'rr-crossing', -1.2, SPRITES.COLUMN);
-        addCL(420, 'rr-crossing', 1.2, SPRITES.COLUMN);
-
-        // --- Route 14 commercial section (segments 600–1200) ---
-        // Branded stores cycle through, well spaced, alternating sides
-        var commercialKeys = ['best-buy', 'taco-bell', 'chick-fil-a', 'exceed-flooring',
-                              'jewel-osco', 'target', 'strip-mall', 'gas-station', 'fast-food'];
-        var commIdx = 0;
-        for (n = 600; n < 1200; n += 80) {
-          var commKey = commercialKeys[commIdx % commercialKeys.length];
-          var cSide = (commIdx % 2 === 0) ? -2.5 : 2.5;
-          addCL(n, commKey, cSide, SPRITES.BILLBOARD06);
-          if (n % 160 === 0) addCL(n + 10, 'traffic-light', cSide * 0.45, null);
-          commIdx++;
-        }
-
-        // --- Lakefront section (segments 1200–1500) — sparse, scenic ---
-        addCL(1220, 'lake-water', 3.5, null);
-        addCL(1300, 'lake-water', 4.0, null);
-        addCL(1400, 'lake-water', 3.5, null);
-        addCL(1260, 'boat-dock', 2.5, null);
-        addCL(1340, 'beach-section', 3.0, null);
-        addCL(1250, 'park-bench', 1.6, null);
-        addCL(1350, 'park-bench', 1.6, null);
-        addCL(1420, 'dole-mansion', -2.8, SPRITES.BILLBOARD09);
-        addCL(1480, 'metra-station', -2.8, null);
-
-        // --- Parks section (1600+): prairie grass, picnic pavilions, sparse ---
-        for (n = 1600; n < segments.length - 50; n += 40) {
-          addCL(n, 'prairie-grass', Util.randomChoice([1, -1]) * (2.5 + Math.random() * 3), null);
-        }
-        addCL(1650, 'picnic-pavilion', -2.5, null);
-        addCL(1800, 'picnic-pavilion', 2.5, null);
-
-        // --- Bushes — sparse, far from road ---
-        for (n = 50; n < segments.length; n += 25) {
-          addCL(n, 'bush-midwest', Util.randomChoice([1, -1]) * (2.5 + Math.random() * 3), SPRITES.BUSH1);
-        }
-
-        // --- Utility poles on the opposite side of lamps ---
-        for (n = 20; n < segments.length; n += 50) {
-          addCL(n, 'utility-pole', -1.15, null);
-        }
-
-      } else {
-        // --- Fallback: original desert scenery ---
-        for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
-          addSprite(n, SPRITES.PALM_TREE, 0.5 + Math.random()*0.5);
-          addSprite(n, SPRITES.PALM_TREE,   1 + Math.random()*2);
-        }
-
-        for(n = 250 ; n < 1000 ; n += 5) {
-          addSprite(n,     SPRITES.COLUMN, 1.1);
-          addSprite(n + Util.randomInt(0,5), SPRITES.TREE1, -1 - (Math.random() * 2));
-          addSprite(n + Util.randomInt(0,5), SPRITES.TREE2, -1 - (Math.random() * 2));
-        }
-
-        for(n = 200 ; n < segments.length ; n += 3) {
-          addSprite(n, Util.randomChoice(SPRITES.PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
-        }
+        commIdx++;
       }
 
     }
