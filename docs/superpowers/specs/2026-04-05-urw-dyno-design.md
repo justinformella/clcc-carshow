@@ -134,7 +134,17 @@ All data is already available from the existing `/api/race` response and the phy
 - `car.pixelArt` — side view image URL
 - `quarterMileET()`, `trapSpeedMPH()` — already defined in the page
 
-No new API endpoints or database changes needed.
+No new API endpoints needed.
+
+## Car Direction Fix
+
+Some cars face left instead of right despite the prompt requesting "facing right." Add a `pixel_art_flipped` boolean column to `registrations`. When true, the side-view image is rendered with `transform: scaleX(-1)` (CSS horizontal flip). This applies everywhere the side view is shown — dyno canvas, matchup screen, race select cards.
+
+**Database:** `ALTER TABLE registrations ADD COLUMN IF NOT EXISTS pixel_art_flipped BOOLEAN DEFAULT FALSE;`
+
+**Admin UI:** Add a "Flip" toggle button next to the Side pixel art card.
+
+**Rendering:** On canvas, use `ctx.scale(-1, 1)` + translate before drawing the car image when flipped. In HTML `<img>` tags, apply `style={{ transform: "scaleX(-1)" }}`.
 
 ## File Changes
 
