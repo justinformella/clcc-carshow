@@ -209,7 +209,7 @@ const TRACK_SKINS: TrackSkin[] = [
       { type: "bandshell", color: "#555555", w: 40, h: 25, rare: true },
     ],
   },
-  { // Downtown Williams Street — night drag past Raue Center
+  { // Downtown Williams Street — night drag through downtown
     name: "DOWNTOWN WILLIAMS ST", subtitle: "Historic Downtown Crystal Lake",
     skyTop: "#060820", skyBottom: "#1a1a2a", stars: true, treeColor: "#1a1a1a",
     grassA: "#2a2a2a", grassB: "#333333", roadA: "#181820", roadB: "#1e1e28",
@@ -435,11 +435,9 @@ function RacePage() {
           }
         }
       }
-      // Raue Center marquee glow (center)
-      ctx.fillStyle = "#ffd70066";
-      ctx.fillRect(W * 0.45, horizonY - 28, W * 0.1, 6);
-      ctx.fillStyle = "#ffd700aa";
-      ctx.fillRect(W * 0.46, horizonY - 27, W * 0.08, 4);
+      // Lit storefront glow (center of skyline)
+      ctx.fillStyle = "#ffcc4433";
+      ctx.fillRect(W * 0.44, horizonY - 20, W * 0.12, 8);
     } else if (skin.horizonStyle === "commercial") {
       // Flat commercial roofline
       ctx.fillStyle = "#0a0a14";
