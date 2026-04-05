@@ -151,10 +151,62 @@ export function nearestWaypointIndex(
 /**
  * Returns a value in [0, 1] representing how far along the track the car is,
  * based on the nearest waypoint index.
+ * NOTE: This can jump backwards on looping tracks — prefer updateMonotonicProgress
+ * for finish-line detection.
  */
 export function raceProgress(track: TrackData, x: number, y: number): number {
   const idx = nearestWaypointIndex(track, x, y);
   return idx / Math.max(track.waypoints.length - 1, 1);
+}
+
+/**
+ * Advances a monotonically-increasing waypoint index based on car position.
+ * The index only ever increases so that on looping tracks whose return path
+ * passes near the start, the progress value never drops back to near 0.
+ *
+ * @param track         - track definition
+ * @param x, y          - current car world position
+ * @param currentIndex  - the car's current waypointProgress value
+ * @returns             - new waypointProgress (may be same or higher, never lower)
+ */
+export function updateMonotonicProgress(
+  track: TrackData,
+  x: number,
+  y: number,
+  currentIndex: number
+): number {
+  const n = track.waypoints.length;
+  // Only search waypoints ahead of current position (within a window of 5)
+  // to avoid jumping backwards on looping tracks.
+  const searchFrom = Math.max(0, Math.floor(currentIndex));
+  const searchTo = Math.min(n - 1, searchFrom + 5);
+
+  let bestIdx = searchFrom;
+  let bestDist = Infinity;
+  for (let i = searchFrom; i <= searchTo; i++) {
+    const wp = track.waypoints[i];
+    const dx = wp.x - x;
+    const dy = wp.y - y;
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestIdx = i;
+    }
+  }
+
+  // Never go backwards
+  const newIndex = Math.max(currentIndex, bestIdx);
+  return newIndex;
+}
+
+/**
+ * Returns [0, 1] progress using the car's monotonic waypointProgress field.
+ */
+export function raceProgressMonotonic(
+  track: TrackData,
+  waypointProgress: number
+): number {
+  return waypointProgress / Math.max(track.waypoints.length - 1, 1);
 }
 
 /**

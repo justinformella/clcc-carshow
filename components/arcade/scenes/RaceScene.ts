@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { CarState, resolveCarCollision } from "../topdown-physics";
-import { TrackData, getSurfaceAt, hasCrossedFinish, raceProgress } from "../track";
+import { TrackData, getSurfaceAt, hasCrossedFinish, raceProgressMonotonic, updateMonotonicProgress } from "../track";
 import { renderTrack } from "../track-renderer";
 import { AIDriver, createAIDrivers } from "../ai";
 import { RaceHUD } from "../hud";
@@ -203,10 +203,13 @@ export class RaceScene extends Phaser.Scene {
       steerRight: this.arrowKeys.right.isDown || this.wasd.right.isDown,
     };
 
-    // Update surface for all cars
+    // Update surface and monotonic waypoint progress for all cars
     for (const car of this.allCars) {
       if (!car.finished) {
         car.surface = getSurfaceAt(this.track, car.x, car.y);
+        car.waypointProgress = updateMonotonicProgress(
+          this.track, car.x, car.y, car.waypointProgress
+        );
       }
     }
 
@@ -260,7 +263,9 @@ export class RaceScene extends Phaser.Scene {
           car.x += nx * overlap;
           car.y += ny * overlap;
 
-          // Speed penalty (0.6x = 40% speed loss)
+          // Velocity penalty on boundary hit (0.6x = 40% speed loss)
+          car.xVelocity *= 0.6;
+          car.yVelocity *= 0.6;
           car.speed *= 0.6;
         }
       }
@@ -273,10 +278,11 @@ export class RaceScene extends Phaser.Scene {
       car.y = Math.max(0, Math.min(th, car.y));
     }
 
-    // Check finish line crossing (only if raceProgress > 0.8 to avoid false positives at start)
+    // Check finish line crossing — use monotonic progress to prevent false positives
+    // on looping tracks whose return path passes near the start area.
     for (const car of this.allCars) {
       if (car.finished) continue;
-      const progress = raceProgress(this.track, car.x, car.y);
+      const progress = raceProgressMonotonic(this.track, car.waypointProgress);
       if (progress > 0.8 && hasCrossedFinish(this.track, car.x, car.y)) {
         car.finished = true;
         car.finishTime = this.raceElapsedMs;

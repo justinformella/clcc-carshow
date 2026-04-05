@@ -1,5 +1,8 @@
 /**
- * Top-down 2D car physics engine.
+ * Top-down 2D car physics engine — velocity-based drift model.
+ * Inspired by pakastin/car: xVelocity/yVelocity components let velocity
+ * lag behind the car's facing direction, which produces natural drift feel.
+ *
  * Pure TypeScript math — no Phaser dependency.
  * Used by RaceScene to update all cars each frame.
  */
@@ -13,15 +16,15 @@ import { RaceCar } from "./types";
 export type Surface = "road" | "grass" | "dirt" | "sidewalk";
 
 interface SurfaceProps {
-  friction: number;       // multiplier applied to speed each frame (lower = more drag)
+  friction: number;       // drag multiplier applied to velocity each frame
   maxSpeedMult: number;   // multiplier on car's topSpeed allowed on this surface
 }
 
 export const SURFACE_PROPS: Record<Surface, SurfaceProps> = {
-  road:     { friction: 0.985, maxSpeedMult: 1.00 },
-  grass:    { friction: 0.940, maxSpeedMult: 0.55 },
-  dirt:     { friction: 0.955, maxSpeedMult: 0.70 },
-  sidewalk: { friction: 0.960, maxSpeedMult: 0.65 },
+  road:     { friction: 0.96, maxSpeedMult: 1.00 },
+  grass:    { friction: 0.90, maxSpeedMult: 0.50 },
+  dirt:     { friction: 0.92, maxSpeedMult: 0.65 },
+  sidewalk: { friction: 0.93, maxSpeedMult: 0.70 },
 };
 
 // ---------------------------------------------------------------------------
@@ -102,6 +105,12 @@ export class CarState {
   y: number;
   /** Angle in radians, 0 = north (up), increases clockwise */
   angle: number;
+  /** World-space velocity components */
+  xVelocity: number;
+  yVelocity: number;
+  /** Throttle power — builds up gradually, decays on coast */
+  power: number;
+  /** Scalar speed (magnitude of velocity vector) — kept for HUD / audio */
   speed: number;
   angularVel: number;
   driftAngle: number;
@@ -118,6 +127,12 @@ export class CarState {
   topSpeedReached: number;
   driftCount: number;
   isDrifting: boolean;
+  /**
+   * Monotonically-increasing waypoint index.
+   * Only advances forward — never drops — so that tracks whose path
+   * loops near the start don't accidentally trigger finish detection early.
+   */
+  waypointProgress: number;
 
   constructor(car: RaceCar, x: number, y: number, angle: number) {
     this.car = car;
@@ -126,6 +141,9 @@ export class CarState {
     this.x = x;
     this.y = y;
     this.angle = angle;
+    this.xVelocity = 0;
+    this.yVelocity = 0;
+    this.power = 0;
     this.speed = 0;
     this.angularVel = 0;
     this.driftAngle = 0;
@@ -138,97 +156,101 @@ export class CarState {
     this.topSpeedReached = 0;
     this.driftCount = 0;
     this.isDrifting = false;
+    this.waypointProgress = 0;
   }
 
   /**
    * Main physics step — call once per frame.
-   * @param input - current frame control inputs
+   * Uses a velocity-based drift model: power accelerates the car in its
+   * facing direction, but velocity carries momentum, so the car slides
+   * naturally when turning at speed (drift = velocity lags facing angle).
+   *
+   * @param input  - current frame control inputs
    * @param deltaMs - milliseconds since last frame (defaults to 16.67 for 60fps)
    */
-  update(
-    input: CarInput,
-    deltaMs: number = 16.667
-  ): void {
+  update(input: CarInput, deltaMs: number = 16.667): void {
     if (this.finished) return;
-
     this.elapsedMs += deltaMs;
 
     const surf = SURFACE_PROPS[this.surface];
-    const maxSpeed = this.stats.topSpeed * surf.maxSpeedMult;
+    const maxPower = this.stats.topSpeed * 0.012; // scale power to car stats
+    const powerFactor = maxPower * 0.08;
 
-    // --- Acceleration / Braking ---
+    // --- Build up / release power gradually ---
     if (input.accel) {
-      this.speed += this.stats.acceleration;
+      this.power = Math.min(this.power + powerFactor, maxPower);
+    } else if (input.brake) {
+      this.power = Math.max(this.power - powerFactor * 3, -maxPower * 0.3);
+    } else {
+      this.power *= 0.95; // coast
     }
-    if (input.brake) {
-      // Braking is 1.5x stronger than acceleration
-      this.speed -= this.stats.acceleration * 1.5;
-    }
 
-    // Clamp speed (allow slight reverse, max = maxSpeed)
-    this.speed = Math.max(-maxSpeed * 0.3, Math.min(maxSpeed, this.speed));
+    // --- Steering — modify angular velocity ---
+    const turnSpeed = this.stats.steerRate * 0.5;
+    const direction = this.power >= 0 ? 1 : -1;
 
-    // Surface friction
-    this.speed *= surf.friction;
+    if (input.steerLeft)  this.angularVel -= direction * turnSpeed;
+    if (input.steerRight) this.angularVel += direction * turnSpeed;
 
-    // Snap tiny speeds to zero
-    if (Math.abs(this.speed) < 0.01) this.speed = 0;
+    // --- Apply power in car's facing direction ---
+    this.xVelocity += Math.sin(this.angle) * this.power;
+    this.yVelocity += Math.cos(this.angle) * this.power;
 
-    // --- Steering ---
-    // Effectiveness scales with speed; no turning when stopped
-    const speedFraction = Math.abs(this.speed) / Math.max(this.stats.topSpeed, 0.001);
-    const steerEffective = this.stats.steerRate * Math.min(speedFraction, 1.0);
+    // --- Drag — THIS is what creates natural drift feel ---
+    // Velocity lags behind facing angle when turning, producing slide
+    const effectiveDrag = surf.friction;
+    this.xVelocity *= effectiveDrag;
+    this.yVelocity *= effectiveDrag;
 
-    let steerInput = 0;
-    if (input.steerLeft)  steerInput -= 1;
-    if (input.steerRight) steerInput += 1;
+    // --- Angular drag ---
+    this.angularVel *= 0.93;
 
-    // Flip steering when reversing
-    if (this.speed < 0) steerInput = -steerInput;
-
-    this.angularVel += steerInput * steerEffective;
-
-    // Angular friction
-    this.angularVel *= 0.80;
-
+    // --- Update angle ---
     this.angle += this.angularVel;
 
+    // --- Update position (screen Y is inverted: forward = +y in world = -y on screen) ---
+    this.x += this.xVelocity;
+    this.y -= this.yVelocity;
+
+    // --- Compute speed scalar for HUD / audio / other systems ---
+    this.speed = Math.sqrt(
+      this.xVelocity * this.xVelocity + this.yVelocity * this.yVelocity
+    );
+
+    // --- Surface speed limit ---
+    const maxSpeed = this.stats.topSpeed * surf.maxSpeedMult;
+    if (this.speed > maxSpeed) {
+      const scale = maxSpeed / this.speed;
+      this.xVelocity *= scale;
+      this.yVelocity *= scale;
+      this.speed = maxSpeed;
+    }
+
+    // Snap tiny speeds to zero
+    if (this.speed < 0.01) {
+      this.xVelocity = 0;
+      this.yVelocity = 0;
+      this.speed = 0;
+    }
+
     // --- Drift detection ---
-    const turnIntensity = Math.abs(this.angularVel);
-    const speedThreshold = this.stats.topSpeed * 0.60;
+    // Drift occurs when velocity direction differs significantly from facing direction
+    const velAngle = Math.atan2(this.xVelocity, this.yVelocity);
+    let angleDiff = this.angle - velAngle;
+    while (angleDiff > Math.PI)  angleDiff -= 2 * Math.PI;
+    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
     const wasDrifting = this.isDrifting;
     this.isDrifting =
-      Math.abs(this.speed) > speedThreshold &&
-      turnIntensity > 0.015;
+      this.speed > this.stats.topSpeed * 0.3 && Math.abs(angleDiff) > 0.2;
+    this.driftAngle = angleDiff * 0.3; // visual drift angle for sprite rotation
 
-    if (this.isDrifting) {
-      // Drift costs 0.3% speed per frame
-      this.speed *= 0.997;
+    if (this.isDrifting && !wasDrifting) this.driftCount++;
+    if (!this.isDrifting) this.driftAngle *= 0.85;
 
-      // Drift angle shifts toward current angular vel to create slide offset
-      const driftTarget = this.angularVel * this.stats.driftFactor * 8;
-      this.driftAngle += (driftTarget - this.driftAngle) * 0.15;
-    } else {
-      // Drift angle decays back to zero
-      this.driftAngle *= 0.85;
-    }
-
-    // Count new drift events (rising edge)
-    if (this.isDrifting && !wasDrifting) {
-      this.driftCount += 1;
-    }
-
-    // --- Position update ---
-    // Movement in facing direction (angle 0 = north = negative Y in screen coords)
-    const moveAngle = this.angle + this.driftAngle;
-    this.x += Math.sin(moveAngle) * this.speed;
-    this.y -= Math.cos(moveAngle) * this.speed;
-
-    // --- Top speed tracking ---
+    // --- Track top speed ---
     const currentMph = this.mph;
-    if (currentMph > this.topSpeedReached) {
-      this.topSpeedReached = currentMph;
-    }
+    if (currentMph > this.topSpeedReached) this.topSpeedReached = currentMph;
   }
 
   /**
@@ -237,7 +259,7 @@ export class CarState {
    */
   get mph(): number {
     if (this.stats.topSpeed === 0) return 0;
-    return Math.abs(this.speed / this.stats.topSpeed) * this.car.topSpeed;
+    return (this.speed / this.stats.topSpeed) * this.car.topSpeed;
   }
 }
 
@@ -250,7 +272,8 @@ const MIN_COLLISION_DIST = 28;
 
 /**
  * Elastic collision between two cars using their masses.
- * Modifies x, y, speed on both cars in-place.
+ * Uses xVelocity/yVelocity directly — no angle-based velocity reconstruction.
+ * Modifies x, y, xVelocity, yVelocity on both cars in-place.
  */
 export function resolveCarCollision(a: CarState, b: CarState): void {
   const dx = b.x - a.x;
@@ -264,13 +287,8 @@ export function resolveCarCollision(a: CarState, b: CarState): void {
   const ny = dy / dist;
 
   // Relative velocity along collision normal
-  const aVx = Math.sin(a.angle) * a.speed;
-  const aVy = -Math.cos(a.angle) * a.speed;
-  const bVx = Math.sin(b.angle) * b.speed;
-  const bVy = -Math.cos(b.angle) * b.speed;
-
-  const relVx = aVx - bVx;
-  const relVy = aVy - bVy;
+  const relVx = a.xVelocity - b.xVelocity;
+  const relVy = a.yVelocity - b.yVelocity;
   const relVn = relVx * nx + relVy * ny;
 
   // Only resolve if approaching
@@ -285,19 +303,15 @@ export function resolveCarCollision(a: CarState, b: CarState): void {
   const impBx = (impulse / b.stats.mass) * nx;
   const impBy = (impulse / b.stats.mass) * ny;
 
-  // Apply impulse to velocity vectors
-  const newAVx = aVx + impAx;
-  const newAVy = aVy + impAy;
-  const newBVx = bVx - impBx;
-  const newBVy = bVy - impBy;
+  // Apply impulse directly to velocity vectors
+  a.xVelocity += impAx;
+  a.yVelocity += impAy;
+  b.xVelocity -= impBx;
+  b.yVelocity -= impBy;
 
-  // Convert back to speed scalars (preserve direction by projecting onto heading)
-  a.speed = Math.sqrt(newAVx * newAVx + newAVy * newAVy) * Math.sign(
-    newAVx * Math.sin(a.angle) + newAVy * (-Math.cos(a.angle))
-  ) || 0;
-  b.speed = Math.sqrt(newBVx * newBVx + newBVy * newBVy) * Math.sign(
-    newBVx * Math.sin(b.angle) + newBVy * (-Math.cos(b.angle))
-  ) || 0;
+  // Update speed scalars
+  a.speed = Math.sqrt(a.xVelocity * a.xVelocity + a.yVelocity * a.yVelocity);
+  b.speed = Math.sqrt(b.xVelocity * b.xVelocity + b.yVelocity * b.yVelocity);
 
   // Positional correction — push cars apart to avoid overlap
   const overlap = MIN_COLLISION_DIST - dist;
@@ -319,28 +333,25 @@ export function resolveWallCollision(
   wallNx: number,
   wallNy: number
 ): void {
-  // Velocity vector
-  const vx = Math.sin(car.angle) * car.speed;
-  const vy = -Math.cos(car.angle) * car.speed;
+  // Use velocity components directly
+  const vx = car.xVelocity;
+  const vy = car.yVelocity;
 
   // Component along wall normal
   const vDotN = vx * wallNx + vy * wallNy;
 
-  // Only bounce if moving toward the wall (negative dot with inward normal means moving away)
+  // Only bounce if moving toward the wall
   if (vDotN >= 0) return;
 
   // Reflect velocity about the wall normal, 40% speed loss (restitution 0.6)
   const restitution = 0.6;
-  const reflectX = vx - (1 + restitution) * vDotN * wallNx;
-  const reflectY = vy - (1 + restitution) * vDotN * wallNy;
+  car.xVelocity = vx - (1 + restitution) * vDotN * wallNx;
+  car.yVelocity = vy - (1 + restitution) * vDotN * wallNy;
 
-  const newSpeed = Math.sqrt(reflectX * reflectX + reflectY * reflectY);
-  // Determine sign: does the reflected vector point in the car's facing direction?
-  const facingX = Math.sin(car.angle);
-  const facingY = -Math.cos(car.angle);
-  const dotFacing = reflectX * facingX + reflectY * facingY;
-
-  car.speed = newSpeed * Math.sign(dotFacing);
+  // Update speed scalar
+  car.speed = Math.sqrt(
+    car.xVelocity * car.xVelocity + car.yVelocity * car.yVelocity
+  );
 
   // Nudge car away from wall
   car.x += wallNx * 2;
@@ -348,4 +359,8 @@ export function resolveWallCollision(
 
   // Dampen angular velocity on wall hit
   car.angularVel *= 0.5;
+
+  // Suppress unused parameter warning
+  void wallX;
+  void wallY;
 }
