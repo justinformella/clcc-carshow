@@ -112,10 +112,11 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       `Black background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
-      `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
-      `Show the steering wheel, instrument cluster with speedometer and tachometer, and windshield. ` +
+      `8-bit retro pixel art wide panoramic interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
+      `Show the full width of the dashboard including both A-pillars, steering wheel centered, instrument cluster with speedometer and tachometer. ` +
       `Style like a 1990s DOS racing game (Test Drive, Street Rod). ` +
-      `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`
+      `Detailed pixel art with authentic retro video game aesthetic. Wide cinematic view from behind the steering wheel looking forward.`,
+      "16:9"
     ),
     generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
   ]);
@@ -175,7 +176,7 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
   return { sideUrl, dashUrl, rearUrl };
 }
 
-export async function generateImage(prompt: string): Promise<Buffer> {
+export async function generateImage(prompt: string, aspectRatio: string = "16:9"): Promise<Buffer> {
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
   if (geminiKey) {
@@ -187,7 +188,7 @@ export async function generateImage(prompt: string): Promise<Buffer> {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             instances: [{ prompt }],
-            parameters: { sampleCount: 1, aspectRatio: "16:9" },
+            parameters: { sampleCount: 1, aspectRatio },
           }),
         }
       );

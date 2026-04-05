@@ -39,7 +39,7 @@ if env_file.exists():
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 BUCKET = "pixel-art"
-CROP_RATIO = 0.45  # Remove top 45% of image
+CROP_RATIO = 0.40  # Remove top 40% of image
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     print("Error: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
