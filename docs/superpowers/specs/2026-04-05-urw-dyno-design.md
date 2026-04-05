@@ -34,18 +34,44 @@ Top to bottom:
    - After pull: spec results grid
 5. **Navigation:** "BACK TO GARAGE" link
 
+## Background Asset: Dyno Room
+
+Generate a static 8-bit pixel art background image of the URW dyno room using the Imagen API (same `generateImage()` function used for car pixel art). This is a **one-time generation** — the image is stored in Supabase storage at `pixel-art/urw-dyno-room.png` and reused for every car.
+
+**Imagen prompt:**
+```
+8-bit retro pixel art side view of an automotive dyno room interior. Clean white walls,
+polished gray concrete floor. A chassis dynamometer (roller dyno) is embedded in the floor
+with two large metal rollers visible. On the left side, a dyno computer kiosk/control station
+with a monitor showing a graph display. A technician in a dark uniform stands next to the kiosk
+holding a clipboard. On the back wall, the text "URW AUTOMOTIVE" is painted in large bold black
+letters. Fluorescent ceiling lights. An open garage door on the right side showing daylight outside.
+Style like a 1990s DOS racing game. Sharp pixels, no anti-aliasing, authentic retro video game
+aesthetic. Side-on view, no perspective distortion.
+```
+
+**Aspect ratio:** 16:9
+
+**Generation flow:**
+1. On first load of the dyno phase, check if `urw-dyno-room.png` exists in Supabase storage
+2. If not, generate it via Imagen and upload
+3. Cache the URL in a React ref so it's only fetched once per session
+
+**Fallback:** If generation fails or image isn't available, draw a simple canvas fallback — dark room with "URW AUTOMOTIVE" text and basic rectangles for the dyno.
+
 ## Canvas Rendering
 
-All drawn in a `requestAnimationFrame` loop on a single `<canvas>` element.
+The dyno room background image is drawn as the base layer on the canvas. The car sprite, rollers, exhaust, and effects are drawn on top via `requestAnimationFrame`.
 
-### Background
-- Dark background (`#0d0d1a`)
-- "URW" rendered large in dark gray (`#1a1a2e`) as background watermark, centered
+### Background Layer
+- Draw the pre-generated dyno room image scaled to fill the canvas
+- This replaces the plain dark background — gives the scene a real environment
 
-### Dyno Rollers
-- Two circles (radius ~30px) positioned at the bottom of the canvas, spaced to sit under the car's wheels
-- Dark gray fill (`#333`) with lighter spoke lines that rotate based on current RPM
+### Dyno Rollers (animated overlay)
+- Two circles (radius ~30px) positioned to align with the rollers in the background image
+- Semi-transparent dark gray fill with lighter spoke lines that rotate based on current RPM
 - Roller rotation speed = `rpm / 1000` radians per frame
+- Positioned at bottom-center of the canvas where the dyno sits in the background art
 
 ### Car Sprite
 - Load the car's `pixelArt` (side view) image
