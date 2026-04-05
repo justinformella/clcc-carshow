@@ -163,9 +163,41 @@ pillow
 
 ## SQL Migration
 
+Run these in order in the Supabase SQL Editor.
+
+### Step 1: Add columns
+
 ```sql
 ALTER TABLE registrations
   ADD COLUMN IF NOT EXISTS pixel_art_original_url TEXT,
   ADD COLUMN IF NOT EXISTS pixel_dashboard_original_url TEXT,
   ADD COLUMN IF NOT EXISTS pixel_rear_original_url TEXT;
 ```
+
+### Step 2: Backfill originals from current images
+
+Copy every existing pixel art URL into the new `_original_url` columns. This preserves the current images as originals before any background removal overwrites the main columns.
+
+```sql
+UPDATE registrations
+SET
+  pixel_art_original_url = pixel_art_url,
+  pixel_dashboard_original_url = pixel_dashboard_url,
+  pixel_rear_original_url = pixel_rear_url
+WHERE
+  pixel_art_url IS NOT NULL
+  OR pixel_dashboard_url IS NOT NULL
+  OR pixel_rear_url IS NOT NULL;
+```
+
+**This must be run BEFORE any bulk upload or background removal.** The backfill ensures every original image is safely stored in its own column. Only after this completes should the stripped/transparent versions be uploaded to the main columns.
+
+### Step 3: Bulk upload stripped images
+
+After the backfill, run the local `strip-backgrounds.py` script with `--upload` to push the locally-processed transparent images to Supabase, overwriting the main columns:
+
+```bash
+python3 scripts/strip-backgrounds.py --upload
+```
+
+The script also needs to be updated to write the transparent URL to the main column only (not the `_original_url` column).
