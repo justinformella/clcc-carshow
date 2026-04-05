@@ -858,27 +858,38 @@
       // Use the original game's polished tree/plant sprites for nature.
       // Only use dynamic CL assets for Route 14 branded storefronts.
 
-      // --- Trees and plants (original spritesheet — these look great) ---
+      // --- Trees and plants (Midwest appropriate — no palms or cacti!) ---
+      var MIDWEST_TREES = [SPRITES.TREE1, SPRITES.TREE2, SPRITES.DEAD_TREE1, SPRITES.DEAD_TREE2];
+      var MIDWEST_PLANTS = [SPRITES.TREE1, SPRITES.TREE2, SPRITES.BUSH1, SPRITES.BUSH2,
+                            SPRITES.DEAD_TREE1, SPRITES.DEAD_TREE2, SPRITES.STUMP,
+                            SPRITES.BOULDER1, SPRITES.BOULDER2, SPRITES.BOULDER3];
+
+      // Trees lining the road at the start
       for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
-        addSprite(n, SPRITES.PALM_TREE, 0.5 + Math.random()*0.5);
-        addSprite(n, SPRITES.PALM_TREE,   1 + Math.random()*2);
+        addSprite(n, Util.randomChoice(MIDWEST_TREES), 0.5 + Math.random()*0.5);
+        addSprite(n, Util.randomChoice(MIDWEST_TREES),   1 + Math.random()*2);
       }
 
+      // Columns (utility poles) + trees along the road
       for(n = 250 ; n < 1000 ; n += 5) {
         addSprite(n,     SPRITES.COLUMN, 1.1);
-        addSprite(n + Util.randomInt(0,5), SPRITES.TREE1, -1 - (Math.random() * 2));
-        addSprite(n + Util.randomInt(0,5), SPRITES.TREE2, -1 - (Math.random() * 2));
+        addSprite(n + Util.randomInt(0,5), Util.randomChoice(MIDWEST_TREES), -1 - (Math.random() * 2));
+        addSprite(n + Util.randomInt(0,5), Util.randomChoice(MIDWEST_TREES), -1 - (Math.random() * 2));
       }
 
+      // Scattered plants throughout (no cacti, no palms)
       for(n = 200 ; n < segments.length ; n += 3) {
-        addSprite(n, Util.randomChoice(SPRITES.PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
+        addSprite(n, Util.randomChoice(MIDWEST_PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
       }
 
       // --- Route 14 branded storefronts (dynamic CL assets) ---
-      // These are the recognizable Crystal Lake businesses along the commercial strip
+      // Actual businesses along Route 14 / Northwest Hwy in Crystal Lake, IL
+      // Listed roughly west-to-east matching the real commercial corridor
       var commercialKeys = [
-        'best-buy', 'target', 'jewel-osco', 'chick-fil-a',
-        'taco-bell', 'exceed-flooring', 'gas-station', 'fast-food', 'strip-mall'
+        'menards', 'outback', 'chick-fil-a', 'chipotle', 'raising-canes',
+        'target', 'sams-club', 'best-buy', 'tj-maxx', 'ross',
+        'jewel-osco', 'hobby-lobby', 'taco-bell', 'wendys', 'panera',
+        'exceed-flooring', 'gas-station', 'fast-food', 'strip-mall', 'starbucks'
       ];
       var commIdx = 0;
       for (n = 200; n < segments.length - 100; n += 100) {
@@ -986,6 +997,17 @@
       'exceed-flooring': { path: '8bit/scenery/exceed-flooring.png',  w: 220, h: 120, category: 'commercial' },
       'jewel-osco':      { path: '8bit/scenery/jewel-osco.png',      w: 260, h: 130, category: 'commercial' },
       'target':          { path: '8bit/scenery/target.png',           w: 250, h: 140, category: 'commercial' },
+      'menards':         { path: '8bit/scenery/menards.png',          w: 260, h: 130, category: 'commercial' },
+      'outback':         { path: '8bit/scenery/outback.png',          w: 180, h: 130, category: 'commercial' },
+      'chipotle':        { path: '8bit/scenery/chipotle.png',         w: 170, h: 120, category: 'commercial' },
+      'raising-canes':   { path: '8bit/scenery/raising-canes.png',    w: 180, h: 130, category: 'commercial' },
+      'sams-club':       { path: '8bit/scenery/sams-club.png',        w: 260, h: 130, category: 'commercial' },
+      'tj-maxx':         { path: '8bit/scenery/tj-maxx.png',          w: 240, h: 120, category: 'commercial' },
+      'ross':            { path: '8bit/scenery/ross.png',             w: 240, h: 120, category: 'commercial' },
+      'hobby-lobby':     { path: '8bit/scenery/hobby-lobby.png',      w: 250, h: 130, category: 'commercial' },
+      'wendys':          { path: '8bit/scenery/wendys.png',           w: 170, h: 130, category: 'commercial' },
+      'panera':          { path: '8bit/scenery/panera.png',           w: 180, h: 130, category: 'commercial' },
+      'starbucks':       { path: '8bit/scenery/starbucks.png',        w: 160, h: 130, category: 'commercial' },
 
       // Street furniture — small
       'street-lamp':     { path: '8bit/scenery/street-lamp.png',     w: 20, h: 160, category: 'furniture' },
