@@ -43,7 +43,7 @@
   </table>
   <div id="instructions" style="display:none"></div>
 
-  <a id="quit-btn" href="/">QUIT</a>
+  <a id="quit-btn" href="/arcade">QUIT</a>
 
   <div id="racer">
     <div id="hud">
@@ -1474,6 +1474,13 @@
     //=========================================================================
 
     // Tweak UI removed — settings are fixed for Route 14
+
+    // QUIT button — always goes back to /arcade with the car ID
+    document.getElementById('quit-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      if (engineSound) stopEngineSound(engineSound);
+      window.location.href = '/arcade' + (playerCarData ? '?car=' + playerCarData.id : '');
+    });
     function refreshTweakUI() {}
 
     //=========================================================================
