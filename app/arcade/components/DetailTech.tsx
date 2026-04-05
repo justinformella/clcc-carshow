@@ -80,6 +80,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   const detailParticlesRef = useRef<{ x: number; y: number; vx: number; vy: number; life: number; maxLife: number; star: boolean }[]>([]);
   const isDraggingRef = useRef(false);
   const lastDragPosRef = useRef<{ x: number; y: number } | null>(null);
+  const grimeInitialCountRef = useRef(0);
 
   // ─── DETAIL TECH HELPERS ───
 
@@ -130,6 +131,11 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       }
     }
     grimeCanvasRef.current = grime;
+    // Count initial grimy pixels for accurate progress tracking
+    const data = gCtx.getImageData(0, 0, width, height).data;
+    let count = 0;
+    for (let i = 3; i < data.length; i += 32) { if (data[i] > 0) count++; }
+    grimeInitialCountRef.current = count;
   }, []);
 
   const eraseGrimeAt = useCallback((canvasX: number, canvasY: number, radius: number) => {
@@ -156,10 +162,12 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     if (!grime) return 0;
     const gCtx = grime.getContext("2d");
     if (!gCtx) return 0;
+    const initial = grimeInitialCountRef.current;
+    if (initial === 0) return 0;
     const data = gCtx.getImageData(0, 0, grime.width, grime.height).data;
-    let cleared = 0, total = 0;
-    for (let i = 3; i < data.length; i += 32) { total++; if (data[i] === 0) cleared++; }
-    return total > 0 ? (cleared / total) * 100 : 0;
+    let remaining = 0;
+    for (let i = 3; i < data.length; i += 32) { if (data[i] > 0) remaining++; }
+    return ((initial - remaining) / initial) * 100;
   }, []);
 
   const toCanvasCoords = useCallback((e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
