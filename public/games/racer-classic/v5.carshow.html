@@ -675,62 +675,55 @@
           spriteX     = segment.p1.screen.x + (spriteScale * sprite.offset * roadWidth * width/2);
           spriteY     = segment.p1.screen.y;
           if (sprite.dynamicImage) {
-            // Draw dynamic image (sponsor billboard or storefront)
-            // Use the projected road width at this segment to size the sprite
-            // proportionally — this keeps it grounded at all distances
+            // Use the EXACT same rendering path as original sprites (Render.sprite)
+            // but pass the dynamic image as the spritesheet source.
+            // This guarantees identical positioning, scaling, and clipping.
             var bImgW = sprite.dynamicImage.naturalWidth || 300;
             var bImgH = sprite.dynamicImage.naturalHeight || 200;
-            var bImgAspect = bImgH / bImgW;
-
-            // Width = fraction of the road width at this distance (consistent scaling)
-            var roadW = segment.p1.screen.w; // projected half-road-width in pixels
-            var bDestW = roadW * (sprite.source.w / 300); // scale relative to reference 300
-            var bDestH = bDestW * bImgAspect;
-
-            // Cap height at 40% of viewport
-            var maxH = height * 0.4;
-            if (bDestH > maxH) {
-              bDestW *= maxH / bDestH;
-              bDestH = maxH;
-            }
-
-            // Position: bottom of sprite sits at spriteY (road surface)
+            // Create a fake sprite rect that covers the entire image
+            var dynSprite = { x: 0, y: 0, w: sprite.source.w, h: sprite.source.h };
             var bOffX = (sprite.offset < 0 ? -1 : 0);
-            var bDx = spriteX + (bDestW * bOffX);
-            var bDy = spriteY - bDestH;
-            var bClipH = segment.clip ? Math.max(0, bDy + bDestH - segment.clip) : 0;
-            if (bClipH < bDestH) {
-              if (sprite.isBillboard) {
-                // Draw billboard structure: two posts + white frame + logo inside
-                var pad = Math.max(3, bDestW * 0.04);  // frame padding
-                var postW = Math.max(2, bDestW * 0.03); // post width
-                var postH = bDestH * 0.35;              // posts are 35% of total height
-                var boardY = bDy;                        // board at top
-                var boardH = bDestH - postH - bClipH;   // board height (minus posts)
 
-                if (boardH > 0) {
-                  // Posts (dark grey)
-                  ctx.fillStyle = '#444444';
-                  ctx.fillRect(bDx + bDestW * 0.25 - postW/2, boardY + boardH, postW, postH);
-                  ctx.fillRect(bDx + bDestW * 0.75 - postW/2, boardY + boardH, postW, postH);
+            if (sprite.isBillboard) {
+              // Billboard: use Render.sprite positioning math, then draw frame + logo
+              var bbScale = spriteScale;
+              var bbW = (dynSprite.w * bbScale * width/2) * (SPRITES.SCALE * roadWidth);
+              var bbH = (dynSprite.h * bbScale * width/2) * (SPRITES.SCALE * roadWidth);
+              var bbX = spriteX + (bbW * bOffX);
+              var bbY = spriteY + (bbH * -1);
+              var bbClip = segment.clip ? Math.max(0, bbY + bbH - segment.clip) : 0;
 
-                  // Billboard backing (white rectangle)
-                  ctx.fillStyle = '#ffffff';
-                  ctx.fillRect(bDx, boardY, bDestW, boardH);
+              if (bbClip < bbH) {
+                var postW = Math.max(2, bbW * 0.03);
+                var postH = bbH * 0.30;
+                var boardH = bbH - postH;
+                var pad = Math.max(2, bbW * 0.04);
 
-                  // Dark border
-                  ctx.strokeStyle = '#333333';
-                  ctx.lineWidth = Math.max(1, pad * 0.4);
-                  ctx.strokeRect(bDx, boardY, bDestW, boardH);
-
-                  // Logo image inside the frame (with padding)
-                  ctx.drawImage(sprite.dynamicImage,
-                    bDx + pad, boardY + pad,
-                    bDestW - pad*2, boardH - pad*2);
-                }
-              } else {
-                // Storefront — draw image directly
-                ctx.drawImage(sprite.dynamicImage, bDx, bDy, bDestW, bDestH - bClipH);
+                // Posts
+                ctx.fillStyle = '#444444';
+                ctx.fillRect(bbX + bbW * 0.25 - postW/2, bbY + boardH, postW, postH);
+                ctx.fillRect(bbX + bbW * 0.75 - postW/2, bbY + boardH, postW, postH);
+                // White backing
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(bbX, bbY, bbW, boardH);
+                // Border
+                ctx.strokeStyle = '#333333';
+                ctx.lineWidth = Math.max(1, pad * 0.3);
+                ctx.strokeRect(bbX, bbY, bbW, boardH);
+                // Logo
+                ctx.drawImage(sprite.dynamicImage, bbX + pad, bbY + pad, bbW - pad*2, boardH - pad*2);
+              }
+            } else {
+              // Storefront: use Render.sprite directly — identical to how trees render
+              // 9-arg drawImage: source is the dynamic image, coords cover full image
+              var stW = (dynSprite.w * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
+              var stH = (dynSprite.h * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
+              var stX = spriteX + (stW * bOffX);
+              var stY = spriteY + (stH * -1); // offsetY = -1, same as trees
+              var stClip = segment.clip ? Math.max(0, stY + stH - segment.clip) : 0;
+              if (stClip < stH) {
+                var srcClipH = bImgH * stClip / stH;
+                ctx.drawImage(sprite.dynamicImage, 0, 0, bImgW, bImgH - srcClipH, stX, stY, stW, stH - stClip);
               }
             }
           } else {
