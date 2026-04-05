@@ -73,6 +73,7 @@
       <span id="fast_lap_time"    class="hud">Fastest Lap: <span id="fast_lap_time_value" class="value">0.0</span></span>
       <span id="car_name" class="hud" style="display:none"><span id="car_name_value" class="value"></span></span>
       <span id="car_stats" class="hud" style="display:none"><span id="car_stats_value" class="value"></span></span>
+      <span id="gear" class="hud" style="display:none">Gear: <span id="gear_value" class="value">1</span></span>
     </div>
     <canvas id="canvas">
       Sorry, this example cannot be run because your browser does not support the &lt;canvas&gt; element
@@ -142,7 +143,8 @@
       current_lap_time: { value: null, dom: Dom.get('current_lap_time_value') },
       last_lap_time:    { value: null, dom: Dom.get('last_lap_time_value')    },
       fast_lap_time:    { value: null, dom: Dom.get('fast_lap_time_value')    },
-      car_name:         { value: null, dom: Dom.get('car_name_value')         }
+      car_name:         { value: null, dom: Dom.get('car_name_value')         },
+      gear:             { value: null, dom: Dom.get('gear_value')             }
     }
 
     //=========================================================================
@@ -235,6 +237,7 @@
       }
 
       updateHud('speed',            playerCarData ? Math.round((speed/maxSpeed) * playerTopSpeedMph) : 5 * Math.round(speed/500));
+      if (playerCarData) updateHud('gear', currentGear);
       updateHud('current_lap_time', formatTime(currentLapTime));
 
       // Engine audio — start on first keypress (browser requires user gesture)
@@ -441,14 +444,50 @@
       es.running = true;
     }
 
+    var currentGear = 1;
+    var shiftCooldown = 0; // frames remaining in shift dip
+
     function updateEngineSound(es, speedNorm, isAccel) {
       if (!es.running || !audioCtx || !es.master) return;
       var t = audioCtx.currentTime;
       var sp = Math.max(0, Math.min(1, speedNorm));
       var p = es.profile;
 
-      var freq = p.baseF + (p.maxF - p.baseF) * sp;
+      // --- Transmission simulation ---
+      // Divide speed range into gears. Within each gear, RPM (frequency)
+      // climbs from low to high, then drops on upshift.
+      var numGears = (playerCarData && playerCarData.gears) ? playerCarData.gears : 5;
+      var gearSize = 1.0 / numGears;
+
+      // Which gear are we in?
+      var newGear = Math.min(numGears, Math.floor(sp / gearSize) + 1);
+      if (sp >= 1.0) newGear = numGears;
+
+      // Detect upshift
+      if (newGear > currentGear && sp > 0.05) {
+        currentGear = newGear;
+        shiftCooldown = 8; // ~8 frames of volume dip (~130ms at 60fps)
+      }
+      // Detect downshift (deceleration)
+      if (newGear < currentGear) {
+        currentGear = newGear;
+      }
+
+      // RPM within current gear: 0.0 (just shifted) to 1.0 (about to shift)
+      var gearStart = (currentGear - 1) * gearSize;
+      var rpmInGear = Math.max(0, Math.min(1, (sp - gearStart) / gearSize));
+
+      // Frequency: climbs within gear from ~40% to 100% of max range
+      // Higher gears have a slightly higher base (gear whine effect)
+      var gearBaseMult = 0.35 + (currentGear - 1) * 0.05; // 0.35, 0.40, 0.45, ...
+      var freq = p.baseF + (p.maxF - p.baseF) * (gearBaseMult + (1 - gearBaseMult) * rpmInGear);
+
+      // Volume: normal + shift dip
       var vol = (p.minG + (p.maxG - p.minG) * sp) * (isAccel ? 1.0 : 0.6);
+      if (shiftCooldown > 0) {
+        vol *= 0.3; // brief volume dip during shift
+        shiftCooldown--;
+      }
 
       es.master.gain.linearRampToValueAtTime(vol, t + 0.01);
 
@@ -1319,6 +1358,7 @@
             Dom.set('car_name_value', playerCarData.name);
             Dom.show('car_stats');
             Dom.set('car_stats_value', playerCarData.hp + ' HP | ' + playerCarData.weight.toLocaleString() + ' lbs | ' + (playerCarData.topSpeed || '?') + ' mph top');
+            Dom.show('gear');
             applyCarStats(playerCarData);
             // Start engine audio on first user interaction (required by browsers)
             engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
