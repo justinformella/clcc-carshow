@@ -559,16 +559,17 @@
           spriteX     = segment.p1.screen.x + (spriteScale * sprite.offset * roadWidth * width/2);
           spriteY     = segment.p1.screen.y;
           if (sprite.dynamicImage) {
-            // Draw sponsor logo billboard
+            // Draw dynamic image (sponsor billboard or storefront)
             var bImgW = sprite.dynamicImage.naturalWidth || 300;
             var bImgH = sprite.dynamicImage.naturalHeight || 200;
             var bRefW = sprite.source.w;
             var bRefH = Math.round(bRefW * (bImgH / bImgW));
             var bDestW = (bRefW * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
             var bDestH = (bRefH * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
+            // Position: horizontally offset from road center, vertically grounded at road surface
             var bOffX = (sprite.offset < 0 ? -1 : 0);
             var bDx = spriteX + (bDestW * bOffX);
-            var bDy = spriteY + (bDestH * -1);
+            var bDy = spriteY - bDestH; // bottom of sprite sits at road Y level
             var bClipH = segment.clip ? Math.max(0, bDy + bDestH - segment.clip) : 0;
             if (bClipH < bDestH) {
               ctx.drawImage(sprite.dynamicImage, bDx, bDy, bDestW, bDestH - bClipH);
@@ -891,24 +892,20 @@
       // --- Trees and plants (Midwest appropriate) ---
       // Only TREE1, TREE2 (green deciduous), BUSH1, BUSH2, and boulders
       // No palms, cacti, dead trees, or castle columns
-      var MW_TREES = [SPRITES.TREE1, SPRITES.TREE2];
-      var MW_GROUND = [SPRITES.BUSH1, SPRITES.BUSH2];
+      // Only TREE1 and TREE2 — the two normal green deciduous trees.
+      // Everything else in the spritesheet looks tropical or fantasy.
 
-      // Trees lining the road at the start
-      for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
-        addSprite(n, Util.randomChoice(MW_TREES), 0.5 + Math.random()*0.5);
-        addSprite(n, Util.randomChoice(MW_TREES),   1 + Math.random()*2);
+      // Trees lining the road — sparse, pushed back, with gaps for businesses
+      // Track which segments have businesses so we skip trees there
+      var businessSegments = {};
+      for (n = 200; n < segments.length - 100; n += 80) {
+        for (var bs = n - 10; bs <= n + 10; bs++) businessSegments[bs] = true;
       }
 
-      // Trees along the road (no columns)
-      for(n = 250 ; n < 1000 ; n += 6) {
-        addSprite(n + Util.randomInt(0,5), Util.randomChoice(MW_TREES), -1 - (Math.random() * 2));
-        addSprite(n + Util.randomInt(0,3), Util.randomChoice(MW_TREES),  1 + (Math.random() * 2));
-      }
-
-      // Scattered bushes and ground cover throughout
-      for(n = 200 ; n < segments.length ; n += 4) {
-        addSprite(n, Util.randomChoice(MW_GROUND), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
+      for(n = 10 ; n < segments.length ; n += 10) {
+        if (businessSegments[n]) continue; // don't plant trees where businesses go
+        var treeSide = Util.randomChoice([1, -1]);
+        addSprite(n, Util.randomChoice([SPRITES.TREE1, SPRITES.TREE2]), treeSide * (2 + Math.random() * 3));
       }
 
       // --- Route 14 branded storefronts (dynamic CL assets) ---
