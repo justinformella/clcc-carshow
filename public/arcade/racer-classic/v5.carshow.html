@@ -490,7 +490,7 @@
       var x  = 0;
       var dx = - (baseSegment.curve * basePercent);
 
-      ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       Render.background(ctx, background, width, height, BACKGROUND.SKY,   skyOffset,  resolution * skySpeed  * playerY);
       Render.background(ctx, background, width, height, BACKGROUND.HILLS, hillOffset, resolution * hillSpeed * playerY);
@@ -603,6 +603,36 @@
                           playerSegment.p2.world.y - playerSegment.p1.world.y);
           }
         }
+      }
+
+      // --- Dashboard overlay (below the road viewport) ---
+      if (playerDashImage) {
+        var dY = height; // dashboard starts right at the bottom of the road viewport
+        var dW = canvas.width;
+        var dH = dashHeight;
+        // Draw dashboard image covering the full width, cropped to fit
+        var imgW = playerDashImage.naturalWidth;
+        var imgH = playerDashImage.naturalHeight;
+        var imgAspect = imgW / imgH;
+        var destAspect = dW / dH;
+        var sx = 0, sy = 0, sw = imgW, sh = imgH;
+        if (imgAspect > destAspect) {
+          // Image is wider — crop sides
+          sw = Math.round(imgH * destAspect);
+          sx = Math.round((imgW - sw) / 2);
+        } else {
+          // Image is taller — crop top/bottom
+          sh = Math.round(imgW / destAspect);
+          sy = Math.round((imgH - sh) / 2);
+        }
+        ctx.drawImage(playerDashImage, sx, sy, sw, sh, 0, dY, dW, dH);
+
+        // Subtle vignette/darkening at the seam between road and dashboard
+        var grad = ctx.createLinearGradient(0, dY - 5, 0, dY + 15);
+        grad.addColorStop(0, 'rgba(0,0,0,0.5)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, dY - 5, dW, 20);
       }
     }
 
@@ -959,6 +989,8 @@
     var carShowImages = {};    // map of car.id -> loaded Image element (pixelRear)
     var playerCarData = null;  // selected player car data
     var playerCarImage = null; // selected player car pixelRear Image
+    var playerDashImage = null; // selected player car dashboard Image (cropped)
+    var dashHeight = 200;      // height of dashboard strip below road
     var gameReady = false;
 
     // Sponsor data
@@ -1180,7 +1212,20 @@
         playerCarData = carShowData[idx];
         playerCarImage = carShowImages[playerCarData.id] || null;
         overlay.remove();
-        startGame();
+
+        // Load dashboard image if available, then start game
+        if (playerCarData.pixelDash) {
+          var dashImg = new Image();
+          dashImg.crossOrigin = 'anonymous';
+          dashImg.onload = function() {
+            playerDashImage = dashImg;
+            startGame();
+          };
+          dashImg.onerror = function() { startGame(); };
+          dashImg.src = playerCarData.pixelDash;
+        } else {
+          startGame();
+        }
       });
     }
 
@@ -1219,8 +1264,12 @@
 
     function reset(options) {
       options       = options || {};
-      canvas.width  = width  = Util.toInt(options.width,          width);
-      canvas.height = height = Util.toInt(options.height,         height);
+      width  = Util.toInt(options.width,          width);
+      height = Util.toInt(options.height,         height);
+      // Canvas is taller than the game viewport to fit the dashboard below
+      var actualDashH = playerDashImage ? dashHeight : 0;
+      canvas.width  = width;
+      canvas.height = height + actualDashH;
       lanes                  = Util.toInt(options.lanes,          lanes);
       roadWidth              = Util.toInt(options.roadWidth,      roadWidth);
       cameraHeight           = Util.toInt(options.cameraHeight,   cameraHeight);
