@@ -392,7 +392,7 @@
       document.body.appendChild(overlay);
 
       // Redirect to /race with the same car
-      var raceUrl = '/race' + (playerCarData ? '?car=' + playerCarData.id : '');
+      var raceUrl = '/arcade' + (playerCarData ? '?car=' + playerCarData.id : '');
 
       document.getElementById('finish-continue').addEventListener('click', function() {
         window.location.href = raceUrl;
