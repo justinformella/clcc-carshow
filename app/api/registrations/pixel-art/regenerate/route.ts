@@ -38,18 +38,32 @@ export async function POST(request: NextRequest) {
         `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`;
     }
 
-    const rawBuffer = await generateImage(prompt);
-    const ts = Date.now();
+    const timing: Record<string, number> = {};
 
+    let t0 = Date.now();
+    const rawBuffer = await generateImage(prompt);
+    timing.generateMs = Date.now() - t0;
+
+    const ts = Date.now();
     const origName = `${type}-${registration_id}.png`;
+
+    t0 = Date.now();
     await supabase.storage.from("pixel-art").upload(origName, rawBuffer, { contentType: "image/png", upsert: true });
+    timing.uploadOriginalMs = Date.now() - t0;
+
     const origUrl = `${supabase.storage.from("pixel-art").getPublicUrl(origName).data.publicUrl}?v=${ts}`;
 
     let mainUrl = origUrl;
     if (type === "side" || type === "rear") {
+      t0 = Date.now();
       const cleanBuffer = await removeBackground(rawBuffer);
+      timing.removeBackgroundMs = Date.now() - t0;
+
+      t0 = Date.now();
       const transName = `${type}-${registration_id}-transparent.png`;
       await supabase.storage.from("pixel-art").upload(transName, cleanBuffer, { contentType: "image/png", upsert: true });
+      timing.uploadTransparentMs = Date.now() - t0;
+
       mainUrl = `${supabase.storage.from("pixel-art").getPublicUrl(transName).data.publicUrl}?v=${ts}`;
     }
 
@@ -61,7 +75,8 @@ export async function POST(request: NextRequest) {
       .update({ [mainCol]: mainUrl, [origCol]: origUrl })
       .eq("id", registration_id);
 
-    return NextResponse.json({ url: mainUrl, originalUrl: origUrl });
+    console.log(`Regenerate ${type} timing:`, timing);
+    return NextResponse.json({ url: mainUrl, originalUrl: origUrl, timing });
   } catch (err) {
     console.error("Regenerate error:", err);
     return NextResponse.json({ error: "Failed to regenerate" }, { status: 500 });

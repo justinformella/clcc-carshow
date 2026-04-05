@@ -1727,7 +1727,15 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ registration_id: registrationId, type }),
       });
-      if (res.ok) { setStatus("Done!"); setTimeout(() => window.location.reload(), 500); }
+      if (res.ok) {
+        const data = await res.json();
+        const t = data.timing || {};
+        const genSec = t.generateMs ? `${(t.generateMs / 1000).toFixed(1)}s` : "?";
+        const bgSec = t.removeBackgroundMs ? `${(t.removeBackgroundMs / 1000).toFixed(1)}s` : "";
+        const detail = bgSec ? `Gen ${genSec} / BG ${bgSec}` : `Gen ${genSec}`;
+        setStatus(`Done! (${detail})`);
+        setTimeout(() => window.location.reload(), 1500);
+      }
       else { stopTimer(); alert("Regeneration failed"); }
     } catch { stopTimer(); alert("Regeneration failed"); }
   };
