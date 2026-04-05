@@ -244,7 +244,22 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   const drawDetailCar = useCallback((ctx: CanvasRenderingContext2D, W: number, H: number, img: HTMLImageElement | null, mode: "side" | "dash") => {
     if (!playerCar) return { carX: 0, carY: 0, carW: 0, carH: 0 };
     if (mode === "dash") {
-      if (img?.complete && img.naturalWidth > 0) ctx.drawImage(img, 0, 0, W, H);
+      if (img?.complete && img.naturalWidth > 0) {
+        // Preserve native aspect ratio with cover fit
+        const imgAspect = img.naturalWidth / img.naturalHeight;
+        const canvasAspect = W / H;
+        let drawW = W, drawH = H, drawX = 0, drawY = 0;
+        if (imgAspect > canvasAspect) {
+          drawH = H;
+          drawW = H * imgAspect;
+          drawX = (W - drawW) / 2;
+        } else {
+          drawW = W;
+          drawH = W / imgAspect;
+          drawY = (H - drawH) / 2;
+        }
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      }
       return { carX: 0, carY: 0, carW: W, carH: H };
     }
     const groundY = H * 0.95;
@@ -553,7 +568,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       <canvas
         ref={detailCanvasRef}
         width={800}
-        height={400}
+        height={450}
         onMouseDown={handleDetailPointerDown}
         onMouseMove={handleDetailPointerMove}
         onMouseUp={handleDetailPointerUp}
