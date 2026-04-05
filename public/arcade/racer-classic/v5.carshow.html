@@ -9,9 +9,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; font-family: 'Press Start 2P', monospace; }
-    #racer { position: relative; width: 100vw; max-width: 1280px; margin: 0 auto; }
-    #canvas { display: block; width: 100%; background-color: #000; }
+    body { background: #000; overflow: hidden; font-family: 'Press Start 2P', monospace;
+           display: flex; align-items: center; justify-content: center; height: 100vh; }
+    #racer { position: relative; }
+    #canvas { display: block; background-color: #000; }
     #hud { position: absolute; z-index: 1; top: 0; left: 0; right: 0; padding: 8px 12px;
            font-size: 11px; color: #ffd700; background: rgba(0,0,0,0.7); }
     #hud .hud { padding: 4px 8px; margin: 0 4px; }
@@ -114,6 +115,48 @@
       car_name:         { value: null, dom: Dom.get('car_name_value')         },
       gear:             { value: null, dom: Dom.get('gear_value')             }
     }
+
+    //=========================================================================
+    // FIT CANVAS TO VIEWPORT (maintain aspect ratio, black letterbox)
+    //=========================================================================
+
+    function fitCanvas() {
+      // The game renders at width x (height + dashHeight) internally
+      // Scale the CSS display to fit the viewport while maintaining aspect ratio
+      var actualDashH = playerDashImage ? dashHeight : 0;
+      var gameW = width;
+      var gameH = height + actualDashH;
+      var gameAspect = gameW / gameH;
+
+      var vpW = window.innerWidth;
+      var vpH = window.innerHeight;
+      var vpAspect = vpW / vpH;
+
+      var displayW, displayH;
+      if (vpAspect > gameAspect) {
+        // Viewport is wider than game — fit to height, black bars on sides
+        displayH = vpH;
+        displayW = vpH * gameAspect;
+      } else {
+        // Viewport is taller than game — fit to width, black bars top/bottom
+        displayW = vpW;
+        displayH = vpW / gameAspect;
+      }
+
+      canvas.style.width = Math.round(displayW) + 'px';
+      canvas.style.height = Math.round(displayH) + 'px';
+
+      // Size the racer container to match
+      var racer = document.getElementById('racer');
+      if (racer) {
+        racer.style.width = Math.round(displayW) + 'px';
+        racer.style.height = Math.round(displayH) + 'px';
+      }
+    }
+
+    window.addEventListener('resize', fitCanvas);
+    // Initial fit after a short delay (wait for canvas dimensions to be set)
+    setTimeout(fitCanvas, 100);
 
     //=========================================================================
     // UPDATE THE GAME WORLD
@@ -1331,6 +1374,8 @@
             // Start engine audio on first user interaction (required by browsers)
             engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
           }
+          // Fit canvas now that we know the dashboard height
+          fitCanvas();
         }
       });
     } // close startGame
