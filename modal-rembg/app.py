@@ -2,11 +2,13 @@ import modal
 
 app = modal.App("clcc-rembg")
 
-image = modal.Image.debian_slim(python_version="3.11").pip_install(
-    "rembg", "onnxruntime", "pillow", "fastapi"
+image = (
+    modal.Image.debian_slim(python_version="3.11")
+    .pip_install("rembg", "onnxruntime", "pillow", "fastapi")
+    .run_commands("python -c \"from rembg.bg import remove; from rembg.session_factory import new_session; new_session('u2net')\"")
 )
 
-@app.function(image=image, timeout=120)
+@app.function(image=image, timeout=300, container_idle_timeout=300)
 @modal.fastapi_endpoint(method="POST")
 def remove_bg(data: dict):
     """Accept base64 PNG, return base64 PNG with background removed."""

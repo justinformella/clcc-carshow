@@ -68,7 +68,7 @@ export async function removeBackground(imageBuffer: Buffer): Promise<Buffer> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: b64 }),
-      signal: AbortSignal.timeout(120000),
+      signal: AbortSignal.timeout(300000),
     });
 
     if (!res.ok) {
