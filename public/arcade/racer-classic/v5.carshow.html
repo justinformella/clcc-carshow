@@ -411,20 +411,20 @@
 
         if (segment == playerSegment) {
           if (playerCarImage) {
-            // Draw player's car show car
+            // Draw player's car show car with correct aspect ratio
+            var pImgW = playerCarImage.naturalWidth || 80;
+            var pImgH = playerCarImage.naturalHeight || 80;
             var pScale = cameraDepth/playerZ;
-            var pDestW = (80 * pScale * width/2) * (SPRITES.SCALE * roadWidth);
-            var pDestH = (56 * pScale * width/2) * (SPRITES.SCALE * roadWidth);
-            var pDestX = width/2 - pDestW/2;
+            var pRefW = 80; // reference width matching original player sprite
+            var pRefH = Math.round(pRefW * (pImgH / pImgW));
+            var pDestW = (pRefW * pScale * width/2) * (SPRITES.SCALE * roadWidth);
+            var pDestH = (pRefH * pScale * width/2) * (SPRITES.SCALE * roadWidth);
+            // Subtle horizontal shift on steering (no skew/rotation)
+            var steerShift = (keyLeft ? -1 : keyRight ? 1 : 0) * (speed/maxSpeed) * 8;
+            var pDestX = width/2 - pDestW/2 + steerShift;
             var pDestY = (height/2) - (cameraDepth/playerZ * Util.interpolate(playerSegment.p1.camera.y, playerSegment.p2.camera.y, playerPercent) * height/2) - pDestH;
             var pBounce = (1.5 * Math.random() * (speed/maxSpeed) * resolution) * Util.randomChoice([-1,1]);
-            // Slight lean on steering
-            ctx.save();
-            var lean = speed * (keyLeft ? -1 : keyRight ? 1 : 0) * 0.0003;
-            ctx.translate(pDestX + pDestW/2, pDestY + pDestH);
-            ctx.transform(1, 0, lean, 1, 0, 0); // skew for steering feel
-            ctx.drawImage(playerCarImage, -pDestW/2, -pDestH + pBounce, pDestW, pDestH);
-            ctx.restore();
+            ctx.drawImage(playerCarImage, pDestX, pDestY + pBounce, pDestW, pDestH);
           } else {
             Render.player(ctx, width, height, resolution, roadWidth, sprites, speed/maxSpeed,
                           cameraDepth/playerZ,
@@ -630,7 +630,15 @@
           dynamicImage = carShowImages[showCar.id] || null;
         }
 
-        sprite = dynamicImage ? { w: 80, h: 56 } : Util.randomChoice(SPRITES.CARS);
+        if (dynamicImage) {
+          // Use actual image aspect ratio, scaled to ~80px reference width
+          var imgW = dynamicImage.naturalWidth || 80;
+          var imgH = dynamicImage.naturalHeight || 56;
+          var scaledH = Math.round(80 * (imgH / imgW));
+          sprite = { w: 80, h: scaledH };
+        } else {
+          sprite = Util.randomChoice(SPRITES.CARS);
+        }
 
         // Speed influenced by car stats if available
         if (showCar && dynamicImage) {
