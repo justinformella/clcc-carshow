@@ -1689,8 +1689,23 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
   hasBgStrip: boolean;
   hasOriginal: boolean;
 }) {
-  const [loading, setLoading] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = (label: string) => {
+    setStatus(label);
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    setStatus(null);
+    setElapsed(0);
+  };
 
   const btnStyle: React.CSSProperties = {
     padding: "0.2rem 0.5rem",
@@ -1705,60 +1720,62 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
   };
 
   const handleRegen = async () => {
-    setLoading("regen");
+    startTimer("Generating image...");
     try {
       const res = await fetch("/api/registrations/pixel-art/regenerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ registration_id: registrationId, type }),
       });
-      if (res.ok) window.location.reload();
-      else alert("Regeneration failed");
-    } finally { setLoading(null); }
+      if (res.ok) { setStatus("Done!"); setTimeout(() => window.location.reload(), 500); }
+      else { stopTimer(); alert("Regeneration failed"); }
+    } catch { stopTimer(); alert("Regeneration failed"); }
   };
 
   const handleStrip = async () => {
-    setLoading("strip");
+    startTimer("Removing background...");
     try {
       const res = await fetch("/api/registrations/pixel-art/strip-bg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ registration_id: registrationId, type }),
       });
-      if (res.ok) window.location.reload();
-      else alert("Background removal failed");
-    } finally { setLoading(null); }
+      if (res.ok) { setStatus("Done!"); setTimeout(() => window.location.reload(), 500); }
+      else { stopTimer(); alert("Background removal failed"); }
+    } catch { stopTimer(); alert("Background removal failed"); }
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setLoading("upload");
+    startTimer("Uploading...");
     try {
       const fd = new FormData();
       fd.append("registration_id", registrationId);
       fd.append("type", type);
       fd.append("file", file);
       const res = await fetch("/api/registrations/pixel-art/upload", { method: "POST", body: fd });
-      if (res.ok) window.location.reload();
-      else alert("Upload failed");
-    } finally { setLoading(null); }
+      if (res.ok) { setStatus("Done!"); setTimeout(() => window.location.reload(), 500); }
+      else { stopTimer(); alert("Upload failed"); }
+    } catch { stopTimer(); alert("Upload failed"); }
   };
 
   return (
-    <div style={{ display: "flex", gap: "0.3rem", justifyContent: "center", flexWrap: "wrap" }}>
-      <button onClick={handleRegen} disabled={!!loading} style={{ ...btnStyle, opacity: loading ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
-        {loading === "regen" ? "..." : "Regen"}
-      </button>
-      {hasBgStrip && hasOriginal && (
-        <button onClick={handleStrip} disabled={!!loading} style={{ ...btnStyle, opacity: loading ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
-          {loading === "strip" ? "..." : "Strip BG"}
-        </button>
+    <div style={{ textAlign: "center" }}>
+      {status ? (
+        <div style={{ fontSize: "0.7rem", color: status === "Done!" ? "#16a34a" : "var(--gold)", fontWeight: 600, padding: "0.3rem 0" }}>
+          {status} {status !== "Done!" && <span style={{ color: "var(--text-light)" }}>{elapsed}s</span>}
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: "0.3rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <button onClick={handleRegen} style={btnStyle}>Regen</button>
+          {hasBgStrip && hasOriginal && (
+            <button onClick={handleStrip} style={btnStyle}>Strip BG</button>
+          )}
+          <button onClick={() => fileRef.current?.click()} style={btnStyle}>Upload</button>
+          <input ref={fileRef} type="file" accept="image/png" style={{ display: "none" }} onChange={handleUpload} />
+        </div>
       )}
-      <button onClick={() => fileRef.current?.click()} disabled={!!loading} style={{ ...btnStyle, opacity: loading ? 0.5 : 1, cursor: loading ? "wait" : "pointer" }}>
-        {loading === "upload" ? "..." : "Upload"}
-      </button>
-      <input ref={fileRef} type="file" accept="image/png" style={{ display: "none" }} onChange={handleUpload} />
     </div>
   );
 }
