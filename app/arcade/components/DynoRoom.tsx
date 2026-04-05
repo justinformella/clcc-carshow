@@ -73,10 +73,10 @@ export default function DynoRoom({ playerCar, onBack }: DynoRoomProps) {
     startEngine();
 
     const redline = playerCar.redline || 6500;
-    // Gear shift logic: at least 3 shifts, or 2 if only a 2-speed
+    // Gear shift logic: shift through actual gears, max 4 gears used
     const numGears = Math.max(2, Math.min(playerCar.gears || 4, 4));
-    const numShifts = numGears <= 2 ? 2 : 3;
-    const gearsUsed = numShifts + 1; // start in 1st, shift numShifts times
+    const numShifts = numGears - 1; // 2-speed = 1 shift, 3-speed = 2, 4+ = 3
+    const gearsUsed = numGears;
     const GEAR_MS = 1800; // time per gear pull
     const SHIFT_MS = 300; // brief RPM drop during shift
     const RAMP_MS = gearsUsed * GEAR_MS + numShifts * SHIFT_MS;

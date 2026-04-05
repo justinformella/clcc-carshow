@@ -6,7 +6,7 @@ import {
   initAudio,
   playCountdownBeep, startEngine, updateEngine, stopEngine,
   playGearShift, playWinJingle, playLoseJingle, playFoulBuzzer,
-  startMusic, stopAll,
+  startMusic, stopMusic, stopAll,
 } from "@/lib/race-audio";
 import {
   quarterMileET, trapSpeedMPH, topSpeedMPH,
@@ -147,12 +147,14 @@ export default function DragRace({ playerCar, cars, onBack }: DragRaceProps) {
   const opponentImgRef = useRef<HTMLImageElement>(null);
   const opponentFallbackRef = useRef<HTMLDivElement>(null);
 
-  // ─── Pick opponent on mount ───
+  // ─── Pick opponent on mount + start music ───
   useEffect(() => {
     const others = cars.filter((c) => c.id !== playerCar.id);
     const opp = others[Math.floor(Math.random() * others.length)] || playerCar;
     setOpponentCar(opp);
     setTrackSkin(pickRandomSkin());
+    initAudio();
+    startMusic();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Keyboard ───
@@ -391,7 +393,7 @@ export default function DragRace({ playerCar, cars, onBack }: DragRaceProps) {
         greenRef.current = performance.now();
         setPhase("racing");
         startEngine();
-        startMusic();
+        stopMusic();
 
         // Opponent reaction time: random 0.15-0.40s
         const oppRT = 150 + Math.random() * 250;
