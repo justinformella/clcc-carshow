@@ -81,10 +81,12 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   const isDraggingRef = useRef(false);
   const lastDragPosRef = useRef<{ x: number; y: number } | null>(null);
   const grimeInitialCountRef = useRef(0);
+  // Separate binary tracking canvas — fully opaque where grime exists, used only for progress math
+  const grimeTrackRef = useRef<HTMLCanvasElement | null>(null);
 
   // ─── DETAIL TECH HELPERS ───
 
-  const initGrimeCanvas = useCallback((width: number, height: number, carBounds?: { x: number; y: number; w: number; h: number }) => {
+  const initGrimeCanvas = useCallback((width: number, height: number, carImg?: HTMLImageElement | null, carBounds?: { x: number; y: number; w: number; h: number }, flipped?: boolean) => {
     const grime = document.createElement("canvas");
     grime.width = width;
     grime.height = height;
@@ -92,24 +94,66 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     const bx = carBounds?.x ?? 0, by = carBounds?.y ?? 0;
     const bw = carBounds?.w ?? width, bh = carBounds?.h ?? height;
 
-    // Fill grime area with solid opaque brown
-    gCtx.fillStyle = "rgba(80, 60, 30, 1)";
-    gCtx.fillRect(bx, by, bw, bh);
-    // Add noise texture
-    for (let i = 0; i < 800; i++) {
-      const x = bx + Math.random() * bw;
-      const y = by + Math.random() * bh;
-      const r = 2 + Math.random() * 6;
-      const alpha = 0.1 + Math.random() * 0.3;
-      gCtx.fillStyle = Math.random() > 0.5 ? `rgba(50, 35, 15, ${alpha})` : `rgba(100, 80, 40, ${alpha})`;
-      gCtx.beginPath();
-      gCtx.arc(x, y, r, 0, Math.PI * 2);
-      gCtx.fill();
+    // Binary tracking canvas — same shape but fully opaque for reliable counting
+    const track = document.createElement("canvas");
+    track.width = width;
+    track.height = height;
+    const tCtx = track.getContext("2d")!;
+
+    if (carImg?.complete && carImg.naturalWidth > 0 && carBounds) {
+      // Draw car silhouette as alpha mask
+      gCtx.save();
+      if (flipped) { gCtx.translate(bx + bw, by); gCtx.scale(-1, 1); gCtx.drawImage(carImg, 0, 0, bw, bh); }
+      else { gCtx.drawImage(carImg, bx, by, bw, bh); }
+      gCtx.restore();
+      // Fill only where car pixels exist
+      gCtx.globalCompositeOperation = "source-in";
+      gCtx.fillStyle = "rgba(80, 60, 30, 1)";
+      gCtx.fillRect(0, 0, width, height);
+      // Noise texture on top
+      gCtx.globalCompositeOperation = "source-atop";
+      for (let i = 0; i < 600; i++) {
+        const x = bx + Math.random() * bw;
+        const y = by + Math.random() * bh;
+        const r = 2 + Math.random() * 5;
+        gCtx.fillStyle = Math.random() > 0.5 ? "rgba(50, 35, 15, 0.3)" : "rgba(100, 80, 40, 0.3)";
+        gCtx.beginPath();
+        gCtx.arc(x, y, r, 0, Math.PI * 2);
+        gCtx.fill();
+      }
+      gCtx.globalCompositeOperation = "source-over";
+
+      // Tracking canvas: same silhouette but fully opaque white
+      tCtx.save();
+      if (flipped) { tCtx.translate(bx + bw, by); tCtx.scale(-1, 1); tCtx.drawImage(carImg, 0, 0, bw, bh); }
+      else { tCtx.drawImage(carImg, bx, by, bw, bh); }
+      tCtx.restore();
+      tCtx.globalCompositeOperation = "source-in";
+      tCtx.fillStyle = "rgba(255, 255, 255, 1)";
+      tCtx.fillRect(0, 0, width, height);
+      tCtx.globalCompositeOperation = "source-over";
+    } else {
+      // Interior: fill entire area
+      gCtx.fillStyle = "rgba(80, 60, 30, 1)";
+      gCtx.fillRect(bx, by, bw, bh);
+      for (let i = 0; i < 800; i++) {
+        const x = bx + Math.random() * bw;
+        const y = by + Math.random() * bh;
+        const r = 2 + Math.random() * 6;
+        gCtx.fillStyle = Math.random() > 0.5 ? "rgba(50, 35, 15, 0.2)" : "rgba(100, 80, 40, 0.2)";
+        gCtx.beginPath();
+        gCtx.arc(x, y, r, 0, Math.PI * 2);
+        gCtx.fill();
+      }
+      // Tracking: solid rect
+      tCtx.fillStyle = "rgba(255, 255, 255, 1)";
+      tCtx.fillRect(bx, by, bw, bh);
     }
 
     grimeCanvasRef.current = grime;
-    // Count initial grimy pixels for progress tracking
-    const data = gCtx.getImageData(0, 0, width, height).data;
+    grimeTrackRef.current = track;
+    // Count initial grimy pixels from tracking canvas (reliable — all fully opaque)
+    const data = tCtx.getImageData(0, 0, width, height).data;
     let count = 0;
     for (let i = 3; i < data.length; i += 16) { if (data[i] > 0) count++; }
     grimeInitialCountRef.current = count;
@@ -125,6 +169,18 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     gCtx.arc(canvasX, canvasY, radius, 0, Math.PI * 2);
     gCtx.fill();
     gCtx.globalCompositeOperation = "source-over";
+    // Also erase from tracking canvas
+    const track = grimeTrackRef.current;
+    if (track) {
+      const tCtx = track.getContext("2d");
+      if (tCtx) {
+        tCtx.globalCompositeOperation = "destination-out";
+        tCtx.beginPath();
+        tCtx.arc(canvasX, canvasY, radius, 0, Math.PI * 2);
+        tCtx.fill();
+        tCtx.globalCompositeOperation = "source-over";
+      }
+    }
     const particles = detailParticlesRef.current;
     const count = radius > 20 ? 4 : 2;
     for (let i = 0; i < count; i++) {
@@ -135,13 +191,13 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   }, []);
 
   const calcGrimeProgress = useCallback(() => {
-    const grime = grimeCanvasRef.current;
-    if (!grime) return 0;
-    const gCtx = grime.getContext("2d");
-    if (!gCtx) return 0;
+    const track = grimeTrackRef.current;
+    if (!track) return 0;
+    const tCtx = track.getContext("2d");
+    if (!tCtx) return 0;
     const initial = grimeInitialCountRef.current;
     if (initial === 0) return 0;
-    const data = gCtx.getImageData(0, 0, grime.width, grime.height).data;
+    const data = tCtx.getImageData(0, 0, track.width, track.height).data;
     let remaining = 0;
     for (let i = 3; i < data.length; i += 16) { if (data[i] > 0) remaining++; }
     return ((initial - remaining) / initial) * 100;
@@ -247,10 +303,10 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       }
       return { carX: 0, carY: 0, carW: W, carH: H };
     }
-    const groundY = H * 0.95;
+    const groundY = H * 0.98;
     const carCX = W * 0.5;
     if (img?.complete && img.naturalWidth > 0) {
-      const carW = W * 0.55;
+      const carW = W * 0.7;
       const carH = carW * (img.height / img.width);
       const carX = carCX - carW / 2;
       const carY = groundY - carH;
@@ -274,16 +330,16 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     // Calculate car bounds for grime overlay
     const carImg = detailCarImgRef.current;
     const W = canvas.width, H = canvas.height;
-    const groundY = H * 0.95;
+    const groundY = H * 0.98;
     let carBounds: { x: number; y: number; w: number; h: number } | undefined;
     if (carImg?.complete && carImg.naturalWidth > 0) {
-      const carW = W * 0.55;
+      const carW = W * 0.7;
       const carH = carW * (carImg.height / carImg.width);
       const carX = W * 0.5 - carW / 2;
       const carY = groundY - carH;
       carBounds = { x: carX, y: carY, w: carW, h: carH };
     }
-    initGrimeCanvas(canvas.width, canvas.height, carBounds);
+    initGrimeCanvas(canvas.width, canvas.height, carImg, carBounds, playerCar.flipped);
     cancelAnimationFrame(detailAnimRef.current);
     const draw = () => {
       const cvs = detailCanvasRef.current;
@@ -466,17 +522,27 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       if (bayImg.complete && bayImg.naturalWidth > 0) {
         ctx.globalAlpha = 0.8; ctx.drawImage(bayImg, 0, 0, W, H); ctx.globalAlpha = 1;
       } else { bayImg.onload = () => requestAnimationFrame(drawIdle); return; }
-      const groundY = H * 0.95, carCX = W * 0.5;
+      const groundY = H * 0.98, carCX = W * 0.5;
       if (carImg.complete && carImg.naturalWidth > 0) {
-        const carW = W * 0.55, carH = carW * (carImg.height / carImg.width);
+        const carW = W * 0.7, carH = carW * (carImg.height / carImg.width);
         const carX = carCX - carW / 2, carY = groundY - carH;
         ctx.save();
         if (playerCar.flipped) { ctx.translate(carX + carW, carY); ctx.scale(-1, 1); ctx.drawImage(carImg, 0, 0, carW, carH); }
         else { ctx.drawImage(carImg, carX, carY, carW, carH); }
         ctx.restore();
-        // Draw grime overlay on car area
-        ctx.fillStyle = "rgba(80, 60, 30, 0.5)";
-        ctx.fillRect(carX, carY, carW, carH);
+        // Draw grime shaped to car silhouette
+        const tmp = document.createElement("canvas");
+        tmp.width = W; tmp.height = H;
+        const tCtx = tmp.getContext("2d")!;
+        if (playerCar.flipped) { tCtx.translate(carX + carW, carY); tCtx.scale(-1, 1); tCtx.drawImage(carImg, 0, 0, carW, carH); }
+        else { tCtx.drawImage(carImg, carX, carY, carW, carH); }
+        tCtx.globalCompositeOperation = "source-in";
+        tCtx.fillStyle = "rgba(80, 60, 30, 1)";
+        tCtx.fillRect(0, 0, W, H);
+        tCtx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(tmp, 0, 0);
+        ctx.globalAlpha = 1;
       } else { carImg.onload = () => requestAnimationFrame(drawIdle); }
     };
     const waitForCanvas = () => { if (detailCanvasRef.current) drawIdle(); else requestAnimationFrame(waitForCanvas); };
@@ -494,8 +560,8 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     const W = canvas.width, H = canvas.height;
     const carImg = detailCarImgRef.current;
     if (!carImg?.complete) return;
-    const carW = W * 0.55, carH = carW * (carImg.height / carImg.width);
-    const groundY = H * 0.95;
+    const carW = W * 0.7, carH = carW * (carImg.height / carImg.width);
+    const groundY = H * 0.98;
     const carX = W * 0.5 - carW / 2, carY = groundY - carH;
 
     // Dirty snapshot
