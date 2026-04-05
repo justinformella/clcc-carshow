@@ -566,11 +566,13 @@
             var bRefH = Math.round(bRefW * (bImgH / bImgW));
             var bDestW = (bRefW * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
             var bDestH = (bRefH * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
-            // Position: horizontally offset from road center, vertically grounded at road surface
-            // Push down by 30% of height to compensate for transparent padding in generated images
+            // Position: match Render.sprite's offsetX/offsetY behavior exactly
+            // offsetX: -1 (left side) or 0 (right side) — same as original sprites
+            // offsetY: -1 — bottom of sprite sits at road surface Y
             var bOffX = (sprite.offset < 0 ? -1 : 0);
+            var bOffY = -1;
             var bDx = spriteX + (bDestW * bOffX);
-            var bDy = spriteY - bDestH * 0.7; // push down so building base sits on ground
+            var bDy = spriteY + (bDestH * bOffY);
             var bClipH = segment.clip ? Math.max(0, bDy + bDestH - segment.clip) : 0;
             if (bClipH < bDestH) {
               ctx.drawImage(sprite.dynamicImage, bDx, bDy, bDestW, bDestH - bClipH);
