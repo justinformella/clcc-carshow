@@ -946,7 +946,10 @@ export default function RegistrationDetailPage() {
                         onClick={() => url && setLightboxUrl(url)}
                         style={{
                           aspectRatio: "16/9",
-                          background: "#111",
+                          backgroundImage: "linear-gradient(45deg, #e0e0e0 25%, transparent 25%), linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0e0e0 75%), linear-gradient(-45deg, transparent 75%, #e0e0e0 75%)",
+                          backgroundSize: "16px 16px",
+                          backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
+                          backgroundColor: "#f0f0f0",
                           borderRadius: "6px",
                           overflow: "hidden",
                           marginBottom: "0.4rem",
