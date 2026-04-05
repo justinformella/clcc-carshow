@@ -101,6 +101,10 @@
     var totalCars      = 50;                      // fewer cars for the shorter Route 14 track
     var currentLapTime = 0;                       // current lap time
     var lastLapTime    = null;                    // last lap time
+    var totalLaps      = 3;                       // laps to complete the cruise
+    var currentLap     = 1;                       // which lap we're on
+    var raceFinished   = false;                   // true when all laps done
+    var totalRaceTime  = 0;                       // total time across all laps
 
     var keyLeft        = false;
     var keyRight       = false;
@@ -164,6 +168,8 @@
 
     function update(dt) {
 
+      if (raceFinished) return;
+
       var n, car, carW, sprite, spriteW;
       var playerSegment = findSegment(position+playerZ);
       var playerW       = SPRITES.PLAYER_STRAIGHT.w * SPRITES.SCALE;
@@ -225,22 +231,26 @@
       hillOffset = Util.increase(hillOffset, hillSpeed * playerSegment.curve * (position-startPosition)/segmentLength, 1);
       treeOffset = Util.increase(treeOffset, treeSpeed * playerSegment.curve * (position-startPosition)/segmentLength, 1);
 
-      if (position > playerZ) {
+      if (position > playerZ && !raceFinished) {
         if (currentLapTime && (startPosition < playerZ)) {
           lastLapTime    = currentLapTime;
+          totalRaceTime += lastLapTime;
           currentLapTime = 0;
+
           if (lastLapTime <= Util.toFloat(Dom.storage.fast_lap_time)) {
             Dom.storage.fast_lap_time = lastLapTime;
             updateHud('fast_lap_time', formatTime(lastLapTime));
-            Dom.addClassName('fast_lap_time', 'fastest');
-            Dom.addClassName('last_lap_time', 'fastest');
-          }
-          else {
-            Dom.removeClassName('fast_lap_time', 'fastest');
-            Dom.removeClassName('last_lap_time', 'fastest');
           }
           updateHud('last_lap_time', formatTime(lastLapTime));
           Dom.show('last_lap_time');
+
+          currentLap++;
+          if (currentLap > totalLaps) {
+            // Race complete!
+            raceFinished = true;
+            speed = 0;
+            showFinishScreen();
+          }
         }
         else {
           currentLapTime += dt;
@@ -249,7 +259,7 @@
 
       updateHud('speed',            playerCarData ? Math.round((speed/maxSpeed) * playerTopSpeedMph) : 5 * Math.round(speed/500));
       if (playerCarData) updateHud('gear', currentGear);
-      updateHud('current_lap_time', formatTime(currentLapTime));
+      updateHud('current_lap_time', 'Lap ' + Math.min(currentLap, totalLaps) + '/' + totalLaps + '  ' + formatTime(currentLapTime));
 
       // Engine audio — start on first keypress (browser requires user gesture)
       if (engineSound && !engineSound.running && (keyFaster || speed > 0)) {
@@ -341,6 +351,61 @@
         return minutes + "." + (seconds < 10 ? "0" : "") + seconds + "." + tenths;
       else
         return seconds + "." + tenths;
+    }
+
+    function showFinishScreen() {
+      // Stop engine audio
+      if (engineSound) stopEngineSound(engineSound);
+
+      // Create finish overlay
+      var overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;';
+
+      var carName = playerCarData ? playerCarData.name : 'Your Car';
+      var fastLap = Dom.storage.fast_lap_time ? formatTime(Util.toFloat(Dom.storage.fast_lap_time)) : '--';
+
+      overlay.innerHTML =
+        '<div style="text-align:center;color:#fff;max-width:600px;padding:20px;">' +
+          '<div style="color:#ffd700;font-size:28px;margin-bottom:20px;">CRUISE COMPLETE!</div>' +
+          '<div style="font-size:14px;margin-bottom:30px;">' + carName + '</div>' +
+          '<div style="background:rgba(255,255,255,0.1);padding:20px;border-radius:8px;margin-bottom:20px;">' +
+            '<div style="margin-bottom:12px;font-size:12px;color:#aaa;">TOTAL TIME</div>' +
+            '<div style="font-size:24px;color:#ffd700;margin-bottom:20px;">' + formatTime(totalRaceTime) + '</div>' +
+            '<div style="margin-bottom:8px;font-size:10px;color:#aaa;">FASTEST LAP</div>' +
+            '<div style="font-size:16px;color:#4f4;">' + fastLap + '</div>' +
+          '</div>' +
+          '<div style="margin-bottom:30px;font-size:10px;color:#888;">' +
+            (playerCarData ? playerCarData.hp + ' HP | ' + playerCarData.weight.toLocaleString() + ' lbs | Gear ' + (playerCarData.gears || 5) + '-speed' : '') +
+          '</div>' +
+          '<div id="finish-cruise-again" style="display:inline-block;background:#ffd700;color:#000;padding:12px 30px;font-size:14px;cursor:pointer;margin:8px;">' +
+            'CRUISE AGAIN' +
+          '</div>' +
+          '<div id="finish-new-car" style="display:inline-block;background:#333;color:#fff;padding:12px 30px;font-size:14px;cursor:pointer;margin:8px;">' +
+            'PICK NEW CAR' +
+          '</div>' +
+        '</div>';
+
+      document.body.appendChild(overlay);
+
+      document.getElementById('finish-cruise-again').addEventListener('click', function() {
+        overlay.remove();
+        currentLap = 1;
+        totalRaceTime = 0;
+        currentLapTime = 0;
+        lastLapTime = null;
+        raceFinished = false;
+        position = 0;
+        speed = 0;
+        currentGear = 1;
+        if (playerCarData) {
+          engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
+        }
+      });
+
+      document.getElementById('finish-new-car').addEventListener('click', function() {
+        overlay.remove();
+        window.location.reload();
+      });
     }
 
     //=========================================================================
@@ -889,13 +954,13 @@
       var hasSponsorBillboards = (presenting.length + premier.length + community.length) > 0;
 
       if (hasSponsorBillboards) {
-        // --- Presenting sponsors: prominent, frequent, both sides ---
+        // --- Presenting sponsors: very frequent, both sides, big ---
         if (presenting.length > 0) {
           var pIdx = 0;
-          for (n = 20; n < segments.length - 50; n += 80) {
+          for (n = 10; n < segments.length - 20; n += 30) {
             var pImg = presenting[pIdx % presenting.length];
             var side = (pIdx % 2 === 0) ? -2.0 : 2.0;
-            addDynamicSprite(n, { w: 350, h: 250 }, side, pImg, true);  // big billboard
+            addDynamicSprite(n, { w: 350, h: 250 }, side, pImg, true);
             pIdx++;
           }
         }
@@ -903,7 +968,7 @@
         // --- Premier sponsors: regular spacing ---
         if (premier.length > 0) {
           var prIdx = 0;
-          for (n = 60; n < segments.length - 50; n += 120) {
+          for (n = 20; n < segments.length - 20; n += 45) {
             var prImg = premier[prIdx % premier.length];
             var prSide = (prIdx % 2 === 0) ? -1.8 : 1.8;
             addDynamicSprite(n, { w: 300, h: 200 }, prSide, prImg, true);
@@ -911,10 +976,10 @@
           }
         }
 
-        // --- Community sponsors: less frequent ---
+        // --- Community sponsors: moderate spacing ---
         if (community.length > 0) {
           var cIdx = 0;
-          for (n = 100; n < segments.length - 50; n += 200) {
+          for (n = 35; n < segments.length - 20; n += 60) {
             var cImg = community[cIdx % community.length];
             var cSide = (cIdx % 2 === 0) ? -1.6 : 1.6;
             addDynamicSprite(n, { w: 250, h: 170 }, cSide, cImg, true);
