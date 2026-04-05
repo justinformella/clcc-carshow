@@ -309,10 +309,96 @@ export function stopSelectMusic() {
   }
 }
 
+// ─── ACTION MENU MUSIC (upbeat garage rock vibe) ─────────────────────────────
+
+let menuInterval: ReturnType<typeof setInterval> | null = null;
+let menuGainNode: GainNode | null = null;
+
+// Driving rock progression — E minor pentatonic, punchy and fun
+const MENU_BASS = [82, 82, 110, 110, 98, 98, 82, 82, 82, 82, 131, 131, 110, 110, 98, 98]; // E2, A2, G2, E2, E2, C3, A2, G2
+const MENU_LEAD = [330, 0, 392, 330, 294, 0, 262, 0, 330, 392, 440, 0, 392, 330, 294, 0]; // syncopated lead
+const MENU_KICK = [1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0]; // kick pattern
+
+export function startMenuMusic() {
+  const c = getCtx();
+  if (menuInterval) stopMenuMusic();
+
+  menuGainNode = c.createGain();
+  menuGainNode.gain.value = 0.05;
+  menuGainNode.connect(c.destination);
+
+  let beat = 0;
+  const BPM = 130;
+  const beatMs = (60 / BPM) * 1000;
+
+  menuInterval = setInterval(() => {
+    const idx = beat % 16;
+
+    // Bass — deep triangle wave
+    const bassFreq = MENU_BASS[idx];
+    if (bassFreq) {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = bassFreq;
+      g.gain.value = 0.9;
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.7);
+      osc.connect(g);
+      g.connect(menuGainNode!);
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime + beatMs / 1000);
+    }
+
+    // Lead — punchy square wave
+    const leadFreq = MENU_LEAD[idx];
+    if (leadFreq) {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = "square";
+      osc.frequency.value = leadFreq;
+      g.gain.value = 0.35;
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + beatMs / 1000 * 0.5);
+      osc.connect(g);
+      g.connect(menuGainNode!);
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime + beatMs / 1000);
+    }
+
+    // Kick drum — short noise burst
+    if (MENU_KICK[idx]) {
+      const bufferSize = c.sampleRate * 0.05;
+      const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+      const source = c.createBufferSource();
+      source.buffer = buffer;
+      const g = c.createGain();
+      g.gain.value = 0.6;
+      source.connect(g);
+      g.connect(menuGainNode!);
+      source.start(c.currentTime);
+    }
+
+    beat++;
+  }, beatMs);
+}
+
+export function stopMenuMusic() {
+  if (menuInterval) {
+    clearInterval(menuInterval);
+    menuInterval = null;
+  }
+  if (menuGainNode) {
+    menuGainNode.disconnect();
+    menuGainNode = null;
+  }
+}
+
 // ─── CLEANUP ─────────────────────────────────────────────────────────────────
 
 export function stopAll() {
   stopEngine();
   stopMusic();
   stopSelectMusic();
+  stopMenuMusic();
 }

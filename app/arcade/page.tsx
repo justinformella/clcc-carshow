@@ -4,7 +4,7 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { initAudio, startSelectMusic, stopSelectMusic } from "@/lib/race-audio";
+import { initAudio, startSelectMusic, stopSelectMusic, startMenuMusic, stopMenuMusic } from "@/lib/race-audio";
 import { RaceCar, C, FONT, pageStyle, goldBtnStyle, pixelBtnStyle } from "@/lib/race-types";
 import CarSelect from "./components/CarSelect";
 import DragRace from "./components/DragRace";
@@ -50,6 +50,8 @@ function RacePage() {
           const target = raceCars.find((c) => c.id === preselectedCarId);
           if (target) {
             setPlayerCar(target);
+            initAudio();
+            startMenuMusic();
             setPhase("action-menu");
             return;
           }
@@ -61,11 +63,14 @@ function RacePage() {
 
   const selectCar = useCallback((car: RaceCar) => {
     setPlayerCar(car);
+    stopSelectMusic();
+    startMenuMusic();
     setPhase("action-menu");
   }, []);
 
   const backToMenu = useCallback(() => {
     setActiveGame(null);
+    startMenuMusic();
     setPhase("action-menu");
   }, []);
 
@@ -168,23 +173,29 @@ function RacePage() {
             )}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", alignItems: "center", maxWidth: "320px", margin: "0 auto" }}>
-          <button onClick={() => setActiveGame("drag")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+        <style>{`
+          .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 640px; margin: 0 auto; }
+          @media (max-width: 600px) { .action-grid { grid-template-columns: 1fr; max-width: 320px; } }
+        `}</style>
+        <div className="action-grid">
+          <button onClick={() => { stopMenuMusic(); setActiveGame("drag"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
             DRAG RACE
           </button>
-          <button onClick={() => setActiveGame("dyno")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            HIT THE DYNO AT URW
-          </button>
-          <button onClick={() => setActiveGame("detail")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            DETAIL YOUR CAR AT DETAIL TECH
-          </button>
           <button onClick={() => {
-            stopSelectMusic();
+            stopMenuMusic();
             window.location.href = `/games/racer-classic/v5.carshow.html?car=${playerCar.id}`;
-          }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+          }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
             CRUISE ROUTE 14
           </button>
-          <button onClick={() => { setPlayerCar(null); setPhase("select"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1rem" }}>
+          <button onClick={() => { stopMenuMusic(); setActiveGame("dyno"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+            HIT THE DYNO AT URW
+          </button>
+          <button onClick={() => { stopMenuMusic(); setActiveGame("detail"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+            DETAIL YOUR CAR AT DETAIL TECH
+          </button>
+        </div>
+        <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+          <button onClick={() => { setPlayerCar(null); setPhase("select"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
             PICK DIFFERENT CAR
           </button>
         </div>
