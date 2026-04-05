@@ -40,6 +40,7 @@ function RacePage() {
           ...c,
           pixelArt: c.pixelArt || null,
           pixelDash: c.pixelDash || null,
+          pixelDashFull: c.pixelDashFull || null,
           pixelRear: c.pixelRear || null,
           aiImage: c.aiImage || null,
           flipped: c.flipped || false,

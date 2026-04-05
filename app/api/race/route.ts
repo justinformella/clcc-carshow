@@ -54,6 +54,7 @@ export async function GET() {
           pwr: Math.round(pwr * 10) / 10,
           pixelArt: r.pixel_art_url || null,
           pixelDash: r.pixel_dash_cropped_url || r.pixel_dashboard_url || null,
+          pixelDashFull: r.pixel_dashboard_url || null,
           pixelRear: r.pixel_rear_url || null,
           aiImage: r.ai_image_url || null,
           flipped: r.pixel_art_flipped || false,

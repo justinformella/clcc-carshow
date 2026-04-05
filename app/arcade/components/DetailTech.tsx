@@ -368,7 +368,10 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     detailParticlesRef.current = [];
     const canvas = detailCanvasRef.current;
     if (!canvas) return;
-    initGrimeCanvas(canvas.width, canvas.height);
+    // Grime only on bottom 60% of dashboard (top 40% is windshield)
+    const W = canvas.width, H = canvas.height;
+    const grimeTop = Math.round(H * 0.40);
+    initGrimeCanvas(W, H, null, { x: 0, y: grimeTop, w: W, h: H - grimeTop });
     cancelAnimationFrame(detailAnimRef.current);
     const draw = () => {
       const cvs = detailCanvasRef.current;
@@ -501,7 +504,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     detailCarImgRef.current = carImg;
 
     const dashImg = new Image(); dashImg.crossOrigin = "anonymous";
-    if (playerCar.pixelDash) dashImg.src = playerCar.pixelDash;
+    if (playerCar.pixelDashFull || playerCar.pixelDash) dashImg.src = (playerCar.pixelDashFull || playerCar.pixelDash)!;
     detailDashImgRef.current = dashImg;
 
     const bayImg = new Image(); bayImg.crossOrigin = "anonymous";

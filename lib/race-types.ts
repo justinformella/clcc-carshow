@@ -25,6 +25,7 @@ export type RaceCar = {
   trans: string;
   pixelArt: string | null;
   pixelDash: string | null;
+  pixelDashFull: string | null;
   pixelRear: string | null;
   aiImage: string | null;
   flipped: boolean;
