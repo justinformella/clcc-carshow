@@ -374,6 +374,10 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   }, [detailState, calcGrimeProgress, runShineSweep, startDetailInterior]);
 
   // Detail pointer handlers
+  // Brush size: interior is full-canvas so needs much larger brush
+  const clickRadius = detailState === "interior" ? 50 : 25;
+  const dragRadius = detailState === "interior" ? 40 : 20;
+
   const handleDetailPointerDown = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (detailState !== "exterior" && detailState !== "interior") return;
     e.preventDefault();
@@ -382,10 +386,14 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     const pos = toCanvasCoords(e, canvas);
     isDraggingRef.current = true;
     lastDragPosRef.current = pos;
-    eraseGrimeAt(pos.x, pos.y, 25);
+    eraseGrimeAt(pos.x, pos.y, clickRadius);
     playSpraySound();
     playSparkleSound();
-  }, [detailState, toCanvasCoords, eraseGrimeAt, playSpraySound, playSparkleSound]);
+    const pct = calcGrimeProgress();
+    setDetailProgress(pct);
+  }, [detailState, clickRadius, toCanvasCoords, eraseGrimeAt, playSpraySound, playSparkleSound, calcGrimeProgress]);
+
+  const progressThrottleRef = useRef(0);
 
   const handleDetailPointerMove = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDraggingRef.current) return;
@@ -400,11 +408,18 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       const steps = Math.max(1, Math.floor(dist / 8));
       for (let i = 0; i <= steps; i++) {
         const t = i / steps;
-        eraseGrimeAt(last.x + dx * t, last.y + dy * t, 20);
+        eraseGrimeAt(last.x + dx * t, last.y + dy * t, dragRadius);
       }
     }
     lastDragPosRef.current = pos;
-  }, [toCanvasCoords, eraseGrimeAt]);
+    // Update progress every 10 frames to avoid perf hit
+    progressThrottleRef.current++;
+    if (progressThrottleRef.current % 10 === 0) {
+      const pct = calcGrimeProgress();
+      setDetailProgress(pct);
+      if (pct >= 95) finishDetailPass();
+    }
+  }, [toCanvasCoords, eraseGrimeAt, dragRadius, calcGrimeProgress, finishDetailPass]);
 
   const handleDetailPointerUp = useCallback(() => {
     isDraggingRef.current = false;
