@@ -453,7 +453,24 @@
           spriteScale = segment.p1.screen.scale;
           spriteX     = segment.p1.screen.x + (spriteScale * sprite.offset * roadWidth * width/2);
           spriteY     = segment.p1.screen.y;
-          Render.sprite(ctx, width, height, resolution, roadWidth, sprites, sprite.source, spriteScale, spriteX, spriteY, (sprite.offset < 0 ? -1 : 0), -1, segment.clip);
+          if (sprite.dynamicImage) {
+            // Draw sponsor logo billboard
+            var bImgW = sprite.dynamicImage.naturalWidth || 300;
+            var bImgH = sprite.dynamicImage.naturalHeight || 200;
+            var bRefW = sprite.source.w;
+            var bRefH = Math.round(bRefW * (bImgH / bImgW));
+            var bDestW = (bRefW * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
+            var bDestH = (bRefH * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
+            var bOffX = (sprite.offset < 0 ? -1 : 0);
+            var bDx = spriteX + (bDestW * bOffX);
+            var bDy = spriteY + (bDestH * -1);
+            var bClipH = segment.clip ? Math.max(0, bDy + bDestH - segment.clip) : 0;
+            if (bClipH < bDestH) {
+              ctx.drawImage(sprite.dynamicImage, bDx, bDy, bDestW, bDestH - bClipH);
+            }
+          } else {
+            Render.sprite(ctx, width, height, resolution, roadWidth, sprites, sprite.source, spriteScale, spriteX, spriteY, (sprite.offset < 0 ? -1 : 0), -1, segment.clip);
+          }
         }
 
         if (segment == playerSegment) {
@@ -615,23 +632,107 @@
       trackLength = segments.length * segmentLength;
     }
 
+    // Add a roadside sprite — extended to support dynamic images
+    function addDynamicSprite(n, sprite, offset, dynamicImage) {
+      segments[n].sprites.push({ source: sprite, offset: offset, dynamicImage: dynamicImage || null });
+    }
+
     function resetSprites() {
       var n, i;
 
-      addSprite(20,  SPRITES.BILLBOARD07, -1);
-      addSprite(40,  SPRITES.BILLBOARD06, -1);
-      addSprite(60,  SPRITES.BILLBOARD08, -1);
-      addSprite(80,  SPRITES.BILLBOARD09, -1);
-      addSprite(100, SPRITES.BILLBOARD01, -1);
-      addSprite(120, SPRITES.BILLBOARD02, -1);
-      addSprite(140, SPRITES.BILLBOARD03, -1);
-      addSprite(160, SPRITES.BILLBOARD04, -1);
-      addSprite(180, SPRITES.BILLBOARD05, -1);
+      // =====================================================================
+      // SPONSOR BILLBOARDS
+      // =====================================================================
+      // Place sponsor logos along the road based on their tier.
+      // Presenting sponsors: appear every 80 segments, both sides
+      // Premier sponsors: appear every 120 segments
+      // Community sponsors: appear every 200 segments
+      // Fall back to original billboards if no sponsors
 
-      addSprite(240,                  SPRITES.BILLBOARD07, -1.2);
-      addSprite(240,                  SPRITES.BILLBOARD06,  1.2);
-      addSprite(segments.length - 25, SPRITES.BILLBOARD07, -1.2);
-      addSprite(segments.length - 25, SPRITES.BILLBOARD06,  1.2);
+      var presenting = [];
+      var premier = [];
+      var community = [];
+
+      sponsorData.forEach(function(s, idx) {
+        var img = sponsorImages[idx];
+        if (!img) return;
+        var tier = (s.tier || '').toLowerCase();
+        if (s.isPresenting || tier.indexOf('presenting') >= 0) {
+          presenting.push(img);
+        } else if (tier.indexOf('premier') >= 0) {
+          premier.push(img);
+        } else {
+          community.push(img);
+        }
+      });
+
+      var hasSponsorBillboards = (presenting.length + premier.length + community.length) > 0;
+
+      if (hasSponsorBillboards) {
+        // --- Presenting sponsors: prominent, frequent, both sides ---
+        if (presenting.length > 0) {
+          var pIdx = 0;
+          for (n = 20; n < segments.length - 50; n += 80) {
+            var pImg = presenting[pIdx % presenting.length];
+            var side = (pIdx % 2 === 0) ? -1.1 : 1.1;
+            addDynamicSprite(n, { w: 350, h: 250 }, side, pImg);  // big billboard
+            pIdx++;
+          }
+        }
+
+        // --- Premier sponsors: regular spacing ---
+        if (premier.length > 0) {
+          var prIdx = 0;
+          for (n = 60; n < segments.length - 50; n += 120) {
+            var prImg = premier[prIdx % premier.length];
+            var prSide = (prIdx % 2 === 0) ? -1.0 : 1.0;
+            addDynamicSprite(n, { w: 300, h: 200 }, prSide, prImg);
+            prIdx++;
+          }
+        }
+
+        // --- Community sponsors: less frequent ---
+        if (community.length > 0) {
+          var cIdx = 0;
+          for (n = 100; n < segments.length - 50; n += 200) {
+            var cImg = community[cIdx % community.length];
+            var cSide = (cIdx % 2 === 0) ? -1.0 : 1.0;
+            addDynamicSprite(n, { w: 250, h: 170 }, cSide, cImg);
+            cIdx++;
+          }
+        }
+      } else {
+        // No sponsors — fall back to original billboards
+        addSprite(20,  SPRITES.BILLBOARD07, -1);
+        addSprite(40,  SPRITES.BILLBOARD06, -1);
+        addSprite(60,  SPRITES.BILLBOARD08, -1);
+        addSprite(80,  SPRITES.BILLBOARD09, -1);
+        addSprite(100, SPRITES.BILLBOARD01, -1);
+        addSprite(120, SPRITES.BILLBOARD02, -1);
+        addSprite(140, SPRITES.BILLBOARD03, -1);
+        addSprite(160, SPRITES.BILLBOARD04, -1);
+        addSprite(180, SPRITES.BILLBOARD05, -1);
+
+        addSprite(240,                  SPRITES.BILLBOARD07, -1.2);
+        addSprite(240,                  SPRITES.BILLBOARD06,  1.2);
+        addSprite(segments.length - 25, SPRITES.BILLBOARD07, -1.2);
+        addSprite(segments.length - 25, SPRITES.BILLBOARD06,  1.2);
+
+        var side, sprite, offset;
+        for(n = 1000 ; n < (segments.length-50) ; n += 100) {
+          side = Util.randomChoice([1, -1]);
+          addSprite(n + Util.randomInt(0, 50), Util.randomChoice(SPRITES.BILLBOARDS), -side);
+          for(i = 0 ; i < 20 ; i++) {
+            sprite = Util.randomChoice(SPRITES.PLANTS);
+            offset = side * (1.5 + Math.random());
+            addSprite(n + Util.randomInt(0, 50), sprite, offset);
+          }
+        }
+      }
+
+      // =====================================================================
+      // ROADSIDE SCENERY (kept from original — trees, plants, columns)
+      // =====================================================================
 
       for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
         addSprite(n, SPRITES.PALM_TREE, 0.5 + Math.random()*0.5);
@@ -646,18 +747,6 @@
 
       for(n = 200 ; n < segments.length ; n += 3) {
         addSprite(n, Util.randomChoice(SPRITES.PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
-      }
-
-      var side, sprite, offset;
-      for(n = 1000 ; n < (segments.length-50) ; n += 100) {
-        side      = Util.randomChoice([1, -1]);
-        addSprite(n + Util.randomInt(0, 50), Util.randomChoice(SPRITES.BILLBOARDS), -side);
-        for(i = 0 ; i < 20 ; i++) {
-          sprite = Util.randomChoice(SPRITES.PLANTS);
-          offset = side * (1.5 + Math.random());
-          addSprite(n + Util.randomInt(0, 50), sprite, offset);
-        }
-          
       }
 
     }
@@ -717,36 +806,73 @@
     var playerCarImage = null; // selected player car pixelRear Image
     var gameReady = false;
 
-    // Fetch car data and load images, then show car select
-    fetch('/api/race')
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        carShowData = (data.cars || []).filter(function(c) { return c.pixelRear; });
-        if (carShowData.length === 0) {
-          // No car show data, just start normally
-          startGame();
-          return;
-        }
-        // Load all pixelRear images
-        var loaded = 0;
-        var total = carShowData.length;
-        carShowData.forEach(function(car) {
+    // Sponsor data
+    var sponsorData = [];       // flat array of { company, logo_url, pixel_logo_url, tier, website }
+    var sponsorImages = [];     // array of loaded Image elements (in order of tier priority)
+
+    // Fetch car data AND sponsor data in parallel, then show car select
+    Promise.all([
+      fetch('/api/race').then(function(r) { return r.json(); }).catch(function() { return { cars: [] }; }),
+      fetch('/api/sponsors/public').then(function(r) { return r.json(); }).catch(function() { return { tiers: [] }; })
+    ]).then(function(results) {
+      var carData = results[0];
+      var sponsorResult = results[1];
+
+      // Process cars
+      carShowData = (carData.cars || []).filter(function(c) { return c.pixelRear; });
+
+      // Process sponsors — flatten tiers into a single array with tier info
+      var tiers = sponsorResult.tiers || [];
+      tiers.forEach(function(tier) {
+        (tier.sponsors || []).forEach(function(s) {
+          if (s.logo_url || s.pixel_logo_url) {
+            sponsorData.push({
+              company: s.company,
+              logo_url: s.pixel_logo_url || s.logo_url,  // prefer pixel version
+              tier: tier.label,
+              isPresenting: tier.isPresenting,
+              website: s.website
+            });
+          }
+        });
+      });
+
+      // Count total images to load
+      var totalToLoad = carShowData.length + sponsorData.length;
+      if (totalToLoad === 0) {
+        startGame();
+        return;
+      }
+
+      var loaded = 0;
+      function onLoad() {
+        loaded++;
+        if (loaded >= totalToLoad) showCarSelect();
+      }
+
+      // Load car pixelRear images
+      carShowData.forEach(function(car) {
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          carShowImages[car.id] = img;
+          onLoad();
+          };
+          img.onerror = onLoad;
+          img.src = car.pixelRear;
+        });
+
+        // Load sponsor logo images
+        sponsorData.forEach(function(sponsor, idx) {
           var img = new Image();
           img.crossOrigin = 'anonymous';
           img.onload = function() {
-            carShowImages[car.id] = img;
-            loaded++;
-            if (loaded >= total) showCarSelect();
+            sponsorImages[idx] = img;
+            onLoad();
           };
-          img.onerror = function() {
-            loaded++;
-            if (loaded >= total) showCarSelect();
-          };
-          img.src = car.pixelRear;
+          img.onerror = onLoad;
+          img.src = sponsor.logo_url;
         });
-      })
-      .catch(function() {
-        startGame(); // fallback to normal game
       });
 
     function showCarSelect() {
