@@ -50,6 +50,39 @@ export function buildRearPrompt(carDesc: string, color: string, visualDetails?: 
   return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Black background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
 }
 
+/**
+ * Remove background via Modal rembg API.
+ * Falls back to original image if Modal is unavailable.
+ */
+export async function removeBackground(imageBuffer: Buffer): Promise<Buffer> {
+  const modalUrl = process.env.MODAL_REMBG_URL;
+  if (!modalUrl) {
+    console.warn("MODAL_REMBG_URL not set — skipping background removal");
+    return imageBuffer;
+  }
+
+  try {
+    const b64 = imageBuffer.toString("base64");
+    const res = await fetch(modalUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: b64 }),
+      signal: AbortSignal.timeout(120000),
+    });
+
+    if (!res.ok) {
+      console.error(`Modal rembg failed: ${res.status} ${res.statusText}`);
+      return imageBuffer;
+    }
+
+    const data = await res.json();
+    return Buffer.from(data.image, "base64");
+  } catch (err) {
+    console.error("Modal rembg error:", err);
+    return imageBuffer;
+  }
+}
+
 export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
   const supabase = createServerClient();
 
@@ -87,32 +120,56 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
   ]);
 
-  const sideBuffer = sideRaw;
-  const rearBuffer = rearRaw;
-
-  // Upload all three to storage
+  // Upload raw originals to storage
   await supabase.storage.createBucket("pixel-art", {
     public: true,
     allowedMimeTypes: ["image/png"],
   });
 
-  const sideFileName = `side-${registrationId}.png`;
-  const dashFileName = `dash-${registrationId}.png`;
-  const rearFileName = `rear-${registrationId}.png`;
+  const sideOrigName = `side-${registrationId}.png`;
+  const dashOrigName = `dash-${registrationId}.png`;
+  const rearOrigName = `rear-${registrationId}.png`;
 
   await Promise.all([
-    supabase.storage.from("pixel-art").upload(sideFileName, sideBuffer, { contentType: "image/png", upsert: true }),
-    supabase.storage.from("pixel-art").upload(dashFileName, dashBuffer, { contentType: "image/png", upsert: true }),
-    supabase.storage.from("pixel-art").upload(rearFileName, rearBuffer, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(sideOrigName, sideRaw, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(dashOrigName, dashBuffer, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(rearOrigName, rearRaw, { contentType: "image/png", upsert: true }),
   ]);
 
-  const sideUrl = `${supabase.storage.from("pixel-art").getPublicUrl(sideFileName).data.publicUrl}?v=${Date.now()}`;
-  const dashUrl = `${supabase.storage.from("pixel-art").getPublicUrl(dashFileName).data.publicUrl}?v=${Date.now()}`;
-  const rearUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearFileName).data.publicUrl}?v=${Date.now()}`;
+  const ts = Date.now();
+  const sideOrigUrl = `${supabase.storage.from("pixel-art").getPublicUrl(sideOrigName).data.publicUrl}?v=${ts}`;
+  const dashOrigUrl = `${supabase.storage.from("pixel-art").getPublicUrl(dashOrigName).data.publicUrl}?v=${ts}`;
+  const rearOrigUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearOrigName).data.publicUrl}?v=${ts}`;
+
+  // Strip backgrounds from side and rear via Modal rembg
+  const [sideClean, rearClean] = await Promise.all([
+    removeBackground(sideRaw),
+    removeBackground(rearRaw),
+  ]);
+
+  // Upload transparent versions
+  const sideTransName = `side-${registrationId}-transparent.png`;
+  const rearTransName = `rear-${registrationId}-transparent.png`;
+
+  await Promise.all([
+    supabase.storage.from("pixel-art").upload(sideTransName, sideClean, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(rearTransName, rearClean, { contentType: "image/png", upsert: true }),
+  ]);
+
+  const sideUrl = `${supabase.storage.from("pixel-art").getPublicUrl(sideTransName).data.publicUrl}?v=${ts}`;
+  const dashUrl = dashOrigUrl;
+  const rearUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearTransName).data.publicUrl}?v=${ts}`;
 
   await supabase
     .from("registrations")
-    .update({ pixel_art_url: sideUrl, pixel_dashboard_url: dashUrl, pixel_rear_url: rearUrl })
+    .update({
+      pixel_art_url: sideUrl,
+      pixel_dashboard_url: dashUrl,
+      pixel_rear_url: rearUrl,
+      pixel_art_original_url: sideOrigUrl,
+      pixel_dashboard_original_url: dashOrigUrl,
+      pixel_rear_original_url: rearOrigUrl,
+    })
     .eq("id", registrationId);
 
   return { sideUrl, dashUrl, rearUrl };

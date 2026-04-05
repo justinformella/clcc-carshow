@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
-import { generatePixelArt, generateImage, buildRearPrompt } from "@/lib/generate-pixel-art";
+import { generatePixelArt, generateImage, buildRearPrompt, removeBackground } from "@/lib/generate-pixel-art";
 
 async function generateRearOnly(registrationId: string): Promise<void> {
   const supabase = createServerClient();
@@ -16,16 +16,24 @@ async function generateRearOnly(registrationId: string): Promise<void> {
   const carDesc = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
   const color = reg.vehicle_color || "silver";
 
-  const rearBuffer = await generateImage(buildRearPrompt(carDesc, color));
+  const rearRaw = await generateImage(buildRearPrompt(carDesc, color));
+  const rearClean = await removeBackground(rearRaw);
+  const ts = Date.now();
 
-  const rearFileName = `rear-${registrationId}.png`;
-  await supabase.storage.from("pixel-art").upload(rearFileName, rearBuffer, { contentType: "image/png", upsert: true });
+  const rearOrigName = `rear-${registrationId}.png`;
+  const rearTransName = `rear-${registrationId}-transparent.png`;
 
-  const rearUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearFileName).data.publicUrl}?v=${Date.now()}`;
+  await Promise.all([
+    supabase.storage.from("pixel-art").upload(rearOrigName, rearRaw, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(rearTransName, rearClean, { contentType: "image/png", upsert: true }),
+  ]);
+
+  const rearOrigUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearOrigName).data.publicUrl}?v=${ts}`;
+  const rearUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearTransName).data.publicUrl}?v=${ts}`;
 
   await supabase
     .from("registrations")
-    .update({ pixel_rear_url: rearUrl })
+    .update({ pixel_rear_url: rearUrl, pixel_rear_original_url: rearOrigUrl })
     .eq("id", registrationId);
 }
 
