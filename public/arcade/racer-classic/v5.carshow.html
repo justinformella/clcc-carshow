@@ -92,8 +92,8 @@
     var fogDensity     = 5;                       // fixed for Route 14
     var position       = 0;                       // current camera Z position (add playerZ to get player's absolute Z position)
     var speed          = 0;                       // current speed
-    var maxSpeed       = segmentLength/step;      // top speed (ensure we can't move more than 1 segment in a single frame to make collision detection easier)
-    var accel          =  maxSpeed/5;             // acceleration rate - tuned until it 'felt' right
+    var maxSpeed       = segmentLength/step * 0.55; // cruise speed — 55% of original, enjoy the scenery
+    var accel          =  maxSpeed/10;            // slow acceleration — takes time to get up to speed
     var breaking       = -maxSpeed;               // deceleration rate when braking
     var decel          = -maxSpeed/5;             // 'natural' deceleration rate when neither accelerating, nor braking
     var offRoadDecel   = -maxSpeed/2;             // off road deceleration is somewhere in between
@@ -347,7 +347,7 @@
     // CAR STATS → GAME PHYSICS
     //=========================================================================
 
-    var baseMaxSpeed = segmentLength/step;  // store the absolute ceiling
+    var baseMaxSpeed = segmentLength/step * 0.55;  // cruise ceiling — 55% of original
 
     // Maps real car data onto game physics variables.
     // Uses ACTUAL stored stats: topSpeed (mph) and hp from the database.
@@ -369,8 +369,9 @@
       // --- Acceleration from HP/weight ratio ---
       var pwr = car.hp / (car.weight / 1000);  // hp per 1000 lbs
       var pwrT = Math.max(0, Math.min(1, (pwr - 25) / (170 - 25)));
-      // Range: maxSpeed/8 (sluggish) to maxSpeed/3.5 (rocket)
-      accel = maxSpeed / (8 - 4.5 * pwrT);
+      // Range: maxSpeed/14 (slow cruise) to maxSpeed/8 (brisk)
+      // Much more gradual than original — enjoy the drive
+      accel = maxSpeed / (14 - 6 * pwrT);
 
       // --- Braking: lighter/sportier cars stop faster ---
       breaking = -(maxSpeed * (0.6 + 0.4 * pwrT));
@@ -1071,13 +1072,14 @@
           sprite = Util.randomChoice(SPRITES.CARS);
         }
 
-        // Speed influenced by car stats if available
+        // NPC speeds — cruising, not racing. Most going around the same speed as player.
         if (showCar && dynamicImage) {
           var pwrRatio = showCar.hp / (showCar.weight / 1000);
-          speed = maxSpeed/4 + (pwrRatio / 200) * maxSpeed/2;
-          speed = Math.min(speed, maxSpeed * 0.85);
+          // Range: 40%-70% of maxSpeed — gentle spread, everyone cruising
+          speed = maxSpeed * 0.40 + (pwrRatio / 200) * maxSpeed * 0.30;
+          speed = Math.min(speed, maxSpeed * 0.70);
         } else {
-          speed = maxSpeed/4 + Math.random() * maxSpeed/(sprite == SPRITES.SEMI ? 4 : 2);
+          speed = maxSpeed * 0.35 + Math.random() * maxSpeed * 0.30;
         }
 
         car = { offset: offset, z: z, sprite: sprite, speed: speed, dynamicImage: dynamicImage, showCar: showCar };
