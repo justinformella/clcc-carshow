@@ -164,7 +164,7 @@ function RacePage() {
           </h1>
           <div style={{ maxWidth: "300px", margin: "0 auto 2rem", aspectRatio: "16/9", background: "#111", borderRadius: "6px", overflow: "hidden", border: `2px solid ${C.gold}` }}>
             {playerCar.pixelArt && (
-              <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const, transform: playerCar.flipped ? "scaleX(-1)" : "none" }} />
+              <img src={playerCar.pixelArt} alt={playerCar.name} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const, transform: "none" }} />
             )}
           </div>
         </div>
