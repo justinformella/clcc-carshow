@@ -141,10 +141,11 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
   const dashOrigUrl = `${supabase.storage.from("pixel-art").getPublicUrl(dashOrigName).data.publicUrl}?v=${ts}`;
   const rearOrigUrl = `${supabase.storage.from("pixel-art").getPublicUrl(rearOrigName).data.publicUrl}?v=${ts}`;
 
-  // Strip backgrounds from side and rear via Modal rembg
-  const [sideClean, rearClean] = await Promise.all([
+  // Detect car direction + strip backgrounds in parallel
+  const [sideClean, rearClean, facingLeft] = await Promise.all([
     removeBackground(sideRaw),
     removeBackground(rearRaw),
+    detectCarFacingLeft(sideRaw),
   ]);
 
   // Upload transparent versions
@@ -169,10 +170,71 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       pixel_art_original_url: sideOrigUrl,
       pixel_dashboard_original_url: dashOrigUrl,
       pixel_rear_original_url: rearOrigUrl,
+      pixel_art_flipped: facingLeft,
     })
     .eq("id", registrationId);
 
   return { sideUrl, dashUrl, rearUrl };
+}
+
+/**
+ * Use OpenAI vision to detect if a car's side-view pixel art faces left.
+ * Returns true if the car faces left (needs flipping), false if it faces right.
+ */
+export async function detectCarFacingLeft(imageBuffer: Buffer): Promise<boolean> {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey) {
+    console.warn("No OpenAI key — skipping car direction detection");
+    return false;
+  }
+
+  try {
+    const b64 = imageBuffer.toString("base64");
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 10,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/png;base64,${b64}`,
+                },
+              },
+              {
+                type: "text",
+                text:
+                  `This is a pixel art side-view of a car. ` +
+                  `Which direction is the FRONT (hood/headlights) of the car pointing — left or right? ` +
+                  `Reply with ONLY "left" or "right".`,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`OpenAI direction detection failed: ${res.status} ${await res.text()}`);
+      return false;
+    }
+
+    const data = await res.json();
+    const answer = (data.choices?.[0]?.message?.content ?? "").trim().toLowerCase();
+    console.log(`Car direction detected: "${answer}"`);
+    return answer.includes("left");
+  } catch (err) {
+    console.error("Car direction detection error:", err);
+    return false;
+  }
 }
 
 export async function generateImage(prompt: string, aspectRatio: string = "16:9"): Promise<Buffer> {

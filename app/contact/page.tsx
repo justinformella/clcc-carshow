@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export default function ContactPage() {
+  const searchParams = useSearchParams();
+  const prefillSubject = searchParams.get("subject") || "";
+  const prefillMessage = searchParams.get("message") || "";
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [requestNumber, setRequestNumber] = useState<number | null>(null);
@@ -202,6 +206,7 @@ export default function ContactPage() {
                   id="subject"
                   name="subject"
                   required
+                  defaultValue={prefillSubject}
                   placeholder="What can we help you with?"
                 />
               </div>
@@ -213,6 +218,7 @@ export default function ContactPage() {
                   name="message"
                   required
                   rows={5}
+                  defaultValue={prefillMessage}
                   placeholder="Tell us more about your question or request..."
                 />
               </div>

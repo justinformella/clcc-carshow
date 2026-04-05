@@ -961,7 +961,7 @@ export default function RegistrationDetailPage() {
                         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
                       >
                         {url ? (
-                          <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const }} />
+                          <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const, transform: type === "side" && r.pixel_art_flipped ? "scaleX(-1)" : "none" }} />
                         ) : (
                           <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#555", fontSize: "0.75rem" }}>Not generated</div>
                         )}
@@ -977,9 +977,9 @@ export default function RegistrationDetailPage() {
                             await supabase.from("registrations").update({ pixel_art_flipped: !r.pixel_art_flipped }).eq("id", r.id);
                             window.location.reload();
                           }}
-                          style={{ marginTop: "0.3rem", padding: "0.2rem 0.5rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase" as const, background: r.pixel_art_flipped ? "var(--gold)" : "var(--cream)", color: "var(--charcoal)", border: "1px solid #ddd", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
+                          style={{ marginTop: "0.3rem", padding: "0.2rem 0.5rem", fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase" as const, background: "var(--cream)", color: "var(--charcoal)", border: "1px solid #ddd", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
                         >
-                          {r.pixel_art_flipped ? "FLIPPED ✓" : "FLIP DIRECTION"}
+                          {r.pixel_art_flipped ? "\u2190 CAR FACING LEFT" : "CAR FACING RIGHT \u2192"}
                         </button>
                       )}
                     </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
-import { generateImage, buildRearPrompt, removeBackground } from "@/lib/generate-pixel-art";
+import { generateImage, buildRearPrompt, removeBackground, detectCarFacingLeft } from "@/lib/generate-pixel-art";
 import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
@@ -86,11 +86,20 @@ export async function POST(request: NextRequest) {
       croppedUrl = `${supabase.storage.from("pixel-art").getPublicUrl(croppedName).data.publicUrl}?v=${ts}`;
     }
 
+    // Detect car direction for side views
+    let facingLeft = false;
+    if (type === "side") {
+      const t1 = Date.now();
+      facingLeft = await detectCarFacingLeft(rawBuffer);
+      timing.detectDirectionMs = Date.now() - t1;
+    }
+
     const mainCol = type === "side" ? "pixel_art_url" : type === "rear" ? "pixel_rear_url" : "pixel_dashboard_url";
     const origCol = type === "side" ? "pixel_art_original_url" : type === "rear" ? "pixel_rear_original_url" : "pixel_dashboard_original_url";
 
-    const updateData: Record<string, string> = { [mainCol]: mainUrl, [origCol]: origUrl };
+    const updateData: Record<string, string | boolean> = { [mainCol]: mainUrl, [origCol]: origUrl };
     if (croppedUrl) updateData.pixel_dash_cropped_url = croppedUrl;
+    if (type === "side") updateData.pixel_art_flipped = facingLeft;
 
     await supabase
       .from("registrations")

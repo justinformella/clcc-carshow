@@ -281,6 +281,7 @@ function RacePage() {
   const [finishFlash, setFinishFlash] = useState(false);
   const [dynoState, setDynoState] = useState<"idle" | "pulling" | "results">("idle");
   const [dynoRpm, setDynoRpm] = useState(0);
+  const [dynoGear, setDynoGear] = useState(1);
   const [revealCount, setRevealCount] = useState(0);
   const dynoCanvasRef = useRef<HTMLCanvasElement>(null);
   const dynoAnimRef = useRef<number>(0);
@@ -771,12 +772,20 @@ function RacePage() {
     startEngine();
 
     const redline = playerCar.redline || 6500;
-    const PULL_MS = 6000;
+    // Gear shift logic: at least 3 shifts, or 2 if only a 2-speed
+    const numGears = Math.max(2, Math.min(playerCar.gears || 4, 4));
+    const numShifts = numGears <= 2 ? 2 : 3;
+    const gearsUsed = numShifts + 1; // start in 1st, shift numShifts times
+    const GEAR_MS = 1800; // time per gear pull
+    const SHIFT_MS = 300; // brief RPM drop during shift
+    const RAMP_MS = gearsUsed * GEAR_MS + numShifts * SHIFT_MS;
     const PEAK_MS = 1000;
     const COOL_MS = 500;
-    const totalMs = PULL_MS + PEAK_MS + COOL_MS;
+    const totalMs = RAMP_MS + PEAK_MS + COOL_MS;
     const pullStart = performance.now();
     const particles: { x: number; y: number; vx: number; vy: number; life: number; hot: boolean }[] = [];
+    // RPM drop point after shift (drops to this fraction of redline)
+    const SHIFT_DROP = 0.45;
 
     const draw = (now: number) => {
       const canvas = dynoCanvasRef.current;
@@ -787,23 +796,60 @@ function RacePage() {
       const H = canvas.height;
       const elapsed = now - pullStart;
 
-      // RPM calculation
-      let rpm: number;
+      // RPM calculation with gear shifts
+      let rpm = 0;
+      let currentGear = 1;
       let done = false;
-      if (elapsed < PULL_MS) {
-        const t = elapsed / PULL_MS;
-        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        rpm = 800 + (redline - 800) * eased;
-      } else if (elapsed < PULL_MS + PEAK_MS) {
+      if (elapsed < RAMP_MS) {
+        // Walk through gear segments to find current position
+        let remaining = elapsed;
+        let gear = 0;
+        let inShift = false;
+        for (let g = 0; g < gearsUsed; g++) {
+          if (remaining < GEAR_MS) {
+            gear = g;
+            break;
+          }
+          remaining -= GEAR_MS;
+          if (g < gearsUsed - 1) {
+            if (remaining < SHIFT_MS) {
+              // In shift gap between gear g and g+1
+              gear = g;
+              inShift = true;
+              break;
+            }
+            remaining -= SHIFT_MS;
+          }
+          gear = g + 1;
+        }
+        currentGear = gear + 1;
+        if (inShift) {
+          // RPM drops during shift
+          const shiftProgress = remaining / SHIFT_MS;
+          rpm = redline * (1 - shiftProgress * (1 - SHIFT_DROP)) ;
+          currentGear = gear + 2; // show next gear during shift
+        } else {
+          // Normal pull within a gear
+          const gearProgress = Math.min(remaining / GEAR_MS, 1);
+          const eased = gearProgress < 0.5
+            ? 2 * gearProgress * gearProgress
+            : 1 - Math.pow(-2 * gearProgress + 2, 2) / 2;
+          const low = gear === 0 ? 800 : redline * SHIFT_DROP;
+          rpm = low + (redline - low) * eased;
+        }
+      } else if (elapsed < RAMP_MS + PEAK_MS) {
         rpm = redline;
+        currentGear = gearsUsed;
       } else if (elapsed < totalMs) {
-        rpm = redline * (1 - (elapsed - PULL_MS - PEAK_MS) / COOL_MS);
+        rpm = redline * (1 - (elapsed - RAMP_MS - PEAK_MS) / COOL_MS);
+        currentGear = gearsUsed;
       } else {
         rpm = 0;
         done = true;
       }
 
       setDynoRpm(Math.round(rpm));
+      setDynoGear(currentGear);
       if (!done) updateEngine(rpm, (rpm / redline) * 100);
 
       // Clear + background
@@ -816,8 +862,8 @@ function RacePage() {
       }
 
       // Car sprite — sits on the dyno floor (background handles the rollers)
-      const groundY = H * 0.78; // bottom of car aligns here
-      const carCX = W * 0.55; // center horizontally on the dyno
+      const groundY = H * 0.95; // bottom of car aligns with dyno rollers
+      const carCX = W * 0.58; // center over the dyno pit
       const carImg = dynoCarImgRef.current;
       if (carImg?.complete) {
         const carW = W * 0.4;
@@ -940,8 +986,8 @@ function RacePage() {
       }
 
       // Car — sits on the dyno floor
-      const groundY = H * 0.78;
-      const carCX = W * 0.55;
+      const groundY = H * 0.95;
+      const carCX = W * 0.58;
       if (carImg.complete) {
         const carW = W * 0.4;
         const carH = carW * (carImg.height / carImg.width);
@@ -1056,7 +1102,7 @@ function RacePage() {
             DRAG RACE
           </button>
           <button onClick={() => setPhase("dyno")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            HIT THE DYNO
+            HIT THE DYNO AT URW
           </button>
           <button disabled style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", opacity: 0.3, cursor: "not-allowed" }}>
             CRUISE CRYSTAL LAKE
@@ -1074,10 +1120,14 @@ function RacePage() {
   if (phase === "dyno" && playerCar) {
     const specs = dynoState === "results" ? [
       { label: "HORSEPOWER", value: `${playerCar.hp} HP` },
+      { label: "ENGINE", value: `${playerCar.displacement}L ${playerCar.engineType}` },
+      { label: "REDLINE", value: `${playerCar.redline.toLocaleString()} RPM` },
       { label: "WEIGHT", value: `${playerCar.weight.toLocaleString()} LBS` },
       { label: "POWER/WEIGHT", value: `${playerCar.pwr} HP/TON` },
+      { label: "DRIVETRAIN", value: `${playerCar.driveType} · ${playerCar.gears}-SPD ${playerCar.trans.toUpperCase()}` },
       { label: "1/4 MILE", value: `${quarterMileET(playerCar.hp, playerCar.weight, playerCar.year, playerCar.trans, playerCar.gears).toFixed(1)}s` },
       { label: "TRAP SPEED", value: `${Math.round(trapSpeedMPH(playerCar.hp, playerCar.weight, playerCar.year))} MPH` },
+      { label: "TOP SPEED", value: `${playerCar.topSpeed} MPH` },
     ] : [];
 
     return (
@@ -1103,9 +1153,14 @@ function RacePage() {
           )}
 
           {dynoState === "pulling" && (
-            <p style={{ fontFamily: FONT, fontSize: "1.5rem", color: dynoRpm > (playerCar.redline || 6500) * 0.88 ? C.red : C.gold, textShadow: dynoRpm > (playerCar.redline || 6500) * 0.88 ? "0 0 10px rgba(255,0,0,0.5)" : "none" }}>
-              {dynoRpm} <span style={{ fontSize: "0.7rem", color: C.midGray }}>RPM</span>
-            </p>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontFamily: FONT, fontSize: "1.5rem", color: dynoRpm > (playerCar.redline || 6500) * 0.88 ? C.red : C.gold, textShadow: dynoRpm > (playerCar.redline || 6500) * 0.88 ? "0 0 10px rgba(255,0,0,0.5)" : "none", margin: 0 }}>
+                {dynoRpm} <span style={{ fontSize: "0.7rem", color: C.midGray }}>RPM</span>
+              </p>
+              <p style={{ fontFamily: FONT, fontSize: "0.7rem", color: C.midGray, margin: "0.3rem 0 0" }}>
+                GEAR {dynoGear}
+              </p>
+            </div>
           )}
 
           {dynoState === "results" && (
@@ -1118,6 +1173,17 @@ function RacePage() {
           >
             BACK TO GARAGE
           </button>
+
+          {dynoState === "results" && (
+            <a
+              href={`/contact?subject=${encodeURIComponent(`Stats issue: #${playerCar.carNumber} ${playerCar.year} ${playerCar.name}`)}&message=${encodeURIComponent(`I noticed an issue with the stats for car #${playerCar.carNumber} (${playerCar.year} ${playerCar.name}):\n\n`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontFamily: FONT, fontSize: "0.5rem", color: C.border, textDecoration: "underline", marginTop: "1rem", display: "block", textAlign: "center" }}
+            >
+              STATS WRONG? REPORT AN ISSUE
+            </a>
+          )}
         </div>
       </div>
     );
