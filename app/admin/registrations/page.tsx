@@ -649,7 +649,7 @@ export default function RegistrationsPage() {
                       display: "block",
                       imageRendering: show8bit ? "pixelated" as const : "auto",
                       background: show8bit ? "#0d0d1a" : "transparent",
-                      transform: show8bit && reg.pixel_art_flipped ? "scaleX(-1)" : "none",
+                      transform: "none",
                     }}
                   />
                   {show8bit && (
