@@ -56,7 +56,7 @@ type RaceCar = {
   flipped: boolean;
 };
 
-type Phase = "loading" | "title" | "select" | "action-menu" | "dyno" | "countdown" | "racing" | "finished";
+type Phase = "loading" | "title" | "select" | "action-menu" | "dyno" | "detail" | "countdown" | "racing" | "finished";
 
 /**
  * Convert advertised HP to SAE Net equivalent.
@@ -1104,10 +1104,12 @@ function RacePage() {
           <button onClick={() => setPhase("dyno")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
             HIT THE DYNO AT URW
           </button>
-          <button disabled style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", opacity: 0.3, cursor: "not-allowed" }}>
-            CRUISE CRYSTAL LAKE
+          <button onClick={() => setPhase("detail")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+            DETAIL TECH
           </button>
-          <p style={{ fontFamily: FONT, fontSize: "0.55rem", color: C.border, marginTop: "0.5rem" }}>CRUISE — COMING SOON</p>
+          <button onClick={() => setPhase("cruise")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+            CRUISE ROUTE 14
+          </button>
           <button onClick={() => { setPlayerCar(null); setOpponentCar(null); setPhase("select"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1rem" }}>
             PICK DIFFERENT CAR
           </button>
