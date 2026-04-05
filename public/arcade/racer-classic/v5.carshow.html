@@ -580,7 +580,38 @@
             var bDy = spriteY + (bDestH * -1);
             var bClipH = segment.clip ? Math.max(0, bDy + bDestH - segment.clip) : 0;
             if (bClipH < bDestH) {
-              ctx.drawImage(sprite.dynamicImage, bDx, bDy, bDestW, bDestH - bClipH);
+              if (sprite.isBillboard) {
+                // Draw billboard structure: two posts + white frame + logo inside
+                var pad = Math.max(3, bDestW * 0.04);  // frame padding
+                var postW = Math.max(2, bDestW * 0.03); // post width
+                var postH = bDestH * 0.35;              // posts are 35% of total height
+                var boardY = bDy;                        // board at top
+                var boardH = bDestH - postH - bClipH;   // board height (minus posts)
+
+                if (boardH > 0) {
+                  // Posts (dark grey)
+                  ctx.fillStyle = '#444444';
+                  ctx.fillRect(bDx + bDestW * 0.25 - postW/2, boardY + boardH, postW, postH);
+                  ctx.fillRect(bDx + bDestW * 0.75 - postW/2, boardY + boardH, postW, postH);
+
+                  // Billboard backing (white rectangle)
+                  ctx.fillStyle = '#ffffff';
+                  ctx.fillRect(bDx, boardY, bDestW, boardH);
+
+                  // Dark border
+                  ctx.strokeStyle = '#333333';
+                  ctx.lineWidth = Math.max(1, pad * 0.4);
+                  ctx.strokeRect(bDx, boardY, bDestW, boardH);
+
+                  // Logo image inside the frame (with padding)
+                  ctx.drawImage(sprite.dynamicImage,
+                    bDx + pad, boardY + pad,
+                    bDestW - pad*2, boardH - pad*2);
+                }
+              } else {
+                // Storefront — draw image directly
+                ctx.drawImage(sprite.dynamicImage, bDx, bDy, bDestW, bDestH - bClipH);
+              }
             }
           } else {
             Render.sprite(ctx, width, height, resolution, roadWidth, sprites, sprite.source, spriteScale, spriteX, spriteY, (sprite.offset < 0 ? -1 : 0), -1, segment.clip);
@@ -777,8 +808,8 @@
     }
 
     // Add a roadside sprite — extended to support dynamic images
-    function addDynamicSprite(n, sprite, offset, dynamicImage) {
-      segments[n].sprites.push({ source: sprite, offset: offset, dynamicImage: dynamicImage || null });
+    function addDynamicSprite(n, sprite, offset, dynamicImage, isBillboard) {
+      segments[n].sprites.push({ source: sprite, offset: offset, dynamicImage: dynamicImage || null, isBillboard: !!isBillboard });
     }
 
     function resetSprites() {
@@ -819,7 +850,7 @@
           for (n = 20; n < segments.length - 50; n += 80) {
             var pImg = presenting[pIdx % presenting.length];
             var side = (pIdx % 2 === 0) ? -2.0 : 2.0;
-            addDynamicSprite(n, { w: 350, h: 250 }, side, pImg);  // big billboard
+            addDynamicSprite(n, { w: 350, h: 250 }, side, pImg, true);  // big billboard
             pIdx++;
           }
         }
@@ -830,7 +861,7 @@
           for (n = 60; n < segments.length - 50; n += 120) {
             var prImg = premier[prIdx % premier.length];
             var prSide = (prIdx % 2 === 0) ? -1.8 : 1.8;
-            addDynamicSprite(n, { w: 300, h: 200 }, prSide, prImg);
+            addDynamicSprite(n, { w: 300, h: 200 }, prSide, prImg, true);
             prIdx++;
           }
         }
@@ -841,7 +872,7 @@
           for (n = 100; n < segments.length - 50; n += 200) {
             var cImg = community[cIdx % community.length];
             var cSide = (cIdx % 2 === 0) ? -1.6 : 1.6;
-            addDynamicSprite(n, { w: 250, h: 170 }, cSide, cImg);
+            addDynamicSprite(n, { w: 250, h: 170 }, cSide, cImg, true);
             cIdx++;
           }
         }
