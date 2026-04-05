@@ -124,31 +124,80 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
 
 /**
  * Remove bright green (#00FF00) chroma key background from an image buffer.
- * Pixels where green channel dominates (G > 180, R < 100, B < 100) become transparent.
- * Uses a tolerance range to catch near-green pixels from anti-aliasing.
+ * Uses flood-fill from image borders so only the outer background is removed —
+ * green visible through windows or glass stays intact.
  */
 export async function removeChromaKey(input: Buffer): Promise<Buffer> {
   const image = sharp(input).ensureAlpha();
   const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
+  const isGreen = (i: number) => {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    return g > 140 && r < 130 && b < 130;
+  };
 
-    // Core green detection: green channel high, red and blue low
-    if (g > 150 && r < 120 && b < 120) {
-      data[i + 3] = 0; // fully transparent
-    }
-    // Catch lighter greens from anti-aliasing edges
-    else if (g > 180 && r < 160 && b < 160 && g > r * 1.3 && g > b * 1.3) {
-      // Partial transparency for edge pixels
-      const greenness = (g - Math.max(r, b)) / g;
-      data[i + 3] = Math.round(255 * (1 - greenness));
+  // Flood-fill from all border pixels to find connected green regions
+  const visited = new Uint8Array(width * height);
+  const queue: number[] = [];
+
+  // Seed with all border pixels that are green
+  for (let x = 0; x < width; x++) {
+    if (isGreen(x * 4)) queue.push(x);
+    const bottom = (height - 1) * width + x;
+    if (isGreen(bottom * 4)) queue.push(bottom);
+  }
+  for (let y = 1; y < height - 1; y++) {
+    if (isGreen(y * width * 4)) queue.push(y * width);
+    const right = y * width + width - 1;
+    if (isGreen(right * 4)) queue.push(right);
+  }
+
+  // BFS flood fill
+  while (queue.length > 0) {
+    const idx = queue.pop()!;
+    if (visited[idx]) continue;
+    visited[idx] = 1;
+
+    const pi = idx * 4;
+    if (!isGreen(pi)) continue;
+
+    data[pi + 3] = 0; // make transparent
+
+    const x = idx % width;
+    const y = (idx - x) / width;
+    if (x > 0) queue.push(idx - 1);
+    if (x < width - 1) queue.push(idx + 1);
+    if (y > 0) queue.push(idx - width);
+    if (y < height - 1) queue.push(idx + width);
+  }
+
+  // Second pass: soften edges — any non-transparent pixel adjacent to
+  // a transparent pixel gets partial transparency if it's near-green
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = y * width + x;
+      const pi = idx * 4;
+      if (data[pi + 3] === 0) continue; // already transparent
+
+      // Check if any neighbor is transparent
+      const hasTransparentNeighbor =
+        data[(idx - 1) * 4 + 3] === 0 ||
+        data[(idx + 1) * 4 + 3] === 0 ||
+        data[(idx - width) * 4 + 3] === 0 ||
+        data[(idx + width) * 4 + 3] === 0;
+
+      if (hasTransparentNeighbor) {
+        const r = data[pi], g = data[pi + 1], b = data[pi + 2];
+        if (g > 100 && g > r * 1.2 && g > b * 1.2) {
+          const greenness = (g - Math.max(r, b)) / g;
+          data[pi + 3] = Math.round(255 * (1 - greenness * 0.8));
+        }
+      }
     }
   }
 
-  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+  return sharp(data, { raw: { width, height, channels: 4 } })
     .png()
     .toBuffer();
 }
