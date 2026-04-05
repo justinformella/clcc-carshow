@@ -566,13 +566,18 @@
             var bRefH = Math.round(bRefW * (bImgH / bImgW));
             var bDestW = (bRefW * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
             var bDestH = (bRefH * spriteScale * width/2) * (SPRITES.SCALE * roadWidth);
-            // Position: match Render.sprite's offsetX/offsetY behavior exactly
-            // offsetX: -1 (left side) or 0 (right side) — same as original sprites
-            // offsetY: -1 — bottom of sprite sits at road surface Y
+            // Position: use Render.sprite's offset conventions but cap height
+            // to prevent buildings from becoming absurdly tall when close to camera
             var bOffX = (sprite.offset < 0 ? -1 : 0);
-            var bOffY = -1;
+            // Cap height so buildings never exceed ~40% of viewport height
+            var maxH = height * 0.4;
+            if (bDestH > maxH) {
+              var hScale = maxH / bDestH;
+              bDestW *= hScale;
+              bDestH = maxH;
+            }
             var bDx = spriteX + (bDestW * bOffX);
-            var bDy = spriteY + (bDestH * bOffY);
+            var bDy = spriteY + (bDestH * -1);
             var bClipH = segment.clip ? Math.max(0, bDy + bDestH - segment.clip) : 0;
             if (bClipH < bDestH) {
               ctx.drawImage(sprite.dynamicImage, bDx, bDy, bDestW, bDestH - bClipH);
@@ -916,15 +921,36 @@
       // Ordered heading NORTHWEST (east-to-west, matching the real drive)
       // Each business appears EXACTLY ONCE per lap
       var commercialKeys = [
-        // East end — The Commons area (~6100-6600 NW Hwy)
-        'ihop', 'jewel-osco', 'hobby-lobby', 'harbor-freight', 'petsmart',
-        // Crystal Point area (~5800-6000 NW Hwy)
-        'best-buy', 'tj-maxx', 'ross', 'panera', 'starbucks', 'five-guys', 'aldi',
-        // Mid-corridor (~5400-5700 NW Hwy)
-        'target', 'sams-club', 'raising-canes', 'crumbl-cookies', 'exceed-flooring',
-        // West end (~4400-5100 NW Hwy)
-        'menards', 'outback', 'chick-fil-a', 'chipotle', 'noodles', 'jersey-mikes',
-        'wendys', 'taco-bell',
+        // Heading SE → NW along Route 14, ordered by actual street address
+        // SE end (~4465-4912 NW Hwy)
+        'petsmart',         // 4465
+        'outback',          // 4751
+        'chick-fil-a',      // 4812
+        'menards',          // 4850
+        'noodles',          // 4912
+        // Mid-SE (~5006-5501 NW Hwy)
+        'chipotle',         // 5006 Ste A
+        'jersey-mikes',     // 5006 Ste E
+        'exceed-flooring',  // 5186
+        'raising-canes',    // 5417
+        'crumbl-cookies',   // 5500
+        'wendys',           // 5501
+        // Mid-corridor (~5580-5880 NW Hwy)
+        'target',           // 5580
+        'sams-club',        // 5670
+        'tj-maxx',          // 5764
+        'aldi',             // 5831
+        'best-buy',         // 5880
+        // Crystal Point (~6000 NW Hwy)
+        'panera',           // 6000
+        'starbucks',        // 6000
+        'five-guys',        // 6000
+        'ross',             // 6000
+        // NW end (~6140-6606 NW Hwy)
+        'jewel-osco',       // 6140
+        'hobby-lobby',      // 6250
+        'harbor-freight',   // 6324
+        'ihop',             // 6606
       ];
 
       // Space businesses evenly across the track, each appears once
