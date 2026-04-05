@@ -1291,8 +1291,132 @@
     }
 
     //=========================================================================
+    // MOBILE TOUCH CONTROLS
+    //=========================================================================
+
+    (function() {
+      var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+
+      // Hide desktop controls panel and instructions on mobile
+      var controls = document.getElementById('controls');
+      if (controls) controls.style.display = 'none';
+      var instructions = document.getElementById('instructions');
+      if (instructions) instructions.style.display = 'none';
+
+      // Make canvas fill the screen on mobile
+      var racer = document.getElementById('racer');
+      if (racer) {
+        racer.style.margin = '0';
+        racer.style.padding = '0';
+        racer.style.width = '100vw';
+      }
+
+      // Create touch overlay
+      var overlay = document.createElement('div');
+      overlay.id = 'touch-controls';
+      overlay.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;height:45%;z-index:100;pointer-events:auto;display:flex;touch-action:none;user-select:none;-webkit-user-select:none;';
+      overlay.innerHTML =
+        '<div id="tc-left" style="flex:1;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(255,255,255,0.1);">' +
+          '<svg width="60" height="60" viewBox="0 0 60 60" style="opacity:0.25;"><polygon points="40,10 10,30 40,50" fill="white"/></svg>' +
+        '</div>' +
+        '<div id="tc-gas" style="flex:2;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+          '<svg width="60" height="60" viewBox="0 0 60 60" style="opacity:0.25;"><polygon points="10,40 30,10 50,40" fill="white"/></svg>' +
+          '<div style="color:rgba(255,255,255,0.2);font-size:10px;font-family:monospace;margin-top:4px;">GAS</div>' +
+        '</div>' +
+        '<div id="tc-right" style="flex:1;display:flex;align-items:center;justify-content:center;border-left:1px solid rgba(255,255,255,0.1);">' +
+          '<svg width="60" height="60" viewBox="0 0 60 60" style="opacity:0.25;"><polygon points="20,10 50,30 20,50" fill="white"/></svg>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      // Brake button (smaller, top-left corner)
+      var brakeBtn = document.createElement('div');
+      brakeBtn.id = 'tc-brake';
+      brakeBtn.style.cssText = 'position:fixed;bottom:46%;left:0;width:25%;height:12%;z-index:100;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;';
+      brakeBtn.innerHTML = '<div style="color:rgba(255,100,100,0.3);font-size:10px;font-family:monospace;border:1px solid rgba(255,100,100,0.15);padding:8px 16px;border-radius:4px;">BRAKE</div>';
+      document.body.appendChild(brakeBtn);
+
+      // Track active touches
+      var activeTouches = {};
+
+      function updateKeys() {
+        keyLeft = false;
+        keyRight = false;
+        keyFaster = false;
+        keySlower = false;
+        for (var id in activeTouches) {
+          var zone = activeTouches[id];
+          if (zone === 'left') keyLeft = true;
+          if (zone === 'right') keyRight = true;
+          if (zone === 'gas') keyFaster = true;
+          if (zone === 'brake') keySlower = true;
+        }
+      }
+
+      function getZone(touch) {
+        var el = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!el) return null;
+        if (el.id === 'tc-left' || el.closest('#tc-left')) return 'left';
+        if (el.id === 'tc-right' || el.closest('#tc-right')) return 'right';
+        if (el.id === 'tc-gas' || el.closest('#tc-gas')) return 'gas';
+        if (el.id === 'tc-brake' || el.closest('#tc-brake')) return 'brake';
+        return null;
+      }
+
+      function onTouchStart(e) {
+        e.preventDefault();
+        for (var i = 0; i < e.changedTouches.length; i++) {
+          var t = e.changedTouches[i];
+          var zone = getZone(t);
+          if (zone) activeTouches[t.identifier] = zone;
+        }
+        updateKeys();
+      }
+
+      function onTouchMove(e) {
+        e.preventDefault();
+        for (var i = 0; i < e.changedTouches.length; i++) {
+          var t = e.changedTouches[i];
+          var zone = getZone(t);
+          if (zone) activeTouches[t.identifier] = zone;
+          else delete activeTouches[t.identifier];
+        }
+        updateKeys();
+      }
+
+      function onTouchEnd(e) {
+        e.preventDefault();
+        for (var i = 0; i < e.changedTouches.length; i++) {
+          delete activeTouches[e.changedTouches[i].identifier];
+        }
+        updateKeys();
+      }
+
+      overlay.addEventListener('touchstart', onTouchStart, { passive: false });
+      overlay.addEventListener('touchmove', onTouchMove, { passive: false });
+      overlay.addEventListener('touchend', onTouchEnd, { passive: false });
+      overlay.addEventListener('touchcancel', onTouchEnd, { passive: false });
+      brakeBtn.addEventListener('touchstart', onTouchStart, { passive: false });
+      brakeBtn.addEventListener('touchmove', onTouchMove, { passive: false });
+      brakeBtn.addEventListener('touchend', onTouchEnd, { passive: false });
+      brakeBtn.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+      // Prevent iOS rubber-banding / scroll while playing
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+
+      // Also add viewport meta for mobile if missing
+      if (!document.querySelector('meta[name="viewport"]')) {
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        document.head.appendChild(meta);
+      }
+    })();
 
   </script>
 
-</body> 
+</body>
 </html>
