@@ -389,9 +389,12 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   }, [detailState, calcGrimeProgress, runShineSweep, startDetailInterior]);
 
   // Detail pointer handlers
-  // Brush size: interior is full-canvas so needs much larger brush
-  const clickRadius = detailState === "interior" ? 50 : 25;
-  const dragRadius = detailState === "interior" ? 40 : 20;
+  // Exterior car is small (~40% of canvas) so brush is smaller
+  // Interior fills canvas so brush needs to be larger
+  const clickRadiusRef = useRef(15);
+  const dragRadiusRef = useRef(12);
+  if (detailState === "interior") { clickRadiusRef.current = 50; dragRadiusRef.current = 40; }
+  else { clickRadiusRef.current = 15; dragRadiusRef.current = 12; }
 
   const handleDetailPointerDown = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (detailState !== "exterior" && detailState !== "interior") return;
@@ -401,12 +404,12 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     const pos = toCanvasCoords(e, canvas);
     isDraggingRef.current = true;
     lastDragPosRef.current = pos;
-    eraseGrimeAt(pos.x, pos.y, clickRadius);
+    eraseGrimeAt(pos.x, pos.y, clickRadiusRef.current);
     playSpraySound();
     playSparkleSound();
     const pct = calcGrimeProgress();
     setDetailProgress(pct);
-  }, [detailState, clickRadius, toCanvasCoords, eraseGrimeAt, playSpraySound, playSparkleSound, calcGrimeProgress]);
+  }, [detailState, toCanvasCoords, eraseGrimeAt, playSpraySound, playSparkleSound, calcGrimeProgress]);
 
   const progressThrottleRef = useRef(0);
 
@@ -423,18 +426,18 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       const steps = Math.max(1, Math.floor(dist / 8));
       for (let i = 0; i <= steps; i++) {
         const t = i / steps;
-        eraseGrimeAt(last.x + dx * t, last.y + dy * t, dragRadius);
+        eraseGrimeAt(last.x + dx * t, last.y + dy * t, dragRadiusRef.current);
       }
     }
     lastDragPosRef.current = pos;
-    // Update progress every 10 frames to avoid perf hit
+    // Update progress every 5 move events
     progressThrottleRef.current++;
-    if (progressThrottleRef.current % 10 === 0) {
+    if (progressThrottleRef.current % 5 === 0) {
       const pct = calcGrimeProgress();
       setDetailProgress(pct);
       if (pct >= 95) finishDetailPass();
     }
-  }, [toCanvasCoords, eraseGrimeAt, dragRadius, calcGrimeProgress, finishDetailPass]);
+  }, [toCanvasCoords, eraseGrimeAt, calcGrimeProgress, finishDetailPass]);
 
   const handleDetailPointerUp = useCallback(() => {
     isDraggingRef.current = false;
@@ -562,7 +565,10 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
   return (
     <div style={pageStyle}>
       <div style={{ textAlign: "center", marginBottom: "0.25rem" }}>
-        <h1 style={{ fontFamily: FONT, fontSize: "clamp(0.9rem, 2.5vw, 1.3rem)", color: C.gold, margin: "0.25rem 0" }}>DETAIL TECH</h1>
+        <p style={{ fontFamily: FONT, fontSize: "0.5rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.2rem" }}>PRESENTED BY</p>
+        <a href="https://www.thedetailtech.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(0.9rem, 2.5vw, 1.3rem)", color: C.gold, margin: "0.25rem 0" }}>THE DETAIL TECH</h1>
+        </a>
       </div>
 
       <canvas
@@ -572,7 +578,6 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
         onMouseDown={handleDetailPointerDown}
         onMouseMove={handleDetailPointerMove}
         onMouseUp={handleDetailPointerUp}
-        onMouseLeave={handleDetailPointerUp}
         onTouchStart={handleDetailPointerDown}
         onTouchMove={handleDetailPointerMove}
         onTouchEnd={handleDetailPointerUp}

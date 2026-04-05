@@ -175,7 +175,7 @@ function RacePage() {
             HIT THE DYNO AT URW
           </button>
           <button onClick={() => setActiveGame("detail")} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            DETAIL TECH
+            DETAIL YOUR CAR AT DETAIL TECH
           </button>
           <button onClick={() => {
             stopSelectMusic();
