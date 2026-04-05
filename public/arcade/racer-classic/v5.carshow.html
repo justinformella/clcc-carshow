@@ -238,6 +238,14 @@
 
       updateHud('speed',            playerCarData ? Math.round((speed/maxSpeed) * playerTopSpeedMph) : 5 * Math.round(speed/500));
       updateHud('current_lap_time', formatTime(currentLapTime));
+
+      // Engine audio — start on first keypress (browser requires user gesture)
+      if (engineSound && !engineSound.running && (keyFaster || speed > 0)) {
+        startEngineSound(engineSound);
+      }
+      if (engineSound && engineSound.running) {
+        updateEngineSound(engineSound, speed / maxSpeed, keyFaster);
+      }
     }
 
     //-------------------------------------------------------------------------
@@ -368,6 +376,105 @@
     }
 
     var playerTopSpeedMph = 150;  // actual top speed in MPH for HUD
+
+    //=========================================================================
+    // ENGINE AUDIO — per-car sound profiles via Web Audio API
+    //=========================================================================
+
+    var audioCtx = null;
+    var engineSound = null;  // current EngineSound instance
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function resolveEngineProfile(engineType, cylinders) {
+      var et = (engineType || '').toLowerCase();
+      if (et.indexOf('electric') >= 0 || et === 'ev')
+        return { wave: 'sine', baseF: 400, maxF: 900, minG: 0.03, maxG: 0.08, harmonics: [{m:2, g:0.4}] };
+      if (et.indexOf('diesel') >= 0)
+        return { wave: 'square', baseF: 55, maxF: 120, minG: 0.06, maxG: 0.15, harmonics: [{m:2, g:0.5},{m:3, g:0.25}] };
+      if (et.indexOf('turbo') >= 0 || et.indexOf('inline') >= 0)
+        return { wave: 'triangle', baseF: 180, maxF: 450, minG: 0.04, maxG: 0.10, harmonics: [{m:2, g:0.45},{m:3.5, g:0.2}] };
+      if (et.indexOf('flat') >= 0 || et.indexOf('boxer') >= 0)
+        return { wave: 'sawtooth', baseF: 100, maxF: 300, minG: 0.05, maxG: 0.12, harmonics: [{m:1.5, g:0.5},{m:2.5, g:0.3}] };
+      // Default: V-type / muscle
+      var bf = (cylinders || 4) >= 8 ? 75 : (cylinders || 4) >= 6 ? 100 : 140;
+      return { wave: 'sawtooth', baseF: bf, maxF: bf * 3.5, minG: 0.05, maxG: 0.13, harmonics: [{m:2, g:0.5},{m:3, g:0.3},{m:4, g:0.15}] };
+    }
+
+    function createEngineSound(engineType, cylinders) {
+      var prof = resolveEngineProfile(engineType, cylinders);
+      return { profile: prof, master: null, nodes: [], running: false };
+    }
+
+    function startEngineSound(es) {
+      if (es.running) return;
+      try { var ctx = getAudioCtx(); } catch(e) { return; }
+      es.master = ctx.createGain();
+      es.master.gain.setValueAtTime(0, ctx.currentTime);
+      es.master.connect(ctx.destination);
+
+      // Fundamental
+      var osc0 = ctx.createOscillator();
+      osc0.type = es.profile.wave;
+      osc0.frequency.setValueAtTime(es.profile.baseF, ctx.currentTime);
+      var g0 = ctx.createGain();
+      g0.gain.setValueAtTime(1.0, ctx.currentTime);
+      osc0.connect(g0); g0.connect(es.master);
+      es.nodes.push({ osc: osc0, gain: g0 });
+
+      // Harmonics
+      es.profile.harmonics.forEach(function(h) {
+        var o = ctx.createOscillator();
+        o.type = es.profile.wave;
+        o.frequency.setValueAtTime(es.profile.baseF * h.m, ctx.currentTime);
+        var g = ctx.createGain();
+        g.gain.setValueAtTime(h.g, ctx.currentTime);
+        o.connect(g); g.connect(es.master);
+        es.nodes.push({ osc: o, gain: g });
+      });
+
+      es.nodes.forEach(function(n) { n.osc.start(); });
+      es.running = true;
+    }
+
+    function updateEngineSound(es, speedNorm, isAccel) {
+      if (!es.running || !audioCtx || !es.master) return;
+      var t = audioCtx.currentTime;
+      var sp = Math.max(0, Math.min(1, speedNorm));
+      var p = es.profile;
+
+      var freq = p.baseF + (p.maxF - p.baseF) * sp;
+      var vol = (p.minG + (p.maxG - p.minG) * sp) * (isAccel ? 1.0 : 0.6);
+
+      es.master.gain.linearRampToValueAtTime(vol, t + 0.01);
+
+      var mults = [1.0];
+      p.harmonics.forEach(function(h) { mults.push(h.m); });
+      for (var i = 0; i < es.nodes.length; i++) {
+        es.nodes[i].osc.frequency.linearRampToValueAtTime(freq * (mults[i] || 1), t + 0.01);
+      }
+    }
+
+    function stopEngineSound(es) {
+      if (!es.running) return;
+      es.running = false;
+      if (es.master && audioCtx) {
+        es.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+      }
+      setTimeout(function() {
+        es.nodes.forEach(function(n) {
+          try { n.osc.stop(); n.osc.disconnect(); n.gain.disconnect(); } catch(e) {}
+        });
+        if (es.master) es.master.disconnect();
+        es.nodes = []; es.master = null;
+      }, 250);
+    }
 
     //=========================================================================
     // RENDER THE GAME WORLD
@@ -1125,6 +1232,8 @@
             Dom.show('car_stats');
             Dom.set('car_stats_value', playerCarData.hp + ' HP | ' + playerCarData.weight.toLocaleString() + ' lbs | ' + (playerCarData.topSpeed || '?') + ' mph top');
             applyCarStats(playerCarData);
+            // Start engine audio on first user interaction (required by browsers)
+            engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
           }
         }
       });
