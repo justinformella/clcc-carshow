@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase-server";
+import sharp from "sharp";
 
 /**
  * Ask Gemini Flash to describe the car so pixel art prompts are accurate
@@ -47,7 +48,7 @@ async function describeCarForPixelArt(
 
 export function buildRearPrompt(carDesc: string, color: string, visualDetails?: string): string {
   const detail = visualDetails ? ` ${visualDetails}` : "";
-  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Transparent background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
+  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Solid bright green (#00FF00) background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
 }
 
 export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
@@ -76,7 +77,7 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     generateImage(
       `8-bit retro pixel art side profile view of a ${carDesc} in ${color}.${detail} ` +
       `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
-      `Transparent background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
+      `Solid bright green (#00FF00) background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
       `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
@@ -85,6 +86,12 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       `Detailed pixel art with authentic retro video game aesthetic. View should be from behind the steering wheel looking forward.`
     ),
     generateImage(buildRearPrompt(carDesc, color, visualDetails ?? undefined)),
+  ]);
+
+  // Remove green chroma key background from side and rear views
+  const [cleanSide, cleanRear] = await Promise.all([
+    removeChromaKey(sideBuffer),
+    removeChromaKey(rearBuffer),
   ]);
 
   // Upload all three to storage
@@ -98,9 +105,9 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
   const rearFileName = `rear-${registrationId}.png`;
 
   await Promise.all([
-    supabase.storage.from("pixel-art").upload(sideFileName, sideBuffer, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(sideFileName, cleanSide, { contentType: "image/png", upsert: true }),
     supabase.storage.from("pixel-art").upload(dashFileName, dashBuffer, { contentType: "image/png", upsert: true }),
-    supabase.storage.from("pixel-art").upload(rearFileName, rearBuffer, { contentType: "image/png", upsert: true }),
+    supabase.storage.from("pixel-art").upload(rearFileName, cleanRear, { contentType: "image/png", upsert: true }),
   ]);
 
   const sideUrl = `${supabase.storage.from("pixel-art").getPublicUrl(sideFileName).data.publicUrl}?v=${Date.now()}`;
@@ -113,6 +120,37 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     .eq("id", registrationId);
 
   return { sideUrl, dashUrl, rearUrl };
+}
+
+/**
+ * Remove bright green (#00FF00) chroma key background from an image buffer.
+ * Pixels where green channel dominates (G > 180, R < 100, B < 100) become transparent.
+ * Uses a tolerance range to catch near-green pixels from anti-aliasing.
+ */
+export async function removeChromaKey(input: Buffer): Promise<Buffer> {
+  const image = sharp(input).ensureAlpha();
+  const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    // Core green detection: green channel high, red and blue low
+    if (g > 150 && r < 120 && b < 120) {
+      data[i + 3] = 0; // fully transparent
+    }
+    // Catch lighter greens from anti-aliasing edges
+    else if (g > 180 && r < 160 && b < 160 && g > r * 1.3 && g > b * 1.3) {
+      // Partial transparency for edge pixels
+      const greenness = (g - Math.max(r, b)) / g;
+      data[i + 3] = Math.round(255 * (1 - greenness));
+    }
+  }
+
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .png()
+    .toBuffer();
 }
 
 export async function generateImage(prompt: string): Promise<Buffer> {
