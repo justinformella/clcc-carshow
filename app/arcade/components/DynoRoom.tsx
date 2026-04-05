@@ -167,7 +167,7 @@ export default function DynoRoom({ playerCar, onBack }: DynoRoomProps) {
       const carCX = W * 0.58; // center over the dyno pit
       const carImg = dynoCarImgRef.current;
       if (carImg?.complete) {
-        const carW = W * 0.55;
+        const carW = W * 0.4;
         const carH = carW * (carImg.height / carImg.width);
         const vibFreq = 8 + (rpm / redline) * 17;
         const vibAmp = 0.5 + (rpm / redline) * 3.5;
@@ -287,7 +287,7 @@ export default function DynoRoom({ playerCar, onBack }: DynoRoomProps) {
       const groundY = H * 0.95;
       const carCX = W * 0.58;
       if (carImg.complete) {
-        const carW = W * 0.55;
+        const carW = W * 0.4;
         const carH = carW * (carImg.height / carImg.width);
         const carX = carCX - carW / 2;
         const carY = groundY - carH;
