@@ -917,11 +917,6 @@
         addCL(1650, 'picnic-pavilion', -2.5, null);
         addCL(1800, 'picnic-pavilion', 2.5, null);
 
-        // --- Fences along residential stretches (before downtown) ---
-        for (n = 100; n < 240; n += 30) {
-          addCL(n, 'picket-fence', Util.randomChoice([-1.6, 1.6]), null);
-        }
-
         // --- Bushes — sparse, far from road ---
         for (n = 50; n < segments.length; n += 25) {
           addCL(n, 'bush-midwest', Util.randomChoice([1, -1]) * (2.5 + Math.random() * 3), SPRITES.BUSH1);

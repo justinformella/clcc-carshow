@@ -11,10 +11,22 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import * as dotenv from "dotenv";
+import * as fs from "fs";
 import * as path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
+// Load .env.local manually (no dotenv dependency needed)
+const envPath = path.resolve(__dirname, "../.env.local");
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx < 0) continue;
+    const key = trimmed.slice(0, eqIdx);
+    const val = trimmed.slice(eqIdx + 1);
+    if (!process.env[key]) process.env[key] = val;
+  }
+}
 
 const GEMINI_KEY = process.env.GOOGLE_GEMINI_API_KEY!;
 const REMBG_URL = process.env.MODAL_REMBG_URL || "https://justin-formella--clcc-rembg-remove-bg.modal.run";
@@ -125,20 +137,62 @@ const ASSETS: AssetDef[] = [
     aspect: "4:3",
     removeBg: true,
   },
+  {
+    key: "best-buy",
+    filename: "best-buy.png",
+    prompt: `${STYLE_BASE} A Best Buy electronics store building — large blue and yellow rectangular building with the Best Buy logo and distinctive yellow price tag logo. Big box retail store with large parking lot. Viewed from across the street. Bright green (#00FF00) solid background.`,
+    aspect: "16:9",
+    removeBg: true,
+  },
+  {
+    key: "taco-bell",
+    filename: "taco-bell.png",
+    prompt: `${STYLE_BASE} A Taco Bell restaurant — distinctive purple and pink modern building with the bell logo, drive-thru lane. Fast food Mexican restaurant. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "4:3",
+    removeBg: true,
+  },
+  {
+    key: "chick-fil-a",
+    filename: "chick-fil-a.png",
+    prompt: `${STYLE_BASE} A Chick-fil-A restaurant — red brick building with a distinctive peaked roof, the Chick-fil-A logo with a chicken, drive-thru lane. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "4:3",
+    removeBg: true,
+  },
+  {
+    key: "exceed-flooring",
+    filename: "exceed-flooring.png",
+    prompt: `${STYLE_BASE} A flooring and home improvement retail store building — a medium commercial storefront with "EXCEED FLOORING" signage on the facade, showroom windows visible. Viewed from the front. Bright green (#00FF00) solid background.`,
+    aspect: "16:9",
+    removeBg: true,
+  },
+  {
+    key: "jewel-osco",
+    filename: "jewel-osco.png",
+    prompt: `${STYLE_BASE} A Jewel-Osco grocery store — large supermarket building with the red Jewel-Osco logo sign, wide entrance, shopping carts visible outside. Big suburban grocery store. Viewed from across the street. Bright green (#00FF00) solid background.`,
+    aspect: "16:9",
+    removeBg: true,
+  },
+  {
+    key: "target",
+    filename: "target.png",
+    prompt: `${STYLE_BASE} A Target store — large red and white big box retail building with the iconic red bullseye Target logo on the facade. Wide entrance, concrete exterior. Viewed from across the street. Bright green (#00FF00) solid background.`,
+    aspect: "16:9",
+    removeBg: true,
+  },
 
   // ─── Street furniture ───
   {
     key: "street-lamp",
     filename: "street-lamp.png",
     prompt: `${STYLE_BASE} A single acorn/globe style street lamp on a dark green metal post. Classic downtown decorative street light. Tall and narrow. Bright green (#00FF00) solid background.`,
-    aspect: "1:4",
+    aspect: "9:16",
     removeBg: true,
   },
   {
     key: "lamp-flowers",
     filename: "lamp-flowers.png",
     prompt: `${STYLE_BASE} A decorative street lamp post (dark green metal, acorn globe top) with a hanging flower basket attached to the pole, colorful flowers spilling out. Classic downtown summer look. Tall and narrow. Bright green (#00FF00) solid background.`,
-    aspect: "1:4",
+    aspect: "9:16",
     removeBg: true,
   },
   {
@@ -175,14 +229,14 @@ const ASSETS: AssetDef[] = [
     key: "rr-crossing",
     filename: "rr-crossing.png",
     prompt: `${STYLE_BASE} A railroad crossing sign — white X-shaped crossbuck on a tall metal post with "RAILROAD CROSSING" text and flashing red signal lights. Tall and narrow. Bright green (#00FF00) solid background.`,
-    aspect: "1:4",
+    aspect: "9:16",
     removeBg: true,
   },
   {
     key: "traffic-light",
     filename: "traffic-light.png",
     prompt: `${STYLE_BASE} A standard 3-light traffic signal (red, yellow, green) mounted on a tall metal pole. Tall and narrow. Bright green (#00FF00) solid background.`,
-    aspect: "1:4",
+    aspect: "9:16",
     removeBg: true,
   },
 
@@ -192,7 +246,7 @@ const ASSETS: AssetDef[] = [
     filename: "lake-water.png",
     prompt: `${STYLE_BASE} A section of calm lake water with subtle wave patterns, light blue with darker blue reflections and small white highlights. Horizontal strip of water surface. Bright green (#00FF00) solid background above the water.`,
     aspect: "16:9",
-    removeBg: false, // keep as-is, water is the ground texture
+    removeBg: true, // strip green background
   },
   {
     key: "beach-section",
@@ -230,7 +284,7 @@ const ASSETS: AssetDef[] = [
     key: "utility-pole",
     filename: "utility-pole.png",
     prompt: `${STYLE_BASE} A wooden utility/telephone pole with crossarm and power lines attached. Tall, brown, simple. Bright green (#00FF00) solid background.`,
-    aspect: "1:4",
+    aspect: "9:16",
     removeBg: true,
   },
   {
