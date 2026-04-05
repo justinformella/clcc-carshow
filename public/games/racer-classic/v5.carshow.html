@@ -747,31 +747,26 @@
       // --- Dashboard overlay (below the road viewport) ---
       if (playerDashImage) {
         var dY = height; // dashboard starts right at the bottom of the road viewport
-        var dW = canvas.width;
+        var dW = width;  // use game width (1024), not canvas.width
         var dH = dashHeight;
-        // Draw dashboard image covering the full width, cropped to fit
         var imgW = playerDashImage.naturalWidth;
         var imgH = playerDashImage.naturalHeight;
-        var imgAspect = imgW / imgH;
-        var destAspect = dW / dH;
-        var sx = 0, sy = 0, sw = imgW, sh = imgH;
-        if (imgAspect > destAspect) {
-          // Image is wider — crop sides
-          sw = Math.round(imgH * destAspect);
-          sx = Math.round((imgW - sw) / 2);
-        } else {
-          // Image is taller — crop top/bottom
-          sh = Math.round(imgW / destAspect);
-          sy = Math.round((imgH - sh) / 2);
-        }
-        ctx.drawImage(playerDashImage, sx, sy, sw, sh, 0, dY, dW, dH);
 
-        // Subtle vignette/darkening at the seam between road and dashboard
-        var grad = ctx.createLinearGradient(0, dY - 5, 0, dY + 15);
-        grad.addColorStop(0, 'rgba(0,0,0,0.5)');
+        // Fill the full width, show as much of the dashboard as fits from the bottom up
+        // This means we take the bottom portion of the image (where the instruments are)
+        var srcW = imgW;
+        var srcH = Math.round(imgW * (dH / dW)); // how much of the image height we can show
+        if (srcH > imgH) srcH = imgH;
+        var srcY = imgH - srcH; // anchor to bottom of image (instruments, not sky)
+
+        ctx.drawImage(playerDashImage, 0, srcY, srcW, srcH, 0, dY, dW, dH);
+
+        // Subtle vignette at the seam
+        var grad = ctx.createLinearGradient(0, dY - 3, 0, dY + 10);
+        grad.addColorStop(0, 'rgba(0,0,0,0.4)');
         grad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = grad;
-        ctx.fillRect(0, dY - 5, dW, 20);
+        ctx.fillRect(0, dY - 3, dW, 13);
       }
     }
 
@@ -1134,7 +1129,7 @@
     var playerCarData = null;  // selected player car data
     var playerCarImage = null; // selected player car pixelRear Image
     var playerDashImage = null; // selected player car dashboard Image (cropped)
-    var dashHeight = 200;      // height of dashboard strip below road
+    var dashHeight = 280;      // height of dashboard strip below road — show the full dash
     var gameReady = false;
 
     // Sponsor data
