@@ -384,35 +384,24 @@
           '<div style="margin-bottom:30px;font-size:10px;color:#888;">' +
             (playerCarData ? playerCarData.hp + ' HP | ' + playerCarData.weight.toLocaleString() + ' lbs | Gear ' + (playerCarData.gears || 5) + '-speed' : '') +
           '</div>' +
-          '<div id="finish-cruise-again" style="display:inline-block;background:#ffd700;color:#000;padding:12px 30px;font-size:14px;cursor:pointer;margin:8px;">' +
-            'CRUISE AGAIN' +
-          '</div>' +
-          '<div id="finish-new-car" style="display:inline-block;background:#333;color:#fff;padding:12px 30px;font-size:14px;cursor:pointer;margin:8px;">' +
-            'PICK NEW CAR' +
+          '<div id="finish-continue" style="display:inline-block;background:#ffd700;color:#000;padding:12px 30px;font-size:14px;cursor:pointer;margin:8px;">' +
+            'CONTINUE' +
           '</div>' +
         '</div>';
 
       document.body.appendChild(overlay);
 
-      document.getElementById('finish-cruise-again').addEventListener('click', function() {
-        overlay.remove();
-        currentLap = 1;
-        totalRaceTime = 0;
-        currentLapTime = 0;
-        lastLapTime = null;
-        raceFinished = false;
-        position = 0;
-        speed = 0;
-        currentGear = 1;
-        if (playerCarData) {
-          engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
-        }
+      // Redirect to /race with the same car
+      var raceUrl = '/race' + (playerCarData ? '?car=' + playerCarData.id : '');
+
+      document.getElementById('finish-continue').addEventListener('click', function() {
+        window.location.href = raceUrl;
       });
 
-      document.getElementById('finish-new-car').addEventListener('click', function() {
-        overlay.remove();
-        window.location.reload();
-      });
+      // Also auto-redirect after 10 seconds
+      setTimeout(function() {
+        if (raceFinished) window.location.href = raceUrl;
+      }, 10000);
     }
 
     //=========================================================================
