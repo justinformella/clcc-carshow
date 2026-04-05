@@ -550,7 +550,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     return () => cancelAnimationFrame(detailAnimRef.current);
   }, [playerCar]);
 
-  // Before/after canvas reveal animation
+  // Clean car reveal with sparkles
   useEffect(() => {
     if (detailState !== "reveal" || !playerCar) return;
     const canvas = detailCanvasRef.current;
@@ -564,41 +564,73 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
     const groundY = H * 0.98;
     const carX = W * 0.5 - carW / 2, carY = groundY - carH;
 
-    // Dirty snapshot
-    const dirtyCanvas = document.createElement("canvas");
-    dirtyCanvas.width = W; dirtyCanvas.height = H;
-    const dCtx = dirtyCanvas.getContext("2d")!;
-    dCtx.fillStyle = "#0d0d1a"; dCtx.fillRect(0, 0, W, H);
-    if (detailBayImgRef.current?.complete) { dCtx.globalAlpha = 0.8; dCtx.drawImage(detailBayImgRef.current, 0, 0, W, H); dCtx.globalAlpha = 1; }
-    dCtx.save();
-    if (playerCar.flipped) { dCtx.translate(carX + carW, carY); dCtx.scale(-1, 1); dCtx.drawImage(carImg, 0, 0, carW, carH); }
-    else { dCtx.drawImage(carImg, carX, carY, carW, carH); }
-    dCtx.restore();
-    dCtx.fillStyle = "rgba(80, 60, 30, 0.45)"; dCtx.fillRect(carX, carY, carW, carH);
+    // Sparkle particles for the reveal
+    const sparkles: { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; star: boolean }[] = [];
+    // Seed initial burst
+    for (let i = 0; i < 30; i++) {
+      sparkles.push({
+        x: carX + Math.random() * carW,
+        y: carY + Math.random() * carH,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        life: 20 + Math.random() * 40,
+        maxLife: 60,
+        star: Math.random() < 0.3,
+      });
+    }
 
-    const cleanFrame = () => {
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+
+      // Background + car
       ctx.fillStyle = "#0d0d1a"; ctx.fillRect(0, 0, W, H);
       if (detailBayImgRef.current?.complete) { ctx.globalAlpha = 0.8; ctx.drawImage(detailBayImgRef.current, 0, 0, W, H); ctx.globalAlpha = 1; }
       ctx.save();
       if (playerCar.flipped) { ctx.translate(carX + carW, carY); ctx.scale(-1, 1); ctx.drawImage(carImg, 0, 0, carW, carH); }
       else { ctx.drawImage(carImg, carX, carY, carW, carH); }
       ctx.restore();
-    };
 
-    const startTime = performance.now();
-    const duration = 1500;
-    const animate = (now: number) => {
-      const t = Math.min((now - startTime) / duration, 1);
-      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      const dividerX = eased * W;
-      cleanFrame();
-      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, dividerX, H); ctx.clip();
-      ctx.drawImage(dirtyCanvas, 0, 0); ctx.restore();
-      ctx.strokeStyle = C.gold; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(dividerX, 0); ctx.lineTo(dividerX, H); ctx.stroke();
-      if (dividerX > 60) { ctx.fillStyle = C.midGray; ctx.font = "10px 'Press Start 2P', monospace"; ctx.fillText("BEFORE", dividerX - 55, 20); }
-      if (dividerX < W - 60) { ctx.fillStyle = C.gold; ctx.font = "10px 'Press Start 2P', monospace"; ctx.fillText("AFTER", dividerX + 10, 20); }
-      if (t < 1) detailAnimRef.current = requestAnimationFrame(animate);
+      // Spawn new sparkles continuously for first 3 seconds
+      if (elapsed < 3000 && Math.random() < 0.3) {
+        sparkles.push({
+          x: carX + Math.random() * carW,
+          y: carY + Math.random() * carH,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: -0.5 - Math.random() * 1.5,
+          life: 25 + Math.random() * 25,
+          maxLife: 50,
+          star: Math.random() < 0.25,
+        });
+      }
+
+      // Draw sparkles
+      for (let i = sparkles.length - 1; i >= 0; i--) {
+        const p = sparkles[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.life <= 0) { sparkles.splice(i, 1); continue; }
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        if (p.star) {
+          ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          const sz = 3 + (1 - alpha) * 3;
+          ctx.moveTo(p.x - sz, p.y); ctx.lineTo(p.x + sz, p.y);
+          ctx.moveTo(p.x, p.y - sz); ctx.lineTo(p.x, p.y + sz);
+          ctx.stroke();
+        } else {
+          const radius = 1 + (1 - p.life / p.maxLife) * 2.5;
+          ctx.fillStyle = Math.random() > 0.3 ? "#ffffff" : "#ffd700";
+          ctx.beginPath(); ctx.arc(p.x, p.y, radius, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // Keep animating while sparkles remain or within first 4 seconds
+      if (sparkles.length > 0 || elapsed < 4000) {
+        detailAnimRef.current = requestAnimationFrame(animate);
+      }
     };
     detailAnimRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(detailAnimRef.current);
