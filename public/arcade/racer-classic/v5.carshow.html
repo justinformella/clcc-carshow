@@ -731,22 +731,112 @@
       }
 
       // =====================================================================
-      // ROADSIDE SCENERY (kept from original — trees, plants, columns)
+      // ROADSIDE SCENERY — Crystal Lake, IL themed
+      // Falls back to original sprites if CL assets aren't loaded
       // =====================================================================
 
-      for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
-        addSprite(n, SPRITES.PALM_TREE, 0.5 + Math.random()*0.5);
-        addSprite(n, SPRITES.PALM_TREE,   1 + Math.random()*2);
+      var hasCLScenery = Object.keys(clScenery).length > 5; // need at least a few loaded
+
+      // Helper: add a CL scenery sprite if loaded, otherwise use a fallback
+      function addCL(seg, key, offset, fallback) {
+        var m = CL_SCENERY_MANIFEST[key];
+        if (clScenery[key] && m) {
+          addDynamicSprite(seg, { w: m.w, h: m.h }, offset, clScenery[key]);
+        } else if (fallback) {
+          addSprite(seg, fallback, offset);
+        }
       }
 
-      for(n = 250 ; n < 1000 ; n += 5) {
-        addSprite(n,     SPRITES.COLUMN, 1.1);
-        addSprite(n + Util.randomInt(0,5), SPRITES.TREE1, -1 - (Math.random() * 2));
-        addSprite(n + Util.randomInt(0,5), SPRITES.TREE2, -1 - (Math.random() * 2));
-      }
+      if (hasCLScenery) {
 
-      for(n = 200 ; n < segments.length ; n += 3) {
-        addSprite(n, Util.randomChoice(SPRITES.PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
+        // --- Welcome sign near start ---
+        addCL(15, 'welcome-sign', -1.8, SPRITES.BILLBOARD01);
+
+        // --- Street lamps / utility poles along the road ---
+        for (n = 5; n < segments.length; n += 8) {
+          var lampKey = (n % 24 < 12) ? 'street-lamp' : 'lamp-flowers';
+          addCL(n, lampKey, 1.1, SPRITES.COLUMN);
+        }
+
+        // --- Trees — mix of oaks, maples, pines ---
+        var treeKeys = ['oak-tree', 'maple-tree', 'maple-fall', 'pine-tree'];
+        for (n = 3; n < segments.length; n += 3) {
+          var tKey = treeKeys[Math.floor(Math.random() * treeKeys.length)];
+          var tSide = Util.randomChoice([1, -1]);
+          addCL(n, tKey, tSide * (2 + Math.random() * 4), Util.randomChoice(SPRITES.PLANTS));
+        }
+
+        // --- Downtown section (segments 250–600): brick buildings, Raue Center ---
+        addCL(300, 'raue-center', -1.5, SPRITES.BILLBOARD08);
+        for (n = 250; n < 600; n += 25) {
+          var bldgKey = (n % 50 < 25) ? 'brick-storefront' : 'painted-storefront';
+          var bSide = (n % 50 < 25) ? -1.6 : 1.6;
+          addCL(n, bldgKey, bSide, SPRITES.BILLBOARD03);
+          // Planters and benches in front of buildings
+          if (n % 50 === 0) addCL(n + 2, 'planter', bSide * 0.8, null);
+          if (n % 75 === 0) addCL(n + 1, 'park-bench', -bSide * 1.3, null);
+        }
+
+        // --- Railroad crossing in downtown ---
+        addCL(400, 'rr-crossing', -1.0, SPRITES.COLUMN);
+        addCL(400, 'rr-crossing', 1.0, SPRITES.COLUMN);
+        if (Math.random() > 0.5) addCL(402, 'metra-train', 2.5, null); // sometimes a train!
+
+        // --- Route 14 commercial section (segments 600–1200) ---
+        for (n = 600; n < 1200; n += 60) {
+          var commKey = Util.randomChoice(['strip-mall', 'gas-station', 'fast-food']);
+          var cSide = (n % 120 < 60) ? -2.0 : 2.0;
+          addCL(n, commKey, cSide, SPRITES.BILLBOARD06);
+          addCL(n + 5, 'traffic-light', cSide * 0.5, null);
+        }
+
+        // --- Lakefront section (segments 1200–1600) ---
+        for (n = 1200; n < 1600; n += 40) {
+          addCL(n, 'lake-water', 2.5 + Math.random(), null);
+          if (n % 80 === 0) addCL(n + 3, 'park-bench', 1.4, null);
+        }
+        addCL(1250, 'boat-dock', 2.0, null);
+        addCL(1300, 'beach-section', 2.2, null);
+        addCL(1400, 'dole-mansion', -2.0, SPRITES.BILLBOARD09);
+        addCL(1450, 'metra-station', -2.2, null);
+
+        // --- Parks section (1600+): prairie grass, picnic pavilions, dense trees ---
+        for (n = 1600; n < segments.length - 50; n += 15) {
+          addCL(n, 'prairie-grass', Util.randomChoice([1, -1]) * (1.5 + Math.random() * 3), null);
+          if (n % 60 === 0) addCL(n, 'picnic-pavilion', Util.randomChoice([-2.0, 2.0]), null);
+        }
+
+        // --- Fences along residential stretches ---
+        for (n = 100; n < 250; n += 20) {
+          addCL(n, 'picket-fence', Util.randomChoice([-1.3, 1.3]), null);
+        }
+
+        // --- Bushes scattered throughout ---
+        for (n = 50; n < segments.length; n += 12) {
+          addCL(n, 'bush-midwest', Util.randomChoice([1, -1]) * (1.5 + Math.random() * 2), SPRITES.BUSH1);
+        }
+
+        // --- Utility poles on the opposite side of lamps ---
+        for (n = 20; n < segments.length; n += 30) {
+          addCL(n, 'utility-pole', -1.1, null);
+        }
+
+      } else {
+        // --- Fallback: original desert scenery ---
+        for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
+          addSprite(n, SPRITES.PALM_TREE, 0.5 + Math.random()*0.5);
+          addSprite(n, SPRITES.PALM_TREE,   1 + Math.random()*2);
+        }
+
+        for(n = 250 ; n < 1000 ; n += 5) {
+          addSprite(n,     SPRITES.COLUMN, 1.1);
+          addSprite(n + Util.randomInt(0,5), SPRITES.TREE1, -1 - (Math.random() * 2));
+          addSprite(n + Util.randomInt(0,5), SPRITES.TREE2, -1 - (Math.random() * 2));
+        }
+
+        for(n = 200 ; n < segments.length ; n += 3) {
+          addSprite(n, Util.randomChoice(SPRITES.PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
+        }
       }
 
     }
@@ -810,6 +900,57 @@
     var sponsorData = [];       // flat array of { company, logo_url, pixel_logo_url, tier, website }
     var sponsorImages = [];     // array of loaded Image elements (in order of tier priority)
 
+    // Crystal Lake scenery — loaded dynamically from Supabase
+    var clScenery = {};         // map of key -> loaded Image element
+    var clSceneryLoaded = false;
+
+    // Scenery manifest: key → { path, w, h (reference dimensions for scaling), category }
+    var CL_SCENERY_MANIFEST = {
+      // Trees (Illinois species)
+      'oak-tree':        { path: '8bit/scenery/oak-tree.png',        w: 360, h: 400, category: 'tree' },
+      'maple-tree':      { path: '8bit/scenery/maple-tree.png',      w: 340, h: 380, category: 'tree' },
+      'maple-fall':      { path: '8bit/scenery/maple-fall.png',      w: 340, h: 380, category: 'tree' },
+      'pine-tree':       { path: '8bit/scenery/pine-tree.png',       w: 200, h: 500, category: 'tree' },
+      'bush-midwest':    { path: '8bit/scenery/bush-midwest.png',    w: 200, h: 140, category: 'plant' },
+
+      // Downtown buildings
+      'raue-center':     { path: '8bit/scenery/raue-center.png',     w: 300, h: 400, category: 'building' },
+      'brick-storefront':{ path: '8bit/scenery/brick-storefront.png',w: 280, h: 300, category: 'building' },
+      'painted-storefront':{ path: '8bit/scenery/painted-storefront.png', w: 260, h: 280, category: 'building' },
+      'dole-mansion':    { path: '8bit/scenery/dole-mansion.png',    w: 400, h: 350, category: 'building' },
+
+      // Commercial (Route 14)
+      'strip-mall':      { path: '8bit/scenery/strip-mall.png',      w: 500, h: 200, category: 'commercial' },
+      'gas-station':     { path: '8bit/scenery/gas-station.png',     w: 300, h: 200, category: 'commercial' },
+      'fast-food':       { path: '8bit/scenery/fast-food.png',       w: 250, h: 200, category: 'commercial' },
+
+      // Street furniture
+      'street-lamp':     { path: '8bit/scenery/street-lamp.png',     w: 40, h: 320, category: 'furniture' },
+      'lamp-flowers':    { path: '8bit/scenery/lamp-flowers.png',    w: 60, h: 340, category: 'furniture' },
+      'park-bench':      { path: '8bit/scenery/park-bench.png',      w: 150, h: 90, category: 'furniture' },
+      'planter':         { path: '8bit/scenery/planter.png',         w: 80, h: 100, category: 'furniture' },
+      'picnic-pavilion': { path: '8bit/scenery/picnic-pavilion.png', w: 300, h: 200, category: 'furniture' },
+
+      // Signs
+      'welcome-sign':    { path: '8bit/scenery/welcome-sign.png',    w: 350, h: 200, category: 'sign' },
+      'rr-crossing':     { path: '8bit/scenery/rr-crossing.png',     w: 60, h: 300, category: 'sign' },
+      'traffic-light':   { path: '8bit/scenery/traffic-light.png',   w: 40, h: 200, category: 'sign' },
+
+      // Lakefront
+      'lake-water':      { path: '8bit/scenery/lake-water.png',      w: 500, h: 200, category: 'lake' },
+      'beach-section':   { path: '8bit/scenery/beach-section.png',   w: 400, h: 150, category: 'lake' },
+      'boat-dock':       { path: '8bit/scenery/boat-dock.png',       w: 180, h: 140, category: 'lake' },
+
+      // Transit
+      'metra-train':     { path: '8bit/scenery/metra-train.png',     w: 400, h: 200, category: 'transit' },
+      'metra-station':   { path: '8bit/scenery/metra-station.png',   w: 350, h: 180, category: 'transit' },
+
+      // Misc
+      'utility-pole':    { path: '8bit/scenery/utility-pole.png',    w: 40, h: 400, category: 'pole' },
+      'picket-fence':    { path: '8bit/scenery/picket-fence.png',    w: 250, h: 100, category: 'fence' },
+      'prairie-grass':   { path: '8bit/scenery/prairie-grass.png',   w: 200, h: 120, category: 'plant' },
+    };
+
     // Fetch car data AND sponsor data in parallel, then show car select
     Promise.all([
       fetch('/api/race').then(function(r) { return r.json(); }).catch(function() { return { cars: [] }; }),
@@ -837,8 +978,20 @@
         });
       });
 
-      // Count total images to load
-      var totalToLoad = carShowData.length + sponsorData.length;
+      // Detect Supabase URL from car image URLs (they're full URLs from the API)
+      var supabaseBaseUrl = '';
+      var allCarsRaw = carData.cars || [];
+      for (var ci = 0; ci < allCarsRaw.length; ci++) {
+        var testUrl = allCarsRaw[ci].pixelArt || allCarsRaw[ci].pixelRear || '';
+        if (testUrl.indexOf('supabase.co') >= 0) {
+          supabaseBaseUrl = testUrl.split('/storage/')[0];
+          break;
+        }
+      }
+
+      // Count total images to load: cars + sponsors + scenery
+      var sceneryKeys = Object.keys(CL_SCENERY_MANIFEST);
+      var totalToLoad = carShowData.length + sponsorData.length + (supabaseBaseUrl ? sceneryKeys.length : 0);
       if (totalToLoad === 0) {
         startGame();
         return;
@@ -873,6 +1026,21 @@
           img.onerror = onLoad;
           img.src = sponsor.logo_url;
         });
+
+        // Load Crystal Lake scenery images from Supabase storage
+        if (supabaseBaseUrl) {
+          sceneryKeys.forEach(function(key) {
+            var manifest = CL_SCENERY_MANIFEST[key];
+            var img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+              clScenery[key] = img;
+              onLoad();
+            };
+            img.onerror = onLoad; // silently skip missing — fall back to original sprites
+            img.src = supabaseBaseUrl + '/storage/v1/object/public/pixel-art/' + manifest.path;
+          });
+        }
       });
 
     function showCarSelect() {
