@@ -1,87 +1,55 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 
 <html>
 <head>
-  <title>CLCC Arcade - Road Race</title>
+  <title>Take a Cruise Down Route 14 | CLCC Arcade</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <link href="common.css" rel="stylesheet" type="text/css" />
-</head> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: 'Press Start 2P', monospace; }
+    #racer { position: relative; width: 100vw; max-width: 1280px; margin: 0 auto; }
+    #canvas { display: block; width: 100%; background-color: #000; }
+    #hud { position: absolute; z-index: 1; top: 0; left: 0; right: 0; padding: 8px 12px;
+           font-size: 11px; color: #ffd700; background: rgba(0,0,0,0.7); }
+    #hud .hud { padding: 4px 8px; margin: 0 4px; }
+    #hud .value { color: #fff; font-weight: bold; }
+    #hud #speed { float: right; }
+    #hud #current_lap_time { float: left; }
+    #hud #last_lap_time { float: left; display: none; }
+    #hud #fast_lap_time { display: block; width: 14em; margin: 0 auto; text-align: center; }
+    #hud #car_name { display: block; clear: both; padding-top: 4px; color: #ffd700; font-size: 13px; }
+    #hud #car_stats { display: block; color: #aaa; font-size: 9px; }
+    #hud #gear { float: right; color: #4f4; }
+    #hud .fastest { color: #ffd700; }
+    /* Hide tweak UI — keep hidden DOM elements so JS doesn't error */
+    #controls, #instructions, #fps, #mute { display: none !important; }
+  </style>
+</head>
 
-<body> 
+<body>
 
-  <table id="controls">
-    <tr>
-      <td colspan="2">
-        <a href='v4.final.html'>original</a> |
-        <a href='v5.carshow.html'>car show</a>
-      </td>
-    </tr>
-    <tr><td id="fps" colspan="2" align="right"></td></tr>
-    <tr>
-      <th><label for="resolution">Resolution :</label></th>
-      <td>
-        <select id="resolution" style="width:100%">
-          <option value='fine'>Fine (1280x960)</option>
-          <option selected value='high'>High (1024x768)</option>
-          <option value='medium'>Medium (640x480)</option>
-          <option value='low'>Low (480x360)</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <th><label for="lanes">Lanes :</label></th>
-      <td>
-        <select id="lanes">
-          <option>1</option>
-          <option>2</option>
-          <option selected>3</option>
-          <option>4</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <th><label for="roadWidth">Road Width (<span id="currentRoadWidth"></span>) :</label></th>
-      <td><input id="roadWidth" type='range' min='500' max='3000' title="integer (500-3000)"></td>
-    </tr>
-    <tr>
-      <th><label for="cameraHeight">CameraHeight (<span id="currentCameraHeight"></span>) :</label></th>
-      <td><input id="cameraHeight" type='range' min='500' max='5000' title="integer (500-5000)"></td>
-    </tr>
-    <tr>
-      <th><label for="drawDistance">Draw Distance (<span id="currentDrawDistance"></span>) :</label></th>
-      <td><input id="drawDistance" type='range' min='100' max='500' title="integer (100-500)"></td>
-    </tr>
-    <tr>
-      <th><label for="fieldOfView">Field of View (<span id="currentFieldOfView"></span>) :</label></th>
-      <td><input id="fieldOfView" type='range' min='80' max='140' title="integer (80-140)"></td>
-    </tr>
-    <tr>
-      <th><label for="fogDensity">Fog Density (<span id="currentFogDensity"></span>) :</label></th>
-      <td><input id="fogDensity" type='range' min='0' max='50' title="integer (0-50)"></td>
-    </tr>
+  <!-- Hidden controls (kept for JS compatibility, never shown) -->
+  <table id="controls" style="display:none">
+    <tr><td id="fps"></td></tr>
   </table>
-
-  <div id='instructions'>
-    <p>Use the <b>arrow keys</b> to drive the car.</p>
-  </div>
+  <div id="instructions" style="display:none"></div>
 
   <div id="racer">
     <div id="hud">
       <span id="speed"            class="hud"><span id="speed_value" class="value">0</span> mph</span>
-      <span id="current_lap_time" class="hud">Time: <span id="current_lap_time_value" class="value">0.0</span></span> 
+      <span id="current_lap_time" class="hud">Time: <span id="current_lap_time_value" class="value">0.0</span></span>
       <span id="last_lap_time"    class="hud">Last Lap: <span id="last_lap_time_value" class="value">0.0</span></span>
       <span id="fast_lap_time"    class="hud">Fastest Lap: <span id="fast_lap_time_value" class="value">0.0</span></span>
       <span id="car_name" class="hud" style="display:none"><span id="car_name_value" class="value"></span></span>
       <span id="car_stats" class="hud" style="display:none"><span id="car_stats_value" class="value"></span></span>
       <span id="gear" class="hud" style="display:none">Gear: <span id="gear_value" class="value">1</span></span>
     </div>
-    <canvas id="canvas">
-      Sorry, this example cannot be run because your browser does not support the &lt;canvas&gt; element
-    </canvas>
-    Loading...
+    <canvas id="canvas"></canvas>
   </div>
 
-  <!-- Background music disabled — engine audio is the soundtrack -->
   <audio id='music' muted></audio>
   <span id="mute" style="display:none"></span>
 
@@ -109,18 +77,18 @@
     var background     = null;                    // our background image (loaded below)
     var sprites        = null;                    // our spritesheet (loaded below)
     var resolution     = null;                    // scaling factor to provide resolution independence (computed)
-    var roadWidth      = 2000;                    // actually half the roads width, easier math if the road spans from -roadWidth to +roadWidth
+    var roadWidth      = 1500;                    // fixed for Route 14
     var segmentLength  = 200;                     // length of a single segment
     var rumbleLength   = 3;                       // number of segments per red/white rumble strip
     var trackLength    = null;                    // z length of entire track (computed)
     var lanes          = 3;                       // number of lanes
-    var fieldOfView    = 100;                     // angle (degrees) for field of view
-    var cameraHeight   = 1000;                    // z height of camera
+    var fieldOfView    = 110;                     // fixed for Route 14
+    var cameraHeight   = 750;                     // fixed for Route 14
     var cameraDepth    = null;                    // z distance camera is from screen (computed)
-    var drawDistance   = 300;                     // number of segments to draw
+    var drawDistance   = 300;                     // fixed for Route 14
     var playerX        = 0;                       // player x offset from center of road (-1 to 1 to stay independent of roadWidth)
     var playerZ        = null;                    // player relative z distance from camera (computed)
-    var fogDensity     = 5;                       // exponential fog density
+    var fogDensity     = 5;                       // fixed for Route 14
     var position       = 0;                       // current camera Z position (add playerZ to get player's absolute Z position)
     var speed          = 0;                       // current speed
     var maxSpeed       = segmentLength/step;      // top speed (ensure we can't move more than 1 segment in a single frame to make collision detection easier)
@@ -1396,33 +1364,8 @@
     // TWEAK UI HANDLERS
     //=========================================================================
 
-    Dom.on('resolution', 'change', function(ev) {
-      var w, h, ratio;
-      switch(ev.target.options[ev.target.selectedIndex].value) {
-        case 'fine':   w = 1280; h = 960;  ratio=w/width; break;
-        case 'high':   w = 1024; h = 768;  ratio=w/width; break;
-        case 'medium': w = 640;  h = 480;  ratio=w/width; break;
-        case 'low':    w = 480;  h = 360;  ratio=w/width; break;
-      }
-      reset({ width: w, height: h })
-      Dom.blur(ev);
-    });
-
-    Dom.on('lanes',          'change', function(ev) { Dom.blur(ev); reset({ lanes:         ev.target.options[ev.target.selectedIndex].value }); });
-    Dom.on('roadWidth',      'change', function(ev) { Dom.blur(ev); reset({ roadWidth:     Util.limit(Util.toInt(ev.target.value), Util.toInt(ev.target.getAttribute('min')), Util.toInt(ev.target.getAttribute('max'))) }); });
-    Dom.on('cameraHeight',   'change', function(ev) { Dom.blur(ev); reset({ cameraHeight:  Util.limit(Util.toInt(ev.target.value), Util.toInt(ev.target.getAttribute('min')), Util.toInt(ev.target.getAttribute('max'))) }); });
-    Dom.on('drawDistance',   'change', function(ev) { Dom.blur(ev); reset({ drawDistance:  Util.limit(Util.toInt(ev.target.value), Util.toInt(ev.target.getAttribute('min')), Util.toInt(ev.target.getAttribute('max'))) }); });
-    Dom.on('fieldOfView',    'change', function(ev) { Dom.blur(ev); reset({ fieldOfView:   Util.limit(Util.toInt(ev.target.value), Util.toInt(ev.target.getAttribute('min')), Util.toInt(ev.target.getAttribute('max'))) }); });
-    Dom.on('fogDensity',     'change', function(ev) { Dom.blur(ev); reset({ fogDensity:    Util.limit(Util.toInt(ev.target.value), Util.toInt(ev.target.getAttribute('min')), Util.toInt(ev.target.getAttribute('max'))) }); });
-
-    function refreshTweakUI() {
-      Dom.get('lanes').selectedIndex = lanes-1;
-      Dom.get('currentRoadWidth').innerHTML      = Dom.get('roadWidth').value      = roadWidth;
-      Dom.get('currentCameraHeight').innerHTML   = Dom.get('cameraHeight').value   = cameraHeight;
-      Dom.get('currentDrawDistance').innerHTML   = Dom.get('drawDistance').value   = drawDistance;
-      Dom.get('currentFieldOfView').innerHTML    = Dom.get('fieldOfView').value    = fieldOfView;
-      Dom.get('currentFogDensity').innerHTML     = Dom.get('fogDensity').value     = fogDensity;
-    }
+    // Tweak UI removed — settings are fixed for Route 14
+    function refreshTweakUI() {}
 
     //=========================================================================
     // MOBILE TOUCH CONTROLS
@@ -1431,20 +1374,6 @@
     (function() {
       var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
       if (!isMobile) return;
-
-      // Hide desktop controls panel and instructions on mobile
-      var controls = document.getElementById('controls');
-      if (controls) controls.style.display = 'none';
-      var instructions = document.getElementById('instructions');
-      if (instructions) instructions.style.display = 'none';
-
-      // Make canvas fill the screen on mobile
-      var racer = document.getElementById('racer');
-      if (racer) {
-        racer.style.margin = '0';
-        racer.style.padding = '0';
-        racer.style.width = '100vw';
-      }
 
       // Create touch overlay
       var overlay = document.createElement('div');
