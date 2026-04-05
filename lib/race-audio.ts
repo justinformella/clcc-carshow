@@ -170,11 +170,11 @@ function stopMusicPlayer() {
   }
 }
 
-export function startSelectMusic() { playTrack("/arcade/music/title-screen.mp3", 0.3); }
+export function startSelectMusic() { playTrack("/arcade/music/select.mp3", 0.15); }
 export function stopSelectMusic() { stopMusicPlayer(); }
-export function startMenuMusic() { playTrack("/arcade/music/level-1.mp3", 0.35); }
+export function startMenuMusic() { playTrack("/arcade/music/level-1.mp3", 0.15); }
 export function stopMenuMusic() { stopMusicPlayer(); }
-export function startMusic() { playTrack("/arcade/music/level-3.mp3", 0.3); }
+export function startMusic() { playTrack("/arcade/music/level-3.mp3", 0.15); }
 export function stopMusic() { stopMusicPlayer(); }
 
 // ─── FOUL BUZZER (jumped the green) ─────────────────────────────────────────

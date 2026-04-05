@@ -183,7 +183,7 @@ export default function DragRace({ playerCar, cars, onBack }: DragRaceProps) {
   }, []);
 
   // ─── Cleanup ───
-  useEffect(() => () => { cancelAnimationFrame(animRef.current); stopAll(); }, []);
+  useEffect(() => () => { cancelAnimationFrame(animRef.current); stopEngine(); }, []);
 
   // ─── Draw road ───
   const drawRoad = useCallback((canvas: HTMLCanvasElement, roadOffset: number, skin: TrackSkin) => {
