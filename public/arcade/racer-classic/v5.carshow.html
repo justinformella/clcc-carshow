@@ -888,28 +888,28 @@
       // Use the original game's polished tree/plant sprites for nature.
       // Only use dynamic CL assets for Route 14 branded storefronts.
 
-      // --- Trees and plants (Midwest appropriate — no palms or cacti!) ---
-      var MIDWEST_TREES = [SPRITES.TREE1, SPRITES.TREE2, SPRITES.DEAD_TREE1, SPRITES.DEAD_TREE2];
-      var MIDWEST_PLANTS = [SPRITES.TREE1, SPRITES.TREE2, SPRITES.BUSH1, SPRITES.BUSH2,
-                            SPRITES.DEAD_TREE1, SPRITES.DEAD_TREE2, SPRITES.STUMP,
-                            SPRITES.BOULDER1, SPRITES.BOULDER2, SPRITES.BOULDER3];
+      // --- Trees and plants (Midwest appropriate) ---
+      // Only TREE1, TREE2 (green deciduous), BUSH1, BUSH2, and boulders
+      // No palms, cacti, dead trees, or castle columns
+      var MW_TREES = [SPRITES.TREE1, SPRITES.TREE2];
+      var MW_GROUND = [SPRITES.BUSH1, SPRITES.BUSH2, SPRITES.STUMP,
+                       SPRITES.BOULDER1, SPRITES.BOULDER2, SPRITES.BOULDER3];
 
       // Trees lining the road at the start
       for(n = 10 ; n < 200 ; n += 4 + Math.floor(n/100)) {
-        addSprite(n, Util.randomChoice(MIDWEST_TREES), 0.5 + Math.random()*0.5);
-        addSprite(n, Util.randomChoice(MIDWEST_TREES),   1 + Math.random()*2);
+        addSprite(n, Util.randomChoice(MW_TREES), 0.5 + Math.random()*0.5);
+        addSprite(n, Util.randomChoice(MW_TREES),   1 + Math.random()*2);
       }
 
-      // Columns (utility poles) + trees along the road
-      for(n = 250 ; n < 1000 ; n += 5) {
-        addSprite(n,     SPRITES.COLUMN, 1.1);
-        addSprite(n + Util.randomInt(0,5), Util.randomChoice(MIDWEST_TREES), -1 - (Math.random() * 2));
-        addSprite(n + Util.randomInt(0,5), Util.randomChoice(MIDWEST_TREES), -1 - (Math.random() * 2));
+      // Trees along the road (no columns)
+      for(n = 250 ; n < 1000 ; n += 6) {
+        addSprite(n + Util.randomInt(0,5), Util.randomChoice(MW_TREES), -1 - (Math.random() * 2));
+        addSprite(n + Util.randomInt(0,3), Util.randomChoice(MW_TREES),  1 + (Math.random() * 2));
       }
 
-      // Scattered plants throughout (no cacti, no palms)
-      for(n = 200 ; n < segments.length ; n += 3) {
-        addSprite(n, Util.randomChoice(MIDWEST_PLANTS), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
+      // Scattered bushes and ground cover throughout
+      for(n = 200 ; n < segments.length ; n += 4) {
+        addSprite(n, Util.randomChoice(MW_GROUND), Util.randomChoice([1,-1]) * (2 + Math.random() * 5));
       }
 
       // --- Route 14 branded storefronts (dynamic CL assets) ---
