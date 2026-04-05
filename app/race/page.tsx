@@ -287,7 +287,6 @@ function RacePage() {
   const opponentOverlayRef = useRef<HTMLDivElement>(null);
   const opponentImgRef = useRef<HTMLImageElement>(null);
   const opponentFallbackRef = useRef<HTMLDivElement>(null);
-  const [processedRearUrl, setProcessedRearUrl] = useState<string | null>(null);
 
   // Fetch cars
   useEffect(() => {
@@ -325,32 +324,6 @@ function RacePage() {
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
   }, []);
 
-  // Remove black background from opponent rear image
-  useEffect(() => {
-    const src = opponentCar?.pixelRear;
-    if (!src) { setProcessedRearUrl(null); return; }
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const c = document.createElement("canvas");
-      c.width = img.width;
-      c.height = img.height;
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, c.width, c.height);
-      const d = imageData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i] < 40 && d[i + 1] < 40 && d[i + 2] < 40) {
-          d[i + 3] = 0;
-        }
-      }
-      ctx.putImageData(imageData, 0, 0);
-      setProcessedRearUrl(c.toDataURL("image/png"));
-    };
-    img.src = src;
-  }, [opponentCar?.pixelRear]);
 
   // Keep canvas resolution matched to display size
   useEffect(() => {
@@ -1025,10 +998,10 @@ function RacePage() {
                 display: "none",
               }}
             >
-              {(processedRearUrl || opponentCar.pixelRear) ? (
+              {opponentCar.pixelRear ? (
                 <img
                   ref={opponentImgRef}
-                  src={processedRearUrl || opponentCar.pixelRear!}
+                  src={opponentCar.pixelRear}
                   alt="opponent"
                   style={{ width: "110px", imageRendering: "pixelated" }}
                 />
