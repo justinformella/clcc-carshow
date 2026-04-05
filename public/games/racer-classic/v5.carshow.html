@@ -25,6 +25,11 @@
     #hud #car_stats { display: block; color: #aaa; font-size: 9px; }
     #hud #gear { float: right; color: #4f4; }
     #hud .fastest { color: #ffd700; }
+    #quit-btn { position: fixed; top: 12px; right: 12px; z-index: 150;
+                background: rgba(0,0,0,0.6); color: #888; border: 1px solid #444;
+                padding: 6px 14px; font-family: 'Press Start 2P', monospace; font-size: 9px;
+                cursor: pointer; text-decoration: none; border-radius: 4px; }
+    #quit-btn:hover { color: #ffd700; border-color: #ffd700; }
     /* Hide tweak UI — keep hidden DOM elements so JS doesn't error */
     #controls, #instructions, #fps, #mute { display: none !important; }
   </style>
@@ -37,6 +42,8 @@
     <tr><td id="fps"></td></tr>
   </table>
   <div id="instructions" style="display:none"></div>
+
+  <a id="quit-btn" href="/">QUIT</a>
 
   <div id="racer">
     <div id="hud">
