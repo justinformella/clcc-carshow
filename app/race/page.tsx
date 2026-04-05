@@ -1030,13 +1030,16 @@ function RacePage() {
         {/* Dashboard */}
         <div style={{
           height: "35%",
-          background: C.bgMid,
+          background: C.bgDark,
           position: "relative",
           overflow: "hidden",
           borderTop: `2px solid ${C.border}`,
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
         }}>
           {playerCar?.pixelDash ? (
-            <img src={playerCar.pixelDash} alt="dashboard" style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated", opacity: 0.6 }} />
+            <img src={playerCar.pixelDash} alt="dashboard" style={{ width: "100%", imageRendering: "pixelated", opacity: 0.6, display: "block" }} />
           ) : (
             <div style={{ width: "100%", height: "100%", background: `linear-gradient(to bottom, ${C.bgMid}, ${C.bgDark})` }} />
           )}

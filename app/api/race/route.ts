@@ -7,7 +7,7 @@ export async function GET() {
 
     const { data: registrations } = await supabase
       .from("registrations")
-      .select("id, car_number, vehicle_year, vehicle_make, vehicle_model, vehicle_color, first_name, last_name, ai_image_url, pixel_art_url, pixel_dashboard_url, pixel_rear_url")
+      .select("id, car_number, vehicle_year, vehicle_make, vehicle_model, vehicle_color, first_name, last_name, ai_image_url, pixel_art_url, pixel_dashboard_url, pixel_rear_url, pixel_dash_cropped_url")
       .in("payment_status", ["paid", "comped"])
       .order("car_number", { ascending: true });
 
@@ -53,7 +53,7 @@ export async function GET() {
           trans: spec.transmission_type || "Manual",
           pwr: Math.round(pwr * 10) / 10,
           pixelArt: r.pixel_art_url || null,
-          pixelDash: r.pixel_dashboard_url || null,
+          pixelDash: r.pixel_dash_cropped_url || r.pixel_dashboard_url || null,
           pixelRear: r.pixel_rear_url || null,
           aiImage: r.ai_image_url || null,
         };
