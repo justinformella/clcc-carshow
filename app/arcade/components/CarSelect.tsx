@@ -39,7 +39,7 @@ export default function CarSelect({ cars, onSelect, generating, onGenerateAll }:
         </div>
 
         {/* Car grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "0.75rem", maxWidth: "1100px", margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "0.75rem", maxWidth: "1100px", margin: "0 auto", alignItems: "start" }}>
           {cars.map((car) => (
             <button
               key={car.id}
