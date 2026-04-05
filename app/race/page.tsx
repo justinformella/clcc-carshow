@@ -242,6 +242,8 @@ const TRACK_SKINS: TrackSkin[] = [
   },
 ];
 
+const DYNO_ROOM_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/urw-dyno-room.png`;
+
 function pickRandomSkin(): TrackSkin {
   return TRACK_SKINS[Math.floor(Math.random() * TRACK_SKINS.length)];
 }
@@ -277,6 +279,13 @@ function RacePage() {
   const [generating, setGenerating] = useState(false);
   const [trackSkin, setTrackSkin] = useState<TrackSkin>(TRACK_SKINS[0]);
   const [finishFlash, setFinishFlash] = useState(false);
+  const [dynoState, setDynoState] = useState<"idle" | "pulling" | "results">("idle");
+  const [dynoRpm, setDynoRpm] = useState(0);
+  const [revealCount, setRevealCount] = useState(0);
+  const dynoCanvasRef = useRef<HTMLCanvasElement>(null);
+  const dynoAnimRef = useRef<number>(0);
+  const dynoCarImgRef = useRef<HTMLImageElement | null>(null);
+  const dynoBgImgRef = useRef<HTMLImageElement | null>(null);
 
   const animRef = useRef<number>(0);
   const startRef = useRef(0);
@@ -756,7 +765,237 @@ function RacePage() {
     }, 1000);
   }, [playerCar, opponentCar, drawRoad, trackSkin]);
 
+  const startDynoPull = useCallback(() => {
+    if (!playerCar) return;
+    setDynoState("pulling");
+    startEngine();
+
+    const redline = playerCar.redline || 6500;
+    const PULL_MS = 6000;
+    const PEAK_MS = 1000;
+    const COOL_MS = 500;
+    const totalMs = PULL_MS + PEAK_MS + COOL_MS;
+    const pullStart = performance.now();
+    const particles: { x: number; y: number; vx: number; vy: number; life: number; hot: boolean }[] = [];
+
+    const draw = (now: number) => {
+      const canvas = dynoCanvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const W = canvas.width;
+      const H = canvas.height;
+      const elapsed = now - pullStart;
+
+      // RPM calculation
+      let rpm: number;
+      let done = false;
+      if (elapsed < PULL_MS) {
+        const t = elapsed / PULL_MS;
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        rpm = 800 + (redline - 800) * eased;
+      } else if (elapsed < PULL_MS + PEAK_MS) {
+        rpm = redline;
+      } else if (elapsed < totalMs) {
+        rpm = redline * (1 - (elapsed - PULL_MS - PEAK_MS) / COOL_MS);
+      } else {
+        rpm = 0;
+        done = true;
+      }
+
+      setDynoRpm(Math.round(rpm));
+      if (!done) updateEngine(rpm, (rpm / redline) * 100);
+
+      // Clear + background
+      ctx.fillStyle = "#0d0d1a";
+      ctx.fillRect(0, 0, W, H);
+      if (dynoBgImgRef.current?.complete) {
+        ctx.globalAlpha = 0.8;
+        ctx.drawImage(dynoBgImgRef.current, 0, 0, W, H);
+        ctx.globalAlpha = 1;
+      }
+
+      // Dyno rollers
+      const rollerY = H * 0.82;
+      const rollerR = Math.round(H * 0.045);
+      const rollerGap = W * 0.14;
+      const rollerCX = W * 0.55;
+      const angle = (elapsed * rpm / 40000) % (Math.PI * 2);
+
+      for (const dx of [-rollerGap / 2, rollerGap / 2]) {
+        const cx = rollerCX + dx;
+        ctx.fillStyle = "#3a3a3a";
+        ctx.beginPath();
+        ctx.arc(cx, rollerY, rollerR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#555";
+        ctx.lineWidth = 1.5;
+        for (let s = 0; s < 4; s++) {
+          const a = angle + s * Math.PI / 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, rollerY);
+          ctx.lineTo(cx + Math.cos(a) * rollerR * 0.85, rollerY + Math.sin(a) * rollerR * 0.85);
+          ctx.stroke();
+        }
+      }
+
+      // Car sprite
+      const carImg = dynoCarImgRef.current;
+      if (carImg?.complete) {
+        const carW = W * 0.38;
+        const carH = carW * (carImg.height / carImg.width);
+        const vibFreq = 8 + (rpm / redline) * 17;
+        const vibAmp = 0.5 + (rpm / redline) * 3.5;
+        const vibY = Math.sin(elapsed * vibFreq / 100) * vibAmp;
+        const carX = rollerCX - carW / 2;
+        const carY = rollerY - carH + rollerR * 0.4 + vibY;
+
+        ctx.save();
+        if (playerCar.flipped) {
+          ctx.translate(carX + carW, carY);
+          ctx.scale(-1, 1);
+          ctx.drawImage(carImg, 0, 0, carW, carH);
+        } else {
+          ctx.drawImage(carImg, carX, carY, carW, carH);
+        }
+        ctx.restore();
+
+        // Exhaust particles
+        const exhaustX = playerCar.flipped ? carX + carW + 3 : carX - 3;
+        const exhaustDir = playerCar.flipped ? 1 : -1;
+        const spawnChance = 0.02 + (rpm / redline) * 0.08;
+        if (!done && Math.random() < spawnChance) {
+          particles.push({
+            x: exhaustX,
+            y: carY + carH * 0.65 + vibY,
+            vx: exhaustDir * (1 + Math.random() * 2.5),
+            vy: -(0.3 + Math.random() * 0.8),
+            life: 25 + Math.random() * 10,
+            hot: rpm > redline * 0.8 && Math.random() < 0.25,
+          });
+        }
+      }
+
+      // Update + draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        const alpha = p.life / 35;
+        const radius = 1.5 + (1 - p.life / 35) * 3;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.hot ? "#ff6622" : "#777";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // RPM gauge bar
+      const gaugeH = 6;
+      const gaugeY = H - gaugeH - 6;
+      const gaugeX = 12;
+      const gaugeW = W - 24;
+      const fill = Math.max(0, rpm / redline);
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(gaugeX, gaugeY, gaugeW, gaugeH);
+      ctx.fillStyle = fill < 0.6 ? "#22cc22" : fill < 0.85 ? "#ddcc00" : "#ee2222";
+      ctx.fillRect(gaugeX, gaugeY, gaugeW * fill, gaugeH);
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(gaugeX, gaugeY, gaugeW, gaugeH);
+
+      if (done) {
+        stopEngine();
+        setDynoState("results");
+        setRevealCount(0);
+        return;
+      }
+
+      dynoAnimRef.current = requestAnimationFrame(draw);
+    };
+
+    dynoAnimRef.current = requestAnimationFrame(draw);
+  }, [playerCar]);
+
   useEffect(() => () => { cancelAnimationFrame(animRef.current); stopAll(); }, []);
+
+  // Draw idle dyno canvas when entering dyno phase
+  useEffect(() => {
+    if (phase !== "dyno" || !playerCar) return;
+    initAudio();
+    setDynoState("idle");
+    setDynoRpm(0);
+    setRevealCount(0);
+
+    // Preload images
+    const carImg = new Image();
+    carImg.crossOrigin = "anonymous";
+    if (playerCar.pixelArt) carImg.src = playerCar.pixelArt;
+    dynoCarImgRef.current = carImg;
+
+    const bgImg = new Image();
+    bgImg.crossOrigin = "anonymous";
+    bgImg.src = DYNO_ROOM_URL;
+    dynoBgImgRef.current = bgImg;
+
+    const drawIdle = () => {
+      const canvas = dynoCanvasRef.current;
+      if (!canvas) { requestAnimationFrame(drawIdle); return; }
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const W = canvas.width;
+      const H = canvas.height;
+
+      ctx.fillStyle = "#0d0d1a";
+      ctx.fillRect(0, 0, W, H);
+
+      if (bgImg.complete) {
+        ctx.globalAlpha = 0.8;
+        ctx.drawImage(bgImg, 0, 0, W, H);
+        ctx.globalAlpha = 1;
+      } else {
+        bgImg.onload = () => requestAnimationFrame(drawIdle);
+        return;
+      }
+
+      // Rollers
+      const rollerY = H * 0.82;
+      const rollerR = Math.round(H * 0.045);
+      const rollerGap = W * 0.14;
+      const rollerCX = W * 0.55;
+      for (const dx of [-rollerGap / 2, rollerGap / 2]) {
+        ctx.fillStyle = "#3a3a3a";
+        ctx.beginPath();
+        ctx.arc(rollerCX + dx, rollerY, rollerR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Car
+      if (carImg.complete) {
+        const carW = W * 0.38;
+        const carH = carW * (carImg.height / carImg.width);
+        const carX = rollerCX - carW / 2;
+        const carY = rollerY - carH + rollerR * 0.4;
+        ctx.save();
+        if (playerCar.flipped) {
+          ctx.translate(carX + carW, carY);
+          ctx.scale(-1, 1);
+          ctx.drawImage(carImg, 0, 0, carW, carH);
+        } else {
+          ctx.drawImage(carImg, carX, carY, carW, carH);
+        }
+        ctx.restore();
+      } else {
+        carImg.onload = () => requestAnimationFrame(drawIdle);
+      }
+    };
+    requestAnimationFrame(drawIdle);
+
+    return () => { cancelAnimationFrame(dynoAnimRef.current); stopAll(); };
+  }, [phase, playerCar]);
 
 
   const handleGenerateAll = async () => {
@@ -857,6 +1096,59 @@ function RacePage() {
           <p style={{ fontFamily: FONT, fontSize: "0.55rem", color: C.border, marginTop: "0.5rem" }}>CRUISE — COMING SOON</p>
           <button onClick={() => { setPlayerCar(null); setOpponentCar(null); setPhase("select"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1rem" }}>
             PICK DIFFERENT CAR
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── DYNO ROOM ───
+  if (phase === "dyno" && playerCar) {
+    const specs = dynoState === "results" ? [
+      { label: "HORSEPOWER", value: `${playerCar.hp} HP` },
+      { label: "WEIGHT", value: `${playerCar.weight.toLocaleString()} LBS` },
+      { label: "POWER/WEIGHT", value: `${playerCar.pwr} HP/TON` },
+      { label: "1/4 MILE", value: `${quarterMileET(playerCar.hp, playerCar.weight, playerCar.year, playerCar.trans, playerCar.gears).toFixed(1)}s` },
+      { label: "TRAP SPEED", value: `${Math.round(trapSpeedMPH(playerCar.hp, playerCar.weight, playerCar.year))} MPH` },
+    ] : [];
+
+    return (
+      <div style={pageStyle}>
+        <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em" }}>URW AUTOMOTIVE</p>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(0.9rem, 2.5vw, 1.3rem)", color: C.gold, margin: "0.25rem 0" }}>DYNO ROOM</h1>
+          <p style={{ fontFamily: FONT, fontSize: "0.7rem", color: C.white }}>{playerCar.name}</p>
+        </div>
+
+        <canvas
+          ref={dynoCanvasRef}
+          width={800}
+          height={400}
+          style={{ width: "100%", maxWidth: "800px", margin: "0 auto", display: "block", imageRendering: "pixelated", borderRadius: "6px", border: `2px solid ${C.border}` }}
+        />
+
+        <div style={{ textAlign: "center", marginTop: "1rem" }}>
+          {dynoState === "idle" && (
+            <button onClick={startDynoPull} style={{ ...goldBtnStyle, padding: "0.8rem 2.5rem", fontSize: "1rem" }}>
+              START DYNO
+            </button>
+          )}
+
+          {dynoState === "pulling" && (
+            <p style={{ fontFamily: FONT, fontSize: "1.5rem", color: dynoRpm > (playerCar.redline || 6500) * 0.88 ? C.red : C.gold, textShadow: dynoRpm > (playerCar.redline || 6500) * 0.88 ? "0 0 10px rgba(255,0,0,0.5)" : "none" }}>
+              {dynoRpm} <span style={{ fontSize: "0.7rem", color: C.midGray }}>RPM</span>
+            </p>
+          )}
+
+          {dynoState === "results" && (
+            <DynoResults specs={specs} />
+          )}
+
+          <button
+            onClick={() => { cancelAnimationFrame(dynoAnimRef.current); stopAll(); setDynoState("idle"); setPhase("action-menu"); }}
+            style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1.5rem", display: "block", margin: "1.5rem auto 0" }}
+          >
+            BACK TO GARAGE
           </button>
         </div>
       </div>
@@ -1281,6 +1573,52 @@ function CarCard({ car, label, isPlayer }: { car: RaceCar; label: string; isPlay
         <span>{car.hp} HP</span>
         <span>{car.weight.toLocaleString()} LBS</span>
       </div>
+    </div>
+  );
+}
+
+function DynoResults({ specs }: { specs: { label: string; value: string }[] }) {
+  const [revealed, setRevealed] = useState(0);
+
+  useEffect(() => {
+    if (revealed >= specs.length) return;
+    const timer = setTimeout(() => {
+      // Click sound
+      try {
+        const actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+        osc.connect(gain);
+        gain.connect(actx.destination);
+        osc.frequency.value = 80;
+        osc.type = "square";
+        gain.gain.value = 0.12;
+        osc.start();
+        osc.stop(actx.currentTime + 0.05);
+      } catch { /* audio may not be available */ }
+      setRevealed((r) => r + 1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [revealed, specs.length]);
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem", maxWidth: "420px", margin: "1rem auto" }}>
+      {specs.map((s, i) => (
+        <div
+          key={s.label}
+          style={{
+            padding: "0.7rem",
+            background: i < revealed ? "rgba(255,215,0,0.06)" : "transparent",
+            border: `1px solid ${i < revealed ? "#b8860b" : C.border}`,
+            opacity: i < revealed ? 1 : 0.15,
+            transition: "all 0.3s ease",
+            gridColumn: i === specs.length - 1 && specs.length % 2 !== 0 ? "1 / -1" : undefined,
+          }}
+        >
+          <div style={{ fontFamily: FONT, fontSize: "0.55rem", color: C.midGray, marginBottom: "0.25rem" }}>{s.label}</div>
+          <div style={{ fontFamily: FONT, fontSize: "0.95rem", color: C.gold }}>{i < revealed ? s.value : "---"}</div>
+        </div>
+      ))}
     </div>
   );
 }
