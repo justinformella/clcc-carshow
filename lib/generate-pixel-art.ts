@@ -48,7 +48,7 @@ async function describeCarForPixelArt(
 
 export function buildRearPrompt(carDesc: string, color: string, visualDetails?: string): string {
   const detail = visualDetails ? ` ${visualDetails}` : "";
-  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Solid bright green (#00FF00) background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
+  return `8-bit retro pixel art rear view of a ${carDesc} in ${color}.${detail} The car is seen from directly behind, showing taillights, rear bumper, and rear window. Style like a 1990s DOS racing game (OutRun, Rad Racer). Solid bright magenta (#FF00FF) background, car fills the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`;
 }
 
 export async function generatePixelArt(registrationId: string): Promise<{ sideUrl: string; dashUrl: string; rearUrl: string }> {
@@ -77,7 +77,7 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
     generateImage(
       `8-bit retro pixel art side profile view of a ${carDesc} in ${color}.${detail} ` +
       `The car should be facing right, detailed pixel art style like a 1990s DOS racing game. ` +
-      `Solid bright green (#00FF00) background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
+      `Solid bright magenta (#FF00FF) background. The car should fill most of the frame. Sharp pixels, no anti-aliasing, authentic retro video game aesthetic.`
     ),
     generateImage(
       `8-bit retro pixel art interior dashboard view from the driver seat of a ${carDesc}.${detail} ` +
@@ -123,77 +123,26 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
 }
 
 /**
- * Remove bright green (#00FF00) chroma key background from an image buffer.
- * Uses flood-fill from image borders so only the outer background is removed —
- * green visible through windows or glass stays intact.
+ * Remove magenta (#FF00FF) chroma key background from an image buffer.
+ * Magenta never appears naturally in car imagery, so simple per-pixel
+ * detection is safe — including through windows and under the car.
  */
 export async function removeChromaKey(input: Buffer): Promise<Buffer> {
   const image = sharp(input).ensureAlpha();
   const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
   const { width, height } = info;
 
-  const isGreen = (i: number) => {
+  for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    return g > 140 && r < 130 && b < 130;
-  };
 
-  // Flood-fill from all border pixels to find connected green regions
-  const visited = new Uint8Array(width * height);
-  const queue: number[] = [];
-
-  // Seed with all border pixels that are green
-  for (let x = 0; x < width; x++) {
-    if (isGreen(x * 4)) queue.push(x);
-    const bottom = (height - 1) * width + x;
-    if (isGreen(bottom * 4)) queue.push(bottom);
-  }
-  for (let y = 1; y < height - 1; y++) {
-    if (isGreen(y * width * 4)) queue.push(y * width);
-    const right = y * width + width - 1;
-    if (isGreen(right * 4)) queue.push(right);
-  }
-
-  // BFS flood fill
-  while (queue.length > 0) {
-    const idx = queue.pop()!;
-    if (visited[idx]) continue;
-    visited[idx] = 1;
-
-    const pi = idx * 4;
-    if (!isGreen(pi)) continue;
-
-    data[pi + 3] = 0; // make transparent
-
-    const x = idx % width;
-    const y = (idx - x) / width;
-    if (x > 0) queue.push(idx - 1);
-    if (x < width - 1) queue.push(idx + 1);
-    if (y > 0) queue.push(idx - width);
-    if (y < height - 1) queue.push(idx + width);
-  }
-
-  // Second pass: soften edges — any non-transparent pixel adjacent to
-  // a transparent pixel gets partial transparency if it's near-green
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const idx = y * width + x;
-      const pi = idx * 4;
-      if (data[pi + 3] === 0) continue; // already transparent
-
-      // Check if any neighbor is transparent
-      const hasTransparentNeighbor =
-        data[(idx - 1) * 4 + 3] === 0 ||
-        data[(idx + 1) * 4 + 3] === 0 ||
-        data[(idx - width) * 4 + 3] === 0 ||
-        data[(idx + width) * 4 + 3] === 0;
-
-      if (hasTransparentNeighbor) {
-        const r = data[pi], g = data[pi + 1], b = data[pi + 2];
-        if (g > 100 && g > r * 1.2 && g > b * 1.2) {
-          const greenness = (g - Math.max(r, b)) / g;
-          data[pi + 3] = Math.round(255 * (1 - greenness * 0.8));
-        }
-      }
+    // Core magenta: R and B high, G low
+    if (r > 180 && b > 180 && g < 100) {
+      data[i + 3] = 0;
+    }
+    // Near-magenta from anti-aliasing: R and B still dominant, G suppressed
+    else if (r > 140 && b > 140 && g < 130 && (r + b) > g * 3) {
+      const magentaness = (r + b - g * 2) / (r + b);
+      data[i + 3] = Math.round(255 * (1 - magentaness));
     }
   }
 
