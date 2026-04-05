@@ -961,7 +961,7 @@ export default function RegistrationDetailPage() {
                         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
                       >
                         {url ? (
-                          <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const, transform: type === "side" && r.pixel_art_flipped ? "scaleX(-1)" : "none" }} />
+                          <img src={url} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" as const }} />
                         ) : (
                           <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#555", fontSize: "0.75rem" }}>Not generated</div>
                         )}
