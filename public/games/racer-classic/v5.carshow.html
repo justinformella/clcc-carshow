@@ -752,14 +752,12 @@
         var imgW = playerDashImage.naturalWidth;
         var imgH = playerDashImage.naturalHeight;
 
-        // Fill the full width, show as much of the dashboard as fits from the bottom up
-        // This means we take the bottom portion of the image (where the instruments are)
+        // Fill the full width, anchor from the top of the image down
         var srcW = imgW;
         var srcH = Math.round(imgW * (dH / dW)); // how much of the image height we can show
         if (srcH > imgH) srcH = imgH;
-        var srcY = imgH - srcH; // anchor to bottom of image (instruments, not sky)
 
-        ctx.drawImage(playerDashImage, 0, srcY, srcW, srcH, 0, dY, dW, dH);
+        ctx.drawImage(playerDashImage, 0, 0, srcW, srcH, 0, dY, dW, dH);
 
         // Subtle vignette at the seam
         var grad = ctx.createLinearGradient(0, dY - 3, 0, dY + 10);
