@@ -92,17 +92,18 @@ function isOnTrack(x: number, y: number): boolean {
 }
 
 function initCar(idx: number): CarState {
-  const offsets = [-90, -60, -30, 0]; // staggered start positions
-  const x = WAYPOINTS[0].x + offsets[idx];
-  const y = WAYPOINTS[0].y;
+  const xOffsets = [-80, -40, -80, -40]; // staggered 2x2 grid
+  const yOffsets = [-25, -25, 25, 25];
+  const x = WAYPOINTS[0].x + xOffsets[idx];
+  const y = WAYPOINTS[0].y + yOffsets[idx];
   const names = ["YOU", "RED", "BLU", "GRN"];
   const colors = ["#ffd700", "#ff4444", "#4488ff", "#44cc44"];
   const skills = [1.0, 0.85, 0.90, 0.95];
   return {
     x, y,
-    angle: Math.PI, // facing left toward start of track loop
+    angle: Math.PI / 2, // facing right along the start straight
     vx: 0, vy: 0, va: 0,
-    wp: 23, // start heading toward waypoint 23 (near start)
+    wp: 1, // heading toward waypoint 1 (right along the straight)
     lap: 1, finishedLap: 0,
     lapStart: 0, lapTimes: [], totalTime: 0,
     finished: false, finishOrder: 0,
@@ -171,18 +172,29 @@ function drawCar(ctx: CanvasRenderingContext2D, car: CarState) {
   ctx.save();
   ctx.translate(car.x, car.y);
   ctx.rotate(car.angle);
-  // Body
+  // Body — 26x42, big enough for sprite overlays later
   ctx.fillStyle = car.color;
-  ctx.fillRect(-6, -10, 12, 20);
-  // Windshield
-  ctx.fillStyle = "rgba(0,0,0,0.5)";
-  ctx.fillRect(-4, -8, 8, 5);
+  ctx.fillRect(-13, -21, 26, 42);
+  // Roof / windshield
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.fillRect(-9, -17, 18, 10);
+  // Rear window
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(-8, 10, 16, 6);
   // Wheels
-  ctx.fillStyle = "#222";
-  ctx.fillRect(-8, -7, 3, 5);
-  ctx.fillRect(5, -7, 3, 5);
-  ctx.fillRect(-8, 5, 3, 5);
-  ctx.fillRect(5, 5, 3, 5);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(-16, -15, 5, 10);
+  ctx.fillRect(11, -15, 5, 10);
+  ctx.fillRect(-16, 8, 5, 10);
+  ctx.fillRect(11, 8, 5, 10);
+  // Headlights
+  ctx.fillStyle = "#ffffaa";
+  ctx.fillRect(-9, -21, 5, 3);
+  ctx.fillRect(4, -21, 5, 3);
+  // Taillights
+  ctx.fillStyle = "#ff3333";
+  ctx.fillRect(-9, 18, 5, 3);
+  ctx.fillRect(4, 18, 5, 3);
   ctx.restore();
 }
 
@@ -290,6 +302,44 @@ function drawResults(ctx: CanvasRenderingContext2D, cars: CarState[], onRestart:
   ctx.textAlign = "center";
   ctx.fillStyle = "#0d0d1a";
   ctx.fillText("RACE AGAIN", W / 2, H / 2 + 146);
+}
+
+// ── Engine Audio ──────────────────────────────────────────────────────────────
+let audioCtx: AudioContext | null = null;
+let engineOsc: OscillatorNode | null = null;
+let engineGain: GainNode | null = null;
+
+function initSprintAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+
+function startSprintEngine() {
+  if (engineOsc) return;
+  initSprintAudio();
+  if (!audioCtx) return;
+  engineOsc = audioCtx.createOscillator();
+  engineGain = audioCtx.createGain();
+  engineOsc.type = "sawtooth";
+  engineOsc.frequency.value = 60;
+  engineGain.gain.value = 0;
+  engineOsc.connect(engineGain);
+  engineGain.connect(audioCtx.destination);
+  engineOsc.start();
+}
+
+function updateSprintEngine(speed: number, maxSpeed: number) {
+  if (!engineOsc || !engineGain) return;
+  const norm = Math.min(1, speed / maxSpeed);
+  engineOsc.frequency.value = 55 + norm * 180;
+  engineGain.gain.value = 0.03 + norm * 0.08;
+}
+
+function stopSprintEngine() {
+  try { if (engineOsc) { engineOsc.stop(); engineOsc.disconnect(); } } catch {}
+  try { if (engineGain) engineGain.disconnect(); } catch {}
+  engineOsc = null;
+  engineGain = null;
 }
 
 export default function SprintPage() {
@@ -432,9 +482,7 @@ export default function SprintPage() {
       ) {
         car.finishedLap++;
         const now = s.elapsed;
-        if (car.lapTimes.length > 0) {
-          car.lapTimes.push(now - car.lapStart);
-        }
+        car.lapTimes.push(now - car.lapStart);
         car.lapStart = now;
         if (car.finishedLap >= TOTAL_LAPS) {
           car.finished = true;
@@ -457,7 +505,7 @@ export default function SprintPage() {
         if (s.countdown <= 0) {
           s.raceStarted = true;
           s.elapsed = 0;
-          s.cars.forEach(c => { c.lapStart = 0; c.lapTimes = [0]; });
+          s.cars.forEach(c => { c.lapStart = 0; c.lapTimes = []; });
         }
       } else {
         s.elapsed += dt;
@@ -465,6 +513,13 @@ export default function SprintPage() {
 
       if (s.raceStarted && !s.raceOver) {
         s.cars.forEach(car => updateCar(car, dt, s.keys, s));
+        // Engine audio
+        const player = s.cars[0];
+        if (player) {
+          const spd = Math.sqrt(player.vx ** 2 + player.vy ** 2);
+          if (!engineOsc && spd > 0.1) startSprintEngine();
+          updateSprintEngine(spd, 3.2);
+        }
         if (s.finishCount >= 4) s.raceOver = true;
         // Force finish remaining cars after leader finishes all laps
         if (s.finishCount >= 1) {
