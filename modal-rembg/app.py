@@ -8,7 +8,7 @@ image = (
     .run_commands("python -c \"from rembg.bg import remove; from rembg.session_factory import new_session; new_session('u2net')\"")
 )
 
-@app.function(image=image, timeout=300, container_idle_timeout=300)
+@app.function(image=image, timeout=300, scaledown_window=300)
 @modal.fastapi_endpoint(method="POST")
 def remove_bg(data: dict):
     """Accept base64 PNG, return base64 PNG with background removed."""
@@ -24,3 +24,12 @@ def remove_bg(data: dict):
     buf = io.BytesIO()
     output_image.save(buf, format="PNG")
     return {"image": base64.b64encode(buf.getvalue()).decode()}
+
+
+@app.function(image=image, timeout=60, scaledown_window=300)
+@modal.fastapi_endpoint(method="GET")
+def health():
+    """Lightweight health check that verifies the model is loadable."""
+    from rembg.session_factory import new_session
+    new_session("u2net")
+    return {"status": "ok"}

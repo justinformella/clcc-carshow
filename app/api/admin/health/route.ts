@@ -84,16 +84,16 @@ async function checkModal(): Promise<ServiceStatus> {
   const url = process.env.MODAL_REMBG_URL;
   if (!url) return { name: "Modal (rembg)", status: "missing", error: "MODAL_REMBG_URL not set" };
 
+  // Derive health URL from the remove_bg URL (same app, different function)
+  const healthUrl = url.replace(/remove-bg$/, "health");
   const start = Date.now();
   try {
-    // Just check the endpoint is reachable — a GET will return 405 but proves it's alive
-    const res = await fetch(url, {
+    const res = await fetch(healthUrl, {
       method: "GET",
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(30000),
     });
     const latencyMs = Date.now() - start;
-    // 405 Method Not Allowed is expected (endpoint only accepts POST) — means it's up
-    if (res.ok || res.status === 405) return { name: "Modal (rembg)", status: "ok", latencyMs };
+    if (res.ok) return { name: "Modal (rembg)", status: "ok", latencyMs };
     return { name: "Modal (rembg)", status: "error", latencyMs, error: `HTTP ${res.status}` };
   } catch (err) {
     return { name: "Modal (rembg)", status: "error", latencyMs: Date.now() - start, error: String(err) };
