@@ -594,11 +594,15 @@ export default function DragRace({ playerCar, cars, onBack }: DragRaceProps) {
     return (
       <div style={pageStyle}>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.5rem" }}>CLCC ARCADE</p>
-          <h1 style={{ fontFamily: FONT, fontSize: "clamp(1rem, 3vw, 1.5rem)", color: C.gold, margin: "0 0 0.3rem", textTransform: "uppercase" }}>
-            Redline Motor Condos
+          <img
+            src="https://vuwiucgxxaoygsyxqodk.supabase.co/storage/v1/object/public/pixel-art/8bit/sponsor-229131e5-32ca-4795-b453-883faa615900.png"
+            alt="First Institute"
+            style={{ maxWidth: "160px", height: "auto", imageRendering: "pixelated", display: "block", margin: "0 auto 0.5rem" }}
+          />
+          <p style={{ fontFamily: FONT, fontSize: "0.5rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "0.3rem" }}>FIRST INSTITUTE PRESENTS</p>
+          <h1 style={{ fontFamily: FONT, fontSize: "clamp(0.9rem, 2.5vw, 1.3rem)", color: C.gold, margin: "0 0 0.3rem", textTransform: "uppercase" }}>
+            CLCC DRAG RACE
           </h1>
-          <p style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.white, margin: "0 0 0.5rem" }}>Choose Your Ride</p>
         </div>
 
         <div style={{ maxWidth: "800px", margin: "0 auto" }}>

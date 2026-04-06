@@ -10,9 +10,10 @@ import CarSelect from "./components/CarSelect";
 import DragRace from "./components/DragRace";
 import DynoRoom from "./components/DynoRoom";
 import DetailTech from "./components/DetailTech";
+import SmokeShow from "./components/SmokeShow";
 
 type Phase = "loading" | "title" | "select" | "action-menu";
-type ActiveGame = "drag" | "dyno" | "detail" | null;
+type ActiveGame = "drag" | "dyno" | "detail" | "smokeshow" | null;
 
 export default function RacePageWrapper() {
   return (
@@ -99,6 +100,8 @@ function RacePage() {
         return <DynoRoom playerCar={playerCar} onBack={backToMenu} />;
       case "detail":
         return <DetailTech playerCar={playerCar} onBack={backToMenu} />;
+      case "smokeshow":
+        return <SmokeShow playerCar={playerCar} onBack={backToMenu} />;
     }
   }
 
@@ -179,21 +182,22 @@ function RacePage() {
           @media (max-width: 600px) { .action-grid { grid-template-columns: 1fr; max-width: 320px; } }
         `}</style>
         <div className="action-grid">
-          <button onClick={() => { stopMenuMusic(); setActiveGame("drag"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            DRAG RACE
-          </button>
-          <button onClick={() => {
-            stopMenuMusic();
-            window.location.href = `/games/racer-classic/v5.carshow.html?car=${playerCar.id}`;
-          }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            CRUISE ROUTE 14
-          </button>
-          <button onClick={() => { stopMenuMusic(); setActiveGame("dyno"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            HIT THE DYNO AT URW
-          </button>
-          <button onClick={() => { stopMenuMusic(); setActiveGame("detail"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
-            DETAIL YOUR CAR AT DETAIL TECH
-          </button>
+          {[
+            { label: "DRAG RACE", icon: "icon-drag-race", action: () => { stopMenuMusic(); setActiveGame("drag"); } },
+            { label: "ROUTE 14 SPEED RUN", icon: "icon-cruise", action: () => { stopMenuMusic(); window.location.href = `/games/racer-classic/v5.carshow.html?car=${playerCar.id}`; } },
+            { label: "DYNO RUN AT URW", icon: "sponsor-a090b21c-c91c-4d9f-add9-510c62e455ad", action: () => { stopMenuMusic(); setActiveGame("dyno"); } },
+            { label: "DETAIL YOUR CAR AT DETAIL TECH", icon: "icon-detail", action: () => { stopMenuMusic(); setActiveGame("detail"); } },
+            { label: "SMOKE SHOW AT IVY HALL", icon: "icon-smokeshow", iconSize: 120, action: () => { stopMenuMusic(); setActiveGame("smokeshow"); } },
+          ].map((item) => (
+            <button key={item.label} onClick={item.action} style={{ ...pixelBtnStyle, width: "100%", padding: "0.75rem 1rem", fontSize: "0.75rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}`, display: "flex", alignItems: "center", gap: "0.75rem", textAlign: "left" }}>
+              <img
+                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/${item.icon}.png?v=4`}
+                alt=""
+                style={{ width: `${(item as { iconSize?: number }).iconSize || 96}px`, height: `${(item as { iconSize?: number }).iconSize || 96}px`, objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }}
+              />
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
         <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
           <button onClick={() => { stopMenuMusic(); startSelectMusic(); setPlayerCar(null); setPhase("select"); window.history.replaceState({}, "", "/arcade"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>

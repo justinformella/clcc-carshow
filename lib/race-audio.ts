@@ -18,6 +18,10 @@ export function initAudio() {
   getCtx();
 }
 
+export function getAudioContext(): AudioContext {
+  return getCtx();
+}
+
 // ─── COUNTDOWN BEEPS ─────────────────────────────────────────────────────────
 
 export function playCountdownBeep(isGo: boolean) {

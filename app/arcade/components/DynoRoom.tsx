@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { initAudio, startEngine, updateEngine, stopEngine, stopAll } from "@/lib/race-audio";
+import { initAudio, getAudioContext, startEngine, updateEngine, stopEngine, stopAll } from "@/lib/race-audio";
 import { quarterMileET, trapSpeedMPH } from "@/lib/race-physics";
 import { RaceCar, C, FONT, pageStyle, goldBtnStyle } from "@/lib/race-types";
 
@@ -17,9 +17,9 @@ function DynoResults({ specs }: { specs: { label: string; value: string }[] }) {
   useEffect(() => {
     if (revealed >= specs.length) return;
     const timer = setTimeout(() => {
-      // Click sound
+      // Click sound — reuse existing AudioContext
       try {
-        const actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+        const actx = getAudioContext();
         const osc = actx.createOscillator();
         const gain = actx.createGain();
         osc.connect(gain);

@@ -475,14 +475,17 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       }
     }
     lastDragPosRef.current = pos;
-    // Update progress every 5 move events
+    // Repeat spray sound while dragging
     progressThrottleRef.current++;
+    if (progressThrottleRef.current % 15 === 0) {
+      playSpraySound();
+    }
     if (progressThrottleRef.current % 5 === 0) {
       const pct = calcGrimeProgress();
       setDetailProgress(pct);
       if (pct >= 95) finishDetailPass();
     }
-  }, [toCanvasCoords, eraseGrimeAt, calcGrimeProgress, finishDetailPass]);
+  }, [toCanvasCoords, eraseGrimeAt, playSpraySound, calcGrimeProgress, finishDetailPass]);
 
   const handleDetailPointerUp = useCallback(() => {
     isDraggingRef.current = false;
