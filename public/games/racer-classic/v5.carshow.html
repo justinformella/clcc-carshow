@@ -487,6 +487,7 @@
 
     var audioCtx = null;
     var engineSound = null;  // current EngineSound instance
+    var isSafariMobile = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
 
     function getAudioCtx() {
       if (!audioCtx) {
@@ -1391,19 +1392,18 @@
     // Unlock audio on ANY user gesture (covers Safari on direct-link with ?car=)
     // Mobile Safari requires: create AudioContext + create & start an OscillatorNode
     // ALL within the same synchronous touch/click call stack
+    // Fallback audio unlock for ?car= direct links (no car select click)
+    // On first user gesture, create engine sound if needed and start it
     var audioUnlocked = false;
     function unlockAudioOnGesture() {
       if (audioUnlocked) return;
       audioUnlocked = true;
       try {
-        // Create context + immediately play a buffer (mobile Safari requirement)
         var ctx = getAudioCtx();
-        var buf = ctx.createBuffer(1, 1, 22050);
-        var src = ctx.createBufferSource();
-        src.buffer = buf;
-        src.connect(ctx.destination);
-        src.start(0);
-        // Now start the real engine sound (also buffer-based, Safari-friendly)
+        // Create engine sound if it doesn't exist yet (auto-select path)
+        if (!engineSound && playerCarData) {
+          engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
+        }
         if (engineSound && !engineSound.running) {
           startEngineSound(engineSound);
         }
@@ -1482,14 +1482,19 @@
         if (card) card.style.borderColor = '#333';
       });
 
-      // Click to select car — also unlock audio (Safari requires user gesture)
+      // Click to select car — also start audio (Safari requires it in the click handler)
       overlay.addEventListener('click', function(e) {
         var card = e.target.closest('.car-card');
         if (!card) return;
-        // Unlock AudioContext on this direct user gesture (Safari requirement)
-        try { getAudioCtx(); } catch(ex) {}
         var idx = parseInt(card.getAttribute('data-index'));
         playerCarData = carShowData[idx];
+        // Create AudioContext AND start engine oscillators RIGHT HERE in the click handler
+        // Safari requires both creation and .start() within the same user gesture call stack
+        engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
+        try {
+          getAudioCtx();
+          startEngineSound(engineSound);
+        } catch(ex) {}
         playerCarImage = carShowImages[playerCarData.id] || null;
         overlay.remove();
 
@@ -1536,8 +1541,7 @@
             Dom.set('car_stats_value', playerCarData.hp + ' HP | ' + playerCarData.weight.toLocaleString() + ' lbs | ' + (playerCarData.topSpeed || '?') + ' mph top');
             Dom.show('gear');
             applyCarStats(playerCarData);
-            // Start engine audio on first user interaction (required by browsers)
-            engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
+            // Engine sound already created and started in the car select click handler
           }
           // Fit canvas now that we know the dashboard height
           fitCanvas();
