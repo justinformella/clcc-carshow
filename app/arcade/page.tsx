@@ -68,12 +68,14 @@ function RacePage() {
     stopSelectMusic();
     startMenuMusic();
     setPhase("action-menu");
+    window.scrollTo(0, 0);
   }, []);
 
   const backToMenu = useCallback(() => {
     setActiveGame(null);
     startMenuMusic();
     setPhase("action-menu");
+    window.scrollTo(0, 0);
   }, []);
 
   const handleGenerateAll = async () => {
@@ -146,6 +148,7 @@ function RacePage() {
               initAudio();
               startSelectMusic();
               setPhase("select");
+              window.scrollTo(0, 0);
             }}
             style={{ ...goldBtnStyle, fontSize: "1rem", padding: "1rem 3rem", marginTop: "0.5rem" }}
           >
@@ -183,11 +186,11 @@ function RacePage() {
         `}</style>
         <div className="action-grid">
           {[
-            { label: "DRAG RACE", icon: "icon-drag-race", action: () => { stopMenuMusic(); setActiveGame("drag"); } },
+            { label: "DRAG RACE", icon: "icon-drag-race", action: () => { stopMenuMusic(); setActiveGame("drag"); window.scrollTo(0, 0); } },
             { label: "ROUTE 14 SPEED RUN", icon: "icon-cruise", action: () => { stopMenuMusic(); window.location.href = `/games/racer-classic/v5.carshow.html?car=${playerCar.id}`; } },
-            { label: "DYNO RUN AT URW", icon: "sponsor-a090b21c-c91c-4d9f-add9-510c62e455ad", action: () => { stopMenuMusic(); setActiveGame("dyno"); } },
-            { label: "DETAIL YOUR CAR AT DETAIL TECH", icon: "icon-detail", action: () => { stopMenuMusic(); setActiveGame("detail"); } },
-            { label: "SMOKE SHOW AT IVY HALL", icon: "icon-smokeshow", iconSize: 120, action: () => { stopMenuMusic(); setActiveGame("smokeshow"); } },
+            { label: "DYNO RUN AT URW", icon: "sponsor-a090b21c-c91c-4d9f-add9-510c62e455ad", action: () => { stopMenuMusic(); setActiveGame("dyno"); window.scrollTo(0, 0); } },
+            { label: "DETAIL YOUR CAR AT DETAIL TECH", icon: "icon-detail", action: () => { stopMenuMusic(); setActiveGame("detail"); window.scrollTo(0, 0); } },
+            { label: "SMOKE SHOW AT IVY HALL", icon: "icon-smokeshow", iconSize: 120, action: () => { stopMenuMusic(); setActiveGame("smokeshow"); window.scrollTo(0, 0); } },
           ].map((item) => (
             <button key={item.label} onClick={item.action} style={{ ...pixelBtnStyle, width: "100%", padding: "0.75rem 1rem", fontSize: "0.75rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}`, display: "flex", alignItems: "center", gap: "0.75rem", textAlign: "left" }}>
               <img
@@ -200,7 +203,7 @@ function RacePage() {
           ))}
         </div>
         <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-          <button onClick={() => { stopMenuMusic(); startSelectMusic(); setPlayerCar(null); setPhase("select"); window.history.replaceState({}, "", "/arcade"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
+          <button onClick={() => { stopMenuMusic(); startSelectMusic(); setPlayerCar(null); setPhase("select"); window.scrollTo(0, 0); window.history.replaceState({}, "", "/arcade"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
             PICK DIFFERENT CAR
           </button>
         </div>
