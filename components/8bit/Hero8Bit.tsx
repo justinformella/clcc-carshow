@@ -213,6 +213,9 @@ export default function Hero8Bit() {
             ► TRY THE CLCC ARCADE
           </Link>
         </div>
+        <Link href="/" style={{ fontFamily: FONT, fontSize: "clamp(0.45rem, 1.2vw, 0.55rem)", color: COLORS.midGray, textDecoration: "none", letterSpacing: "0.1em", border: `2px solid ${COLORS.midGray}`, padding: "0.5rem 1.25rem" }}>
+          VIEW THE MODERN CAR SHOW SITE →
+        </Link>
       </div>
 
       {/* Scroll indicator */}
