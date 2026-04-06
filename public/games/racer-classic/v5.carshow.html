@@ -492,7 +492,18 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+        // Mobile Safari needs actual audio output during a gesture to fully unlock
+        // Play a silent buffer to force it
+        try {
+          var silentBuf = audioCtx.createBuffer(1, 1, 22050);
+          var src = audioCtx.createBufferSource();
+          src.buffer = silentBuf;
+          src.connect(audioCtx.destination);
+          src.start(0);
+        } catch(ex) {}
+      }
       return audioCtx;
     }
 
