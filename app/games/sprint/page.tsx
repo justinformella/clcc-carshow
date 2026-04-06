@@ -31,7 +31,7 @@ const WAYPOINTS = [
   { x: 560, y: 690 }, // back to start
 ];
 
-const TRACK_WIDTH = 62;
+const TRACK_WIDTH = 120;
 const TOTAL_LAPS = 3;
 const W = 1200;
 const H = 820;
@@ -116,7 +116,7 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
 
   // Track surface — draw wide path
   ctx.strokeStyle = "#3a3a3a";
-  ctx.lineWidth = TRACK_WIDTH * 2;
+  ctx.lineWidth = TRACK_WIDTH;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.beginPath();
@@ -127,7 +127,7 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
 
   // Track border (lighter edge)
   ctx.strokeStyle = "#555";
-  ctx.lineWidth = TRACK_WIDTH * 2 + 8;
+  ctx.lineWidth = TRACK_WIDTH + 8;
   ctx.beginPath();
   ctx.moveTo(WAYPOINTS[0].x, WAYPOINTS[0].y);
   for (let i = 1; i < WAYPOINTS.length; i++) ctx.lineTo(WAYPOINTS[i].x, WAYPOINTS[i].y);
@@ -136,7 +136,7 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
 
   // Redraw track top
   ctx.strokeStyle = "#3a3a3a";
-  ctx.lineWidth = TRACK_WIDTH * 2;
+  ctx.lineWidth = TRACK_WIDTH;
   ctx.beginPath();
   ctx.moveTo(WAYPOINTS[0].x, WAYPOINTS[0].y);
   for (let i = 1; i < WAYPOINTS.length; i++) ctx.lineTo(WAYPOINTS[i].x, WAYPOINTS[i].y);
@@ -349,11 +349,11 @@ export default function SprintPage() {
 
     function updateCar(car: CarState, dt: number, keys: Record<string, boolean>, s: typeof stateRef.current) {
       if (car.finished) return;
-      const drag = 0.94;
-      const angDrag = 0.94;
-      const maxSpeed = 2.8 * car.skill;
-      const accel = 0.18 * car.skill;
-      const turnRate = 0.055;
+      const drag = 0.96;
+      const angDrag = 0.88;
+      const maxSpeed = 3.2 * car.skill;
+      const accel = 0.14 * car.skill;
+      const turnRate = 0.032;
 
       if (car.isPlayer) {
         if (keys["ArrowLeft"]) car.va -= turnRate;
@@ -403,11 +403,11 @@ export default function SprintPage() {
       car.x += car.vx;
       car.y += car.vy;
 
-      // Grass slowdown
+      // Grass slowdown — gentle, not instant death
       car.onGrass = !isOnTrack(car.x, car.y);
       if (car.onGrass) {
-        car.vx *= 0.7;
-        car.vy *= 0.7;
+        car.vx *= 0.94;
+        car.vy *= 0.94;
       }
 
       // Bounds clamp
