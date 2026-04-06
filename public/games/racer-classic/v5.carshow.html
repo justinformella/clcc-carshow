@@ -67,8 +67,9 @@
 
     var fps            = 60;                      // how many 'update' frames per second
     var step           = 1/fps;                   // how long is each frame (in seconds)
-    var width          = 1024;                    // logical canvas width
-    var height         = 768;                     // logical canvas height
+    var isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth < 800);
+    var width          = isMobileDevice ? 640  : 1024;  // lower res on mobile for performance
+    var height         = isMobileDevice ? 480  : 768;
     var centrifugal    = 0.3;                     // centrifugal force multiplier when going around curves
     var offRoadDecel   = 0.99;                    // speed multiplier when off road (e.g. you lose 2% speed each update frame)
     var skySpeed       = 0.001;                   // background sky layer scroll speed when going around curve (or up hill)
@@ -93,7 +94,7 @@
     var fieldOfView    = 110;                     // fixed for Route 14
     var cameraHeight   = 750;                     // fixed for Route 14
     var cameraDepth    = null;                    // z distance camera is from screen (computed)
-    var drawDistance   = 300;                     // fixed for Route 14
+    var drawDistance   = isMobileDevice ? 150 : 300;  // shorter draw on mobile for performance
     var playerX        = 0;                       // player x offset from center of road (-1 to 1 to stay independent of roadWidth)
     var playerZ        = null;                    // player relative z distance from camera (computed)
     var fogDensity     = 5;                       // fixed for Route 14
@@ -105,7 +106,7 @@
     var decel          = -maxSpeed/5;             // 'natural' deceleration rate when neither accelerating, nor braking
     var offRoadDecel   = -maxSpeed/2;             // off road deceleration is somewhere in between
     var offRoadLimit   =  maxSpeed/4;             // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
-    var totalCars      = 50;                      // fewer cars for the shorter Route 14 track
+    var totalCars      = isMobileDevice ? 20 : 50;  // fewer cars on mobile for performance
     var currentLapTime = 0;                       // current lap time
     var lastLapTime    = null;                    // last lap time
     var totalLaps      = 3;                       // laps to complete the cruise
@@ -1479,111 +1480,92 @@
     //=========================================================================
     // MOBILE TOUCH CONTROLS
     //=========================================================================
+    // Auto-accelerate on mobile. Player only steers:
+    //   - Touch LEFT half of screen = steer left
+    //   - Touch RIGHT half of screen = steer right
+    //   - Touch BOTH sides (two thumbs) = brake
+    //   - No touch = cruise straight (still accelerating)
 
     (function() {
-      var isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-      if (!isMobile) return;
+      if (!isMobileDevice) return;
 
-      // Create touch overlay
+      // Always accelerating on mobile
+      keyFaster = true;
+
       var overlay = document.createElement('div');
       overlay.id = 'touch-controls';
-      overlay.style.cssText = 'position:fixed;bottom:0;left:0;width:100%;height:45%;z-index:100;pointer-events:auto;display:flex;touch-action:none;user-select:none;-webkit-user-select:none;';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;';
       overlay.innerHTML =
-        '<div id="tc-left" style="flex:1;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(255,255,255,0.1);">' +
-          '<svg width="60" height="60" viewBox="0 0 60 60" style="opacity:0.25;"><polygon points="40,10 10,30 40,50" fill="white"/></svg>' +
+        '<div id="tc-left" style="flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:15%;">' +
+          '<svg width="50" height="50" viewBox="0 0 60 60" style="opacity:0.15;"><polygon points="40,10 10,30 40,50" fill="white"/></svg>' +
         '</div>' +
-        '<div id="tc-gas" style="flex:2;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
-          '<svg width="60" height="60" viewBox="0 0 60 60" style="opacity:0.25;"><polygon points="10,40 30,10 50,40" fill="white"/></svg>' +
-          '<div style="color:rgba(255,255,255,0.2);font-size:10px;font-family:monospace;margin-top:4px;">GAS</div>' +
-        '</div>' +
-        '<div id="tc-right" style="flex:1;display:flex;align-items:center;justify-content:center;border-left:1px solid rgba(255,255,255,0.1);">' +
-          '<svg width="60" height="60" viewBox="0 0 60 60" style="opacity:0.25;"><polygon points="20,10 50,30 20,50" fill="white"/></svg>' +
+        '<div id="tc-right" style="flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:15%;">' +
+          '<svg width="50" height="50" viewBox="0 0 60 60" style="opacity:0.15;"><polygon points="20,10 50,30 20,50" fill="white"/></svg>' +
         '</div>';
       document.body.appendChild(overlay);
 
-      // Brake button (smaller, top-left corner)
-      var brakeBtn = document.createElement('div');
-      brakeBtn.id = 'tc-brake';
-      brakeBtn.style.cssText = 'position:fixed;bottom:46%;left:0;width:25%;height:12%;z-index:100;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;';
-      brakeBtn.innerHTML = '<div style="color:rgba(255,100,100,0.3);font-size:10px;font-family:monospace;border:1px solid rgba(255,100,100,0.15);padding:8px 16px;border-radius:4px;">BRAKE</div>';
-      document.body.appendChild(brakeBtn);
-
-      // Track active touches
       var activeTouches = {};
 
-      function updateKeys() {
+      function updateSteering() {
+        var hasLeft = false, hasRight = false;
+        for (var id in activeTouches) {
+          if (activeTouches[id] === 'left') hasLeft = true;
+          if (activeTouches[id] === 'right') hasRight = true;
+        }
+
         keyLeft = false;
         keyRight = false;
-        keyFaster = false;
         keySlower = false;
-        for (var id in activeTouches) {
-          var zone = activeTouches[id];
-          if (zone === 'left') keyLeft = true;
-          if (zone === 'right') keyRight = true;
-          if (zone === 'gas') keyFaster = true;
-          if (zone === 'brake') keySlower = true;
+        keyFaster = true; // always accelerating
+
+        if (hasLeft && hasRight) {
+          // Two thumbs = brake
+          keyFaster = false;
+          keySlower = true;
+        } else if (hasLeft) {
+          keyLeft = true;
+        } else if (hasRight) {
+          keyRight = true;
         }
       }
 
       function getZone(touch) {
-        var el = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!el) return null;
-        if (el.id === 'tc-left' || el.closest('#tc-left')) return 'left';
-        if (el.id === 'tc-right' || el.closest('#tc-right')) return 'right';
-        if (el.id === 'tc-gas' || el.closest('#tc-gas')) return 'gas';
-        if (el.id === 'tc-brake' || el.closest('#tc-brake')) return 'brake';
-        return null;
+        return touch.clientX < window.innerWidth / 2 ? 'left' : 'right';
       }
 
-      function onTouchStart(e) {
+      overlay.addEventListener('touchstart', function(e) {
         e.preventDefault();
         for (var i = 0; i < e.changedTouches.length; i++) {
-          var t = e.changedTouches[i];
-          var zone = getZone(t);
-          if (zone) activeTouches[t.identifier] = zone;
+          activeTouches[e.changedTouches[i].identifier] = getZone(e.changedTouches[i]);
         }
-        updateKeys();
-      }
+        updateSteering();
+      }, { passive: false });
 
-      function onTouchMove(e) {
+      overlay.addEventListener('touchmove', function(e) {
         e.preventDefault();
         for (var i = 0; i < e.changedTouches.length; i++) {
-          var t = e.changedTouches[i];
-          var zone = getZone(t);
-          if (zone) activeTouches[t.identifier] = zone;
-          else delete activeTouches[t.identifier];
+          activeTouches[e.changedTouches[i].identifier] = getZone(e.changedTouches[i]);
         }
-        updateKeys();
-      }
+        updateSteering();
+      }, { passive: false });
 
-      function onTouchEnd(e) {
+      overlay.addEventListener('touchend', function(e) {
         e.preventDefault();
         for (var i = 0; i < e.changedTouches.length; i++) {
           delete activeTouches[e.changedTouches[i].identifier];
         }
-        updateKeys();
-      }
+        updateSteering();
+      }, { passive: false });
 
-      overlay.addEventListener('touchstart', onTouchStart, { passive: false });
-      overlay.addEventListener('touchmove', onTouchMove, { passive: false });
-      overlay.addEventListener('touchend', onTouchEnd, { passive: false });
-      overlay.addEventListener('touchcancel', onTouchEnd, { passive: false });
-      brakeBtn.addEventListener('touchstart', onTouchStart, { passive: false });
-      brakeBtn.addEventListener('touchmove', onTouchMove, { passive: false });
-      brakeBtn.addEventListener('touchend', onTouchEnd, { passive: false });
-      brakeBtn.addEventListener('touchcancel', onTouchEnd, { passive: false });
+      overlay.addEventListener('touchcancel', function(e) {
+        e.preventDefault();
+        for (var i = 0; i < e.changedTouches.length; i++) {
+          delete activeTouches[e.changedTouches[i].identifier];
+        }
+        updateSteering();
+      }, { passive: false });
 
-      // Prevent iOS rubber-banding / scroll while playing
       document.body.style.overflow = 'hidden';
-      // Note: don't set position:fixed — it breaks the flex letterbox layout
-
-      // Viewport meta already in <head>, but add if missing
-      if (!document.querySelector('meta[name="viewport"]')) {
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-        document.head.appendChild(meta);
-      }
     })();
 
   </script>
