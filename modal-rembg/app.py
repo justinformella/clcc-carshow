@@ -29,7 +29,9 @@ def remove_bg(data: dict):
 @app.function(image=image, timeout=60, scaledown_window=300)
 @modal.fastapi_endpoint(method="GET")
 def health():
-    """Lightweight health check that verifies the model is loadable."""
-    from rembg.session_factory import new_session
-    new_session("u2net")
-    return {"status": "ok"}
+    """Lightweight health check — verifies rembg + model file are present."""
+    import os
+    from rembg.bg import remove  # noqa: F401 — verify import works
+    model_path = os.path.expanduser("~/.u2net/u2net.onnx")
+    model_exists = os.path.isfile(model_path)
+    return {"status": "ok" if model_exists else "error", "model": model_exists}
