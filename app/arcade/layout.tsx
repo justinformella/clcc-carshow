@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "CLCC Car Show Race Mode | Crystal Lake Cars & Caffeine",
+  title: "CLCC Arcade — Redline Motor Condos | Crystal Lake Cars & Caffeine",
   description:
-    "Race registered show cars in a retro arcade-style drag race. Pick your ride, hold to accelerate, and see who crosses the finish line first.",
+    "Drag race, cruise, hit the dyno, and detail your ride in retro 8-bit style. Pick from real registered show cars at Crystal Lake Cars & Caffeine.",
   openGraph: {
-    title: "CLCC Car Show Race Mode",
+    title: "CLCC Arcade — Redline Motor Condos",
     description:
-      "Race registered show cars in a retro arcade-style drag race at Crystal Lake Cars & Caffeine.",
+      "Drag race, cruise, hit the dyno, and detail your ride in retro 8-bit arcade style.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CLCC Car Show Race Mode | CLCC",
+    title: "CLCC Arcade — Redline Motor Condos",
     description:
-      "Race registered show cars in a retro arcade-style drag race.",
+      "Drag race, cruise, hit the dyno, and detail your ride in retro 8-bit arcade style.",
   },
 };
 
