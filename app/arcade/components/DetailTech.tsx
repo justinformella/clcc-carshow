@@ -702,7 +702,7 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       )}
 
       <button
-        onClick={() => { cancelAnimationFrame(detailAnimRef.current); stopAll(); setDetailState("idle"); onBack(); }}
+        onClick={() => { cancelAnimationFrame(detailAnimRef.current); setDetailState("idle"); onBack(); }}
         style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1.5rem", display: "block", margin: "1.5rem auto 0" }}
       >
         BACK TO GARAGE

@@ -306,7 +306,7 @@ export default function DynoRoom({ playerCar, onBack }: DynoRoomProps) {
     };
     requestAnimationFrame(drawIdle);
 
-    return () => { cancelAnimationFrame(dynoAnimRef.current); stopAll(); };
+    return () => { cancelAnimationFrame(dynoAnimRef.current); stopEngine(); };
   }, [playerCar]);
 
   const specs = dynoState === "results" ? [
@@ -359,7 +359,7 @@ export default function DynoRoom({ playerCar, onBack }: DynoRoomProps) {
         )}
 
         <button
-          onClick={() => { cancelAnimationFrame(dynoAnimRef.current); stopAll(); setDynoState("idle"); onBack(); }}
+          onClick={() => { cancelAnimationFrame(dynoAnimRef.current); stopEngine(); setDynoState("idle"); onBack(); }}
           style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1.5rem", display: "block", margin: "1.5rem auto 0" }}
         >
           BACK TO GARAGE

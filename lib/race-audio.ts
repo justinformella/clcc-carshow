@@ -172,7 +172,7 @@ function stopMusicPlayer() {
 
 export function startSelectMusic() { playTrack("/arcade/music/select.mp3", 0.15); }
 export function stopSelectMusic() { stopMusicPlayer(); }
-export function startMenuMusic() { playTrack("/arcade/music/level-1.mp3", 0.15); }
+export function startMenuMusic() { playTrack("/arcade/music/level-2.mp3", 0.15); }
 export function stopMenuMusic() { stopMusicPlayer(); }
 export function startMusic() { playTrack("/arcade/music/level-3.mp3", 0.15); }
 export function stopMusic() { stopMusicPlayer(); }
