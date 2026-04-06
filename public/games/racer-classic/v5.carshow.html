@@ -1359,6 +1359,20 @@
       document.getElementById('quit-btn').style.display = '';
     }
 
+    // Unlock audio on ANY user gesture (covers Safari on direct-link with ?car=)
+    function unlockAudioOnGesture() {
+      try { getAudioCtx(); } catch(ex) {}
+      if (engineSound && !engineSound.running) {
+        startEngineSound(engineSound);
+      }
+      document.removeEventListener('click', unlockAudioOnGesture);
+      document.removeEventListener('touchstart', unlockAudioOnGesture);
+      document.removeEventListener('keydown', unlockAudioOnGesture);
+    }
+    document.addEventListener('click', unlockAudioOnGesture);
+    document.addEventListener('touchstart', unlockAudioOnGesture);
+    document.addEventListener('keydown', unlockAudioOnGesture);
+
     function autoSelectCar(car) {
       hideLoadingScreen();
       playerCarData = car;
@@ -1423,10 +1437,12 @@
         if (card) card.style.borderColor = '#333';
       });
 
-      // Click to select car
+      // Click to select car — also unlock audio (Safari requires user gesture)
       overlay.addEventListener('click', function(e) {
         var card = e.target.closest('.car-card');
         if (!card) return;
+        // Unlock AudioContext on this direct user gesture (Safari requirement)
+        try { getAudioCtx(); } catch(ex) {}
         var idx = parseInt(card.getAttribute('data-index'));
         playerCarData = carShowData[idx];
         playerCarImage = carShowImages[playerCarData.id] || null;
