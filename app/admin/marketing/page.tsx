@@ -715,7 +715,7 @@ function AnnouncementsTab() {
       const { data } = await supabase
         .from("registrations")
         .select("id, first_name, last_name, email")
-        .eq("payment_status", "paid")
+        .in("payment_status", ["paid", "comped"])
         .order("car_number", { ascending: true });
       setRegistrations(data || []);
       setLoading(false);
@@ -783,7 +783,7 @@ function AnnouncementsTab() {
     <div style={cardStyle}>
       <h2 style={sectionHeadingStyle}>Send Announcement</h2>
       <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
-        Send a freeform email to paid registrants. Uses the announcement email template.
+        Send a freeform email to paid and comped registrants. Uses the announcement email template.
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -813,7 +813,7 @@ function AnnouncementsTab() {
           <div style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
               <input type="radio" checked={sendToAll} onChange={() => setSendToAll(true)} />
-              All paid registrants ({registrations.length})
+              All paid & comped registrants ({registrations.length})
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
               <input type="radio" checked={!sendToAll} onChange={() => setSendToAll(false)} />
