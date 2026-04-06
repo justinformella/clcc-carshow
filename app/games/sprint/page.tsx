@@ -92,8 +92,8 @@ function isOnTrack(x: number, y: number): boolean {
 }
 
 function initCar(idx: number): CarState {
-  const xOffsets = [-100, -40, -100, -40]; // staggered 2x2 grid with more space
-  const yOffsets = [-30, -30, 30, 30];
+  const xOffsets = [-80, -40, -80, -40]; // staggered 2x2 grid
+  const yOffsets = [-25, -25, 25, 25];
   const x = WAYPOINTS[0].x + xOffsets[idx];
   const y = WAYPOINTS[0].y + yOffsets[idx];
   const names = ["YOU", "RED", "BLU", "GRN"];
@@ -352,7 +352,6 @@ export default function SprintPage() {
     raceOver: false,
     elapsed: 0,
     finishCount: 0,
-    winnerTime: 0, // elapsed when first car finished
     lastTime: 0,
     trackCache: null as ImageData | null,
   });
@@ -365,8 +364,6 @@ export default function SprintPage() {
     s.raceOver = false;
     s.elapsed = 0;
     s.finishCount = 0;
-    s.winnerTime = 0;
-    stopSprintEngine();
     s.lastTime = 0;
   }, []);
 
@@ -492,7 +489,6 @@ export default function SprintPage() {
           car.totalTime = now;
           s.finishCount++;
           car.finishOrder = s.finishCount;
-          if (s.finishCount === 1) s.winnerTime = now;
         } else {
           car.lap = car.finishedLap + 1;
         }
@@ -524,12 +520,9 @@ export default function SprintPage() {
           if (!engineOsc && spd > 0.1) startSprintEngine();
           updateSprintEngine(spd, 3.2);
         }
-        if (s.finishCount >= 4) {
-          s.raceOver = true;
-          stopSprintEngine();
-        }
-        // Force-finish stragglers 10 seconds after winner
-        if (s.finishCount >= 1 && s.finishCount < 4 && s.elapsed - s.winnerTime > 10000) {
+        if (s.finishCount >= 4) s.raceOver = true;
+        // Force finish remaining cars after leader finishes all laps
+        if (s.finishCount >= 1) {
           s.cars.forEach(car => {
             if (!car.finished) {
               car.finished = true;
@@ -539,7 +532,6 @@ export default function SprintPage() {
             }
           });
           s.raceOver = true;
-          stopSprintEngine();
         }
       }
 
