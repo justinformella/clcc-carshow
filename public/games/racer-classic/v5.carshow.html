@@ -135,7 +135,7 @@
     var decel          = -maxSpeed/5;             // 'natural' deceleration rate when neither accelerating, nor braking
     var offRoadDecel   = -maxSpeed/2;             // off road deceleration is somewhere in between
     var offRoadLimit   =  maxSpeed/4;             // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
-    var totalCars      = isMobileDevice ? 20 : 50;  // fewer cars on mobile for performance
+    var totalCars      = isMobileDevice ? 35 : 50;  // more cars on mobile, still performant at 640x480
     var currentLapTime = 0;                       // current lap time
     var lastLapTime    = null;                    // last lap time
     var totalLaps      = 3;                       // laps to complete the cruise
