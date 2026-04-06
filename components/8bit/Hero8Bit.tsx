@@ -137,7 +137,7 @@ export default function Hero8Bit() {
 
   const ctaPrimaryStyle: CSSProperties = {
     fontFamily: FONT,
-    fontSize: "clamp(0.4rem, 1.2vw, 0.6rem)",
+    fontSize: "clamp(0.55rem, 1.5vw, 0.75rem)",
     color: COLORS.bgDark,
     backgroundColor: COLORS.gold,
     border: `3px solid ${COLORS.goldDark}`,
