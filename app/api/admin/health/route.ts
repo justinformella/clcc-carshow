@@ -85,7 +85,8 @@ async function checkModal(): Promise<ServiceStatus> {
   if (!url) return { name: "Modal (rembg)", status: "missing", error: "MODAL_REMBG_URL not set" };
 
   // Derive health URL from the remove_bg URL (same app, different function)
-  const healthUrl = url.replace(/remove-bg$/, "health");
+  // URL format: https://user--app-name-function-name.modal.run
+  const healthUrl = url.replace("remove-bg", "health");
   const start = Date.now();
   try {
     const res = await fetch(healthUrl, {
