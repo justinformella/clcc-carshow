@@ -25,6 +25,16 @@
     #hud #car_stats { display: block; color: #aaa; font-size: 9px; }
     #hud #gear { float: right; color: #4f4; }
     #hud .fastest { color: #ffd700; }
+    /* Mobile: compact HUD — hide stats and fastest lap */
+    @media (max-width: 800px), (pointer: coarse) {
+      #hud { padding: 4px 8px; font-size: 9px; }
+      #hud #car_name { font-size: 10px; padding-top: 2px; }
+      #hud #car_stats { display: none !important; }
+      #hud #fast_lap_time { display: none !important; }
+      #hud #last_lap_time { display: none !important; }
+      #hud #gear { font-size: 9px; }
+      #quit-btn { padding: 4px 10px; font-size: 8px; }
+    }
     #quit-btn { position: fixed; top: 12px; right: 12px; z-index: 150;
                 background: rgba(0,0,0,0.6); color: #888; border: 1px solid #444;
                 padding: 6px 14px; font-family: 'Press Start 2P', monospace; font-size: 9px;
@@ -1535,6 +1545,11 @@
 
       overlay.addEventListener('touchstart', function(e) {
         e.preventDefault();
+        // Init audio on first touch (mobile browsers require user gesture)
+        if (engineSound && !engineSound.running) {
+          try { getAudioCtx(); } catch(ex) {}
+          startEngineSound(engineSound);
+        }
         for (var i = 0; i < e.changedTouches.length; i++) {
           activeTouches[e.changedTouches[i].identifier] = getZone(e.changedTouches[i]);
         }
