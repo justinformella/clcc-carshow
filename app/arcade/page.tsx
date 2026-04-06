@@ -31,8 +31,9 @@ function RacePage() {
   const [activeGame, setActiveGame] = useState<ActiveGame>(null);
   const [generating, setGenerating] = useState(false);
 
-  // Fetch cars
+  // Fetch cars (once on mount)
   useEffect(() => {
+    const carId = preselectedCarId;
     fetch("/api/race")
       .then((r) => r.json())
       .then((data) => {
@@ -46,8 +47,8 @@ function RacePage() {
           flipped: c.flipped || false,
         }));
         setCars(raceCars);
-        if (preselectedCarId) {
-          const target = raceCars.find((c) => c.id === preselectedCarId);
+        if (carId) {
+          const target = raceCars.find((c) => c.id === carId);
           if (target) {
             setPlayerCar(target);
             initAudio();
@@ -59,7 +60,7 @@ function RacePage() {
         setPhase("title");
       })
       .catch(() => setPhase("title"));
-  }, [preselectedCarId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectCar = useCallback((car: RaceCar) => {
     setPlayerCar(car);
