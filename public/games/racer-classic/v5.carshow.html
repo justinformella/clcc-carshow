@@ -492,69 +492,98 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-        // Mobile Safari needs actual audio output during a gesture to fully unlock
-        // Play a silent buffer to force it
-        try {
-          var silentBuf = audioCtx.createBuffer(1, 1, 22050);
-          var src = audioCtx.createBufferSource();
-          src.buffer = silentBuf;
-          src.connect(audioCtx.destination);
-          src.start(0);
-        } catch(ex) {}
-      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       return audioCtx;
     }
 
     function resolveEngineProfile(engineType, cylinders) {
       var et = (engineType || '').toLowerCase();
       if (et.indexOf('electric') >= 0 || et === 'ev')
-        return { wave: 'sine', baseF: 400, maxF: 900, minG: 0.03, maxG: 0.08, harmonics: [{m:2, g:0.4}] };
+        return { baseF: 400, maxF: 900, minG: 0.03, maxG: 0.08, type: 'ev' };
       if (et.indexOf('diesel') >= 0)
-        return { wave: 'square', baseF: 55, maxF: 120, minG: 0.06, maxG: 0.15, harmonics: [{m:2, g:0.5},{m:3, g:0.25}] };
+        return { baseF: 55, maxF: 120, minG: 0.06, maxG: 0.15, type: 'diesel' };
       if (et.indexOf('turbo') >= 0 || et.indexOf('inline') >= 0)
-        return { wave: 'triangle', baseF: 180, maxF: 450, minG: 0.04, maxG: 0.10, harmonics: [{m:2, g:0.45},{m:3.5, g:0.2}] };
+        return { baseF: 180, maxF: 450, minG: 0.04, maxG: 0.10, type: 'turbo' };
       if (et.indexOf('flat') >= 0 || et.indexOf('boxer') >= 0)
-        return { wave: 'sawtooth', baseF: 100, maxF: 300, minG: 0.05, maxG: 0.12, harmonics: [{m:1.5, g:0.5},{m:2.5, g:0.3}] };
-      // Default: V-type / muscle
+        return { baseF: 100, maxF: 300, minG: 0.05, maxG: 0.12, type: 'boxer' };
       var bf = (cylinders || 4) >= 8 ? 75 : (cylinders || 4) >= 6 ? 100 : 140;
-      return { wave: 'sawtooth', baseF: bf, maxF: bf * 3.5, minG: 0.05, maxG: 0.13, harmonics: [{m:2, g:0.5},{m:3, g:0.3},{m:4, g:0.15}] };
+      return { baseF: bf, maxF: bf * 3.5, minG: 0.05, maxG: 0.13, type: 'v8' };
+    }
+
+    // Generate a loopable engine audio buffer (works on all browsers including mobile Safari)
+    function generateEngineBuffer(ctx, profile) {
+      var sampleRate = ctx.sampleRate;
+      var duration = 0.1; // 100ms loop
+      var length = Math.round(sampleRate * duration);
+      var buffer = ctx.createBuffer(1, length, sampleRate);
+      var data = buffer.getChannelData(0);
+
+      for (var i = 0; i < length; i++) {
+        var t = i / sampleRate;
+        var freq = profile.baseF;
+        var sample = 0;
+
+        // Generate waveform based on engine type
+        switch (profile.type) {
+          case 'ev':
+            // Pure sine — quiet whir
+            sample = Math.sin(2 * Math.PI * freq * t);
+            sample += 0.3 * Math.sin(2 * Math.PI * freq * 2 * t);
+            break;
+          case 'diesel':
+            // Square-ish — rough rumble
+            sample = Math.sign(Math.sin(2 * Math.PI * freq * t));
+            sample += 0.4 * Math.sign(Math.sin(2 * Math.PI * freq * 2 * t));
+            sample += 0.2 * Math.sign(Math.sin(2 * Math.PI * freq * 3 * t));
+            break;
+          case 'turbo':
+            // Triangle — whiny
+            sample = 2 * Math.abs(2 * ((freq * t) % 1) - 1) - 1;
+            sample += 0.4 * (2 * Math.abs(2 * ((freq * 2 * t) % 1) - 1) - 1);
+            break;
+          case 'boxer':
+            // Sawtooth with uneven pulse
+            sample = 2 * ((freq * t) % 1) - 1;
+            sample += 0.4 * (2 * ((freq * 1.5 * t) % 1) - 1);
+            break;
+          default:
+            // V8 sawtooth with harmonics
+            sample = 2 * ((freq * t) % 1) - 1;
+            sample += 0.5 * (2 * ((freq * 2 * t) % 1) - 1);
+            sample += 0.3 * (2 * ((freq * 3 * t) % 1) - 1);
+            sample += 0.15 * (2 * ((freq * 4 * t) % 1) - 1);
+        }
+
+        data[i] = sample * 0.3; // keep amplitude reasonable
+      }
+      return buffer;
     }
 
     function createEngineSound(engineType, cylinders) {
       var prof = resolveEngineProfile(engineType, cylinders);
-      return { profile: prof, master: null, nodes: [], running: false };
+      return { profile: prof, source: null, master: null, running: false, buffer: null };
     }
 
     function startEngineSound(es) {
       if (es.running) return;
       try { var ctx = getAudioCtx(); } catch(e) { return; }
+
+      // Generate the engine buffer
+      es.buffer = generateEngineBuffer(ctx, es.profile);
+
+      // Master gain
       es.master = ctx.createGain();
-      es.master.gain.setValueAtTime(0, ctx.currentTime);
+      es.master.gain.value = 0;
       es.master.connect(ctx.destination);
 
-      // Fundamental
-      var osc0 = ctx.createOscillator();
-      osc0.type = es.profile.wave;
-      osc0.frequency.setValueAtTime(es.profile.baseF, ctx.currentTime);
-      var g0 = ctx.createGain();
-      g0.gain.setValueAtTime(1.0, ctx.currentTime);
-      osc0.connect(g0); g0.connect(es.master);
-      es.nodes.push({ osc: osc0, gain: g0 });
+      // Looping buffer source
+      es.source = ctx.createBufferSource();
+      es.source.buffer = es.buffer;
+      es.source.loop = true;
+      es.source.playbackRate.value = 1.0;
+      es.source.connect(es.master);
+      es.source.start(0);
 
-      // Harmonics
-      es.profile.harmonics.forEach(function(h) {
-        var o = ctx.createOscillator();
-        o.type = es.profile.wave;
-        o.frequency.setValueAtTime(es.profile.baseF * h.m, ctx.currentTime);
-        var g = ctx.createGain();
-        g.gain.setValueAtTime(h.g, ctx.currentTime);
-        o.connect(g); g.connect(es.master);
-        es.nodes.push({ osc: o, gain: g });
-      });
-
-      es.nodes.forEach(function(n) { n.osc.start(); });
       es.running = true;
     }
 
@@ -562,54 +591,45 @@
     var shiftCooldown = 0; // frames remaining in shift dip
 
     function updateEngineSound(es, speedNorm, isAccel) {
-      if (!es.running || !audioCtx || !es.master) return;
+      if (!es.running || !audioCtx || !es.master || !es.source) return;
       var t = audioCtx.currentTime;
       var sp = Math.max(0, Math.min(1, speedNorm));
       var p = es.profile;
 
       // --- Transmission simulation ---
-      // Divide speed range into gears. Within each gear, RPM (frequency)
-      // climbs from low to high, then drops on upshift.
       var numGears = (playerCarData && playerCarData.gears) ? playerCarData.gears : 5;
       var gearSize = 1.0 / numGears;
 
-      // Which gear are we in?
       var newGear = Math.min(numGears, Math.floor(sp / gearSize) + 1);
       if (sp >= 1.0) newGear = numGears;
 
-      // Detect upshift
       if (newGear > currentGear && sp > 0.05) {
         currentGear = newGear;
-        shiftCooldown = 8; // ~8 frames of volume dip (~130ms at 60fps)
+        shiftCooldown = 8;
       }
-      // Detect downshift (deceleration)
       if (newGear < currentGear) {
         currentGear = newGear;
       }
 
-      // RPM within current gear: 0.0 (just shifted) to 1.0 (about to shift)
       var gearStart = (currentGear - 1) * gearSize;
       var rpmInGear = Math.max(0, Math.min(1, (sp - gearStart) / gearSize));
 
-      // Frequency: climbs within gear from ~40% to 100% of max range
-      // Higher gears have a slightly higher base (gear whine effect)
-      var gearBaseMult = 0.35 + (currentGear - 1) * 0.05; // 0.35, 0.40, 0.45, ...
-      var freq = p.baseF + (p.maxF - p.baseF) * (gearBaseMult + (1 - gearBaseMult) * rpmInGear);
+      var gearBaseMult = 0.35 + (currentGear - 1) * 0.05;
+      // Playback rate controls pitch — 1.0 = base frequency, higher = higher pitch
+      var rateTarget = gearBaseMult + (1 - gearBaseMult) * rpmInGear;
+      // Scale from base to max frequency ratio
+      var freqRatio = p.maxF / p.baseF;
+      var rate = 1.0 + (freqRatio - 1.0) * rateTarget;
 
-      // Volume: normal + shift dip
+      // Volume
       var vol = (p.minG + (p.maxG - p.minG) * sp) * (isAccel ? 1.0 : 0.6);
       if (shiftCooldown > 0) {
-        vol *= 0.3; // brief volume dip during shift
+        vol *= 0.3;
         shiftCooldown--;
       }
 
-      es.master.gain.linearRampToValueAtTime(vol, t + 0.01);
-
-      var mults = [1.0];
-      p.harmonics.forEach(function(h) { mults.push(h.m); });
-      for (var i = 0; i < es.nodes.length; i++) {
-        es.nodes[i].osc.frequency.linearRampToValueAtTime(freq * (mults[i] || 1), t + 0.01);
-      }
+      es.master.gain.linearRampToValueAtTime(vol, t + 0.02);
+      es.source.playbackRate.linearRampToValueAtTime(rate, t + 0.02);
     }
 
     function stopEngineSound(es) {
@@ -619,11 +639,9 @@
         es.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
       }
       setTimeout(function() {
-        es.nodes.forEach(function(n) {
-          try { n.osc.stop(); n.osc.disconnect(); n.gain.disconnect(); } catch(e) {}
-        });
+        try { if (es.source) { es.source.stop(); es.source.disconnect(); } } catch(e) {}
         if (es.master) es.master.disconnect();
-        es.nodes = []; es.master = null;
+        es.source = null; es.master = null;
       }, 250);
     }
 
@@ -1378,17 +1396,14 @@
       if (audioUnlocked) return;
       audioUnlocked = true;
       try {
-        // Create context
+        // Create context + immediately play a buffer (mobile Safari requirement)
         var ctx = getAudioCtx();
-        // Immediately create, connect, and start an oscillator (Safari requirement)
-        var o = ctx.createOscillator();
-        var g = ctx.createGain();
-        g.gain.value = 0; // silent
-        o.connect(g);
-        g.connect(ctx.destination);
-        o.start(0);
-        o.stop(ctx.currentTime + 0.001); // stop after 1ms
-        // Now start the real engine sound
+        var buf = ctx.createBuffer(1, 1, 22050);
+        var src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        // Now start the real engine sound (also buffer-based, Safari-friendly)
         if (engineSound && !engineSound.running) {
           startEngineSound(engineSound);
         }
@@ -1398,7 +1413,6 @@
       document.removeEventListener('touchend', unlockAudioOnGesture, true);
       document.removeEventListener('keydown', unlockAudioOnGesture, true);
     }
-    // Use capture phase to fire before anything else
     document.addEventListener('click', unlockAudioOnGesture, true);
     document.addEventListener('touchstart', unlockAudioOnGesture, true);
     document.addEventListener('touchend', unlockAudioOnGesture, true);
