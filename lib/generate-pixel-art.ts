@@ -290,11 +290,18 @@ async function tryImagenModel(model: string, prompt: string, aspectRatio: string
   return null;
 }
 
-export async function generateImage(prompt: string, aspectRatio: string = "16:9"): Promise<Buffer> {
+export async function generateImage(prompt: string, aspectRatio: string = "16:9", preferredModel?: string): Promise<Buffer> {
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
-  // Try each Imagen model in fallback order
-  if (geminiKey) {
+  // If a specific model is requested, try it first (or exclusively for OpenAI)
+  if (preferredModel === "openai") {
+    // Skip Imagen, go straight to OpenAI
+  } else if (preferredModel && geminiKey) {
+    const result = await tryImagenModel(preferredModel, prompt, aspectRatio, geminiKey);
+    if (result) return result;
+    console.warn(`Preferred model ${preferredModel} failed, trying fallback chain`);
+  } else if (geminiKey) {
+    // Try each Imagen model in fallback order
     for (const model of IMAGEN_MODELS) {
       const result = await tryImagenModel(model, prompt, aspectRatio, geminiKey);
       if (result) return result;
@@ -302,7 +309,7 @@ export async function generateImage(prompt: string, aspectRatio: string = "16:9"
   }
 
   // Final fallback: OpenAI
-  console.log("All Imagen models failed, falling back to OpenAI");
+  console.log("Falling back to OpenAI");
   const OpenAI = (await import("openai")).default;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const response = await openai.images.generate({

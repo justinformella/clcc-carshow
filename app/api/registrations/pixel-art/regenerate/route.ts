@@ -5,7 +5,7 @@ import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
   try {
-    const { registration_id, type } = await request.json();
+    const { registration_id, type, model } = await request.json();
 
     if (!registration_id || !["side", "dashboard", "rear"].includes(type)) {
       return NextResponse.json({ error: "Provide registration_id and type (side|dashboard|rear)" }, { status: 400 });
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const timing: Record<string, number> = {};
 
     let t0 = Date.now();
-    const rawBuffer = await generateImage(prompt, aspectRatio);
+    const rawBuffer = await generateImage(prompt, aspectRatio, model || undefined);
     timing.generateMs = Date.now() - t0;
 
     const ts = Date.now();

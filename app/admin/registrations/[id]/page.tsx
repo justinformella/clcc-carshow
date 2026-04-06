@@ -1732,6 +1732,7 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
 }) {
   const [status, setStatus] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [model, setModel] = useState("auto");
   const fileRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -1766,7 +1767,7 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
       const res = await fetch("/api/registrations/pixel-art/regenerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registration_id: registrationId, type }),
+        body: JSON.stringify({ registration_id: registrationId, type, model: model === "auto" ? undefined : model }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -1816,7 +1817,18 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
           {status} {status !== "Done!" && <span style={{ color: "var(--text-light)" }}>{elapsed}s</span>}
         </div>
       ) : (
-        <div style={{ display: "flex", gap: "0.3rem", justifyContent: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "0.3rem", justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            style={{ padding: "0.15rem 0.25rem", fontSize: "0.6rem", border: "1px solid #ddd", borderRadius: "2px", background: "var(--white)", cursor: "pointer" }}
+          >
+            <option value="auto">Auto</option>
+            <option value="imagen-4.0-generate-001">Imagen 4</option>
+            <option value="imagen-4.0-fast-generate-001">Imagen 4 Fast</option>
+            <option value="imagen-4.0-ultra-generate-001">Imagen 4 Ultra</option>
+            <option value="openai">OpenAI</option>
+          </select>
           <button onClick={handleRegen} style={btnStyle}>Regen</button>
           {hasBgStrip && hasOriginal && (
             <button onClick={handleStrip} style={btnStyle}>Strip BG</button>
