@@ -986,27 +986,30 @@ export default function RegistrationDetailPage() {
                   ))}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", margin: "0.5rem 0" }}>
-                  <button
-                    onClick={async () => {
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "0.75rem 0" }}>
+                  <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--charcoal)", whiteSpace: "nowrap" }}>Arcade</label>
+                  <select
+                    value={r.game_eligible ? "eligible" : "hidden"}
+                    onChange={async (e) => {
                       const supabase = (await import("@/lib/supabase")).createClient();
-                      await supabase.from("registrations").update({ game_eligible: !r.game_eligible }).eq("id", r.id);
+                      await supabase.from("registrations").update({ game_eligible: e.target.value === "eligible" }).eq("id", r.id);
                       window.location.reload();
                     }}
                     style={{
-                      padding: "0.35rem 0.75rem",
-                      fontSize: "0.7rem",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                      background: r.game_eligible ? "#e8f5e9" : "#fef2f2",
-                      color: r.game_eligible ? "#2e7d32" : "#991b1b",
-                      border: `1px solid ${r.game_eligible ? "#a5d6a7" : "#fecaca"}`,
+                      flex: 1,
+                      padding: "0.45rem 0.6rem",
+                      fontSize: "0.8rem",
+                      fontWeight: 500,
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      background: "var(--white)",
+                      color: "var(--charcoal)",
                       cursor: "pointer",
                     }}
                   >
-                    {r.game_eligible ? "GAME ELIGIBLE" : "HIDDEN FROM GAME"}
-                  </button>
+                    <option value="eligible">Eligible for game</option>
+                    <option value="hidden">Hidden from game</option>
+                  </select>
                 </div>
 
                 <div style={{ textAlign: "center" }}>
