@@ -37,7 +37,6 @@ export default function Arcade8Bit() {
         @keyframes glowPulse { 0%,100%{box-shadow: 0 0 20px rgba(255,215,0,0.15), 0 0 60px rgba(255,215,0,0.05)} 50%{box-shadow: 0 0 30px rgba(255,215,0,0.3), 0 0 80px rgba(255,215,0,0.1)} }
         .arcade-play-btn:hover { transform: translateY(2px) !important; box-shadow: 0 3px 0 #166534, 0 4px 8px rgba(0,0,0,0.4) !important; }
         .arcade-play-btn:active { transform: translateY(5px) !important; box-shadow: 0 0px 0 #166534 !important; }
-        .game-card:hover { border-color: #ffd700 !important; transform: translateY(-2px); }
       `}</style>
 
       {/* Section header */}
@@ -45,33 +44,6 @@ export default function Arcade8Bit() {
       <p style={{ fontFamily: FONT, fontSize: "clamp(0.45rem, 1.2vw, 0.55rem)", color: COLORS.midGray, marginBottom: "2.5rem", letterSpacing: "0.15em" }}>
         SPONSORED BY REDLINE MOTOR CONDOS · URW AUTOMOTIVE · THE DETAIL TECH
       </p>
-
-      {/* Game cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", maxWidth: "900px", margin: "0 auto 2.5rem" }}>
-        {[
-          { name: "DRAG RACE", desc: "Quarter mile showdown", icon: "🏁" },
-          { name: "CRUISE ROUTE 14", desc: "Cruise the open road", icon: "🛣️" },
-          { name: "HIT THE DYNO", desc: "See what you're packing", icon: "⚡" },
-          { name: "DETAIL TECH", desc: "Clean it up nice", icon: "✨" },
-        ].map((game) => (
-          <div
-            key={game.name}
-            className="game-card"
-            style={{
-              background: "linear-gradient(175deg, #1e1e35, #151528)",
-              border: "2px solid #333",
-              borderRadius: "6px",
-              padding: "1.2rem 0.8rem",
-              transition: "all 0.2s",
-              cursor: "default",
-            }}
-          >
-            <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>{game.icon}</div>
-            <p style={{ fontFamily: FONT, fontSize: "clamp(0.5rem, 1.3vw, 0.65rem)", color: COLORS.gold, marginBottom: "0.3rem" }}>{game.name}</p>
-            <p style={{ fontFamily: FONT, fontSize: "clamp(0.35rem, 1vw, 0.45rem)", color: COLORS.midGray, lineHeight: 1.8 }}>{game.desc}</p>
-          </div>
-        ))}
-      </div>
 
       {/* Arcade Cabinet */}
       <div style={{ position: "relative", display: "inline-block", maxWidth: "560px", width: "92%", animation: "glowPulse 3s ease-in-out infinite" }}>
