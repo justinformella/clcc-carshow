@@ -986,41 +986,40 @@ export default function RegistrationDetailPage() {
                   ))}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "0.75rem 0" }}>
-                  <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--charcoal)", whiteSpace: "nowrap" }}>Arcade</label>
-                  <select
-                    value={r.game_eligible ? "eligible" : "hidden"}
-                    onChange={async (e) => {
-                      const supabase = (await import("@/lib/supabase")).createClient();
-                      await supabase.from("registrations").update({ game_eligible: e.target.value === "eligible" }).eq("id", r.id);
-                      window.location.reload();
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "0.45rem 0.6rem",
-                      fontSize: "0.8rem",
-                      fontWeight: 500,
-                      border: "1px solid #ddd",
-                      borderRadius: "4px",
-                      background: "var(--white)",
-                      color: "var(--charcoal)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <option value="eligible">Eligible for game</option>
-                    <option value="hidden">Hidden from game</option>
-                  </select>
-                </div>
-
-                <div style={{ textAlign: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "0.75rem 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--charcoal)", whiteSpace: "nowrap" }}>Arcade</label>
+                    <select
+                      value={r.game_eligible ? "eligible" : "hidden"}
+                      onChange={async (e) => {
+                        const supabase = (await import("@/lib/supabase")).createClient();
+                        await supabase.from("registrations").update({ game_eligible: e.target.value === "eligible" }).eq("id", r.id);
+                        window.location.reload();
+                      }}
+                      style={{
+                        padding: "0.35rem 0.5rem",
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                        border: "1px solid #ddd",
+                        borderRadius: "4px",
+                        background: "var(--white)",
+                        color: "var(--charcoal)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <option value="eligible">Eligible</option>
+                      <option value="hidden">Hidden</option>
+                    </select>
+                  </div>
                   <button
-                    onClick={() => window.open(`/arcade?car=${r.id}`, "_blank")}
+                    onClick={() => window.open(`/games?car=${r.id}`, "_blank")}
                     style={{
-                      padding: "0.6rem 2.5rem",
+                      marginLeft: "auto",
+                      padding: "0.4rem 1.25rem",
                       background: "var(--charcoal, #1a1a1e)",
                       color: "var(--gold, #c9a84c)",
                       border: "none",
-                      fontSize: "0.8rem",
+                      fontSize: "0.7rem",
                       fontWeight: 700,
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
