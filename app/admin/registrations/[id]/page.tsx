@@ -986,6 +986,29 @@ export default function RegistrationDetailPage() {
                   ))}
                 </div>
 
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", margin: "0.5rem 0" }}>
+                  <button
+                    onClick={async () => {
+                      const supabase = (await import("@/lib/supabase")).createClient();
+                      await supabase.from("registrations").update({ game_eligible: !r.game_eligible }).eq("id", r.id);
+                      window.location.reload();
+                    }}
+                    style={{
+                      padding: "0.35rem 0.75rem",
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      background: r.game_eligible ? "#e8f5e9" : "#fef2f2",
+                      color: r.game_eligible ? "#2e7d32" : "#991b1b",
+                      border: `1px solid ${r.game_eligible ? "#a5d6a7" : "#fecaca"}`,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {r.game_eligible ? "GAME ELIGIBLE" : "HIDDEN FROM GAME"}
+                  </button>
+                </div>
+
                 <div style={{ textAlign: "center" }}>
                   <button
                     onClick={() => window.open(`/arcade?car=${r.id}`, "_blank")}

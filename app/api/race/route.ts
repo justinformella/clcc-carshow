@@ -1,15 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient();
+    const gameOnly = request.nextUrl.searchParams.get("eligible") === "1";
 
-    const { data: registrations } = await supabase
+    let query = supabase
       .from("registrations")
       .select("id, car_number, vehicle_year, vehicle_make, vehicle_model, vehicle_color, first_name, last_name, ai_image_url, pixel_art_url, pixel_dashboard_url, pixel_rear_url, pixel_dash_cropped_url, pixel_art_flipped")
-      .in("payment_status", ["paid", "comped"])
-      .order("car_number", { ascending: true });
+      .in("payment_status", ["paid", "comped"]);
+
+    if (gameOnly) {
+      query = query.eq("game_eligible", true);
+    }
+
+    const { data: registrations } = await query.order("car_number", { ascending: true });
 
     const { data: specs } = await supabase
       .from("vehicle_specs")

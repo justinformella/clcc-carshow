@@ -1212,7 +1212,7 @@
 
     // Fetch car data AND sponsor data in parallel, then show car select
     Promise.all([
-      fetch('/api/race').then(function(r) { return r.json(); }).catch(function() { return { cars: [] }; }),
+      fetch('/api/race?eligible=1').then(function(r) { return r.json(); }).catch(function() { return { cars: [] }; }),
       fetch('/api/sponsors/public').then(function(r) { return r.json(); }).catch(function() { return { tiers: [] }; })
     ]).then(function(results) {
       var carData = results[0];

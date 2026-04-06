@@ -13,7 +13,7 @@ export default function Arcade8Bit() {
   const [cars, setCars] = useState<ArcadeCar[]>([]);
 
   useEffect(() => {
-    fetch("/api/race")
+    fetch("/api/race?eligible=1")
       .then((r) => r.json())
       .then((data) => {
         const withArt = (data.cars || []).filter(
@@ -28,18 +28,51 @@ export default function Arcade8Bit() {
   if (cars.length === 0) return null;
 
   return (
-    <section id="arcade" style={{ ...sectionStyle(COLORS.bgDark), textAlign: "center" }}>
-      <h2 style={sectionTitleStyle()}>TRY THE CLCC / REDLINE MOTOR CONDOS ARCADE</h2>
-
+    <section id="arcade" style={{ ...sectionStyle(COLORS.bgDark), textAlign: "center", padding: "4rem 1.5rem" }}>
       <style>{`
         @keyframes cabinetBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
         @keyframes marqueeLights { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes glowPulse { 0%,100%{box-shadow: 0 0 20px rgba(255,215,0,0.15), 0 0 60px rgba(255,215,0,0.05)} 50%{box-shadow: 0 0 30px rgba(255,215,0,0.3), 0 0 80px rgba(255,215,0,0.1)} }
         .arcade-play-btn:hover { transform: translateY(2px) !important; box-shadow: 0 3px 0 #8a6d1b, 0 4px 8px rgba(0,0,0,0.4) !important; }
         .arcade-play-btn:active { transform: translateY(5px) !important; box-shadow: 0 0px 0 #8a6d1b !important; }
+        .game-card:hover { border-color: #ffd700 !important; transform: translateY(-2px); }
       `}</style>
 
+      {/* Section header */}
+      <h2 style={sectionTitleStyle()}>CLCC ARCADE</h2>
+      <p style={{ fontFamily: FONT, fontSize: "clamp(0.45rem, 1.2vw, 0.55rem)", color: COLORS.midGray, marginBottom: "2.5rem", letterSpacing: "0.15em" }}>
+        SPONSORED BY REDLINE MOTOR CONDOS · URW AUTOMOTIVE · THE DETAIL TECH
+      </p>
+
+      {/* Game cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", maxWidth: "900px", margin: "0 auto 2.5rem" }}>
+        {[
+          { name: "DRAG RACE", desc: "Quarter mile showdown", icon: "🏁" },
+          { name: "CRUISE ROUTE 14", desc: "Cruise the open road", icon: "🛣️" },
+          { name: "HIT THE DYNO", desc: "See what you're packing", icon: "⚡" },
+          { name: "DETAIL TECH", desc: "Clean it up nice", icon: "✨" },
+        ].map((game) => (
+          <div
+            key={game.name}
+            className="game-card"
+            style={{
+              background: "linear-gradient(175deg, #1e1e35, #151528)",
+              border: "2px solid #333",
+              borderRadius: "6px",
+              padding: "1.2rem 0.8rem",
+              transition: "all 0.2s",
+              cursor: "default",
+            }}
+          >
+            <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>{game.icon}</div>
+            <p style={{ fontFamily: FONT, fontSize: "clamp(0.5rem, 1.3vw, 0.65rem)", color: COLORS.gold, marginBottom: "0.3rem" }}>{game.name}</p>
+            <p style={{ fontFamily: FONT, fontSize: "clamp(0.35rem, 1vw, 0.45rem)", color: COLORS.midGray, lineHeight: 1.8 }}>{game.desc}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Arcade Cabinet */}
-      <div style={{ position: "relative", display: "inline-block", maxWidth: "560px", width: "92%" }}>
+      <div style={{ position: "relative", display: "inline-block", maxWidth: "560px", width: "92%", animation: "glowPulse 3s ease-in-out infinite" }}>
         {/* Side panels */}
         <div style={{ position: "absolute", top: 0, bottom: "40px", left: "-2px", width: "12px", background: "linear-gradient(to right, #15152a, #1e1e35)", borderLeft: "2px solid #555", borderRadius: "6px 0 0 0", zIndex: 2 }} />
         <div style={{ position: "absolute", top: 0, bottom: "40px", right: "-2px", width: "12px", background: "linear-gradient(to left, #15152a, #1e1e35)", borderRight: "2px solid #555", borderRadius: "0 6px 0 0", zIndex: 2 }} />
@@ -96,13 +129,13 @@ export default function Arcade8Bit() {
               <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.6rem", position: "relative", zIndex: 2 }}>
                 {cars.map((car, i) => (
                   <div key={i} style={{ flex: "1 1 0", aspectRatio: "16/9", background: "#0a0a15", border: "1px solid #222", overflow: "hidden", lineHeight: 0 }}>
-                    <img src={car.pixelArt} alt="Show car" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" }} />
+                    <img src={car.pixelArt} alt="Show car" style={{ display: "block", width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", imageRendering: "pixelated" }} />
                   </div>
                 ))}
               </div>
 
               <p style={{ fontFamily: FONT, fontSize: "clamp(0.5rem, 1.5vw, 0.6rem)", color: COLORS.gold, lineHeight: 2, position: "relative", zIndex: 2 }}>
-                REDLINE MOTOR CONDOS
+                CHOOSE YOUR RIDE
               </p>
               <p style={{ fontFamily: FONT, fontSize: "clamp(0.45rem, 1.2vw, 0.5rem)", color: COLORS.green, animation: "cabinetBlink 1.5s infinite", position: "relative", zIndex: 2, marginTop: "0.2rem" }}>
                 INSERT COIN
@@ -127,8 +160,8 @@ export default function Arcade8Bit() {
             {/* Angled top edge */}
             <div style={{ position: "absolute", top: "-8px", left: "5%", right: "5%", height: "8px", background: "linear-gradient(to bottom, transparent, #252540)" }} />
 
-            <p style={{ fontFamily: FONT, fontSize: "clamp(0.55rem, 1.5vw, 0.7rem)", color: "#ccc", lineHeight: 2.2, marginBottom: "1rem" }}>
-              Race the registered show cars
+            <p style={{ fontFamily: FONT, fontSize: "clamp(0.5rem, 1.4vw, 0.65rem)", color: "#ccc", lineHeight: 2.2, marginBottom: "1rem" }}>
+              {cars.length} cars ready to race, detail & cruise
             </p>
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem" }}>
@@ -144,12 +177,12 @@ export default function Arcade8Bit() {
                 style={{
                   display: "inline-block",
                   fontFamily: FONT,
-                  fontSize: "clamp(0.7rem, 2vw, 0.9rem)",
+                  fontSize: "clamp(0.9rem, 2.5vw, 1.2rem)",
                   color: COLORS.bgDark,
                   background: "linear-gradient(180deg, #ffe066, #ffd700, #c9a84c)",
                   border: "3px solid #b8860b",
                   boxShadow: "0 5px 0 #8a6d1b, 0 7px 14px rgba(0,0,0,0.4)",
-                  padding: "0.7rem 2.2rem",
+                  padding: "1rem 3rem",
                   textDecoration: "none",
                   letterSpacing: "0.12em",
                   borderRadius: "50px",

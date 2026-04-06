@@ -49,6 +49,7 @@ const sampleReg: Registration = {
   pixel_rear_original_url: null,
   pixel_dash_cropped_url: null,
   pixel_art_flipped: false,
+  game_eligible: false,
   lat: null,
   lng: null,
   utm_source: null,

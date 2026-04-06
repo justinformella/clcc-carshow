@@ -184,6 +184,7 @@ export async function generatePixelArt(registrationId: string): Promise<{ sideUr
       pixel_rear_original_url: rearOrigUrl,
       pixel_dash_cropped_url: croppedUrl,
       pixel_art_flipped: facingLeft,
+      game_eligible: true,
     })
     .eq("id", registrationId);
 

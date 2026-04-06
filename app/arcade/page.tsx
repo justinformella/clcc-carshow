@@ -34,7 +34,7 @@ function RacePage() {
   // Fetch cars (once on mount)
   useEffect(() => {
     const carId = preselectedCarId;
-    fetch("/api/race")
+    fetch("/api/race?eligible=1")
       .then((r) => r.json())
       .then((data) => {
         const raceCars: RaceCar[] = (data.cars || []).map((c: Record<string, unknown>) => ({
@@ -83,7 +83,7 @@ function RacePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ batch: true }),
       });
-      const res = await fetch("/api/race");
+      const res = await fetch("/api/race?eligible=1");
       const data = await res.json();
       setCars(data.cars || []);
     } catch {}

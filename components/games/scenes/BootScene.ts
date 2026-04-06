@@ -45,7 +45,7 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Fetch car data from API
-    fetch("/api/race")
+    fetch("/api/race?eligible=1")
       .then((r) => r.json())
       .then((data) => {
         const cars: RaceCar[] = (data.cars || []).map((c: Record<string, unknown>) => ({
