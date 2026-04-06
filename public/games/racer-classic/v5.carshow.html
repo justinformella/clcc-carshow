@@ -1371,18 +1371,38 @@
     }
 
     // Unlock audio on ANY user gesture (covers Safari on direct-link with ?car=)
+    // Mobile Safari requires: create AudioContext + create & start an OscillatorNode
+    // ALL within the same synchronous touch/click call stack
+    var audioUnlocked = false;
     function unlockAudioOnGesture() {
-      try { getAudioCtx(); } catch(ex) {}
-      if (engineSound && !engineSound.running) {
-        startEngineSound(engineSound);
-      }
-      document.removeEventListener('click', unlockAudioOnGesture);
-      document.removeEventListener('touchstart', unlockAudioOnGesture);
-      document.removeEventListener('keydown', unlockAudioOnGesture);
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      try {
+        // Create context
+        var ctx = getAudioCtx();
+        // Immediately create, connect, and start an oscillator (Safari requirement)
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        g.gain.value = 0; // silent
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(0);
+        o.stop(ctx.currentTime + 0.001); // stop after 1ms
+        // Now start the real engine sound
+        if (engineSound && !engineSound.running) {
+          startEngineSound(engineSound);
+        }
+      } catch(ex) {}
+      document.removeEventListener('click', unlockAudioOnGesture, true);
+      document.removeEventListener('touchstart', unlockAudioOnGesture, true);
+      document.removeEventListener('touchend', unlockAudioOnGesture, true);
+      document.removeEventListener('keydown', unlockAudioOnGesture, true);
     }
-    document.addEventListener('click', unlockAudioOnGesture);
-    document.addEventListener('touchstart', unlockAudioOnGesture);
-    document.addEventListener('keydown', unlockAudioOnGesture);
+    // Use capture phase to fire before anything else
+    document.addEventListener('click', unlockAudioOnGesture, true);
+    document.addEventListener('touchstart', unlockAudioOnGesture, true);
+    document.addEventListener('touchend', unlockAudioOnGesture, true);
+    document.addEventListener('keydown', unlockAudioOnGesture, true);
 
     function autoSelectCar(car) {
       hideLoadingScreen();
@@ -1608,11 +1628,6 @@
 
       overlay.addEventListener('touchstart', function(e) {
         e.preventDefault();
-        // Init audio on first touch (mobile browsers require user gesture)
-        if (engineSound && !engineSound.running) {
-          try { getAudioCtx(); } catch(ex) {}
-          startEngineSound(engineSound);
-        }
         for (var i = 0; i < e.changedTouches.length; i++) {
           activeTouches[e.changedTouches[i].identifier] = getZone(e.changedTouches[i]);
         }
