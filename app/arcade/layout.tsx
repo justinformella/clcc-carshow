@@ -10,7 +10,7 @@ export const metadata: Metadata = {
       "Drag race, cruise, hit the dyno, and detail your ride in retro 8-bit arcade style.",
     type: "website",
     images: [{
-      url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png`,
+      url: "https://vuwiucgxxaoygsyxqodk.supabase.co/storage/v1/object/public/pixel-art/8bit/redline-garage.png",
       width: 1200,
       height: 630,
       alt: "CLCC Arcade — Redline Motor Condos",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: "CLCC Arcade",
     description:
       "Drag race, cruise, hit the dyno, and detail your ride in retro 8-bit arcade style.",
-    images: [`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/redline-garage.png`],
+    images: ["https://vuwiucgxxaoygsyxqodk.supabase.co/storage/v1/object/public/pixel-art/8bit/redline-garage.png"],
   },
 };
 

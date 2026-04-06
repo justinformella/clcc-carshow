@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     description: "Crystal Lake Cars & Caffeine — 8-Bit retro arcade edition.",
     type: "website",
     images: [{
-      url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/hero.png`,
+      url: "https://vuwiucgxxaoygsyxqodk.supabase.co/storage/v1/object/public/pixel-art/8bit/hero.png",
       width: 1200,
       height: 630,
       alt: "Crystal Lake Cars & Caffeine — 8-Bit Edition",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "CLCC Car Show | 8-Bit Edition",
     description: "Crystal Lake Cars & Caffeine — 8-Bit retro arcade edition.",
-    images: [`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/hero.png`],
+    images: ["https://vuwiucgxxaoygsyxqodk.supabase.co/storage/v1/object/public/pixel-art/8bit/hero.png"],
   },
 };
 
