@@ -41,19 +41,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# playwright MCP logs
-.playwright-mcp/
-
-# screenshots
-*.png
-!public/**/*.png
-
-# superpowers brainstorm sessions
-.superpowers/
-
-# remember plugin
-.remember/
-
-# stripped preview images
-stripped-preview/
