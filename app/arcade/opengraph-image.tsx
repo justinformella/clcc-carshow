@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "CLCC Car Show Race Mode";
+export const alt = "CLCC Arcade — Redline Motor Condos";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -91,29 +91,65 @@ export default async function OGImage() {
             justifyContent: "center",
             flex: 1,
             position: "relative",
-            gap: "12px",
+            gap: "16px",
           }}
         >
           <div
             style={{
-              fontSize: "80px",
-              fontWeight: 800,
-              color: "#c9a84c",
-              letterSpacing: "-0.02em",
-              textShadow: "0 4px 30px rgba(0,0,0,0.8), 0 2px 10px rgba(201,168,76,0.4)",
+              fontSize: "22px",
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.6)",
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
               display: "flex",
             }}
           >
-            RACE MODE
+            CLCC ARCADE
           </div>
           <div
             style={{
-              fontSize: "30px",
+              fontSize: "72px",
+              fontWeight: 800,
+              color: "#ffd700",
+              letterSpacing: "-0.02em",
+              textShadow: "0 4px 30px rgba(0,0,0,0.8), 0 2px 10px rgba(255,215,0,0.4)",
+              display: "flex",
+            }}
+          >
+            REDLINE MOTOR CONDOS
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: "24px",
+              marginTop: "8px",
+            }}
+          >
+            {["DRAG RACE", "CRUISE", "DYNO", "DETAIL"].map((game) => (
+              <div
+                key={game}
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  color: "#ffd700",
+                  padding: "8px 20px",
+                  border: "2px solid #b8860b",
+                  background: "rgba(26,26,46,0.8)",
+                  letterSpacing: "0.1em",
+                  display: "flex",
+                }}
+              >
+                {game}
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              fontSize: "20px",
               fontWeight: 600,
-              color: "rgba(255,255,255,0.85)",
+              color: "rgba(255,255,255,0.7)",
               letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              textShadow: "0 2px 10px rgba(0,0,0,0.8)",
+              marginTop: "4px",
               display: "flex",
             }}
           >
