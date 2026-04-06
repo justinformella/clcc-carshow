@@ -1518,13 +1518,13 @@
 
       document.body.appendChild(tap);
 
+      var tapHandled = false;
       function onTap(e) {
-        e.preventDefault();
-        tap.removeEventListener('click', onTap);
-        tap.removeEventListener('touchend', onTap);
-        tap.remove();
+        if (tapHandled) return;
+        tapHandled = true;
 
-        // THIS is the real user gesture — create and start audio here
+        // START AUDIO FIRST — before removing DOM, before anything else
+        // Safari requires .start() in the same call stack as the gesture
         try {
           getAudioCtx();
           if (!engineSound && playerCarData) {
@@ -1536,9 +1536,13 @@
           audioUnlocked = true;
         } catch(ex) {}
 
+        // NOW remove overlay and start game
+        tap.remove();
         startGame();
       }
 
+      // Listen on both click (desktop) and touchend (mobile)
+      // Do NOT preventDefault — let the browser see this as a real interaction
       tap.addEventListener('click', onTap);
       tap.addEventListener('touchend', onTap);
     }
