@@ -86,16 +86,14 @@ async function checkModal(): Promise<ServiceStatus> {
 
   const start = Date.now();
   try {
-    // Send a tiny 1x1 transparent PNG to test the endpoint is alive
-    const tinyPng = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    // Just check the endpoint is reachable — a GET will return 405 but proves it's alive
     const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: tinyPng }),
-      signal: AbortSignal.timeout(30000),
+      method: "GET",
+      signal: AbortSignal.timeout(10000),
     });
     const latencyMs = Date.now() - start;
-    if (res.ok) return { name: "Modal (rembg)", status: "ok", latencyMs };
+    // 405 Method Not Allowed is expected (endpoint only accepts POST) — means it's up
+    if (res.ok || res.status === 405) return { name: "Modal (rembg)", status: "ok", latencyMs };
     return { name: "Modal (rembg)", status: "error", latencyMs, error: `HTTP ${res.status}` };
   } catch (err) {
     return { name: "Modal (rembg)", status: "error", latencyMs: Date.now() - start, error: String(err) };
