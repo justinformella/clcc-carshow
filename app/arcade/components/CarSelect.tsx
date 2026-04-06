@@ -38,6 +38,30 @@ export default function CarSelect({ cars, onSelect, generating, onGenerateAll }:
           )}
         </div>
 
+        {/* Register CTA banner */}
+        <a
+          href="/register"
+          style={{
+            display: "block",
+            maxWidth: "1100px",
+            margin: "0 auto 1.25rem",
+            padding: "0.75rem 1rem",
+            background: "linear-gradient(90deg, rgba(255,215,0,0.08) 0%, rgba(255,215,0,0.15) 50%, rgba(255,215,0,0.08) 100%)",
+            border: `2px dashed ${C.goldDark}`,
+            textAlign: "center",
+            textDecoration: "none",
+            fontFamily: FONT,
+          }}
+        >
+          <p style={{ color: C.gold, fontSize: "0.7rem", margin: "0 0 0.3rem" }}>DON&apos;T SEE YOUR CAR?</p>
+          <p style={{ color: C.midGray, fontSize: "0.55rem", margin: "0 0 0.3rem", lineHeight: 1.6 }}>
+            REGISTER FOR THE CRYSTAL LAKE CAR SHOW AND YOUR RIDE GETS ADDED TO THE ARCADE
+          </p>
+          <p style={{ color: C.midGray, fontSize: "0.5rem", margin: 0, letterSpacing: "0.1em" }}>
+            MAY 17, 2026 &middot; DOWNTOWN CRYSTAL LAKE
+          </p>
+        </a>
+
         {/* Car grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "0.75rem", maxWidth: "1100px", margin: "0 auto", alignItems: "start" }}>
           {cars.map((car) => (
@@ -84,6 +108,35 @@ export default function CarSelect({ cars, onSelect, generating, onGenerateAll }:
               </div>
             </button>
           ))}
+
+          {/* "Your car here" registration CTA slot */}
+          <a
+            href="/register"
+            style={{
+              background: "transparent",
+              border: `2px dashed ${C.border}`,
+              padding: 0,
+              cursor: "pointer",
+              overflow: "hidden",
+              textAlign: "left",
+              fontFamily: FONT,
+              textDecoration: "none",
+              transition: "border-color 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.gold; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}
+          >
+            <div style={{ width: "100%", aspectRatio: "16/9", background: "rgba(255,215,0,0.04)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "0.5rem" }}>
+              <span style={{ fontFamily: FONT, fontSize: "2.5rem", color: C.border, lineHeight: 1 }}>?</span>
+              <span style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray }}>YOUR CAR HERE</span>
+            </div>
+            <div style={{ padding: "0.6rem 0.7rem 1.5rem" }}>
+              <p style={{ color: C.gold, fontSize: "0.65rem", fontFamily: FONT, marginBottom: "0.4rem" }}>UNLOCK YOUR RIDE</p>
+              <p style={{ color: C.white, fontSize: "0.55rem", fontFamily: FONT, marginBottom: "0.4rem", lineHeight: 1.6 }}>CRYSTAL LAKE CAR SHOW</p>
+              <p style={{ color: C.midGray, fontSize: "0.5rem", fontFamily: FONT, marginBottom: "0.5rem", lineHeight: 1.6 }}>MAY 17, 2026 &middot; DOWNTOWN CRYSTAL LAKE</p>
+              <span style={{ display: "inline-block", padding: "0.3rem 0.8rem", background: C.gold, color: C.bgDark, fontFamily: FONT, fontSize: "0.5rem" }}>REGISTER NOW</span>
+            </div>
+          </a>
         </div>
       </div>
     </div>
