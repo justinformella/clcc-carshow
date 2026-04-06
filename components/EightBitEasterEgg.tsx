@@ -155,47 +155,74 @@ export function FooterPixelBadge() {
   return (
     <>
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+      <style>{`
+        @keyframes blink8bit { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes scanlines8bit {
+          0% { background-position: 0 0; }
+          100% { background-position: 0 4px; }
+        }
+      `}</style>
       <div
         onClick={triggerTransition}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          display: "inline-block",
-          padding: "0.8rem 1.2rem",
-          background: hovered ? "rgba(255,215,0,0.08)" : "rgba(255,255,255,0.03)",
-          border: `2px solid ${hovered ? "#ffd700" : "rgba(255,255,255,0.15)"}`,
-          boxShadow: hovered ? "3px 3px 0 #b8860b" : "2px 2px 0 rgba(255,255,255,0.05)",
+          display: "block",
+          width: "100%",
+          padding: "1.2rem 1.5rem",
+          background: hovered ? "#0d0d1a" : "#111118",
           cursor: "pointer",
           transition: "all 0.3s",
           textAlign: "center",
+          position: "relative",
+          overflow: "hidden",
+          borderTop: `2px solid ${hovered ? "#ffd700" : "#333"}`,
+          borderBottom: `2px solid ${hovered ? "#ffd700" : "#333"}`,
         }}
       >
+        {/* Scanline overlay */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px)",
+          pointerEvents: "none",
+          animation: "scanlines8bit 0.5s linear infinite",
+        }} />
+
+        {/* CRT glow */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          boxShadow: hovered ? "inset 0 0 40px rgba(255,215,0,0.08)" : "none",
+          pointerEvents: "none",
+          transition: "box-shadow 0.3s",
+        }} />
+
         <span
           style={{
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: "0.65rem",
-            color: hovered ? "#ffd700" : "rgba(255,255,255,0.5)",
-            display: "block",
-            letterSpacing: "0.1em",
+            fontSize: "clamp(0.6rem, 1.5vw, 0.85rem)",
+            color: hovered ? "#ffd700" : "#aaa",
+            letterSpacing: "0.15em",
+            position: "relative",
+            zIndex: 1,
             transition: "color 0.3s",
           }}
         >
-          &copy; 2026 CLCC
+          ★ TRY THE 8-BIT VERSION ★
         </span>
         <span
           style={{
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: "0.4rem",
-            color: hovered ? "rgba(255,215,0,0.7)" : "rgba(255,255,255,0.3)",
-            display: "block",
-            marginTop: "0.4rem",
-            lineHeight: 1.8,
-            transition: "color 0.3s",
+            fontSize: "clamp(0.6rem, 1.5vw, 0.85rem)",
+            color: hovered ? "#00ff00" : "#555",
+            animation: "blink8bit 1s step-end infinite",
+            marginLeft: "0.3rem",
+            position: "relative",
+            zIndex: 1,
           }}
         >
-          Crystal Lake Cars &amp; Caffeine
-          <br />
-          All rights reserved
+          ▌
         </span>
       </div>
     </>
