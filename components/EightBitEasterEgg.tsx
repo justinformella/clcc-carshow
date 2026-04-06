@@ -146,6 +146,22 @@ export function FooterPixelBadge() {
   const [transitioning, setTransitioning] = useState(false);
   const [hovered, setHovered] = useState(false);
 
+  // Reset transitioning state on back navigation
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) { cleanupTransition(); setTransitioning(false); }
+    };
+    const handlePopState = () => { cleanupTransition(); setTransitioning(false); };
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("popstate", handlePopState);
+    cleanupTransition();
+    setTransitioning(false);
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   const triggerTransition = useCallback(() => {
     if (transitioning) return;
     setTransitioning(true);
