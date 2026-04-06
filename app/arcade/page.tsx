@@ -195,7 +195,7 @@ function RacePage() {
           </button>
         </div>
         <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-          <button onClick={() => { setPlayerCar(null); setPhase("select"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
+          <button onClick={() => { stopMenuMusic(); startSelectMusic(); setPlayerCar(null); setPhase("select"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
             PICK DIFFERENT CAR
           </button>
         </div>
