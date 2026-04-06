@@ -209,7 +209,7 @@ export default function Hero8Bit() {
           <Link href="/register" style={ctaPrimaryStyle}>
             ★ REGISTER YOUR VEHICLE ★
           </Link>
-          <Link href="/arcade" style={{ ...ctaPrimaryStyle, backgroundColor: "#22c55e", border: "3px solid #15803d", color: "#fff", boxShadow: "3px 3px 0 #166534" }}>
+          <Link href="/arcade" style={{ ...ctaPrimaryStyle, backgroundColor: "#16a34a", border: "3px solid #14532d", color: "#fff", boxShadow: "3px 3px 0 #14532d" }}>
             ► TRY THE CLCC ARCADE
           </Link>
         </div>
