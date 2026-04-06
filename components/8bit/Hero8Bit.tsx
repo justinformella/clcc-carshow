@@ -212,6 +212,9 @@ export default function Hero8Bit() {
           <a href="#sponsors" style={ctaOutlineStyle}>
             BECOME A SPONSOR
           </a>
+          <Link href="/arcade" style={{ ...ctaOutlineStyle, border: `3px solid ${COLORS.gold}`, color: COLORS.gold }}>
+            ► TRY THE CLCC ARCADE
+          </Link>
         </div>
       </div>
 
