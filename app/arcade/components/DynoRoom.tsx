@@ -370,7 +370,7 @@ export default function DynoRoom({ playerCar, onBack }: DynoRoomProps) {
             href={`/contact?subject=${encodeURIComponent(`Stats issue: #${playerCar.carNumber} ${playerCar.year} ${playerCar.name}`)}&message=${encodeURIComponent(`I noticed an issue with the stats for car #${playerCar.carNumber} (${playerCar.year} ${playerCar.name}):\n\n`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontFamily: FONT, fontSize: "0.5rem", color: C.border, textDecoration: "underline", marginTop: "1rem", display: "block", textAlign: "center" }}
+            style={{ fontFamily: FONT, fontSize: "0.5rem", color: C.midGray, textDecoration: "underline", marginTop: "1.5rem", display: "block", textAlign: "center" }}
           >
             STATS WRONG? REPORT AN ISSUE
           </a>

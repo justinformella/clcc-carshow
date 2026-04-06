@@ -32,7 +32,7 @@ const WAYPOINTS = [
 ];
 
 const TRACK_WIDTH = 120;
-const TOTAL_LAPS = 3;
+const TOTAL_LAPS = 2;
 const W = 1200;
 const H = 820;
 
