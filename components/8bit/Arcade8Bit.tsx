@@ -11,14 +11,16 @@ type ArcadeCar = {
 
 export default function Arcade8Bit() {
   const [cars, setCars] = useState<ArcadeCar[]>([]);
+  const [totalCars, setTotalCars] = useState(0);
 
   useEffect(() => {
-    fetch("/api/race?eligible=1")
+    fetch("/api/race")
       .then((r) => r.json())
       .then((data) => {
         const withArt = (data.cars || []).filter(
           (c: { pixelArt?: string | null }) => c.pixelArt
         );
+        setTotalCars(withArt.length);
         const shuffled = withArt.sort(() => Math.random() - 0.5).slice(0, 3);
         setCars(shuffled);
       })
@@ -33,13 +35,13 @@ export default function Arcade8Bit() {
         @keyframes cabinetBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
         @keyframes marqueeLights { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes glowPulse { 0%,100%{box-shadow: 0 0 20px rgba(255,215,0,0.15), 0 0 60px rgba(255,215,0,0.05)} 50%{box-shadow: 0 0 30px rgba(255,215,0,0.3), 0 0 80px rgba(255,215,0,0.1)} }
-        .arcade-play-btn:hover { transform: translateY(2px) !important; box-shadow: 0 3px 0 #8a6d1b, 0 4px 8px rgba(0,0,0,0.4) !important; }
-        .arcade-play-btn:active { transform: translateY(5px) !important; box-shadow: 0 0px 0 #8a6d1b !important; }
+        .arcade-play-btn:hover { transform: translateY(2px) !important; box-shadow: 0 3px 0 #166534, 0 4px 8px rgba(0,0,0,0.4) !important; }
+        .arcade-play-btn:active { transform: translateY(5px) !important; box-shadow: 0 0px 0 #166534 !important; }
         .game-card:hover { border-color: #ffd700 !important; transform: translateY(-2px); }
       `}</style>
 
       {/* Section header */}
-      <h2 style={sectionTitleStyle()}>CLCC ARCADE</h2>
+      <h2 style={{ ...sectionTitleStyle(), fontSize: "clamp(1.5rem, 4vw, 2.5rem)" }}>CLCC ARCADE</h2>
       <p style={{ fontFamily: FONT, fontSize: "clamp(0.45rem, 1.2vw, 0.55rem)", color: COLORS.midGray, marginBottom: "2.5rem", letterSpacing: "0.15em" }}>
         SPONSORED BY REDLINE MOTOR CONDOS · URW AUTOMOTIVE · THE DETAIL TECH
       </p>
@@ -161,13 +163,18 @@ export default function Arcade8Bit() {
             <div style={{ position: "absolute", top: "-8px", left: "5%", right: "5%", height: "8px", background: "linear-gradient(to bottom, transparent, #252540)" }} />
 
             <p style={{ fontFamily: FONT, fontSize: "clamp(0.5rem, 1.4vw, 0.65rem)", color: "#ccc", lineHeight: 2.2, marginBottom: "1rem" }}>
-              {cars.length} cars ready to race, detail & cruise
+              {totalCars} cars ready to race, detail & cruise
             </p>
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.5rem" }}>
               {/* Joystick */}
-              <div style={{ width: "32px", height: "32px", background: "radial-gradient(circle at 40% 40%, #444, #222)", border: "2px solid #555", borderRadius: "50%", position: "relative", flexShrink: 0 }}>
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "12px", height: "12px", background: "#333", borderRadius: "50%", border: "1px solid #555" }} />
+              <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                {/* Ball top */}
+                <div style={{ width: "20px", height: "20px", background: "radial-gradient(circle at 35% 35%, #ef4444, #991b1b)", border: "2px solid #b91c1c", borderRadius: "50%", zIndex: 2 }} />
+                {/* Shaft */}
+                <div style={{ width: "8px", height: "16px", background: "linear-gradient(to right, #333, #555, #333)", marginTop: "-4px", zIndex: 1 }} />
+                {/* Base plate */}
+                <div style={{ width: "36px", height: "10px", background: "radial-gradient(ellipse at center, #444, #222)", border: "2px solid #555", borderRadius: "50%", marginTop: "-3px" }} />
               </div>
 
               {/* Play button */}
@@ -178,10 +185,10 @@ export default function Arcade8Bit() {
                   display: "inline-block",
                   fontFamily: FONT,
                   fontSize: "clamp(0.9rem, 2.5vw, 1.2rem)",
-                  color: COLORS.bgDark,
-                  background: "linear-gradient(180deg, #ffe066, #ffd700, #c9a84c)",
-                  border: "3px solid #b8860b",
-                  boxShadow: "0 5px 0 #8a6d1b, 0 7px 14px rgba(0,0,0,0.4)",
+                  color: "#fff",
+                  background: "linear-gradient(180deg, #4ade80, #22c55e, #16a34a)",
+                  border: "3px solid #15803d",
+                  boxShadow: "0 5px 0 #166534, 0 7px 14px rgba(0,0,0,0.4)",
                   padding: "1rem 3rem",
                   textDecoration: "none",
                   letterSpacing: "0.12em",
