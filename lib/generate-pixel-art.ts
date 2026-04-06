@@ -251,34 +251,58 @@ export async function detectCarFacingLeft(imageBuffer: Buffer): Promise<boolean>
   }
 }
 
+// Google image generation models in fallback order
+const IMAGEN_MODELS = [
+  "imagen-4.0-generate-001",      // Best quality, 70 RPD
+  "imagen-4.0-fast-generate-001", // Fast, 70 RPD
+  "imagen-4.0-ultra-generate-001", // Ultra quality, 30 RPD
+];
+
+async function tryImagenModel(model: string, prompt: string, aspectRatio: string, geminiKey: string): Promise<Buffer | null> {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${geminiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instances: [{ prompt }],
+          parameters: { sampleCount: 1, aspectRatio },
+        }),
+      }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+      if (b64) {
+        console.log(`Image generated with ${model}`);
+        return Buffer.from(b64, "base64");
+      }
+    } else {
+      const status = res.status;
+      const text = await res.text().catch(() => "");
+      console.warn(`${model} failed (${status}): ${text.slice(0, 200)}`);
+    }
+  } catch (err) {
+    console.warn(`${model} error:`, err);
+  }
+  return null;
+}
+
 export async function generateImage(prompt: string, aspectRatio: string = "16:9"): Promise<Buffer> {
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
+  // Try each Imagen model in fallback order
   if (geminiKey) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instances: [{ prompt }],
-            parameters: { sampleCount: 1, aspectRatio },
-          }),
-        }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-        if (b64) return Buffer.from(b64, "base64");
-      }
-    } catch (err) {
-      console.error("Imagen pixel art failed:", err);
+    for (const model of IMAGEN_MODELS) {
+      const result = await tryImagenModel(model, prompt, aspectRatio, geminiKey);
+      if (result) return result;
     }
   }
 
-  // Fallback to OpenAI
+  // Final fallback: OpenAI
+  console.log("All Imagen models failed, falling back to OpenAI");
   const OpenAI = (await import("openai")).default;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const response = await openai.images.generate({
