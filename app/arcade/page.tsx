@@ -10,9 +10,10 @@ import CarSelect from "./components/CarSelect";
 import DragRace from "./components/DragRace";
 import DynoRoom from "./components/DynoRoom";
 import DetailTech from "./components/DetailTech";
+import SmokeShow from "./components/SmokeShow";
 
 type Phase = "loading" | "title" | "select" | "action-menu";
-type ActiveGame = "drag" | "dyno" | "detail" | null;
+type ActiveGame = "drag" | "dyno" | "detail" | "smokeshow" | null;
 
 export default function RacePageWrapper() {
   return (
@@ -99,6 +100,8 @@ function RacePage() {
         return <DynoRoom playerCar={playerCar} onBack={backToMenu} />;
       case "detail":
         return <DetailTech playerCar={playerCar} onBack={backToMenu} />;
+      case "smokeshow":
+        return <SmokeShow playerCar={playerCar} onBack={backToMenu} />;
     }
   }
 
@@ -193,6 +196,9 @@ function RacePage() {
           </button>
           <button onClick={() => { stopMenuMusic(); setActiveGame("detail"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
             DETAIL YOUR CAR AT DETAIL TECH
+          </button>
+          <button onClick={() => { stopMenuMusic(); setActiveGame("smokeshow"); }} style={{ ...pixelBtnStyle, width: "100%", padding: "1rem", fontSize: "0.85rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}` }}>
+            SMOKE SHOW AT IVY HALL
           </button>
         </div>
         <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
