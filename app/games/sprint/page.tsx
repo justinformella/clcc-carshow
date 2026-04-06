@@ -76,11 +76,17 @@ function ptOnSegment(px: number, py: number, ax: number, ay: number, bx: number,
 }
 
 function isOnTrack(x: number, y: number): boolean {
+  const halfW = TRACK_WIDTH / 2 + 10; // generous margin
+  // Check distance to each waypoint (covers rounded corners)
+  for (let i = 0; i < WAYPOINTS.length; i++) {
+    if (dist(x, y, WAYPOINTS[i].x, WAYPOINTS[i].y) < halfW) return true;
+  }
+  // Check distance to each segment between waypoints
   for (let i = 0; i < WAYPOINTS.length; i++) {
     const a = WAYPOINTS[i];
     const b = WAYPOINTS[(i + 1) % WAYPOINTS.length];
     const p = ptOnSegment(x, y, a.x, a.y, b.x, b.y);
-    if (dist(x, y, p.x, p.y) < TRACK_WIDTH / 2 + 4) return true;
+    if (dist(x, y, p.x, p.y) < halfW) return true;
   }
   return false;
 }
@@ -356,13 +362,17 @@ export default function SprintPage() {
       const turnRate = 0.032;
 
       if (car.isPlayer) {
-        if (keys["ArrowLeft"]) car.va -= turnRate;
-        if (keys["ArrowRight"]) car.va += turnRate;
-        if (keys["ArrowUp"]) {
+        // Steering scales with speed — no turning when stopped, tighter at low speed
+        const spd = Math.sqrt(car.vx ** 2 + car.vy ** 2);
+        const speedFactor = Math.min(1, spd / 1.5);
+        const effectiveTurn = turnRate * speedFactor;
+        if (keys["ArrowLeft"] || keys["a"] || keys["A"]) car.va -= effectiveTurn;
+        if (keys["ArrowRight"] || keys["d"] || keys["D"]) car.va += effectiveTurn;
+        if (keys["ArrowUp"] || keys["w"] || keys["W"]) {
           car.vx += Math.sin(car.angle) * accel;
           car.vy -= Math.cos(car.angle) * accel;
         }
-        if (keys["ArrowDown"]) {
+        if (keys["ArrowDown"] || keys["s"] || keys["S"]) {
           car.vx -= Math.sin(car.angle) * accel * 0.5;
           car.vy += Math.cos(car.angle) * accel * 0.5;
         }
