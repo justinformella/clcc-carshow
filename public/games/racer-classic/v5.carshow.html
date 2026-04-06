@@ -1313,7 +1313,7 @@
       var totalToLoad = carShowData.length + sponsorData.length + (supabaseBaseUrl ? sceneryKeys.length : 0);
       if (totalToLoad === 0) {
         hideLoadingScreen();
-        startGame();
+        showTapToStart();
         return;
       }
 
@@ -1428,12 +1428,12 @@
         dashImg.crossOrigin = 'anonymous';
         dashImg.onload = function() {
           playerDashImage = dashImg;
-          startGame();
+          showTapToStart();
         };
-        dashImg.onerror = function() { startGame(); };
+        dashImg.onerror = function() { showTapToStart(); };
         dashImg.src = car.pixelDash;
       } else {
-        startGame();
+        showTapToStart();
       }
     }
 
@@ -1488,30 +1488,59 @@
         if (!card) return;
         var idx = parseInt(card.getAttribute('data-index'));
         playerCarData = carShowData[idx];
-        // Create AudioContext AND start engine oscillators RIGHT HERE in the click handler
-        // Safari requires both creation and .start() within the same user gesture call stack
-        engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
-        try {
-          getAudioCtx();
-          startEngineSound(engineSound);
-        } catch(ex) {}
+        // Audio will be started in the TAP TO START screen
         playerCarImage = carShowImages[playerCarData.id] || null;
         overlay.remove();
 
-        // Load dashboard image if available, then start game
+        // Load dashboard image if available, then show tap to start
         if (playerCarData.pixelDash) {
           var dashImg = new Image();
           dashImg.crossOrigin = 'anonymous';
           dashImg.onload = function() {
             playerDashImage = dashImg;
-            startGame();
+            showTapToStart();
           };
-          dashImg.onerror = function() { startGame(); };
+          dashImg.onerror = function() { showTapToStart(); };
           dashImg.src = playerCarData.pixelDash;
         } else {
-          startGame();
+          showTapToStart();
         }
       });
+    }
+
+    function showTapToStart() {
+      var tap = document.createElement('div');
+      tap.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;cursor:pointer;touch-action:none;';
+      tap.innerHTML =
+        '<div style="color:#ffd700;font-size:clamp(12px,3vw,20px);margin-bottom:20px;">' + (playerCarData ? playerCarData.name : '') + '</div>' +
+        '<div style="color:#fff;font-size:clamp(16px,5vw,32px);animation:pulse 1.5s ease-in-out infinite;">TAP TO START</div>' +
+        '<style>@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }</style>';
+
+      document.body.appendChild(tap);
+
+      function onTap(e) {
+        e.preventDefault();
+        tap.removeEventListener('click', onTap);
+        tap.removeEventListener('touchend', onTap);
+        tap.remove();
+
+        // THIS is the real user gesture — create and start audio here
+        try {
+          getAudioCtx();
+          if (!engineSound && playerCarData) {
+            engineSound = createEngineSound(playerCarData.engineType, playerCarData.cylinders);
+          }
+          if (engineSound && !engineSound.running) {
+            startEngineSound(engineSound);
+          }
+          audioUnlocked = true;
+        } catch(ex) {}
+
+        startGame();
+      }
+
+      tap.addEventListener('click', onTap);
+      tap.addEventListener('touchend', onTap);
     }
 
     function startGame() {
