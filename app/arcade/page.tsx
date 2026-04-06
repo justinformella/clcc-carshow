@@ -154,6 +154,7 @@ function RacePage() {
           >
             ENTER GARAGE
           </button>
+          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, margin: "0.75rem 0" }}>OR</p>
           <Link href="/8bit" style={{ ...goldBtnStyle, fontSize: "0.7rem", padding: "0.75rem 2rem", background: C.bgMid, color: C.midGray, border: `2px solid ${C.border}`, textDecoration: "none" }}>BACK TO THE CRYSTAL LAKE CAR SHOW HOME PAGE →</Link>
         </div>
       </div>
