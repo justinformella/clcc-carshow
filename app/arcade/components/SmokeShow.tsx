@@ -117,7 +117,7 @@ export default function SmokeShow({ playerCar, onBack }: SmokeShowProps) {
   // Handle tap/keypress for burnout
   const handleTap = useCallback(() => {
     if (phaseRef.current !== "burnout") return;
-    const add = 200 + Math.random() * 250;
+    const add = 250 + Math.random() * 300;
     rpmRef.current = Math.min(rpmRef.current + add, redline);
     if (rpmRef.current > peakRpmRef.current) peakRpmRef.current = rpmRef.current;
   }, [redline]);
@@ -262,7 +262,7 @@ export default function SmokeShow({ playerCar, onBack }: SmokeShowProps) {
 
         if (phase === "burnout") {
           // RPM decay
-          rpmRef.current = Math.max(800, rpmRef.current - 35);
+          rpmRef.current = Math.max(800, rpmRef.current - 28);
           updateEngine(rpmRef.current, (rpmRef.current / redline) * 100);
           updateScreech(rpmRef.current);
           setDisplayRpm(Math.round(rpmRef.current));
