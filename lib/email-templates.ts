@@ -444,6 +444,132 @@ export function sponsorPaymentLinkEmail(
   };
 }
 
+export function sponsorReceiptEmail(
+  sponsor: Sponsor,
+  tierName: string,
+  amountDollars: string,
+  benefits: string
+): { subject: string; html: string } {
+  const benefitsHtml = benefits
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => {
+      const text = line.replace(/^-\s*/, "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+      return `<li style="padding:4px 0; font-size:14px; color:#333;">${text}</li>`;
+    })
+    .join("");
+
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c;">Sponsorship Receipt</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Thank you, ${sponsor.name}! Your sponsorship payment has been received.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888; width:140px;">Company</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${sponsor.company}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Sponsorship Level</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${tierName}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Amount Paid</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c; font-weight:600;">${amountDollars}</td>
+      </tr>
+    </table>
+    ${benefitsHtml ? `
+    <h2 style="margin:0 0 12px; font-size:18px; color:#2c2c2c;">Your Sponsorship Includes</h2>
+    <ul style="margin:0 0 24px; padding-left:20px;">${benefitsHtml}</ul>
+    ` : ""}
+    <div style="background:#f8f5f0; padding:20px; margin:0 0 24px; border-left:4px solid #c9a84c;">
+      <h3 style="margin:0 0 8px; font-size:16px; color:#2c2c2c;">Tax Receipt Information</h3>
+      <p style="margin:0; font-size:13px; color:#555; line-height:1.6;">
+        <strong>Organization:</strong> Downtown Crystal Lake / Main Street<br/>
+        <strong>Type:</strong> 501(c)(3) not-for-profit, founded 1996<br/>
+        <strong>Address:</strong> Raue House, 25 W. Crystal Lake Avenue, Crystal Lake, IL 60014<br/>
+        <strong>Phone:</strong> 815-479-0835<br/>
+        <strong>Website:</strong> downtowncl.org
+      </p>
+    </div>
+    <p style="margin:0; font-size:13px; color:#888; line-height:1.5;">
+      If you have any questions, contact us at info@crystallakecarshow.com.
+    </p>
+  `;
+
+  return {
+    subject: "Sponsorship Receipt — Crystal Lake Cars & Caffeine",
+    html: htmlShell(content),
+  };
+}
+
+export function sponsorPaymentAdminNotificationEmail(
+  sponsor: Sponsor,
+  tierName: string,
+  amountDollars: string,
+  paymentMethod: "stripe" | "check",
+  upgradedFrom: string | null,
+  adminDetailUrl: string
+): { subject: string; html: string } {
+  const isCheck = paymentMethod === "check";
+  const upgradeNote = upgradedFrom
+    ? `<tr>
+        <td style="padding:8px 0; font-size:14px; color:#e65100; width:140px;">Upgraded From</td>
+        <td style="padding:8px 0; font-size:14px; color:#e65100; font-weight:600;">${upgradedFrom}</td>
+      </tr>`
+    : "";
+
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c;">
+      ${isCheck ? "Sponsor Check Pending" : "Sponsor Payment Received"}
+    </h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      ${isCheck
+        ? `${sponsor.company} has chosen to pay by check.`
+        : `${sponsor.company} has completed their sponsorship payment.`}
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888; width:140px;">Company</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${sponsor.company}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Contact</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${sponsor.name} (${sponsor.email})</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Level</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${tierName}</td>
+      </tr>
+      ${upgradeNote}
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Amount</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c; font-weight:600;">${amountDollars}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Payment Method</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${isCheck ? "Check" : "Credit Card (Stripe)"}</td>
+      </tr>
+      ${isCheck && sponsor.check_note ? `
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Check Note</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${sponsor.check_note}</td>
+      </tr>
+      ` : ""}
+    </table>
+    <a href="${adminDetailUrl}" style="display:inline-block; padding:12px 24px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:600; font-size:14px; border-radius:6px;">
+      View Sponsor
+    </a>
+  `;
+
+  return {
+    subject: isCheck
+      ? `Sponsor Check Pending: ${sponsor.company}`
+      : `Sponsor Payment: ${sponsor.company}`,
+    html: htmlShell(content),
+  };
+}
+
 export function adminInviteEmail(
   name: string,
   inviteLink: string

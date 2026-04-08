@@ -6,6 +6,8 @@ import {
   adminNotificationEmail,
   sponsorAdminNotificationEmail,
   sponsorPaymentLinkEmail,
+  sponsorReceiptEmail,
+  sponsorPaymentAdminNotificationEmail,
   announcementEmail,
   helpRequestConfirmationEmail,
   helpRequestAdminNotificationEmail,
@@ -204,6 +206,90 @@ export async function sendSponsorPaymentLink(sponsorId: string) {
   const result = await sendWithRetry({ from: FROM_EMAIL, to: sponsor.email, subject, html });
   console.log("[sponsor-payment-link] Sent to:", sponsor.email, "resend_id:", result.id);
   await logEmail(null, "sponsor_payment_link", sponsor.email, subject, result.id ?? null);
+}
+
+export async function sendSponsorReceipt(sponsorId: string) {
+  console.log("[sponsor-receipt] Starting for sponsor:", sponsorId);
+  const supabase = createServerClient();
+
+  const { data: sponsor, error: sponsorError } = await supabase
+    .from("sponsors")
+    .select("*")
+    .eq("id", sponsorId)
+    .single();
+
+  if (sponsorError || !sponsor) {
+    throw new Error(`Sponsor fetch failed: ${sponsorError?.message || "not found"}`);
+  }
+
+  const { data: tier } = await supabase
+    .from("sponsorship_tiers")
+    .select("name, price_cents, benefits")
+    .eq("name", sponsor.sponsorship_level)
+    .single();
+
+  const tierName = tier?.name || sponsor.sponsorship_level;
+  const amountDollars = `$${(sponsor.amount_paid / 100).toLocaleString()}`;
+  const benefits = tier?.benefits || "";
+
+  const { subject, html } = sponsorReceiptEmail(sponsor as Sponsor, tierName, amountDollars, benefits);
+
+  const result = await sendWithRetry({ from: FROM_EMAIL, to: sponsor.email, subject, html });
+  console.log("[sponsor-receipt] Sent to:", sponsor.email, "resend_id:", result.id);
+  await logEmail(null, "sponsor_receipt", sponsor.email, subject, result.id ?? null);
+}
+
+export async function sendSponsorPaymentAdminNotification(sponsorId: string, paymentMethod: "stripe" | "check") {
+  console.log("[sponsor-payment-notify] Starting for sponsor:", sponsorId);
+  const supabase = createServerClient();
+
+  const { data: sponsor, error: sponsorError } = await supabase
+    .from("sponsors")
+    .select("*")
+    .eq("id", sponsorId)
+    .single();
+
+  if (sponsorError || !sponsor) {
+    throw new Error(`Sponsor fetch failed: ${sponsorError?.message || "not found"}`);
+  }
+
+  const { data: tier } = await supabase
+    .from("sponsorship_tiers")
+    .select("name, price_cents")
+    .eq("name", sponsor.sponsorship_level)
+    .single();
+
+  const tierName = tier?.name || sponsor.sponsorship_level;
+  const amountDollars = tier ? `$${(tier.price_cents / 100).toLocaleString()}` : `$${(sponsor.amount_paid / 100).toLocaleString()}`;
+  const upgradedFrom = sponsor.original_level && sponsor.original_level !== sponsor.sponsorship_level
+    ? sponsor.original_level
+    : null;
+
+  const adminDetailUrl = `${SITE_URL}/admin/sponsors/${sponsorId}`;
+  const { subject, html } = sponsorPaymentAdminNotificationEmail(
+    sponsor as Sponsor, tierName, amountDollars, paymentMethod, upgradedFrom, adminDetailUrl
+  );
+
+  const { data: admins } = await supabase.from("admins").select("*");
+
+  if (!admins || admins.length === 0) {
+    console.log("[sponsor-payment-notify] No admins configured — skipping");
+    return;
+  }
+
+  for (const admin of admins) {
+    try {
+      const result = await sendWithRetry({ from: FROM_EMAIL, to: admin.email, subject, html });
+      console.log("[sponsor-payment-notify] Sent to:", admin.email);
+      await logEmail(null, "sponsor_payment_notification", admin.email, subject, result.id ?? null);
+    } catch (err) {
+      console.error(`[sponsor-payment-notify] Exception for ${admin.email}:`, err);
+    }
+  }
+}
+
+export async function sendSponsorCheckAdminNotification(sponsorId: string) {
+  return sendSponsorPaymentAdminNotification(sponsorId, "check");
 }
 
 export async function sendAnnouncement(

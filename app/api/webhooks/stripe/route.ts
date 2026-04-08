@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase-server";
 import { generateCarImage } from "@/lib/generate-car-image";
-import { sendConfirmation, sendAdminNotification } from "@/lib/email";
+import { sendConfirmation, sendAdminNotification, sendSponsorReceipt, sendSponsorPaymentAdminNotification } from "@/lib/email";
 import Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -112,6 +112,44 @@ export async function POST(request: NextRequest) {
           } catch (err) {
             console.error("Admin notification email failed:", err);
           }
+        }
+      });
+    }
+
+    // Handle sponsor payments
+    const sponsorId = session.metadata?.sponsor_id;
+    if (sponsorId) {
+      const supabase = createServerClient();
+
+      const { error } = await supabase
+        .from("sponsors")
+        .update({
+          status: "paid",
+          amount_paid: session.amount_total,
+          paid_at: new Date().toISOString(),
+          payment_method: "stripe",
+          stripe_session_id: session.id,
+          stripe_payment_intent_id: session.payment_intent as string,
+          ...(session.metadata?.tier_name ? { sponsorship_level: session.metadata.tier_name } : {}),
+        })
+        .eq("id", sponsorId);
+
+      if (error) {
+        console.error("Failed to update sponsor:", error);
+        return NextResponse.json({ error: "Failed to update sponsor" }, { status: 500 });
+      }
+
+      after(async () => {
+        try {
+          await sendSponsorReceipt(sponsorId);
+        } catch (err) {
+          console.error("Sponsor receipt email failed:", err);
+        }
+
+        try {
+          await sendSponsorPaymentAdminNotification(sponsorId, "stripe");
+        } catch (err) {
+          console.error("Sponsor payment admin notification failed:", err);
         }
       });
     }
