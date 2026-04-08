@@ -40,6 +40,9 @@ export default function RegistrationDetailPage() {
   const [saving, setSaving] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imageModel, setImageModel] = useState("auto");
+  const [imageGenElapsed, setImageGenElapsed] = useState(0);
+  const imageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [generatingPixelArt, setGeneratingPixelArt] = useState(false);
   const [form, setForm] = useState<EditForm | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -384,12 +387,17 @@ export default function RegistrationDetailPage() {
     if (!registration) return;
     setGeneratingImage(true);
     setImageError(null);
+    setImageGenElapsed(0);
+    imageTimerRef.current = setInterval(() => setImageGenElapsed((e) => e + 1), 1000);
 
     try {
       const res = await fetch("/api/generate-car-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registrationId: registration.id }),
+        body: JSON.stringify({
+          registrationId: registration.id,
+          model: imageModel === "auto" ? undefined : imageModel,
+        }),
       });
 
       const data = await res.json();
@@ -402,6 +410,8 @@ export default function RegistrationDetailPage() {
     } catch (err) {
       setImageError(err instanceof Error ? err.message : "Image generation failed");
     } finally {
+      if (imageTimerRef.current) clearInterval(imageTimerRef.current);
+      imageTimerRef.current = null;
       setGeneratingImage(false);
     }
   };
@@ -555,17 +565,6 @@ export default function RegistrationDetailPage() {
                     zIndex: 50,
                   }}
                 >
-                  <DropdownItem
-                    label={
-                      generatingImage
-                        ? "Generating..."
-                        : r.ai_image_url
-                        ? "Regenerate Image"
-                        : "Generate Image"
-                    }
-                    onClick={() => { handleGenerateImage(); setMenuOpen(false); }}
-                    disabled={generatingImage}
-                  />
                   <DropdownItem
                     label={sendingEmail ? "Sending..." : "Resend Confirmation"}
                     onClick={() => { handleResendConfirmation(); setMenuOpen(false); }}
@@ -1456,14 +1455,17 @@ export default function RegistrationDetailPage() {
                 {generatingImage ? (
                   <div style={{
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "3rem 1.5rem",
                     color: "var(--text-light)",
                     fontSize: "0.85rem",
                     textAlign: "center",
+                    gap: "0.5rem",
                   }}>
-                    Generating image of this {r.vehicle_year} {r.vehicle_make} {r.vehicle_model}...
+                    <span>Generating image of this {r.vehicle_year} {r.vehicle_make} {r.vehicle_model}...</span>
+                    <span style={{ color: "var(--gold)", fontWeight: 600 }}>{imageGenElapsed}s</span>
                   </div>
                 ) : r.ai_image_url ? (
                   <img
@@ -1484,13 +1486,50 @@ export default function RegistrationDetailPage() {
                     fontSize: "0.85rem",
                   }}>
                     <span>No image generated</span>
-                    <ActionButton
-                      label="Generate Image"
-                      onClick={handleGenerateImage}
-                      variant="primary"
-                    />
                   </div>
                 )}
+                {/* Image generation controls */}
+                <div style={{
+                  display: "flex",
+                  gap: "0.4rem",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "0.5rem 0.75rem",
+                  borderTop: "1px solid #eee",
+                }}>
+                  <select
+                    value={imageModel}
+                    onChange={(e) => setImageModel(e.target.value)}
+                    style={{ padding: "0.25rem 0.4rem", fontSize: "0.65rem", border: "1px solid #ddd", borderRadius: "2px", background: "var(--white)", cursor: "pointer" }}
+                  >
+                    <option value="auto">Auto</option>
+                    <option value="imagen-4.0-generate-001">Imagen 4</option>
+                    <option value="imagen-4.0-fast-generate-001">Imagen 4 Fast</option>
+                    <option value="imagen-4.0-ultra-generate-001">Imagen 4 Ultra</option>
+                    <option value="openai">OpenAI</option>
+                  </select>
+                  <button
+                    onClick={handleGenerateImage}
+                    disabled={generatingImage}
+                    style={{
+                      padding: "0.25rem 0.6rem",
+                      fontSize: "0.65rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      background: "var(--cream)",
+                      color: "var(--charcoal)",
+                      border: "1px solid #ddd",
+                      cursor: generatingImage ? "not-allowed" : "pointer",
+                      letterSpacing: "0.04em",
+                      opacity: generatingImage ? 0.5 : 1,
+                    }}
+                  >
+                    {r.ai_image_url ? "Regen" : "Generate"}
+                  </button>
+                  {imageError && (
+                    <span style={{ fontSize: "0.65rem", color: "#dc2626" }}>{imageError}</span>
+                  )}
+                </div>
               </div>
 
               {/* Quick Info card */}

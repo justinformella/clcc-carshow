@@ -18,6 +18,7 @@ const awards = [
   "BEST DOMESTIC",
   "BEST VANITY PLATE",
   "BEST INTERIOR",
+  "BEST MOTORCYCLE",
 ];
 
 export default function Schedule8Bit() {

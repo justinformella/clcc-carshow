@@ -69,7 +69,7 @@ interface SmokeShowProps {
   - 90-100%: "LEGENDARY BURNOUT" (gold, sparkle particles)
   - 70-89%: "SOLID SMOKE SHOW" (gold)
   - 50-69%: "DECENT BURNOUT" (white)
-  - Below 50%: "WEAK SAUCE" (gray)
+  - Below 50%: "WEAK" (gray)
 - "BACK TO GARAGE" link
 - Ivy Hall branding visible
 
@@ -186,6 +186,4 @@ Generates the driver sprite sheet if it doesn't exist. Same pattern as generate-
 ## Ivy Hall Branding
 
 - Header: Ivy Hall 8-bit logo from sponsor record (`pixel-art/8bit/sponsor-{id}.png`) + "IVY HALL" text
-- Link to https://www.ivyhallil.com
 - Building is the gameplay backdrop
-- Score screen shows "PRESENTED BY IVY HALL"

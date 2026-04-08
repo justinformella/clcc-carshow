@@ -231,22 +231,92 @@ export default function AnalyticsPage() {
         if (!isNaN(v)) setMaxRegistrations(v);
       }
 
-      // Fetch traffic data
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const [trafficRes, pathRes, referrerRes] = await Promise.all([
-        supabase.from("page_views").select("date, views, visitors").gte("date", thirtyDaysAgo).order("date"),
-        supabase.from("page_view_paths").select("path, views").gte("date", thirtyDaysAgo),
-        supabase.from("page_view_referrers").select("referrer, visitors").gte("date", thirtyDaysAgo),
+      // Fetch traffic data — use raw events (local-timezone accurate) with
+      // fallback to legacy pre-aggregated tables for historical data
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const thirtyDaysAgoDate = thirtyDaysAgo.split("T")[0];
+
+      const [rawEventsRes, legacyTrafficRes, pathRes, referrerRes] = await Promise.all([
+        supabase.from("page_view_events").select("timestamp, path, referrer, device_id").gte("timestamp", thirtyDaysAgo).order("timestamp"),
+        supabase.from("page_views").select("date, views, visitors").gte("date", thirtyDaysAgoDate).order("date"),
+        supabase.from("page_view_paths").select("path, views").gte("date", thirtyDaysAgoDate),
+        supabase.from("page_view_referrers").select("referrer, visitors").gte("date", thirtyDaysAgoDate),
       ]);
-      setTrafficData(trafficRes.data || []);
-      // Aggregate paths across dates
-      const pathMap: Record<string, number> = {};
-      (pathRes.data || []).forEach((r: { path: string; views: number }) => { pathMap[r.path] = (pathMap[r.path] || 0) + r.views; });
-      setPathData(Object.entries(pathMap).map(([path, views]) => ({ path, views })).sort((a, b) => b.views - a.views));
-      // Aggregate referrers across dates
-      const refMap: Record<string, number> = {};
-      (referrerRes.data || []).forEach((r: { referrer: string; visitors: number }) => { refMap[r.referrer] = (refMap[r.referrer] || 0) + r.visitors; });
-      setReferrerData(Object.entries(refMap).map(([referrer, visitors]) => ({ referrer, visitors })).sort((a, b) => b.visitors - a.visitors));
+
+      const rawEvents = rawEventsRes.data || [];
+
+      if (rawEvents.length > 0) {
+        // Aggregate raw events by local date
+        const toLocalDate = (ts: string) => {
+          const d = new Date(ts);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        };
+
+        const dayBuckets: Record<string, { views: number; deviceIds: Set<string> }> = {};
+        const rawPathMap: Record<string, number> = {};
+        const rawRefMap: Record<string, number> = {};
+
+        for (const e of rawEvents) {
+          const localDay = toLocalDate(e.timestamp);
+          if (!dayBuckets[localDay]) dayBuckets[localDay] = { views: 0, deviceIds: new Set() };
+          dayBuckets[localDay].views++;
+          if (e.device_id) dayBuckets[localDay].deviceIds.add(e.device_id);
+
+          const path = e.path || "/";
+          rawPathMap[path] = (rawPathMap[path] || 0) + 1;
+
+          const ref = e.referrer || "Direct";
+          rawRefMap[ref] = (rawRefMap[ref] || 0) + 1;
+        }
+
+        // Find the earliest local date covered by raw events
+        const rawDates = Object.keys(dayBuckets).sort();
+        const rawStartDate = rawDates[0];
+
+        // Use legacy data for dates before raw events, raw data for the rest
+        const legacyData = (legacyTrafficRes.data || []).filter(
+          (d: { date: string }) => d.date < rawStartDate
+        );
+
+        const rawTraffic = rawDates.map((date) => ({
+          date,
+          views: dayBuckets[date].views,
+          visitors: dayBuckets[date].deviceIds.size,
+        }));
+
+        setTrafficData([...legacyData, ...rawTraffic]);
+
+        // Merge path data: legacy (before raw) + raw
+        const mergedPathMap: Record<string, number> = {};
+        (pathRes.data || []).forEach((r: { path: string; views: number }) => {
+          // Only include legacy path data — raw paths are already counted
+          mergedPathMap[r.path] = (mergedPathMap[r.path] || 0) + r.views;
+        });
+        // Overwrite with raw path data for accuracy in the overlap period
+        for (const [path, views] of Object.entries(rawPathMap)) {
+          mergedPathMap[path] = views;
+        }
+        setPathData(Object.entries(mergedPathMap).map(([path, views]) => ({ path, views })).sort((a, b) => b.views - a.views));
+
+        // Merge referrer data similarly
+        const mergedRefMap: Record<string, number> = {};
+        (referrerRes.data || []).forEach((r: { referrer: string; visitors: number }) => {
+          mergedRefMap[r.referrer] = (mergedRefMap[r.referrer] || 0) + r.visitors;
+        });
+        for (const [ref, count] of Object.entries(rawRefMap)) {
+          mergedRefMap[ref] = count;
+        }
+        setReferrerData(Object.entries(mergedRefMap).map(([referrer, visitors]) => ({ referrer, visitors })).sort((a, b) => b.visitors - a.visitors));
+      } else {
+        // No raw events yet — use legacy tables as-is
+        setTrafficData(legacyTrafficRes.data || []);
+        const pathMap: Record<string, number> = {};
+        (pathRes.data || []).forEach((r: { path: string; views: number }) => { pathMap[r.path] = (pathMap[r.path] || 0) + r.views; });
+        setPathData(Object.entries(pathMap).map(([path, views]) => ({ path, views })).sort((a, b) => b.views - a.views));
+        const refMap: Record<string, number> = {};
+        (referrerRes.data || []).forEach((r: { referrer: string; visitors: number }) => { refMap[r.referrer] = (refMap[r.referrer] || 0) + r.visitors; });
+        setReferrerData(Object.entries(refMap).map(([referrer, visitors]) => ({ referrer, visitors })).sort((a, b) => b.visitors - a.visitors));
+      }
 
       // Fetch email log data (aggregated by day) and prospect stats
       const [emailLogRes, prospectRes] = await Promise.all([
@@ -307,76 +377,77 @@ export default function AnalyticsPage() {
   const regsWithSpecs: RegWithSpec[] = useMemo(() => registrations.map((r) => ({ ...r, spec: specMap.get(r.id) })), [registrations, specMap]);
   const hasSpecs = specs.length > 0;
 
-  // Metrics
-  const uniqueMakes = new Set(registrations.map((r) => r.vehicle_make?.trim().toLowerCase())).size;
   // Convert pre-1972 SAE Gross HP to Net (×0.80) for accurate aggregates
   const toNetHP = (hp: number, year: number) => year < 1972 ? Math.round(hp * 0.80) : hp;
-  const totalHp = regsWithSpecs.reduce((s, r) => s + toNetHP(r.spec?.horsepower || 0, r.vehicle_year), 0);
-  const totalWeight = specs.reduce((s, sp) => s + (sp.weight_lbs || 0), 0);
-  const totalMsrp = specs.reduce((s, sp) => s + (sp.original_msrp || 0), 0);
-  const totalMsrpAdjusted = specs.reduce((s, sp) => s + (sp.msrp_adjusted || 0), 0);
 
-  // Charts
-  const byMake = countBy(registrations, (r) => r.vehicle_make?.trim());
-  const byDecade = countBy(registrations, (r) => `${Math.floor(r.vehicle_year / 10) * 10}s`).sort((a, b) => a.id.localeCompare(b.id));
-  const byColor = countBy(registrations, (r) => normalizeColor(r.vehicle_color));
-  const byCountry = countBy(specs, (s) => s.country_of_origin);
-  const byCategory = countBy(specs, (s) => s.category);
-  const byEra = countBy(specs, (s) => s.era);
-  const byDriveType = countBy(specs, (s) => s.drive_type);
-  const byEngineType = countBy(specs, (s) => s.engine_type);
-  const byBodyStyle = countBy(specs, (s) => s.body_style);
-  const treemapData = { name: "makes", children: byMake.slice(0, 15).map((m) => ({ name: m.id, value: m.value })) };
+  // Memoize all chart data and metrics
+  const chartData = useMemo(() => {
+    const uniqueMakes = new Set(registrations.map((r) => r.vehicle_make?.trim().toLowerCase())).size;
+    const totalHp = regsWithSpecs.reduce((s, r) => s + toNetHP(r.spec?.horsepower || 0, r.vehicle_year), 0);
+    const totalWeight = specs.reduce((s, sp) => s + (sp.weight_lbs || 0), 0);
+    const totalMsrp = specs.reduce((s, sp) => s + (sp.original_msrp || 0), 0);
+    const totalMsrpAdjusted = specs.reduce((s, sp) => s + (sp.msrp_adjusted || 0), 0);
 
-  // Power-to-weight ratio
-  const ptwData = regsWithSpecs
-    .filter((r) => r.spec?.horsepower && r.spec?.weight_lbs && r.spec.weight_lbs > 0)
-    .map((r) => ({
-      ...r,
-      ptw: Math.round((toNetHP(r.spec!.horsepower!, r.vehicle_year) / r.spec!.weight_lbs!) * 1000) / 1000,
-    }))
-    .sort((a, b) => b.ptw - a.ptw);
+    const byMake = countBy(registrations, (r) => r.vehicle_make?.trim());
+    const byDecade = countBy(registrations, (r) => `${Math.floor(r.vehicle_year / 10) * 10}s`).sort((a, b) => a.id.localeCompare(b.id));
+    const byColor = countBy(registrations, (r) => normalizeColor(r.vehicle_color));
+    const byCountry = countBy(specs, (s) => s.country_of_origin);
+    const byCategory = countBy(specs, (s) => s.category);
+    const byEra = countBy(specs, (s) => s.era);
+    const byDriveType = countBy(specs, (s) => s.drive_type);
+    const byEngineType = countBy(specs, (s) => s.engine_type);
+    const byBodyStyle = countBy(specs, (s) => s.body_style);
+    const treemapData = { name: "makes", children: byMake.slice(0, 15).map((m) => ({ name: m.id, value: m.value })) };
 
-  // Additional fun stats
-  const heaviest = regsWithSpecs.filter((r) => r.spec?.weight_lbs).sort((a, b) => (b.spec?.weight_lbs || 0) - (a.spec?.weight_lbs || 0))[0] || null;
-  const lightest = regsWithSpecs.filter((r) => r.spec?.weight_lbs && r.spec.weight_lbs > 0).sort((a, b) => (a.spec?.weight_lbs || 0) - (b.spec?.weight_lbs || 0))[0] || null;
-  const mostExpensive = regsWithSpecs.filter((r) => r.spec?.msrp_adjusted).sort((a, b) => (b.spec?.msrp_adjusted || 0) - (a.spec?.msrp_adjusted || 0))[0] || null;
-  const bestPtw = ptwData[0] || null;
+    const ptwData = regsWithSpecs
+      .filter((r) => r.spec?.horsepower && r.spec?.weight_lbs && r.spec.weight_lbs > 0)
+      .map((r) => ({
+        ...r,
+        ptw: Math.round((toNetHP(r.spec!.horsepower!, r.vehicle_year) / r.spec!.weight_lbs!) * 1000) / 1000,
+      }))
+      .sort((a, b) => b.ptw - a.ptw);
 
-  // Fun stats
-  const oldest = registrations.length > 0 ? registrations.reduce((m, r) => r.vehicle_year < m.vehicle_year ? r : m, registrations[0]) : null;
-  const newest = registrations.length > 0 ? registrations.reduce((m, r) => r.vehicle_year > m.vehicle_year ? r : m, registrations[0]) : null;
-  const mostPowerful = regsWithSpecs.filter((r) => r.spec?.horsepower).sort((a, b) => toNetHP(b.spec?.horsepower || 0, b.vehicle_year) - toNetHP(a.spec?.horsepower || 0, a.vehicle_year))[0] || null;
-  const rarest = regsWithSpecs.filter((r) => r.spec?.production_numbers && r.spec.production_numbers > 0).sort((a, b) => (a.spec?.production_numbers || Infinity) - (b.spec?.production_numbers || Infinity))[0] || null;
+    const heaviest = regsWithSpecs.filter((r) => r.spec?.weight_lbs).sort((a, b) => (b.spec?.weight_lbs || 0) - (a.spec?.weight_lbs || 0))[0] || null;
+    const lightest = regsWithSpecs.filter((r) => r.spec?.weight_lbs && r.spec.weight_lbs > 0).sort((a, b) => (a.spec?.weight_lbs || 0) - (b.spec?.weight_lbs || 0))[0] || null;
+    const mostExpensive = regsWithSpecs.filter((r) => r.spec?.msrp_adjusted).sort((a, b) => (b.spec?.msrp_adjusted || 0) - (a.spec?.msrp_adjusted || 0))[0] || null;
+    const bestPtw = ptwData[0] || null;
 
-  // HP distribution
-  const hpBuckets = (() => {
-    const b: Record<string, number> = {};
-    regsWithSpecs.filter((r) => r.spec?.horsepower).forEach((r) => {
-      const hp = toNetHP(r.spec!.horsepower!, r.vehicle_year);
-      const key = hp < 150 ? "< 150" : hp < 250 ? "150-249" : hp < 350 ? "250-349" : hp < 500 ? "350-499" : "500+";
-      b[key] = (b[key] || 0) + 1;
-    });
-    return ["< 150", "150-249", "250-349", "350-499", "500+"].filter((k) => b[k]).map((id) => ({ id, value: b[id] }));
-  })();
+    const oldest = registrations.length > 0 ? registrations.reduce((m, r) => r.vehicle_year < m.vehicle_year ? r : m, registrations[0]) : null;
+    const newest = registrations.length > 0 ? registrations.reduce((m, r) => r.vehicle_year > m.vehicle_year ? r : m, registrations[0]) : null;
+    const mostPowerful = regsWithSpecs.filter((r) => r.spec?.horsepower).sort((a, b) => toNetHP(b.spec?.horsepower || 0, b.vehicle_year) - toNetHP(a.spec?.horsepower || 0, a.vehicle_year))[0] || null;
+    const rarest = regsWithSpecs.filter((r) => r.spec?.production_numbers && r.spec.production_numbers > 0).sort((a, b) => (a.spec?.production_numbers || Infinity) - (b.spec?.production_numbers || Infinity))[0] || null;
 
-  // Radar
-  const specsWithData = specs.filter((s) => s.horsepower && s.weight_lbs);
-  const radarData = specsWithData.length > 0 ? [
-    { stat: "Power", value: Math.round(regsWithSpecs.filter((r) => r.spec?.horsepower && r.spec?.weight_lbs).reduce((s, r) => s + toNetHP(r.spec!.horsepower!, r.vehicle_year), 0) / specsWithData.length / 5) },
-    { stat: "Weight", value: Math.round(specsWithData.reduce((s, sp) => s + (sp.weight_lbs || 0), 0) / specsWithData.length / 50) },
-    { stat: "Displ.", value: Math.round(specs.filter((s) => s.displacement_liters).reduce((s, sp) => s + (Number(sp.displacement_liters) || 0), 0) / (specs.filter((s) => s.displacement_liters).length || 1) * 10) },
-    { stat: "Rarity", value: Math.min(100, Math.round(100 - (specs.filter((s) => s.production_numbers).reduce((s, sp) => s + Math.min(sp.production_numbers || 100000, 100000), 0) / (specs.filter((s) => s.production_numbers).length || 1)) / 1000)) },
-    { stat: "Price", value: Math.round(specs.filter((s) => s.msrp_adjusted || s.original_msrp).reduce((s, sp) => s + (sp.msrp_adjusted || sp.original_msrp || 0), 0) / (specs.filter((s) => s.msrp_adjusted || s.original_msrp).length || 1) / 500) },
-  ] : [];
+    const hpBuckets = (() => {
+      const b: Record<string, number> = {};
+      regsWithSpecs.filter((r) => r.spec?.horsepower).forEach((r) => {
+        const hp = toNetHP(r.spec!.horsepower!, r.vehicle_year);
+        const key = hp < 150 ? "< 150" : hp < 250 ? "150-249" : hp < 350 ? "250-349" : hp < 500 ? "350-499" : "500+";
+        b[key] = (b[key] || 0) + 1;
+      });
+      return ["< 150", "150-249", "250-349", "350-499", "500+"].filter((k) => b[k]).map((id) => ({ id, value: b[id] }));
+    })();
 
-  // Leaderboard
-  const leaderboardData = (() => {
+    const specsWithData = specs.filter((s) => s.horsepower && s.weight_lbs);
+    const radarData = specsWithData.length > 0 ? [
+      { stat: "Power", value: Math.round(regsWithSpecs.filter((r) => r.spec?.horsepower && r.spec?.weight_lbs).reduce((s, r) => s + toNetHP(r.spec!.horsepower!, r.vehicle_year), 0) / specsWithData.length / 5) },
+      { stat: "Weight", value: Math.round(specsWithData.reduce((s, sp) => s + (sp.weight_lbs || 0), 0) / specsWithData.length / 50) },
+      { stat: "Displ.", value: Math.round(specs.filter((s) => s.displacement_liters).reduce((s, sp) => s + (Number(sp.displacement_liters) || 0), 0) / (specs.filter((s) => s.displacement_liters).length || 1) * 10) },
+      { stat: "Rarity", value: Math.min(100, Math.round(100 - (specs.filter((s) => s.production_numbers).reduce((s, sp) => s + Math.min(sp.production_numbers || 100000, 100000), 0) / (specs.filter((s) => s.production_numbers).length || 1)) / 1000)) },
+      { stat: "Price", value: Math.round(specs.filter((s) => s.msrp_adjusted || s.original_msrp).reduce((s, sp) => s + (sp.msrp_adjusted || sp.original_msrp || 0), 0) / (specs.filter((s) => s.msrp_adjusted || s.original_msrp).length || 1) / 500) },
+    ] : [];
+
+    return { uniqueMakes, totalHp, totalWeight, totalMsrp, totalMsrpAdjusted, byMake, byDecade, byColor, byCountry, byCategory, byEra, byDriveType, byEngineType, byBodyStyle, treemapData, ptwData, heaviest, lightest, mostExpensive, bestPtw, oldest, newest, mostPowerful, rarest, hpBuckets, radarData };
+  }, [registrations, regsWithSpecs, specs]);
+
+  const { uniqueMakes, totalHp, totalWeight, totalMsrp, totalMsrpAdjusted, byMake, byDecade, byColor, byCountry, byCategory, byEra, byDriveType, byEngineType, byBodyStyle, treemapData, ptwData, heaviest, lightest, mostExpensive, bestPtw, oldest, newest, mostPowerful, rarest, hpBuckets, radarData } = chartData;
+
+  // Leaderboard — depends on leaderboard state, so separate memo
+  const leaderboardData = useMemo(() => {
     const items = regsWithSpecs.filter((r) => r.spec);
-    if (leaderboard === "hp") return items.sort((a, b) => toNetHP(b.spec?.horsepower || 0, b.vehicle_year) - toNetHP(a.spec?.horsepower || 0, a.vehicle_year));
+    if (leaderboard === "hp") return [...items].sort((a, b) => toNetHP(b.spec?.horsepower || 0, b.vehicle_year) - toNetHP(a.spec?.horsepower || 0, a.vehicle_year));
     if (leaderboard === "rare") return items.filter((r) => r.spec?.production_numbers && r.spec.production_numbers > 0).sort((a, b) => (a.spec?.production_numbers || Infinity) - (b.spec?.production_numbers || Infinity));
     return items.filter((r) => r.spec?.msrp_adjusted || r.spec?.original_msrp).sort((a, b) => (b.spec?.msrp_adjusted || b.spec?.original_msrp || 0) - (a.spec?.msrp_adjusted || a.spec?.original_msrp || 0));
-  })();
+  }, [regsWithSpecs, leaderboard]);
 
   // Site analytics computations
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -406,6 +477,7 @@ export default function AnalyticsPage() {
   const mergedDailyData = useMemo(() => {
     return trafficData.map((d) => ({
       date: d.date,
+      label: `${parseInt(d.date.slice(5, 7))}/${parseInt(d.date.slice(8))}`,
       visitors: d.visitors,
       registrations: dailyRegCounts[d.date] || 0,
       emails: emailDayMap[d.date] || 0,
@@ -522,7 +594,7 @@ export default function AnalyticsPage() {
             <Card title="Conversion Rate Trend">
               <div style={{ height: 280 }}>
                 <ResponsiveBar
-                  data={mergedDailyData.map((d) => ({ date: d.date.slice(5), visitors: d.visitors, conversionRate: d.conversionRate }))}
+                  data={mergedDailyData.map((d) => ({ date: d.label, visitors: d.visitors, conversionRate: d.conversionRate }))}
                   keys={["visitors"]}
                   indexBy="date"
                   theme={nivoTheme}
@@ -533,7 +605,7 @@ export default function AnalyticsPage() {
                   axisBottom={{ tickSize: 0, tickPadding: 6, tickRotation: -45 }}
                   axisLeft={{ tickSize: 0, tickPadding: 6 }}
                   enableLabel
-                  label={(d) => `${mergedDailyData.find((m) => m.date.slice(5) === d.indexValue)?.conversionRate || 0}%`}
+                  label={(d) => `${mergedDailyData.find((m) => m.label === d.indexValue)?.conversionRate || 0}%`}
                   labelTextColor="#fff"
                   animate
                   motionConfig="gentle"
@@ -547,7 +619,7 @@ export default function AnalyticsPage() {
             <Card title="Visitors & Registrations by Day">
               <div style={{ height: 280 }}>
                 <ResponsiveBar
-                  data={mergedDailyData.map((d) => ({ date: d.date.slice(5), visitors: d.visitors, registrations: d.registrations }))}
+                  data={mergedDailyData.map((d) => ({ date: d.label, visitors: d.visitors, registrations: d.registrations }))}
                   keys={["visitors", "registrations"]}
                   indexBy="date"
                   theme={nivoTheme}
@@ -624,7 +696,7 @@ export default function AnalyticsPage() {
             <Card title="Emails Sent & Registrations by Day">
               <div style={{ height: 280 }}>
                 <ResponsiveBar
-                  data={mergedDailyData.filter((d) => d.emails > 0 || d.registrations > 0).map((d) => ({ date: d.date.slice(5), emails: d.emails, registrations: d.registrations }))}
+                  data={mergedDailyData.filter((d) => d.emails > 0 || d.registrations > 0).map((d) => ({ date: d.label, emails: d.emails, registrations: d.registrations }))}
                   keys={["emails", "registrations"]}
                   indexBy="date"
                   theme={nivoTheme}
@@ -803,7 +875,8 @@ export default function AnalyticsPage() {
               {radarData.length > 0 && (() => {
                 const specsHP = regsWithSpecs.filter((r) => r.spec?.horsepower && r.spec?.weight_lbs);
                 const avgHP = specsHP.length > 0 ? Math.round(specsHP.reduce((s, r) => s + toNetHP(r.spec!.horsepower!, r.vehicle_year), 0) / specsHP.length) : 0;
-                const avgWeight = specsWithData.length > 0 ? Math.round(specsWithData.reduce((s, sp) => s + (sp.weight_lbs || 0), 0) / specsWithData.length) : 0;
+                const specsWithWeightData = specs.filter((s) => s.horsepower && s.weight_lbs);
+                const avgWeight = specsWithWeightData.length > 0 ? Math.round(specsWithWeightData.reduce((s, sp) => s + (sp.weight_lbs || 0), 0) / specsWithWeightData.length) : 0;
                 const displacementSpecs = specs.filter((s) => s.displacement_liters);
                 const avgDispl = displacementSpecs.length > 0 ? Math.round(displacementSpecs.reduce((s, sp) => s + (Number(sp.displacement_liters) || 0), 0) / displacementSpecs.length * 10) / 10 : 0;
                 const prodSpecs = specs.filter((s) => s.production_numbers);

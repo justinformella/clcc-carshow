@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 
-export default function CountdownTimer() {
+function CountdownTimerInner() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
 
   useEffect(() => {
@@ -47,3 +47,5 @@ export default function CountdownTimer() {
     </div>
   );
 }
+
+export default memo(CountdownTimerInner);

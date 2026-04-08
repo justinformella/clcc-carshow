@@ -53,7 +53,7 @@ async function describeCarWithGemini(
   }
 }
 
-export async function generateCarImage(registrationId: string): Promise<string> {
+export async function generateCarImage(registrationId: string, preferredModel?: string): Promise<string> {
   const supabase = createServerClient();
 
   const { data: reg, error: fetchError } = await supabase
@@ -98,14 +98,35 @@ export async function generateCarImage(registrationId: string): Promise<string> 
 
   const prompt = parts.join(" ");
 
-  // Generate image — Imagen 4.0 first, fall back to OpenAI
-  let buffer: Buffer;
+  // Generate image with model selection (same pattern as pixel art)
+  let buffer: Buffer | null = null;
 
-  if (geminiKey) {
+  if (preferredModel === "openai") {
+    buffer = await generateWithOpenAI(prompt);
+  } else if (preferredModel && geminiKey) {
     try {
-      buffer = await generateWithImagen(geminiKey, prompt);
+      buffer = await generateWithImagen(geminiKey, prompt, preferredModel);
     } catch (err) {
-      console.error("Imagen failed, falling back to OpenAI:", err);
+      console.error(`${preferredModel} failed, falling back to OpenAI:`, err);
+      buffer = await generateWithOpenAI(prompt);
+    }
+  } else if (geminiKey) {
+    // Default fallback chain
+    const models = [
+      "imagen-4.0-generate-001",
+      "imagen-4.0-fast-generate-001",
+      "imagen-4.0-ultra-generate-001",
+    ];
+    for (const model of models) {
+      try {
+        buffer = await generateWithImagen(geminiKey, prompt, model);
+        break;
+      } catch (err) {
+        console.warn(`${model} failed:`, err);
+      }
+    }
+    if (!buffer) {
+      console.log("All Imagen models failed, falling back to OpenAI");
       buffer = await generateWithOpenAI(prompt);
     }
   } else {
@@ -148,9 +169,9 @@ export async function generateCarImage(registrationId: string): Promise<string> 
   return imageUrl;
 }
 
-async function generateWithImagen(apiKey: string, prompt: string): Promise<Buffer> {
+async function generateWithImagen(apiKey: string, prompt: string, model: string = "imagen-4.0-generate-001"): Promise<Buffer> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

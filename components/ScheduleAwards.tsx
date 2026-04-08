@@ -46,6 +46,7 @@ export default function ScheduleAwards() {
               <li>Best Domestic</li>
               <li>Best Vanity Plate</li>
               <li>Best Interior</li>
+              <li>Best Motorcycle</li>
             </ul>
           </div>
         </div>

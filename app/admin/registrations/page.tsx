@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, useTransition, memo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
@@ -51,40 +51,55 @@ export default function RegistrationsPage() {
     fetchData();
   }, [showArchived]);
 
-  const filtered = registrations.filter((r) => {
-    const matchesSearch =
-      !search ||
-      `${r.first_name} ${r.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
-      r.email.toLowerCase().includes(search.toLowerCase()) ||
-      `${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
+  const [deferredSearch, setDeferredSearch] = useState("");
+  const [, startTransition] = useTransition();
 
-    const matchesCategory =
-      !categoryFilter ||
-      (categoryFilter === "__none__" ? !r.award_category : r.award_category === categoryFilter);
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearch(val);
+    startTransition(() => setDeferredSearch(val));
+  }, []);
 
-    const matchesStatus =
-      !statusFilter ||
-      (statusFilter === "checked_in" && r.checked_in) ||
-      (statusFilter === "not_checked_in" && !r.checked_in);
+  const filtered = useMemo(() => {
+    const result = registrations.filter((r) => {
+      const matchesSearch =
+        !deferredSearch ||
+        `${r.first_name} ${r.last_name}`.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+        r.email.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+        `${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}`
+          .toLowerCase()
+          .includes(deferredSearch.toLowerCase());
 
-    const matchesPayment =
-      !paymentFilter ||
-      (paymentFilter === "abandoned"
-        ? r.payment_status === "pending" && new Date(r.created_at).getTime() < Date.now() - 30 * 60 * 1000
-        : r.payment_status === paymentFilter);
+      const matchesCategory =
+        !categoryFilter ||
+        (categoryFilter === "__none__" ? !r.award_category : r.award_category === categoryFilter);
 
-    return matchesSearch && matchesCategory && matchesStatus && matchesPayment;
-  }).sort((a, b) => {
-    switch (sortBy) {
-      case "name": return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
-      case "date": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case "vehicle": return `${a.vehicle_make} ${a.vehicle_model}`.localeCompare(`${b.vehicle_make} ${b.vehicle_model}`);
-      case "city": return (a.address_city || "").localeCompare(b.address_city || "");
-      default: return (a.car_number || 0) - (b.car_number || 0);
-    }
-  });
+      const matchesStatus =
+        !statusFilter ||
+        (statusFilter === "checked_in" && r.checked_in) ||
+        (statusFilter === "not_checked_in" && !r.checked_in);
+
+      const matchesPayment =
+        !paymentFilter ||
+        (paymentFilter === "abandoned"
+          ? r.payment_status === "pending" && new Date(r.created_at).getTime() < Date.now() - 30 * 60 * 1000
+          : r.payment_status === paymentFilter);
+
+      return matchesSearch && matchesCategory && matchesStatus && matchesPayment;
+    });
+
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "name": return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+        case "date": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "vehicle": return `${a.vehicle_make} ${a.vehicle_model}`.localeCompare(`${b.vehicle_make} ${b.vehicle_model}`);
+        case "city": return (a.address_city || "").localeCompare(b.address_city || "");
+        default: return (a.car_number || 0) - (b.car_number || 0);
+      }
+    });
+
+    return result;
+  }, [registrations, deferredSearch, categoryFilter, statusFilter, paymentFilter, sortBy]);
 
   const exportCSV = () => {
     const headers = [
@@ -191,6 +206,8 @@ export default function RegistrationsPage() {
     setArchiving(false);
   };
 
+  const categories = useMemo(() => [...new Set(registrations.map((r) => r.award_category).filter(Boolean))] as string[], [registrations]);
+
   if (loading) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
@@ -198,8 +215,6 @@ export default function RegistrationsPage() {
       </p>
     );
   }
-
-  const categories = [...new Set(registrations.map((r) => r.award_category).filter(Boolean))] as string[];
 
   return (
     <>
@@ -291,7 +306,7 @@ export default function RegistrationsPage() {
           type="text"
           placeholder="Search name, email, or vehicle..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearch}
           style={{
             flex: 1,
             minWidth: "200px",
@@ -520,13 +535,12 @@ export default function RegistrationsPage() {
                 <tr
                   key={reg.id}
                   onClick={() => router.push(`/admin/registrations/${reg.id}`)}
+                  className="admin-hover-row"
                   style={{
                     borderBottom: "1px solid #eee",
                     cursor: "pointer",
                     opacity: reg.payment_status === "archived" ? 0.6 : 1,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--cream)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
                   <td style={tdStyle} onClick={(e) => e.stopPropagation()}>
                     {reg.payment_status !== "archived" && (
@@ -633,8 +647,7 @@ export default function RegistrationsPage() {
                 opacity: reg.payment_status === "archived" ? 0.6 : 1,
                 transition: "box-shadow 0.15s ease",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)")}
-              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)")}
+              className="admin-hover-card"
             >
               {/* Image */}
               {(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url) ? (
@@ -642,6 +655,7 @@ export default function RegistrationsPage() {
                   <img
                     src={(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url)!}
                     alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
+                    loading="lazy"
                     style={{
                       width: "100%",
                       aspectRatio: "16/9",
@@ -728,7 +742,7 @@ export default function RegistrationsPage() {
   );
 }
 
-function StatusBadge({ reg }: { reg: Registration }) {
+const StatusBadge = memo(function StatusBadge({ reg }: { reg: Registration }) {
   let label: string;
   let bg: string;
   let color: string;
@@ -770,7 +784,7 @@ function StatusBadge({ reg }: { reg: Registration }) {
       {label}
     </span>
   );
-}
+});
 
 const thStyle: React.CSSProperties = {
   padding: "0.8rem 1rem",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useTransition, memo } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -8,9 +8,15 @@ import type { Registration } from "@/types/database";
 
 const RegistrantMap = dynamic(() => import("@/components/RegistrantMap"), { ssr: false });
 
+const sha256Cache = new Map<string, string>();
 async function sha256(str: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str.trim().toLowerCase()));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  const key = str.trim().toLowerCase();
+  const cached = sha256Cache.get(key);
+  if (cached) return cached;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
+  const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  sha256Cache.set(key, hash);
+  return hash;
 }
 
 type Attendee = {
@@ -62,6 +68,14 @@ export default function AttendeesPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [deferredSearch, setDeferredSearch] = useState("");
+  const [, startTransition] = useTransition();
+
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearch(val);
+    startTransition(() => setDeferredSearch(val));
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,29 +91,26 @@ export default function AttendeesPage() {
     fetchData();
   }, []);
 
-  const attendees = groupByEmail(registrations);
+  const attendees = useMemo(() => groupByEmail(registrations), [registrations]);
 
-  const filtered = attendees.filter((a) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    if (`${a.firstName} ${a.lastName}`.toLowerCase().includes(q)) return true;
-    if (`${a.lastName}, ${a.firstName}`.toLowerCase().includes(q)) return true;
-    if (a.email.includes(q)) return true;
-    for (const v of a.vehicles) {
-      if (
-        `${v.vehicle_year} ${v.vehicle_make} ${v.vehicle_model}`
-          .toLowerCase()
-          .includes(q)
-      )
-        return true;
-    }
-    return false;
-  });
+  const filtered = useMemo(() => {
+    if (!deferredSearch) return attendees;
+    const q = deferredSearch.toLowerCase();
+    return attendees.filter((a) => {
+      if (`${a.firstName} ${a.lastName}`.toLowerCase().includes(q)) return true;
+      if (`${a.lastName}, ${a.firstName}`.toLowerCase().includes(q)) return true;
+      if (a.email.includes(q)) return true;
+      for (const v of a.vehicles) {
+        if (`${v.vehicle_year} ${v.vehicle_make} ${v.vehicle_model}`.toLowerCase().includes(q)) return true;
+      }
+      return false;
+    });
+  }, [attendees, deferredSearch]);
 
-  const totalVehicles = attendees.reduce((s, a) => s + a.vehicles.length, 0);
-  const fullyCheckedIn = attendees.filter(
+  const totalVehicles = useMemo(() => attendees.reduce((s, a) => s + a.vehicles.length, 0), [attendees]);
+  const fullyCheckedIn = useMemo(() => attendees.filter(
     (a) => a.checkedInCount === a.vehicles.length
-  ).length;
+  ).length, [attendees]);
 
   const mapPins = useMemo(() => {
     const seen = new Set<string>();
@@ -225,7 +236,7 @@ export default function AttendeesPage() {
           type="text"
           placeholder="Search name, email, or vehicle..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearch}
           style={{
             width: "100%",
             maxWidth: "400px",
@@ -271,16 +282,11 @@ export default function AttendeesPage() {
                     `/admin/attendees/${encodeURIComponent(a.email)}`
                   )
                 }
+                className="admin-hover-row"
                 style={{
                   borderBottom: "1px solid #eee",
                   cursor: "pointer",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "var(--cream)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "")
-                }
               >
                 <td style={{ ...tdStyle, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <AvatarImg email={a.email} firstName={a.firstName} lastName={a.lastName} />
@@ -338,7 +344,7 @@ export default function AttendeesPage() {
   );
 }
 
-function StatCard({
+const StatCard = memo(function StatCard({
   label,
   value,
   note,
@@ -382,9 +388,9 @@ function StatCard({
       )}
     </div>
   );
-}
+});
 
-function CheckInBadge({
+const CheckInBadge = memo(function CheckInBadge({
   checkedIn,
   total,
 }: {
@@ -407,7 +413,7 @@ function CheckInBadge({
       {checkedIn}/{total} checked in
     </span>
   );
-}
+});
 
 function getInitialsColor(email: string): string {
   let hash = 0;
@@ -422,7 +428,7 @@ function getInitialsColor(email: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function AvatarImg({ email, firstName, lastName }: { email: string; firstName: string; lastName: string }) {
+const AvatarImg = memo(function AvatarImg({ email, firstName, lastName }: { email: string; firstName: string; lastName: string }) {
   const [src, setSrc] = useState<string | null>(null);
   const [errored, setErrored] = useState(false);
 
@@ -470,7 +476,7 @@ function AvatarImg({ email, firstName, lastName }: { email: string; firstName: s
       }}
     />
   );
-}
+});
 
 const thStyle: React.CSSProperties = {
   padding: "0.8rem 1rem",

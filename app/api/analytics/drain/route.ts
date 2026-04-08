@@ -7,7 +7,10 @@ export async function POST(request: NextRequest) {
     const events = Array.isArray(body) ? body : [body];
     const supabase = createServerClient();
 
-    // Group pageviews by date
+    // Store raw events (UTC timestamps) for accurate timezone-aware aggregation
+    const rawRows: { timestamp: string; path: string; referrer: string | null; device_id: string | null; session_id: string | null }[] = [];
+
+    // Also maintain legacy daily aggregation tables
     const dailyCounts: Record<string, { views: number; deviceIds: Set<string> }> = {};
     const pathCounts: Record<string, number> = {};
     const referrerCounts: Record<string, number> = {};
@@ -16,29 +19,42 @@ export async function POST(request: NextRequest) {
       if (event.eventType !== "pageview") continue;
       if (event.vercelEnvironment && event.vercelEnvironment !== "production") continue;
 
-      const date = new Date(event.timestamp).toISOString().split("T")[0];
+      const ts = event.timestamp || new Date().toISOString();
+      const path: string = event.path || "/";
+      const referrer: string | null =
+        event.referrer && event.referrer.trim() !== "" ? event.referrer.trim() : null;
+      const deviceId = event.deviceId ? String(event.deviceId) : null;
+      const sessionId = event.sessionId ? String(event.sessionId) : null;
+
+      // Raw event
+      rawRows.push({ timestamp: ts, path, referrer, device_id: deviceId, session_id: sessionId });
+
+      // Legacy aggregation (keep using UTC for existing data consistency)
+      const date = new Date(ts).toISOString().split("T")[0];
 
       if (!dailyCounts[date]) {
         dailyCounts[date] = { views: 0, deviceIds: new Set() };
       }
       dailyCounts[date].views++;
-      // Use deviceId for visitor deduplication (more stable than sessionId)
-      const deviceKey = String(event.deviceId || event.sessionId || "");
+      const deviceKey = String(deviceId || sessionId || "");
       if (deviceKey) {
         dailyCounts[date].deviceIds.add(deviceKey);
       }
 
-      const path: string = event.path || "/";
       const pathKey = `${date}||${path}`;
       pathCounts[pathKey] = (pathCounts[pathKey] ?? 0) + 1;
 
-      const referrer: string =
-        event.referrer && event.referrer.trim() !== "" ? event.referrer.trim() : "Direct";
-      const referrerKey = `${date}||${referrer}`;
+      const referrerDisplay = referrer || "Direct";
+      const referrerKey = `${date}||${referrerDisplay}`;
       referrerCounts[referrerKey] = (referrerCounts[referrerKey] ?? 0) + 1;
     }
 
-    // Atomic upsert daily counts — row-level lock prevents concurrent batch races
+    // Insert raw events in batch
+    if (rawRows.length > 0) {
+      await supabase.from("page_view_events").insert(rawRows);
+    }
+
+    // Legacy: Atomic upsert daily counts
     for (const [date, data] of Object.entries(dailyCounts)) {
       const deviceIds = Array.from(data.deviceIds);
       await supabase.rpc("upsert_page_views", {
@@ -48,7 +64,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Atomic upsert per-path counts
+    // Legacy: Atomic upsert per-path counts
     for (const [key, count] of Object.entries(pathCounts)) {
       const [date, path] = key.split("||");
       await supabase.rpc("upsert_page_view_paths", {
@@ -58,7 +74,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Atomic upsert per-referrer counts
+    // Legacy: Atomic upsert per-referrer counts
     for (const [key, count] of Object.entries(referrerCounts)) {
       const [date, referrer] = key.split("||");
       await supabase.rpc("upsert_page_view_referrers", {

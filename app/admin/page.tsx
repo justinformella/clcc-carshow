@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import type { Registration, Sponsor, SponsorStatus, AdCampaign, Admin, HelpRequestPriority } from "@/types/database";
@@ -90,69 +90,67 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const confirmedRegistrations = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
-  const paidRegistrations = registrations.filter((r) => r.payment_status === "paid");
-  const unpaidRegistrations = registrations.filter((r) => r.payment_status === "pending");
-  const abandonedRegistrations = unpaidRegistrations.filter(
-    (r) => new Date(r.created_at).getTime() < Date.now() - 30 * 60 * 1000
-  );
-  const regRevenueCents = paidRegistrations.reduce(
-    (sum, r) => sum + (r.amount_paid || 0),
-    0
-  );
-  const donationRevenueCents = paidRegistrations.reduce(
-    (sum, r) => sum + (r.donation_cents || 0),
-    0
-  );
-  const totalRevenue = regRevenueCents + donationRevenueCents;
-  const checkedIn = registrations.filter((r) => r.checked_in).length;
-  const uniqueAttendees = new Set(registrations.map((r) => r.email.toLowerCase())).size;
+  const dashboardStats = useMemo(() => {
+    const confirmedRegistrations = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
+    const paidRegistrations = registrations.filter((r) => r.payment_status === "paid");
+    const unpaidRegistrations = registrations.filter((r) => r.payment_status === "pending");
+    const abandonedRegistrations = unpaidRegistrations.filter(
+      (r) => new Date(r.created_at).getTime() < Date.now() - 30 * 60 * 1000
+    );
+    const regRevenueCents = paidRegistrations.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
+    const donationRevenueCents = paidRegistrations.reduce((sum, r) => sum + (r.donation_cents || 0), 0);
+    const totalRevenue = regRevenueCents + donationRevenueCents;
+    const checkedIn = registrations.filter((r) => r.checked_in).length;
+    const uniqueAttendees = new Set(registrations.map((r) => r.email.toLowerCase())).size;
 
-  const eventDate = new Date("2026-05-17T00:00:00");
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const daysUntilEvent = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const eventDate = new Date("2026-05-17T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysUntilEvent = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-  const activeSponsors = sponsors.filter((s) => s.status !== "archived");
+    const activeSponsors = sponsors.filter((s) => s.status !== "archived");
+    const sponsorRevenue = activeSponsors
+      .filter((s) => s.status === "paid" || s.status === "engaged")
+      .reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
-  const sponsorRevenue = activeSponsors
-    .filter((s) => s.status === "paid" || s.status === "engaged")
-    .reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+    const committedUnpaid = activeSponsors.filter((s) => s.status === "engaged" && s.amount_paid === 0);
+    const committedProjected = committedUnpaid.reduce((sum, s) => {
+      const match = s.sponsorship_level.match(/\$([0-9,]+)/);
+      return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
+    }, 0);
 
-  // Committed sponsors who haven't paid — projected based on sponsorship level
-  const committedUnpaid = activeSponsors.filter((s) => s.status === "engaged" && s.amount_paid === 0);
-  const committedProjected = committedUnpaid.reduce((sum, s) => {
-    const match = s.sponsorship_level.match(/\$([0-9,]+)/);
-    return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
-  }, 0);
+    const openSponsors = activeSponsors.filter((s) => s.status === "prospect" || s.status === "inquired");
+    const openPipeline = openSponsors.reduce((sum, s) => {
+      const match = s.sponsorship_level.match(/\$([0-9,]+)/);
+      return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
+    }, 0);
 
-  const openSponsors = activeSponsors.filter((s) => s.status === "prospect" || s.status === "inquired");
-  const openPipeline = openSponsors.reduce((sum, s) => {
-    const match = s.sponsorship_level.match(/\$([0-9,]+)/);
-    return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
-  }, 0);
+    const projectedTotal = totalRevenue + sponsorRevenue + committedProjected;
+    const fullCapacityReg = maxRegistrations * 3000;
+    const avgDonationPerReg = paidRegistrations.length > 0 ? donationRevenueCents / paidRegistrations.length : 0;
+    const fullCapacityDonations = Math.round(avgDonationPerReg * maxRegistrations);
+    const fullCapacityTotal = fullCapacityReg + fullCapacityDonations + sponsorRevenue + committedProjected;
 
-  const projectedTotal = totalRevenue + sponsorRevenue + committedProjected;
-  const fullCapacityReg = maxRegistrations * 3000; // $30 per vehicle
-  const avgDonationPerReg = paidRegistrations.length > 0 ? donationRevenueCents / paidRegistrations.length : 0;
-  const fullCapacityDonations = Math.round(avgDonationPerReg * maxRegistrations);
-  const fullCapacityTotal = fullCapacityReg + fullCapacityDonations + sponsorRevenue + committedProjected;
+    const adRegistrations = registrations.filter((r) => r.utm_source);
+    const adSourceCounts: Record<string, number> = {};
+    adRegistrations.forEach((r) => {
+      const src = r.utm_source!;
+      adSourceCounts[src] = (adSourceCounts[src] || 0) + 1;
+    });
+    const adSourceSummary = Object.entries(adSourceCounts)
+      .map(([src, count]) => `${count} ${src}`)
+      .join(", ");
 
-  const adRegistrations = registrations.filter((r) => r.utm_source);
-  const adSourceCounts: Record<string, number> = {};
-  adRegistrations.forEach((r) => {
-    const src = r.utm_source!;
-    adSourceCounts[src] = (adSourceCounts[src] || 0) + 1;
-  });
-  const adSourceSummary = Object.entries(adSourceCounts)
-    .map(([src, count]) => `${count} ${src}`)
-    .join(", ");
+    const totalAdSpend = campaigns.reduce((sum, c) => sum + (c.spent_cents || 0), 0);
 
-  const totalAdSpend = campaigns.reduce((sum, c) => sum + (c.spent_cents || 0), 0);
+    const mySponsors = currentAdmin
+      ? activeSponsors.filter((s) => s.assigned_to === currentAdmin.id)
+      : [];
 
-  const mySponsors = currentAdmin
-    ? activeSponsors.filter((s) => s.assigned_to === currentAdmin.id)
-    : [];
+    return { confirmedRegistrations, paidRegistrations, unpaidRegistrations, abandonedRegistrations, regRevenueCents, donationRevenueCents, totalRevenue, checkedIn, uniqueAttendees, daysUntilEvent, activeSponsors, sponsorRevenue, committedUnpaid, committedProjected, openSponsors, openPipeline, projectedTotal, fullCapacityReg, avgDonationPerReg, fullCapacityDonations, fullCapacityTotal, adRegistrations, adSourceSummary, totalAdSpend, mySponsors };
+  }, [registrations, sponsors, campaigns, currentAdmin, maxRegistrations]);
+
+  const { confirmedRegistrations, paidRegistrations, unpaidRegistrations, abandonedRegistrations, regRevenueCents, donationRevenueCents, totalRevenue, checkedIn, uniqueAttendees, daysUntilEvent, activeSponsors, sponsorRevenue, committedUnpaid, committedProjected, openSponsors, openPipeline, projectedTotal, fullCapacityReg, avgDonationPerReg, fullCapacityDonations, fullCapacityTotal, adRegistrations, adSourceSummary, totalAdSpend, mySponsors } = dashboardStats;
 
   if (loading) {
     return (
@@ -615,6 +613,7 @@ function DashboardCard({
   return (
     <Link href={href} style={{ textDecoration: "none", color: "inherit" }}>
       <div
+        className="admin-dashboard-card"
         style={{
           background: "var(--white)",
           border: "1px solid rgba(0,0,0,0.08)",
@@ -623,16 +622,6 @@ function DashboardCard({
           transition: "all 0.15s ease",
           cursor: "pointer",
           height: "100%",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = "var(--gold)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-          e.currentTarget.style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
-          e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
-          e.currentTarget.style.transform = "translateY(0)";
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
