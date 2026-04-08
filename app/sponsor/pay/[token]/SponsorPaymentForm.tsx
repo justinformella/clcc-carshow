@@ -284,35 +284,60 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", fontWeight: 600, color: "var(--charcoal)", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px solid #eee", marginTop: "2rem" }}>
               Sponsorship Level
             </h2>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              {availableTiers.length > 1 ? (
-                <select
-                  value={selectedLevel}
-                  onChange={(e) => setSelectedLevel(e.target.value)}
-                  style={{ padding: "0.6rem 1rem", border: "1px solid #ddd", fontSize: "0.9rem", fontFamily: "'Inter', sans-serif" }}
-                >
-                  {availableTiers.map((tier) => (
-                    <option key={tier.id} value={tier.name}>
-                      {tier.name} &mdash; ${(tier.price_cents / 100).toLocaleString()}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p style={{ fontSize: "1.1rem", color: "var(--charcoal)", fontWeight: 600 }}>
-                  {selectedLevel}
-                </p>
-              )}
-              <span style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--gold, #c9a84c)" }}>
-                {priceDollars}
-              </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {/* Show tiers in reverse order: assigned (cheapest available) first, upgrades below */}
+              {[...availableTiers].reverse().map((tier) => {
+                const isSelected = selectedLevel === tier.name;
+                const isAssigned = sponsor.sponsorship_level === tier.name;
+                const isUpgrade = tier.display_order < (tiers[assignedTierIndex]?.display_order ?? 999);
+                return (
+                  <label
+                    key={tier.id}
+                    onClick={() => setSelectedLevel(tier.name)}
+                    style={{
+                      display: "block",
+                      border: isSelected ? "2px solid var(--gold, #c9a84c)" : "1px solid #ddd",
+                      padding: "1.25rem",
+                      cursor: "pointer",
+                      background: isSelected ? "#fffdf7" : "var(--white, #fff)",
+                      position: "relative",
+                      transition: "border-color 0.2s, background 0.2s",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: "50%",
+                        border: isSelected ? "6px solid var(--gold, #c9a84c)" : "2px solid #ccc",
+                        flexShrink: 0,
+                      }} />
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--charcoal)" }}>
+                          {tier.name}
+                        </span>
+                        {isAssigned && (
+                          <span style={{ fontSize: "0.75rem", background: "#e3f2fd", color: "#1565c0", padding: "2px 8px", borderRadius: 4, marginLeft: "0.5rem" }}>
+                            Your Level
+                          </span>
+                        )}
+                        {isUpgrade && !isAssigned && (
+                          <span style={{ fontSize: "0.75rem", background: "#fff3e0", color: "#e65100", padding: "2px 8px", borderRadius: 4, marginLeft: "0.5rem" }}>
+                            Upgrade
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: "1.3rem", fontWeight: 700, color: isSelected ? "var(--gold, #c9a84c)" : "var(--charcoal)" }}>
+                        ${(tier.price_cents / 100).toLocaleString()}
+                      </span>
+                    </div>
+                    {tier.benefits && (
+                      <div style={{ paddingLeft: "2.75rem", fontSize: "0.9rem", color: "#555", lineHeight: 1.7 }}>
+                        <ReactMarkdown>{tier.benefits}</ReactMarkdown>
+                      </div>
+                    )}
+                  </label>
+                );
+              })}
             </div>
-
-            {/* Benefits */}
-            {currentTier?.benefits && (
-              <div style={{ marginTop: "1rem", padding: "1rem", background: "#f8f5f0", fontSize: "0.95rem", lineHeight: 1.7 }}>
-                <ReactMarkdown>{currentTier.benefits}</ReactMarkdown>
-              </div>
-            )}
 
             {/* Payment */}
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", fontWeight: 600, color: "var(--charcoal)", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px solid #eee", marginTop: "2rem" }}>
