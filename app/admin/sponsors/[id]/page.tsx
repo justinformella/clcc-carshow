@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Sponsor, SponsorStatus, SponsorAuditLogEntry, Admin } from "@/types/database";
+import type { Sponsor, SponsorStatus, SponsorAuditLogEntry, Admin, StripePaymentDetails } from "@/types/database";
 
 type EditForm = {
   name: string;
@@ -34,6 +34,33 @@ export default function SponsorDetailPage() {
   const [logoVisible, setLogoVisible] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [tiers, setTiers] = useState<{ name: string; price_cents: number }[]>([]);
+  const [paymentToken, setPaymentToken] = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [generatingToken, setGeneratingToken] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [stripeDetails, setStripeDetails] = useState<StripePaymentDetails | null>(null);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+
+  const fetchStripeDetails = useCallback(async (opts: { paymentIntentId?: string; sessionId?: string }) => {
+    setStripeLoading(true);
+    setStripeError(null);
+    try {
+      const params = new URLSearchParams();
+      if (opts.paymentIntentId) params.set("payment_intent_id", opts.paymentIntentId);
+      else if (opts.sessionId) params.set("session_id", opts.sessionId);
+      const res = await fetch(`/api/admin/stripe-details?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch Stripe details");
+      setStripeDetails(data);
+    } catch (err) {
+      setStripeError(err instanceof Error ? err.message : "Failed to load payment details");
+    } finally {
+      setStripeLoading(false);
+    }
+  }, []);
 
   const fetchSponsor = useCallback(async () => {
     const supabase = createClient();
@@ -184,6 +211,56 @@ export default function SponsorDetailPage() {
       console.error("Remove failed:", err);
     } finally {
       setUploading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (sponsor?.payment_token) {
+      setPaymentToken(sponsor.payment_token);
+      setPaymentUrl(`${window.location.origin}/sponsor/pay/${sponsor.payment_token}`);
+    }
+    if (sponsor?.stripe_payment_intent_id) {
+      fetchStripeDetails({ paymentIntentId: sponsor.stripe_payment_intent_id });
+    } else if (sponsor?.stripe_session_id) {
+      fetchStripeDetails({ sessionId: sponsor.stripe_session_id });
+    }
+  }, [sponsor, fetchStripeDetails]);
+
+  const handleGenerateToken = async () => {
+    setGeneratingToken(true);
+    try {
+      const res = await fetch(`/api/sponsors/${id}/generate-token`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setPaymentToken(data.token);
+      setPaymentUrl(data.paymentUrl);
+      await fetchSponsor();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to generate token");
+    } finally {
+      setGeneratingToken(false);
+    }
+  };
+
+  const handleSendPaymentEmail = async () => {
+    setSendingEmail(true);
+    try {
+      const res = await fetch(`/api/sponsors/${id}/send-payment-email`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setEmailSent(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to send email");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (paymentUrl) {
+      navigator.clipboard.writeText(paymentUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -551,6 +628,127 @@ export default function SponsorDetailPage() {
               <p style={{ fontSize: "0.9rem", color: "var(--charcoal)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
                 {s.notes}
               </p>
+            </div>
+          )}
+
+          {/* Payment Link Section */}
+          <div style={{ background: "var(--white)", padding: "2rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "1.5rem" }}>
+            <SectionHeading>Payment Link</SectionHeading>
+
+            {s.status === "paid" ? (
+              <div>
+                <p style={{ color: "#2e7d32", fontWeight: 600, fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
+                  Paid via {s.payment_method === "stripe" ? "Credit Card" : s.payment_method === "check" ? "Check" : "Unknown"}
+                </p>
+                {s.amount_paid > 0 && (
+                  <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+                    Amount: ${(s.amount_paid / 100).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            ) : !paymentToken ? (
+              <button onClick={handleGenerateToken} disabled={generatingToken}
+                style={{ padding: "0.6rem 1.5rem", background: "var(--gold)", color: "var(--charcoal)", border: "none", fontWeight: 600, fontSize: "0.85rem", letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
+                {generatingToken ? "Generating..." : "Generate Payment Link"}
+              </button>
+            ) : (
+              <div>
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem" }}>
+                  <input readOnly value={paymentUrl || ""} style={{ flex: 1, padding: "0.5rem", fontSize: "0.85rem", border: "1px solid #ddd", background: "#f8f5f0", fontFamily: "'Inter', sans-serif" }} />
+                  <button onClick={handleCopyLink}
+                    style={{ padding: "0.5rem 1rem", background: copied ? "#2e7d32" : "var(--charcoal)", color: "#fff", border: "none", fontSize: "0.8rem", cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+                <button onClick={handleSendPaymentEmail} disabled={sendingEmail}
+                  style={{ padding: "0.6rem 1.5rem", background: "var(--gold)", color: "var(--charcoal)", border: "none", fontWeight: 600, fontSize: "0.85rem", letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {sendingEmail ? "Sending..." : emailSent ? "Email Sent \u2713" : "Send Payment Email"}
+                </button>
+              </div>
+            )}
+
+            {/* Check pending badge */}
+            {s.payment_method === "check" && s.status !== "paid" && (
+              <div style={{ marginTop: "1rem", background: "#fff3e0", border: "1px solid #ffe0b2", padding: "0.75rem 1rem", fontSize: "0.85rem", color: "#e65100" }}>
+                <strong>Check Pending</strong>
+                {s.check_note && <span> &mdash; {s.check_note}</span>}
+              </div>
+            )}
+
+            {/* Upgrade indicator */}
+            {s.original_level && s.original_level !== s.sponsorship_level && (
+              <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#666" }}>
+                Upgraded from <strong>{s.original_level}</strong> to <strong>{s.sponsorship_level}</strong>
+              </div>
+            )}
+          </div>
+
+          {/* Stripe Payment Details */}
+          {s.payment_method === "stripe" && (
+            <div style={{ background: "var(--white)", padding: "2rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "1.5rem" }}>
+              <SectionHeading>Payment Details</SectionHeading>
+              {stripeLoading ? (
+                <p style={{ color: "#888", fontSize: "0.9rem" }}>Loading Stripe details...</p>
+              ) : stripeError ? (
+                <div>
+                  <p style={{ color: "#c00", fontSize: "0.85rem" }}>{stripeError}</p>
+                  <button onClick={() => fetchStripeDetails(
+                    s.stripe_payment_intent_id
+                      ? { paymentIntentId: s.stripe_payment_intent_id }
+                      : { sessionId: s.stripe_session_id! }
+                  )} style={{ fontSize: "0.8rem", color: "var(--gold)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                    Retry
+                  </button>
+                </div>
+              ) : stripeDetails ? (
+                <div>
+                  {stripeDetails.card && (
+                    <>
+                      <DetailRow label="Card" value={`${stripeDetails.card.brand?.toUpperCase() || "Card"} \u2022\u2022\u2022\u2022 ${stripeDetails.card.last4}`} />
+                      <DetailRow label="Expiry" value={`${String(stripeDetails.card.exp_month).padStart(2, "0")}/${stripeDetails.card.exp_year}`} />
+                      {stripeDetails.card.funding && <DetailRow label="Funding" value={stripeDetails.card.funding} />}
+                      {stripeDetails.card.country && <DetailRow label="Card Country" value={stripeDetails.card.country} />}
+                      {stripeDetails.card.wallet && <DetailRow label="Wallet" value={stripeDetails.card.wallet} />}
+                    </>
+                  )}
+                  {stripeDetails.payment?.created && (
+                    <DetailRow label="Payment Date" value={new Date(stripeDetails.payment.created * 1000).toLocaleString()} />
+                  )}
+                  {(stripeDetails.links.receipt_url || stripeDetails.links.dashboard_url) && (
+                    <div style={{ display: "flex", gap: "1rem", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #eee" }}>
+                      {stripeDetails.links.receipt_url && (
+                        <a href={stripeDetails.links.receipt_url} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: "0.85rem", color: "var(--gold)" }}>
+                          View Receipt
+                        </a>
+                      )}
+                      {stripeDetails.links.dashboard_url && (
+                        <a href={stripeDetails.links.dashboard_url} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: "0.85rem", color: "var(--gold)" }}>
+                          View in Stripe
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {stripeDetails.billing && (stripeDetails.billing.name || stripeDetails.billing.address) && (
+                    <>
+                      {stripeDetails.billing.name && <DetailRow label="Billing Name" value={stripeDetails.billing.name} />}
+                      {stripeDetails.billing.address && (
+                        <DetailRow label="Billing Address" value={
+                          [stripeDetails.billing.address.line1, stripeDetails.billing.address.line2, stripeDetails.billing.address.city, stripeDetails.billing.address.state, stripeDetails.billing.address.postal_code, stripeDetails.billing.address.country].filter(Boolean).join(", ")
+                        } />
+                      )}
+                    </>
+                  )}
+                  {stripeDetails.risk?.risk_level && (
+                    <DetailRow label="Risk Level" value={
+                      stripeDetails.risk.risk_level === "normal" ? "Normal" :
+                      stripeDetails.risk.risk_level === "elevated" ? "Elevated" :
+                      stripeDetails.risk.risk_level
+                    } />
+                  )}
+                </div>
+              ) : null}
             </div>
           )}
 
