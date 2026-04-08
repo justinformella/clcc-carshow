@@ -21,11 +21,17 @@ export default function SponsorsSection() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tiers, setTiers] = useState<SponsorTier[]>([]);
+  const [tierOptions, setTierOptions] = useState<{ name: string; price_cents: number }[]>([]);
 
   useEffect(() => {
     fetch("/api/sponsors/public")
       .then((res) => res.json())
       .then((data) => setTiers(data.tiers || []))
+      .catch(() => {});
+
+    fetch("/api/sponsors/tiers/public")
+      .then((res) => res.json())
+      .then((data) => setTierOptions(data.tiers || []))
       .catch(() => {});
   }, []);
 
@@ -194,15 +200,11 @@ export default function SponsorsSection() {
                 </label>
                 <select id="sponsor-level" name="sponsorship_level">
                   <option value="">Select a level...</option>
-                  <option value="Presenting Sponsor ($2,500)">
-                    Presenting Sponsor ($2,500)
-                  </option>
-                  <option value="Premier Sponsor ($1,000)">
-                    Premier Sponsor ($1,000)
-                  </option>
-                  <option value="Community Sponsor ($500)">
-                    Community Sponsor ($500)
-                  </option>
+                  {tierOptions.map((tier) => (
+                    <option key={tier.name} value={`${tier.name} ($${(tier.price_cents / 100).toLocaleString()})`}>
+                      {tier.name} (${(tier.price_cents / 100).toLocaleString()})
+                    </option>
+                  ))}
                   <option value="Other">Other / Not Sure</option>
                 </select>
               </div>

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { SPONSORSHIP_LEVELS } from "@/types/database";
 import type { Admin } from "@/types/database";
 
 export default function NewSponsorPage() {
@@ -11,6 +10,7 @@ export default function NewSponsorPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [admins, setAdmins] = useState<Admin[]>([]);
+  const [tiers, setTiers] = useState<{ name: string; price_cents: number }[]>([]);
 
   useEffect(() => {
     const fetchAdmins = async () => {
@@ -19,6 +19,11 @@ export default function NewSponsorPage() {
       setAdmins((data as Admin[]) || []);
     };
     fetchAdmins();
+
+    fetch("/api/sponsors/tiers/public")
+      .then((res) => res.json())
+      .then((data) => setTiers(data.tiers || []))
+      .catch(() => {});
   }, []);
 
   const [form, setForm] = useState({
@@ -160,9 +165,12 @@ export default function NewSponsorPage() {
               <label htmlFor="sponsorship_level">Sponsorship Level *</label>
               <select id="sponsorship_level" name="sponsorship_level" value={form.sponsorship_level} onChange={handleChange} required>
                 <option value="">Select a level...</option>
-                {SPONSORSHIP_LEVELS.map((level) => (
-                  <option key={level} value={level}>{level}</option>
+                {tiers.map((tier) => (
+                  <option key={tier.name} value={tier.name}>
+                    {tier.name} (${(tier.price_cents / 100).toLocaleString()})
+                  </option>
                 ))}
+                <option value="Other / Not Sure">Other / Not Sure</option>
               </select>
             </div>
             <div className="form-group">

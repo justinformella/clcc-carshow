@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Sponsor, SponsorStatus, SponsorAuditLogEntry, Admin } from "@/types/database";
-import { SPONSORSHIP_LEVELS } from "@/types/database";
 
 type EditForm = {
   name: string;
@@ -34,6 +33,7 @@ export default function SponsorDetailPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [logoVisible, setLogoVisible] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [tiers, setTiers] = useState<{ name: string; price_cents: number }[]>([]);
 
   const fetchSponsor = useCallback(async () => {
     const supabase = createClient();
@@ -68,6 +68,11 @@ export default function SponsorDetailPage() {
       setAdmins((data as Admin[]) || []);
     };
     fetchAdmins();
+
+    fetch("/api/sponsors/tiers/public")
+      .then((res) => res.json())
+      .then((data) => setTiers(data.tiers || []))
+      .catch(() => {});
   }, [fetchSponsor, fetchAuditLog]);
 
   const startEdit = () => {
@@ -451,9 +456,12 @@ export default function SponsorDetailPage() {
                 <label htmlFor="sponsorship_level">Sponsorship Level *</label>
                 <select id="sponsorship_level" name="sponsorship_level" value={form.sponsorship_level} onChange={handleFormChange} required>
                   <option value="">Select a level...</option>
-                  {SPONSORSHIP_LEVELS.map((level) => (
-                    <option key={level} value={level}>{level}</option>
+                  {tiers.map((tier) => (
+                    <option key={tier.name} value={tier.name}>
+                      {tier.name} (${(tier.price_cents / 100).toLocaleString()})
+                    </option>
                   ))}
+                  <option value="Other / Not Sure">Other / Not Sure</option>
                 </select>
               </div>
               <div className="form-group">
