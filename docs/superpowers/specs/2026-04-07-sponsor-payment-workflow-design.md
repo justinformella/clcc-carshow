@@ -36,6 +36,8 @@ A complete sponsor payment workflow: admin-managed sponsorship tiers, unique pay
 | `payment_method` | text, nullable | `'stripe'` or `'check'` |
 | `check_note` | text, nullable | Sponsor's note about when they'll send check |
 | `original_level` | text, nullable | Tracks admin's original assignment to detect upgrades |
+| `stripe_session_id` | text, nullable | Stripe Checkout session ID |
+| `stripe_payment_intent_id` | text, nullable | Stripe payment intent ID (for fetching details) |
 
 Existing columns unchanged. `sponsorship_level` remains text (not a FK) for backward compatibility.
 
@@ -141,6 +143,13 @@ All use existing `htmlShell()` template wrapper, Resend service, retry logic, an
   - Link status display: not generated / generated / sent / paid
 - Check pending: show check note and badge if sponsor chose pay-by-check
 - Upgrade indicator: show original level vs current level if sponsor upgraded
+- **Stripe payment details section** (when paid via Stripe): Mirrors the registration detail page (`/admin/registrations/[id]`). Uses the same `/api/admin/stripe-details` endpoint. Displays:
+  - Card info (brand, last 4, expiry, funding type, country, wallet)
+  - Payment date
+  - Receipt URL link
+  - "View in Stripe" dashboard link
+  - Billing name and address
+  - Risk assessment level
 
 ### Sponsor list page
 
