@@ -365,6 +365,50 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .reg-header .header-inner {
+          flex-wrap: nowrap;
+        }
+        .reg-header nav {
+          width: auto;
+          order: 0;
+        }
+        .reg-header nav ul {
+          display: flex !important;
+          background: none !important;
+          padding: 0 !important;
+          flex-direction: row !important;
+        }
+        .reg-header nav ul li a {
+          color: var(--text-dark) !important;
+          padding: 0 !important;
+        }
+        .reg-logo {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+        .reg-logo-img {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        @media (max-width: 600px) {
+          .reg-logo .logo-text {
+            font-size: 1rem !important;
+            letter-spacing: 0.03em !important;
+          }
+          .reg-logo-tagline {
+            display: none;
+          }
+          .reg-logo-img {
+            width: 34px;
+            height: 34px;
+          }
+        }
+      `}</style>
     </>
   );
 }
