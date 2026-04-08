@@ -123,8 +123,12 @@ All use existing `htmlShell()` template wrapper, Resend service, retry logic, an
 - **To:** Sponsor's email
 - **Subject:** "Sponsorship Receipt — Crystal Lake Cars & Caffeine"
 - **Body:** Thank you, tier, amount paid, benefits summary, charity receipt info:
-  - Organization: Downtown Crystal Lake (downtowncl.org)
-  - Details from https://downtowncl.org/who-we-are/
+  - **Organization:** Downtown Crystal Lake / Main Street
+  - **Type:** 501(c)(3) not-for-profit, founded 1996
+  - **Address:** Raue House, 25 W. Crystal Lake Avenue, Crystal Lake, IL 60014
+  - **Phone:** 815-479-0835
+  - **EIN:** _(to be provided by admin)_
+  - **Website:** downtowncl.org
 
 ### 3. Admin notification
 
@@ -165,6 +169,12 @@ All use existing `htmlShell()` template wrapper, Resend service, retry logic, an
 - Thank you message with confirmation
 - Tax receipt information:
   - Sponsorship tier and amount
-  - Charity: Downtown Crystal Lake (downtowncl.org)
-  - Organization details for tax purposes
+  - Charity details for tax purposes:
+  - **Organization:** Downtown Crystal Lake / Main Street
+  - **Type:** 501(c)(3) not-for-profit, founded 1996
+  - **Address:** Raue House, 25 W. Crystal Lake Avenue, Crystal Lake, IL 60014
+  - **Phone:** 815-479-0835
+  - **EIN:** _(to be provided by admin)_
+  - **Website:** downtowncl.org
+  - **Accreditation:** Main Street America accredited program
 - Event details reminder
