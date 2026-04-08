@@ -19,7 +19,12 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
     phone: sponsor.phone || "",
     website: sponsor.website || "",
   });
-  const [selectedLevel, setSelectedLevel] = useState(sponsor.sponsorship_level);
+  // Match sponsor's level to a tier — handles old format "Premier Sponsor ($1,000)" matching "Premier Sponsor"
+  const matchTier = (level: string) => tiers.find((t) => level.startsWith(t.name));
+  const assignedTier = matchTier(sponsor.sponsorship_level);
+  const initialLevel = assignedTier?.name || sponsor.sponsorship_level;
+
+  const [selectedLevel, setSelectedLevel] = useState(initialLevel);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "check" | null>(null);
   const [checkNote, setCheckNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -27,9 +32,9 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
   const [checkSubmitted, setCheckSubmitted] = useState(false);
 
   const currentTier = tiers.find((t) => t.name === selectedLevel);
-  const assignedTierIndex = tiers.findIndex((t) => t.name === sponsor.sponsorship_level);
+  const assignedTierIndex = assignedTier ? tiers.findIndex((t) => t.id === assignedTier.id) : -1;
   // Only show tiers at or above the assigned level (lower display_order = higher rank)
-  const availableTiers = tiers.filter((t) => t.display_order <= (tiers[assignedTierIndex]?.display_order ?? 999));
+  const availableTiers = tiers.filter((t) => t.display_order <= (assignedTier?.display_order ?? 999));
   const priceDollars = currentTier ? `$${(currentTier.price_cents / 100).toLocaleString()}` : "";
 
   const handleCardPayment = async () => {
@@ -288,7 +293,7 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
               {/* Show tiers in reverse order: assigned (cheapest available) first, upgrades below */}
               {[...availableTiers].reverse().map((tier) => {
                 const isSelected = selectedLevel === tier.name;
-                const isAssigned = sponsor.sponsorship_level === tier.name;
+                const isAssigned = assignedTier?.name === tier.name;
                 const isUpgrade = tier.display_order < (tiers[assignedTierIndex]?.display_order ?? 999);
                 return (
                   <label
