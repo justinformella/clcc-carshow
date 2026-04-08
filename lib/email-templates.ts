@@ -401,6 +401,49 @@ export function sponsorAdminNotificationEmail(
   };
 }
 
+export function sponsorPaymentLinkEmail(
+  sponsor: Sponsor,
+  tierName: string,
+  amountDollars: string,
+  paymentUrl: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c;">Sponsorship Payment</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Hi ${sponsor.name},
+    </p>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Thank you for your support of Crystal Lake Cars &amp; Caffeine! Your sponsorship details are below.
+      Click the button to review your information and complete payment.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888; width:140px;">Company</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${sponsor.company}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Sponsorship Level</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${tierName}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Amount</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c; font-weight:600;">${amountDollars}</td>
+      </tr>
+    </table>
+    <a href="${paymentUrl}" style="display:inline-block; padding:12px 24px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:600; font-size:14px; border-radius:6px;">
+      Review &amp; Pay
+    </a>
+    <p style="margin:20px 0 0; font-size:13px; color:#888; line-height:1.5;">
+      If you have any questions, reply to this email or contact us at info@crystallakecarshow.com.
+    </p>
+  `;
+
+  return {
+    subject: "Crystal Lake Cars & Caffeine — Sponsorship Payment",
+    html: htmlShell(content),
+  };
+}
+
 export function adminInviteEmail(
   name: string,
   inviteLink: string

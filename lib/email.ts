@@ -5,6 +5,7 @@ import {
   multiVehicleConfirmationEmail,
   adminNotificationEmail,
   sponsorAdminNotificationEmail,
+  sponsorPaymentLinkEmail,
   announcementEmail,
   helpRequestConfirmationEmail,
   helpRequestAdminNotificationEmail,
@@ -172,6 +173,37 @@ export async function sendSponsorAdminNotification(sponsorId: string) {
       console.error(`[sponsor-notify] Exception for ${admin.email}:`, err);
     }
   }
+}
+
+export async function sendSponsorPaymentLink(sponsorId: string) {
+  console.log("[sponsor-payment-link] Starting for sponsor:", sponsorId);
+  const supabase = createServerClient();
+
+  const { data: sponsor, error: sponsorError } = await supabase
+    .from("sponsors")
+    .select("*")
+    .eq("id", sponsorId)
+    .single();
+
+  if (sponsorError || !sponsor) {
+    throw new Error(`Sponsor fetch failed: ${sponsorError?.message || "not found"}`);
+  }
+
+  const { data: tier } = await supabase
+    .from("sponsorship_tiers")
+    .select("name, price_cents")
+    .eq("name", sponsor.sponsorship_level)
+    .single();
+
+  const tierName = tier?.name || sponsor.sponsorship_level;
+  const amountDollars = tier ? `$${(tier.price_cents / 100).toLocaleString()}` : "See payment page";
+  const paymentUrl = `${SITE_URL}/sponsor/pay/${sponsor.payment_token}`;
+
+  const { subject, html } = sponsorPaymentLinkEmail(sponsor as Sponsor, tierName, amountDollars, paymentUrl);
+
+  const result = await sendWithRetry({ from: FROM_EMAIL, to: sponsor.email, subject, html });
+  console.log("[sponsor-payment-link] Sent to:", sponsor.email, "resend_id:", result.id);
+  await logEmail(null, "sponsor_payment_link", sponsor.email, subject, result.id ?? null);
 }
 
 export async function sendAnnouncement(
