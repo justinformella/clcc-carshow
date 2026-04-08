@@ -197,6 +197,12 @@ export type Sponsor = {
   paid_at: string | null;
   created_at: string;
   updated_at: string;
+  payment_token: string | null;
+  payment_method: string | null;
+  check_note: string | null;
+  original_level: string | null;
+  stripe_session_id: string | null;
+  stripe_payment_intent_id: string | null;
 };
 
 export type SponsorAuditLogEntry = {
@@ -207,6 +213,18 @@ export type SponsorAuditLogEntry = {
   created_at: string;
 };
 
+export type SponsorshipTier = {
+  id: string;
+  name: string;
+  price_cents: number;
+  benefits: string;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** @deprecated Use sponsorship_tiers table instead. Kept for reference. */
 export const SPONSORSHIP_LEVELS = [
   "Presenting Sponsor ($2,500)",
   "Premier Sponsor ($1,000)",

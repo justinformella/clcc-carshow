@@ -407,3 +407,57 @@ CREATE POLICY "Allow authenticated read marketing_sends" ON marketing_sends
   FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Allow authenticated insert marketing_sends" ON marketing_sends
   FOR INSERT TO authenticated WITH CHECK (true);
+
+-- ============================================================
+-- Sponsorship Tiers
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS sponsorship_tiers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  price_cents INTEGER NOT NULL,
+  benefits TEXT NOT NULL DEFAULT '',
+  display_order INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TRIGGER sponsorship_tiers_updated_at
+  BEFORE UPDATE ON sponsorship_tiers
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+ALTER TABLE sponsorship_tiers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can manage tiers"
+  ON sponsorship_tiers FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "Anyone can read active tiers"
+  ON sponsorship_tiers FOR SELECT TO anon USING (is_active = true);
+
+-- Seed default tiers
+INSERT INTO sponsorship_tiers (name, price_cents, benefits, display_order) VALUES
+  ('Presenting Sponsor', 250000, '- Branding on all advertising material
+- Logo on trophy titled as "Presenting Sponsor"
+- Optional 10x10 booth
+- 1 show car space
+- Up to 12 Facebook advertisements (1/month) on CLCC page with access to over 700 local members', 1),
+  ('Premier Sponsor', 100000, '- Branding on all advertising materials
+- Logo on trophy
+- 10x10 booth
+- 1 show car space
+- Up to 12 Facebook advertisements (1/month) on CLCC page with access to over 700 local members', 2),
+  ('Community Sponsor', 50000, '- 10x10 booth
+- 1 show car space
+- Branding on all advertising material
+- Up to 6 Facebook advertisements on CLCC page with access to over 700 local members', 3);
+
+-- Add new columns to sponsors table
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS payment_token UUID UNIQUE;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS payment_method TEXT;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS check_note TEXT;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS original_level TEXT;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_sponsors_payment_token ON sponsors (payment_token) WHERE payment_token IS NOT NULL;
