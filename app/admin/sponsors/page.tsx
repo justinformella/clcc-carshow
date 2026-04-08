@@ -176,6 +176,7 @@ export default function SponsorsPage() {
               <th style={thStyle}>Status</th>
               <th style={thStyle}>Assigned To</th>
               <th style={thStyle}>Amount Paid</th>
+              <th style={thStyle}>Payment</th>
               <th style={thStyle}>Date</th>
             </tr>
           </thead>
@@ -243,6 +244,19 @@ export default function SponsorsPage() {
                     {s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
                   </td>
                   <td style={tdStyle}>
+                    {s.payment_method === "stripe" ? (
+                      <span style={{ fontSize: "0.8rem", background: "#e8f5e9", color: "#2e7d32", padding: "2px 8px", borderRadius: 4 }}>
+                        Card
+                      </span>
+                    ) : s.payment_method === "check" ? (
+                      <span style={{ fontSize: "0.8rem", background: "#fff3e0", color: "#e65100", padding: "2px 8px", borderRadius: 4 }}>
+                        Check{s.status !== "paid" ? " (pending)" : ""}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.8rem", color: "#999" }}>—</span>
+                    )}
+                  </td>
+                  <td style={tdStyle}>
                     {new Date(s.created_at).toLocaleDateString()}
                   </td>
                 </tr>
@@ -251,7 +265,7 @@ export default function SponsorsPage() {
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   style={{
                     ...tdStyle,
                     textAlign: "center",
