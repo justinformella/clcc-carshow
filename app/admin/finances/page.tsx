@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Registration, Sponsor, AdCampaign } from "@/types/database";
+import type { Registration, Sponsor, AdCampaign, SponsorshipTier } from "@/types/database";
 import { REGISTRATION_PRICE_CENTS, MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
 import {
   AreaChart,
@@ -53,6 +53,7 @@ export default function FinancesPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [tiers, setTiers] = useState<SponsorshipTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailModal, setDetailModal] = useState<"registration" | "sponsorship" | "donation" | null>(null);
   const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS_DEFAULT);
@@ -66,7 +67,7 @@ export default function FinancesPage() {
     const fetchData = async () => {
       const supabase = createClient();
 
-      const [regResult, sponsorResult, campaignResult, settingResult] = await Promise.all([
+      const [regResult, sponsorResult, campaignResult, settingResult, tierResult] = await Promise.all([
         supabase
           .from("registrations")
           .select("*")
@@ -83,11 +84,17 @@ export default function FinancesPage() {
           .select("value")
           .eq("key", "max_registrations")
           .maybeSingle(),
+        supabase
+          .from("sponsorship_tiers")
+          .select("*")
+          .eq("is_active", true)
+          .order("display_order"),
       ]);
 
       setRegistrations(regResult.data || []);
       setSponsors((sponsorResult.data as Sponsor[]) || []);
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
+      setTiers((tierResult.data as SponsorshipTier[]) || []);
       if (settingResult.data?.value) {
         const v = parseInt(settingResult.data.value, 10);
         if (!isNaN(v)) setMaxRegistrations(v);
@@ -155,6 +162,76 @@ export default function FinancesPage() {
     tierBreakdown[tier].count++;
     tierBreakdown[tier].total += s.amount_paid || 0;
   });
+
+  // Sponsor breakdown by tier and status
+  const activeSponsors = sponsors.filter((s) => s.status !== "archived");
+
+  // Helper: extract tier name from sponsorship_level string
+  const extractTierName = (level: string) => {
+    // Match tier names like "Community Sponsor ($500)" → "Community Sponsor"
+    // Also handles plain tier names without price like "Community Sponsor"
+    return level.replace(/\s*\(\$[0-9,]+\)\s*$/, "").trim();
+  };
+
+  // Helper: get tier price from tiers table, falling back to parsing the string
+  const getTierPrice = (level: string): number => {
+    const tierName = extractTierName(level);
+    const tier = tiers.find((t) => t.name === tierName);
+    if (tier) return tier.price_cents;
+    const match = level.match(/\$([0-9,]+)/);
+    return match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0;
+  };
+
+  // Build a comprehensive breakdown by tier
+  const sponsorTierData = (() => {
+    const tierMap: Record<string, {
+      tierName: string;
+      priceCents: number;
+      paid: Sponsor[];
+      engaged: Sponsor[];
+      committed: Sponsor[];
+      inquired: Sponsor[];
+      prospect: Sponsor[];
+    }> = {};
+
+    // Initialize from the tiers table
+    for (const t of tiers) {
+      tierMap[t.name] = {
+        tierName: t.name,
+        priceCents: t.price_cents,
+        paid: [], engaged: [], committed: [], inquired: [], prospect: [],
+      };
+    }
+
+    // Bucket each active sponsor into its tier
+    for (const s of activeSponsors) {
+      const tierName = extractTierName(s.sponsorship_level);
+      if (!tierMap[tierName]) {
+        tierMap[tierName] = {
+          tierName,
+          priceCents: getTierPrice(s.sponsorship_level),
+          paid: [], engaged: [], committed: [], inquired: [], prospect: [],
+        };
+      }
+      const bucket = tierMap[tierName];
+      const status = s.status as string;
+      if (status === "paid") bucket.paid.push(s);
+      else if (status === "engaged") bucket.engaged.push(s);
+      else if (status === "committed") bucket.committed.push(s);
+      else if (status === "inquired") bucket.inquired.push(s);
+      else if (status === "prospect") bucket.prospect.push(s);
+    }
+
+    // Sort by tier price descending
+    return Object.values(tierMap).sort((a, b) => b.priceCents - a.priceCents);
+  })();
+
+  const totalSponsorPipeline = sponsorTierData.reduce((sum, t) => {
+    const confirmedValue = t.paid.reduce((s, sp) => s + (sp.amount_paid || 0), 0)
+      + (t.engaged.length + t.committed.length) * t.priceCents;
+    const pipelineValue = (t.inquired.length + t.prospect.length) * t.priceCents;
+    return sum + confirmedValue + pipelineValue;
+  }, 0);
 
   // === Chart data ===
 
@@ -710,6 +787,171 @@ export default function FinancesPage() {
               </p>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ── 3b. Sponsorship Finance Breakdown ── */}
+      <div
+        style={{
+          background: "var(--white)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          padding: "1.5rem 2rem",
+          marginBottom: "3rem",
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "1.4rem",
+            fontWeight: 400,
+            marginBottom: "1.5rem",
+          }}
+        >
+          Sponsorship Breakdown
+        </h2>
+
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: "0.85rem",
+          }}
+        >
+          <thead>
+            <tr style={{ borderBottom: "2px solid #eee", textAlign: "left" }}>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)" }}>Tier</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Rate</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#2e7d32", textAlign: "center" }}>Paid</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#1565c0", textAlign: "center" }}>Committed</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#e65100", textAlign: "center" }}>Pipeline</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Collected</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Expected</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Potential</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sponsorTierData.map((t) => {
+              const collectedCents = t.paid.reduce((s, sp) => s + (sp.amount_paid || 0), 0);
+              const committedCount = t.engaged.length + t.committed.length;
+              const expectedCents = collectedCents + committedCount * t.priceCents;
+              const pipelineCount = t.inquired.length + t.prospect.length;
+              const potentialCents = expectedCents + pipelineCount * t.priceCents;
+              const totalSponsors = t.paid.length + committedCount + pipelineCount;
+
+              if (totalSponsors === 0) return null;
+
+              return (
+                <tr key={t.tierName} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                  <td style={{ padding: "0.75rem 1rem", fontWeight: 500 }}>{t.tierName}</td>
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", color: "var(--text-light)" }}>{fmtMoney(t.priceCents)}</td>
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "center" }}>
+                    {t.paid.length > 0 ? (
+                      <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.7rem", fontWeight: 600, background: "#e8f5e9", color: "#2e7d32" }}>
+                        {t.paid.length}
+                      </span>
+                    ) : (
+                      <span style={{ color: "#ccc" }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "center" }}>
+                    {committedCount > 0 ? (
+                      <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.7rem", fontWeight: 600, background: "#e3f2fd", color: "#1565c0" }}>
+                        {committedCount}
+                      </span>
+                    ) : (
+                      <span style={{ color: "#ccc" }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "center" }}>
+                    {pipelineCount > 0 ? (
+                      <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.7rem", fontWeight: 600, background: "#fff3e0", color: "#e65100" }}>
+                        {pipelineCount}
+                      </span>
+                    ) : (
+                      <span style={{ color: "#ccc" }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: collectedCents > 0 ? "#2e7d32" : "var(--text-light)" }}>
+                    {collectedCents > 0 ? fmtMoney(collectedCents) : "—"}
+                  </td>
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 500, color: expectedCents > collectedCents ? "#1565c0" : "var(--text-light)" }}>
+                    {fmtMoney(expectedCents)}
+                  </td>
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", color: "var(--text-light)" }}>
+                    {potentialCents > expectedCents ? fmtMoney(potentialCents) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr style={{ borderTop: "2px solid #ddd" }}>
+              <td style={{ padding: "0.75rem 1rem", fontWeight: 600 }}>Total</td>
+              <td />
+              <td style={{ padding: "0.75rem 1rem", textAlign: "center", fontWeight: 600 }}>
+                {sponsorTierData.reduce((s, t) => s + t.paid.length, 0)}
+              </td>
+              <td style={{ padding: "0.75rem 1rem", textAlign: "center", fontWeight: 600 }}>
+                {sponsorTierData.reduce((s, t) => s + t.engaged.length + t.committed.length, 0)}
+              </td>
+              <td style={{ padding: "0.75rem 1rem", textAlign: "center", fontWeight: 600 }}>
+                {sponsorTierData.reduce((s, t) => s + t.inquired.length + t.prospect.length, 0)}
+              </td>
+              <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#2e7d32" }}>
+                {fmtMoney(sponsorTierData.reduce((s, t) => s + t.paid.reduce((s2, sp) => s2 + (sp.amount_paid || 0), 0), 0))}
+              </td>
+              <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#1565c0" }}>
+                {fmtMoney(sponsorTierData.reduce((s, t) => {
+                  const collected = t.paid.reduce((s2, sp) => s2 + (sp.amount_paid || 0), 0);
+                  return s + collected + (t.engaged.length + t.committed.length) * t.priceCents;
+                }, 0))}
+              </td>
+              <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600 }}>
+                {fmtMoney(totalSponsorPipeline)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        {/* Sponsor names by status */}
+        <div style={{ marginTop: "1.5rem", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
+          {[
+            { label: "Paid", color: "#2e7d32", bg: "#e8f5e9", items: activeSponsors.filter((s) => s.status === "paid") },
+            { label: "Committed", color: "#1565c0", bg: "#e3f2fd", items: activeSponsors.filter((s) => s.status === "engaged" || (s.status as string) === "committed") },
+            { label: "Pipeline", color: "#e65100", bg: "#fff3e0", items: activeSponsors.filter((s) => s.status === "prospect" || s.status === "inquired") },
+          ].map(({ label, color, bg, items }) => (
+            <div key={label}>
+              <h4 style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color, marginBottom: "0.5rem" }}>
+                {label} ({items.length})
+              </h4>
+              {items.length === 0 ? (
+                <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>None</p>
+              ) : (
+                items.map((s) => (
+                  <div
+                    key={s.id}
+                    onClick={() => router.push(`/admin/sponsors/${s.id}`)}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "0.4rem 0.6rem",
+                      marginBottom: "0.3rem",
+                      background: bg,
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, color: "var(--charcoal)" }}>{s.company}</span>
+                    <span style={{ fontSize: "0.75rem", color }}>
+                      {extractTierName(s.sponsorship_level)}
+                      {s.amount_paid ? ` · ${fmtMoney(s.amount_paid)}` : ` · ${fmtMoney(getTierPrice(s.sponsorship_level))}`}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

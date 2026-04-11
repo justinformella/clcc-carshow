@@ -493,8 +493,8 @@ export default function SponsorDetailPage() {
             <SectionHeading>Contact Information</SectionHeading>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="name">Name *</label>
-                <input type="text" id="name" name="name" value={form.name} onChange={handleFormChange} required />
+                <label htmlFor="name">Name</label>
+                <input type="text" id="name" name="name" value={form.name} onChange={handleFormChange} />
               </div>
               <div className="form-group">
                 <label htmlFor="company">Company *</label>
@@ -503,8 +503,8 @@ export default function SponsorDetailPage() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="email">Email *</label>
-                <input type="email" id="email" name="email" value={form.email} onChange={handleFormChange} required />
+                <label htmlFor="email">Email</label>
+                <input type="email" id="email" name="email" value={form.email} onChange={handleFormChange} />
               </div>
               <div className="form-group">
                 <label htmlFor="phone">Phone</label>
