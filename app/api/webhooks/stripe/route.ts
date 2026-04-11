@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         .from("sponsors")
         .update({
           status: "paid",
-          amount_paid: tierAmount,
+          sponsorship_amount: tierAmount,
           donation_cents: donationCents,
           paid_at: new Date().toISOString(),
           payment_method: "stripe",

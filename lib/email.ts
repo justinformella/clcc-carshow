@@ -243,9 +243,9 @@ export async function sendSponsorReceipt(sponsorId: string) {
     .single();
 
   const tierName = tier?.name || sponsor.sponsorship_level;
-  const tierAmountCents = tier?.price_cents || sponsor.amount_paid;
+  const tierAmountCents = tier?.price_cents || sponsor.sponsorship_amount;
   const donationCents = sponsor.donation_cents || 0;
-  const totalCents = sponsor.amount_paid || (tierAmountCents + donationCents);
+  const totalCents = sponsor.sponsorship_amount || (tierAmountCents + donationCents);
 
   const tierAmountDollars = `$${(tierAmountCents / 100).toLocaleString()}`;
   const donationDollars = donationCents > 0 ? `$${(donationCents / 100).toLocaleString()}` : null;
@@ -281,7 +281,7 @@ export async function sendSponsorPaymentAdminNotification(sponsorId: string, pay
     .single();
 
   const tierName = tier?.name || sponsor.sponsorship_level;
-  const amountDollars = tier ? `$${(tier.price_cents / 100).toLocaleString()}` : `$${(sponsor.amount_paid / 100).toLocaleString()}`;
+  const amountDollars = tier ? `$${(tier.price_cents / 100).toLocaleString()}` : `$${(sponsor.sponsorship_amount / 100).toLocaleString()}`;
   const upgradedFrom = sponsor.original_level && sponsor.original_level !== sponsor.sponsorship_level
     ? sponsor.original_level
     : null;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Sponsor, SponsorStatus, Admin } from "@/types/database";
 
-type SortField = "company" | "name" | "status" | "sponsorship_level" | "amount_paid" | "created_at";
+type SortField = "company" | "name" | "status" | "sponsorship_level" | "sponsorship_amount" | "created_at";
 
 export default function SponsorsPage() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function SponsorsPage() {
 
   const toggleSort = (f: SortField) => {
     if (sortField === f) { setSortDir(sortDir === "asc" ? "desc" : "asc"); }
-    else { setSortField(f); setSortDir(f === "amount_paid" || f === "created_at" ? "desc" : "asc"); }
+    else { setSortField(f); setSortDir(f === "sponsorship_amount" || f === "created_at" ? "desc" : "asc"); }
   };
 
   useEffect(() => {
@@ -57,8 +57,8 @@ export default function SponsorsPage() {
   }).sort((a, b) => {
     const statusOrder: Record<string, number> = { prospect: 0, inquired: 1, engaged: 2, paid: 3, archived: 4 };
     let cmp = 0;
-    if (sortField === "amount_paid") {
-      cmp = (a.amount_paid || 0) - (b.amount_paid || 0);
+    if (sortField === "sponsorship_amount") {
+      cmp = (a.sponsorship_amount || 0) - (b.sponsorship_amount || 0);
     } else if (sortField === "created_at") {
       cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     } else if (sortField === "status") {
@@ -197,7 +197,7 @@ export default function SponsorsPage() {
               <SortTh field="sponsorship_level" label="Level" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
               <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
               <th style={thStyle}>Assigned To</th>
-              <SortTh field="amount_paid" label="Received" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+              <SortTh field="sponsorship_amount" label="Received" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
               <th style={thStyle}>Payment</th>
               <SortTh field="created_at" label="Date" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
             </tr>
@@ -263,7 +263,7 @@ export default function SponsorsPage() {
                     {s.assigned_to ? (admins.find((a) => a.id === s.assigned_to)?.name || "—") : "—"}
                   </td>
                   <td style={tdStyle}>
-                    {s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
+                    {s.sponsorship_amount > 0 ? `$${(s.sponsorship_amount / 100).toLocaleString()}` : "—"}
                   </td>
                   <td style={tdStyle}>
                     {s.payment_method === "stripe" ? (

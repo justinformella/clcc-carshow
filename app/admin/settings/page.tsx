@@ -122,7 +122,7 @@ const sampleSponsor: Sponsor = {
   sponsorship_level: "Premier Sponsor",
   message: null,
   status: "paid",
-  amount_paid: 100000,
+  sponsorship_amount: 100000,
   donation_cents: 25000,
   notes: null,
   assigned_to: null,

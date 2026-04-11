@@ -221,7 +221,7 @@ CREATE TABLE sponsors (
   sponsorship_level TEXT NOT NULL,
   message TEXT,
   status TEXT DEFAULT 'inquired',  -- prospect | inquired | engaged | paid
-  amount_paid INTEGER DEFAULT 0,   -- cents (consistent with registrations)
+  sponsorship_amount INTEGER DEFAULT 0,   -- cents: base sponsorship tier amount
   notes TEXT,
   assigned_to UUID REFERENCES admins(id) ON DELETE SET NULL,
   paid_at TIMESTAMPTZ,
@@ -299,7 +299,7 @@ BEGIN
   IF OLD.sponsorship_level  IS DISTINCT FROM NEW.sponsorship_level  THEN changes := changes || jsonb_build_object('sponsorship_level',  jsonb_build_object('old', to_jsonb(OLD.sponsorship_level),  'new', to_jsonb(NEW.sponsorship_level))); END IF;
   IF OLD.message            IS DISTINCT FROM NEW.message            THEN changes := changes || jsonb_build_object('message',            jsonb_build_object('old', to_jsonb(OLD.message),            'new', to_jsonb(NEW.message))); END IF;
   IF OLD.status             IS DISTINCT FROM NEW.status             THEN changes := changes || jsonb_build_object('status',             jsonb_build_object('old', to_jsonb(OLD.status),             'new', to_jsonb(NEW.status))); END IF;
-  IF OLD.amount_paid        IS DISTINCT FROM NEW.amount_paid        THEN changes := changes || jsonb_build_object('amount_paid',        jsonb_build_object('old', to_jsonb(OLD.amount_paid),        'new', to_jsonb(NEW.amount_paid))); END IF;
+  IF OLD.sponsorship_amount IS DISTINCT FROM NEW.sponsorship_amount THEN changes := changes || jsonb_build_object('sponsorship_amount', jsonb_build_object('old', to_jsonb(OLD.sponsorship_amount), 'new', to_jsonb(NEW.sponsorship_amount))); END IF;
   IF OLD.notes              IS DISTINCT FROM NEW.notes              THEN changes := changes || jsonb_build_object('notes',              jsonb_build_object('old', to_jsonb(OLD.notes),              'new', to_jsonb(NEW.notes))); END IF;
   IF OLD.assigned_to        IS DISTINCT FROM NEW.assigned_to        THEN changes := changes || jsonb_build_object('assigned_to',        jsonb_build_object('old', to_jsonb(OLD.assigned_to),        'new', to_jsonb(NEW.assigned_to))); END IF;
 

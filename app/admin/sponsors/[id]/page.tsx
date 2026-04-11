@@ -14,7 +14,7 @@ type EditForm = {
   sponsorship_level: string;
   message: string;
   status: string;
-  amount_paid: string;
+  sponsorship_amount: string;
   donation: string;
   payment_method: string;
   notes: string;
@@ -117,7 +117,7 @@ export default function SponsorDetailPage() {
       sponsorship_level: sponsor.sponsorship_level,
       message: sponsor.message || "",
       status: sponsor.status,
-      amount_paid: String(sponsor.amount_paid / 100),
+      sponsorship_amount: String(sponsor.sponsorship_amount / 100),
       donation: String((sponsor.donation_cents || 0) / 100),
       payment_method: sponsor.payment_method || "",
       notes: sponsor.notes || "",
@@ -166,7 +166,7 @@ export default function SponsorDetailPage() {
         sponsorship_level: form.sponsorship_level,
         message: form.message || null,
         status: form.status,
-        amount_paid: Math.round(parseFloat(form.amount_paid || "0") * 100),
+        sponsorship_amount: Math.round(parseFloat(form.sponsorship_amount || "0") * 100),
         donation_cents: Math.round(parseFloat(form.donation || "0") * 100),
         payment_method: form.payment_method || null,
         notes: form.notes || null,
@@ -576,8 +576,8 @@ export default function SponsorDetailPage() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="amount_paid">Base Sponsorship Amount ($)</label>
-                <input type="number" id="amount_paid" name="amount_paid" value={form.amount_paid} onChange={handleFormChange} min="0" step="0.01" />
+                <label htmlFor="sponsorship_amount">Base Sponsorship Amount ($)</label>
+                <input type="number" id="sponsorship_amount" name="sponsorship_amount" value={form.sponsorship_amount} onChange={handleFormChange} min="0" step="0.01" />
               </div>
               <div className="form-group">
                 <label htmlFor="donation">Additional Donation ($)</label>
@@ -645,7 +645,7 @@ export default function SponsorDetailPage() {
             <DetailRow label="Status" value={<SponsorStatusBadge status={s.status} />} />
             <DetailRow
               label="Base Sponsorship Amount"
-              value={s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
+              value={s.sponsorship_amount > 0 ? `$${(s.sponsorship_amount / 100).toLocaleString()}` : "—"}
             />
             {s.donation_cents > 0 && (
               <DetailRow
@@ -690,9 +690,9 @@ export default function SponsorDetailPage() {
                 <p style={{ color: "#2e7d32", fontWeight: 600, fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
                   Paid via {s.payment_method === "stripe" ? "Credit Card" : s.payment_method === "check" ? "Check" : s.payment_method === "cash" ? "Cash" : s.payment_method || "Unknown"}
                 </p>
-                {s.amount_paid > 0 && (
+                {s.sponsorship_amount > 0 && (
                   <p style={{ fontSize: "0.9rem", color: "#666", margin: "0 0 0.75rem" }}>
-                    Amount: ${(s.amount_paid / 100).toLocaleString()}
+                    Amount: ${(s.sponsorship_amount / 100).toLocaleString()}
                     {s.donation_cents > 0 && ` (includes $${(s.donation_cents / 100).toLocaleString()} donation)`}
                   </p>
                 )}
@@ -1048,7 +1048,7 @@ const FIELD_LABELS: Record<string, string> = {
   sponsorship_level: "Sponsorship Level",
   message: "Message",
   status: "Status",
-  amount_paid: "Sponsorship Amount",
+  sponsorship_amount: "Base Sponsorship Amount",
   notes: "Notes",
   assigned_to: "Assigned To",
 };

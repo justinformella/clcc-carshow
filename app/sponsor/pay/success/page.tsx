@@ -31,15 +31,15 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
       const supabase = createServerClient();
       const { data: sponsor } = await supabase
         .from("sponsors")
-        .select("company, sponsorship_level, amount_paid, donation_cents")
+        .select("company, sponsorship_level, sponsorship_amount, donation_cents")
         .eq("id", sponsorId)
         .single();
 
       if (sponsor) {
         company = sponsor.company;
         tierName = sponsor.sponsorship_level;
-        amountPaidCents = sponsor.amount_paid;
-        amountDisplay = `$${(sponsor.amount_paid / 100).toLocaleString()}`;
+        amountPaidCents = sponsor.sponsorship_amount;
+        amountDisplay = `$${(sponsor.sponsorship_amount / 100).toLocaleString()}`;
         donationCents = sponsor.donation_cents || 0;
       }
     }

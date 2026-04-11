@@ -332,8 +332,8 @@ export default function TiersPage() {
                                 {statusLabels[s.status] || s.status}
                               </span>
                             </td>
-                            <td style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 500, color: s.amount_paid > 0 ? "#2e7d32" : "var(--text-light)" }}>
-                              {s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
+                            <td style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 500, color: s.sponsorship_amount > 0 ? "#2e7d32" : "var(--text-light)" }}>
+                              {s.sponsorship_amount > 0 ? `$${(s.sponsorship_amount / 100).toLocaleString()}` : "—"}
                             </td>
                           </tr>
                         );

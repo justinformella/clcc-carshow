@@ -111,9 +111,9 @@ export default function AdminDashboard() {
     const activeSponsors = sponsors.filter((s) => s.status !== "archived");
     const sponsorRevenue = activeSponsors
       .filter((s) => s.status === "paid" || s.status === "engaged")
-      .reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+      .reduce((sum, s) => sum + (s.sponsorship_amount || 0), 0);
 
-    const committedUnpaid = activeSponsors.filter((s) => s.status === "engaged" && s.amount_paid === 0);
+    const committedUnpaid = activeSponsors.filter((s) => s.status === "engaged" && s.sponsorship_amount === 0);
     const committedProjected = committedUnpaid.reduce((sum, s) => {
       const match = s.sponsorship_level.match(/\$([0-9,]+)/);
       return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);

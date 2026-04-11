@@ -118,7 +118,7 @@ export default function FinancesPage() {
   const paidSponsors = sponsors.filter((s) => s.status === "paid" || s.status === "engaged");
 
   const regRevenue = paidRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
-  const sponsorRevenue = paidSponsors.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+  const sponsorRevenue = paidSponsors.reduce((sum, s) => sum + (s.sponsorship_amount || 0), 0);
   const regDonationRevenue = paidRegs.reduce((sum, r) => sum + (r.donation_cents || 0), 0);
   const sponsorDonationRevenue = paidSponsors.reduce((sum, s) => sum + (s.donation_cents || 0), 0);
   const donationRevenue = regDonationRevenue + sponsorDonationRevenue;
@@ -138,13 +138,13 @@ export default function FinancesPage() {
 
   // Stripe fee estimate: applied to each paid registration (incl. donation) and paid sponsor
   const regFees = paidRegs.reduce((sum, r) => sum + estimateStripeFee((r.amount_paid || 0) + (r.donation_cents || 0)), 0);
-  const sponsorFees = paidSponsors.reduce((sum, s) => sum + estimateStripeFee((s.amount_paid || 0) + (s.donation_cents || 0)), 0);
+  const sponsorFees = paidSponsors.reduce((sum, s) => sum + estimateStripeFee((s.sponsorship_amount || 0) + (s.donation_cents || 0)), 0);
   const totalFees = regFees + sponsorFees;
 
   const netAfterFees = totalRevenue - totalFees;
 
   // Projected income from committed but unpaid sponsors
-  const committedUnpaid = sponsors.filter((s) => s.status === "engaged" && s.amount_paid === 0);
+  const committedUnpaid = sponsors.filter((s) => s.status === "engaged" && s.sponsorship_amount === 0);
   const committedProjected = committedUnpaid.reduce((sum, s) => {
     const match = s.sponsorship_level.match(/\$([0-9,]+)/);
     return sum + (match ? parseInt(match[1].replace(/,/g, "")) * 100 : 0);
@@ -168,7 +168,7 @@ export default function FinancesPage() {
     const tier = s.sponsorship_level;
     if (!tierBreakdown[tier]) tierBreakdown[tier] = { count: 0, total: 0 };
     tierBreakdown[tier].count++;
-    tierBreakdown[tier].total += s.amount_paid || 0;
+    tierBreakdown[tier].total += s.sponsorship_amount || 0;
   });
 
   // Sponsor breakdown by tier and status
@@ -235,7 +235,7 @@ export default function FinancesPage() {
   })();
 
   const totalSponsorPipeline = sponsorTierData.reduce((sum, t) => {
-    const confirmedValue = t.paid.reduce((s, sp) => s + (sp.amount_paid || 0), 0)
+    const confirmedValue = t.paid.reduce((s, sp) => s + (sp.sponsorship_amount || 0), 0)
       + (t.engaged.length + t.committed.length) * t.priceCents;
     const pipelineValue = (t.inquired.length + t.prospect.length) * t.priceCents;
     return sum + confirmedValue + pipelineValue;
@@ -255,7 +255,7 @@ export default function FinancesPage() {
     sponsors.filter((s) => s.status === "paid").forEach((s) => {
       const day = (s.paid_at || s.created_at).slice(0, 10);
       if (!dayMap[day]) dayMap[day] = { reg: 0, sponsor: 0, donation: 0 };
-      dayMap[day].sponsor += s.amount_paid || 0;
+      dayMap[day].sponsor += s.sponsorship_amount || 0;
     });
     const sortedDays = Object.keys(dayMap).sort();
     let cumReg = 0;
@@ -307,11 +307,11 @@ export default function FinancesPage() {
       date: s.status === "paid" ? (s.paid_at || s.created_at) : s.created_at,
       type: "sponsorship" as const,
       description: `${s.company} — ${s.sponsorship_level}`,
-      amountCents: s.amount_paid || 0,
-      feeCents: (s.status === "paid" || s.status === "engaged") ? estimateStripeFee(s.amount_paid || 0) : 0,
+      amountCents: s.sponsorship_amount || 0,
+      feeCents: (s.status === "paid" || s.status === "engaged") ? estimateStripeFee(s.sponsorship_amount || 0) : 0,
       netCents:
         (s.status === "paid" || s.status === "engaged")
-          ? (s.amount_paid || 0) - estimateStripeFee(s.amount_paid || 0)
+          ? (s.sponsorship_amount || 0) - estimateStripeFee(s.sponsorship_amount || 0)
           : 0,
       status: (s.status === "paid" || s.status === "engaged") ? "paid" : s.status === "prospect" || s.status === "inquired" ? "pending" : s.status,
       detailUrl: `/admin/sponsors/${s.id}`,
@@ -839,7 +839,7 @@ export default function FinancesPage() {
           </thead>
           <tbody>
             {sponsorTierData.map((t) => {
-              const paidCents = t.paid.reduce((s, sp) => s + (sp.amount_paid || 0), 0);
+              const paidCents = t.paid.reduce((s, sp) => s + (sp.sponsorship_amount || 0), 0);
               const paidDonations = t.paid.reduce((s, sp) => s + (sp.donation_cents || 0), 0);
               const committedCount = t.engaged.length + t.committed.length;
               const committedCents = committedCount * t.priceCents;
@@ -910,7 +910,7 @@ export default function FinancesPage() {
                 {sponsorTierData.reduce((s, t) => s + t.inquired.length + t.prospect.length, 0)}
               </td>
               <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#2e7d32" }}>
-                {fmtMoney(sponsorTierData.reduce((s, t) => s + t.paid.reduce((s2, sp) => s2 + (sp.amount_paid || 0), 0), 0))}
+                {fmtMoney(sponsorTierData.reduce((s, t) => s + t.paid.reduce((s2, sp) => s2 + (sp.sponsorship_amount || 0), 0), 0))}
               </td>
               <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#1565c0" }}>
                 {fmtMoney(sponsorTierData.reduce((s, t) => s + (t.engaged.length + t.committed.length) * t.priceCents, 0))}
@@ -954,7 +954,7 @@ export default function FinancesPage() {
                     <span style={{ fontWeight: 500, color: "var(--charcoal)" }}>{s.company}</span>
                     <span style={{ fontSize: "0.75rem", color }}>
                       {extractTierName(s.sponsorship_level)}
-                      {s.amount_paid ? ` · ${fmtMoney(s.amount_paid)}` : ` · ${fmtMoney(getTierPrice(s.sponsorship_level))}`}
+                      {s.sponsorship_amount ? ` · ${fmtMoney(s.sponsorship_amount)}` : ` · ${fmtMoney(getTierPrice(s.sponsorship_level))}`}
                       {s.donation_cents > 0 && <span style={{ opacity: 0.7 }}> + {fmtMoney(s.donation_cents)}</span>}
                     </span>
                   </div>
@@ -1263,7 +1263,7 @@ export default function FinancesPage() {
                       <td style={modalTdStyle}>{s.company}</td>
                       <td style={modalTdStyle}>{s.sponsorship_level}</td>
                       <td style={modalTdStyle}>{s.status === "engaged" ? "Committed" : "Paid"}</td>
-                      <td style={modalTdStyle}>{fmtMoney(s.amount_paid || 0)}</td>
+                      <td style={modalTdStyle}>{fmtMoney(s.sponsorship_amount || 0)}</td>
                     </tr>
                   ))}
                   {paidSponsors.length === 0 && (

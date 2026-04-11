@@ -190,7 +190,7 @@ export type Sponsor = {
   sponsorship_level: string;
   message: string | null;
   status: SponsorStatus;
-  amount_paid: number;
+  sponsorship_amount: number;
   notes: string | null;
   assigned_to: string | null;
   logo_url: string | null;
