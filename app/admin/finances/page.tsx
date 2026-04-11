@@ -280,7 +280,8 @@ export default function FinancesPage() {
   const donutData = [
     { name: "Registrations", value: regRevenue },
     { name: "Sponsorships", value: sponsorRevenue },
-    ...(donationRevenue > 0 ? [{ name: "Donations", value: donationRevenue }] : []),
+    ...(regDonationRevenue > 0 ? [{ name: "Reg. Donations", value: regDonationRevenue }] : []),
+    ...(sponsorDonationRevenue > 0 ? [{ name: "Sponsor Donations", value: sponsorDonationRevenue }] : []),
   ];
 
   // === Unified transaction list ===
@@ -481,7 +482,7 @@ export default function FinancesPage() {
         <SummaryCard
           label="Donation Revenue"
           value={fmtMoney(donationRevenue)}
-          note={`${donorCount} donor${donorCount !== 1 ? "s" : ""}`}
+          note={`Reg: ${fmtMoney(regDonationRevenue)} · Sponsors: ${fmtMoney(sponsorDonationRevenue)}`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>}
           onClick={() => setDetailModal("donation")}
         />
@@ -989,7 +990,10 @@ export default function FinancesPage() {
           <tbody>
             <LedgerRow label="Gross Revenue (Registrations)" amount={regRevenue} />
             <LedgerRow label="Gross Revenue (Sponsorships)" amount={sponsorRevenue} />
-            <LedgerRow label="Gross Revenue (Donations)" amount={donationRevenue} />
+            <LedgerRow label="Gross Revenue (Registration Donations)" amount={regDonationRevenue} />
+            {sponsorDonationRevenue > 0 && (
+              <LedgerRow label="Gross Revenue (Sponsor Donations)" amount={sponsorDonationRevenue} />
+            )}
             <LedgerRow label="Total Gross Revenue" amount={totalRevenue} bold separator />
             <LedgerRow label="Less: Stripe Processing Fees (est.)" amount={-totalFees} />
             <LedgerRow label="Less: Refunds Issued" amount={-refundedAmount} />
@@ -1280,36 +1284,76 @@ export default function FinancesPage() {
             )}
 
             {detailModal === "donation" && (
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
-                <thead>
-                  <tr style={{ background: "var(--cream)", textAlign: "left" }}>
-                    <th style={modalThStyle}>Name</th>
-                    <th style={modalThStyle}>Email</th>
-                    <th style={modalThStyle}>Donation</th>
-                    <th style={modalThStyle}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {registrations.filter((r) => (r.donation_cents || 0) > 0 && r.payment_status === "paid").map((r) => (
-                    <tr key={r.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                      <td style={modalTdStyle}>{r.first_name} {r.last_name}</td>
-                      <td style={modalTdStyle}>{r.email}</td>
-                      <td style={modalTdStyle}>{fmtMoney(r.donation_cents || 0)}</td>
-                      <td style={modalTdStyle}>{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : "—"}</td>
+              <>
+                <h4 style={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "0 0 0.5rem" }}>Registration Donations</h4>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+                  <thead>
+                    <tr style={{ background: "var(--cream)", textAlign: "left" }}>
+                      <th style={modalThStyle}>Name</th>
+                      <th style={modalThStyle}>Email</th>
+                      <th style={modalThStyle}>Donation</th>
+                      <th style={modalThStyle}>Date</th>
                     </tr>
-                  ))}
-                  {registrations.filter((r) => (r.donation_cents || 0) > 0 && r.payment_status === "paid").length === 0 && (
-                    <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No donations yet</td></tr>
-                  )}
-                </tbody>
-                <tfoot>
-                  <tr style={{ fontWeight: 600, borderTop: "2px solid #ddd" }}>
-                    <td colSpan={2} style={modalTdStyle}>Total</td>
-                    <td style={modalTdStyle}>{fmtMoney(donationRevenue)}</td>
-                    <td style={modalTdStyle}></td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {registrations.filter((r) => (r.donation_cents || 0) > 0 && r.payment_status === "paid").map((r) => (
+                      <tr key={r.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                        <td style={modalTdStyle}>{r.first_name} {r.last_name}</td>
+                        <td style={modalTdStyle}>{r.email}</td>
+                        <td style={modalTdStyle}>{fmtMoney(r.donation_cents || 0)}</td>
+                        <td style={modalTdStyle}>{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : "—"}</td>
+                      </tr>
+                    ))}
+                    {registrations.filter((r) => (r.donation_cents || 0) > 0 && r.payment_status === "paid").length === 0 && (
+                      <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No registration donations yet</td></tr>
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ fontWeight: 600, borderTop: "2px solid #ddd" }}>
+                      <td colSpan={2} style={modalTdStyle}>Subtotal</td>
+                      <td style={modalTdStyle}>{fmtMoney(regDonationRevenue)}</td>
+                      <td style={modalTdStyle}></td>
+                    </tr>
+                  </tfoot>
+                </table>
+
+                <h4 style={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "0 0 0.5rem" }}>Sponsor Donations</h4>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr style={{ background: "var(--cream)", textAlign: "left" }}>
+                      <th style={modalThStyle}>Company</th>
+                      <th style={modalThStyle}>Contact</th>
+                      <th style={modalThStyle}>Donation</th>
+                      <th style={modalThStyle}>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sponsors.filter((s) => (s.donation_cents || 0) > 0 && s.status === "paid").map((s) => (
+                      <tr key={s.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                        <td style={modalTdStyle}>{s.company}</td>
+                        <td style={modalTdStyle}>{s.name}</td>
+                        <td style={modalTdStyle}>{fmtMoney(s.donation_cents || 0)}</td>
+                        <td style={modalTdStyle}>{s.paid_at ? new Date(s.paid_at).toLocaleDateString() : "—"}</td>
+                      </tr>
+                    ))}
+                    {sponsors.filter((s) => (s.donation_cents || 0) > 0 && s.status === "paid").length === 0 && (
+                      <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No sponsor donations yet</td></tr>
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ fontWeight: 600, borderTop: "2px solid #ddd" }}>
+                      <td colSpan={2} style={modalTdStyle}>Subtotal</td>
+                      <td style={modalTdStyle}>{fmtMoney(sponsorDonationRevenue)}</td>
+                      <td style={modalTdStyle}></td>
+                    </tr>
+                    <tr style={{ fontWeight: 700, borderTop: "1px solid #ddd" }}>
+                      <td colSpan={2} style={modalTdStyle}>Total Donations</td>
+                      <td style={modalTdStyle}>{fmtMoney(donationRevenue)}</td>
+                      <td style={modalTdStyle}></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </>
             )}
           </div>
         </>
