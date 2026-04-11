@@ -69,13 +69,14 @@ export async function generateCarImage(registrationId: string, preferredModel?: 
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
   // Pre-call: ask Gemini to describe the car so the image prompt is accurate
-  const carLabel = `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`;
+  const modelWithTrim = reg.vehicle_trim ? `${reg.vehicle_model} ${reg.vehicle_trim}` : reg.vehicle_model;
+  const carLabel = `${reg.vehicle_year} ${reg.vehicle_make} ${modelWithTrim}`;
   const carDescription = geminiKey
     ? await describeCarWithGemini(
         geminiKey,
         reg.vehicle_year,
         reg.vehicle_make,
-        reg.vehicle_model,
+        modelWithTrim,
         reg.vehicle_color
       )
     : null;

@@ -17,6 +17,7 @@ type VehicleForm = {
   vehicle_year: string;
   vehicle_make: string;
   vehicle_model: string;
+  vehicle_trim: string;
   vehicle_color: string;
   story: string;
 };
@@ -25,6 +26,7 @@ const emptyVehicle = (): VehicleForm => ({
   vehicle_year: "",
   vehicle_make: "",
   vehicle_model: "",
+  vehicle_trim: "",
   vehicle_color: "",
   story: "",
 });
@@ -498,10 +500,23 @@ function RegisterContent() {
                           name="vehicle_model"
                           value={vehicle.vehicle_model}
                           onChange={(e) => handleVehicleChange(index, e)}
-                          placeholder="e.g., Mustang GT"
+                          placeholder="e.g., Mustang"
                           required
                         />
                       </div>
+                      <div className="form-group">
+                        <label htmlFor={`vehicle_trim_${index}`}>Trim / Package</label>
+                        <input
+                          type="text"
+                          id={`vehicle_trim_${index}`}
+                          name="vehicle_trim"
+                          value={vehicle.vehicle_trim}
+                          onChange={(e) => handleVehicleChange(index, e)}
+                          placeholder="e.g., GT, SS, TRD Pro"
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
                       <div className="form-group">
                         <label htmlFor={`vehicle_color_${index}`}>Color</label>
                         <input

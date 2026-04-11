@@ -14,6 +14,7 @@ CREATE TABLE registrations (
   vehicle_year INTEGER NOT NULL,
   vehicle_make TEXT NOT NULL,
   vehicle_model TEXT NOT NULL,
+  vehicle_trim TEXT,
   vehicle_color TEXT,
   engine_specs TEXT,
   modifications TEXT,

@@ -11,6 +11,7 @@ type VehicleInput = {
   vehicle_year: number;
   vehicle_make: string;
   vehicle_model: string;
+  vehicle_trim?: string;
   vehicle_color?: string;
   story?: string;
 };
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
           vehicle_year: body.vehicle_year,
           vehicle_make: body.vehicle_make,
           vehicle_model: body.vehicle_model,
+          vehicle_trim: body.vehicle_trim,
           vehicle_color: body.vehicle_color,
           story: body.story,
         },
@@ -139,6 +141,7 @@ export async function POST(request: NextRequest) {
       vehicle_year: v.vehicle_year,
       vehicle_make: v.vehicle_make,
       vehicle_model: v.vehicle_model,
+      vehicle_trim: v.vehicle_trim || null,
       vehicle_color: v.vehicle_color || null,
       story: v.story || null,
       utm_source: utm_source || null,

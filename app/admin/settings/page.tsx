@@ -29,6 +29,7 @@ const sampleReg: Registration = {
   vehicle_year: 1967,
   vehicle_make: "Ford",
   vehicle_model: "Mustang",
+  vehicle_trim: "GT",
   vehicle_color: "Red",
   story: null,
   award_category: null,

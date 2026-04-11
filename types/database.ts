@@ -14,6 +14,7 @@ export type Registration = {
   vehicle_year: number;
   vehicle_make: string;
   vehicle_model: string;
+  vehicle_trim: string | null;
   vehicle_color: string | null;
   story: string | null;
   // Award (admin-assigned, null = no award)

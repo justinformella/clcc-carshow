@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       // Batch mode: enrich all registrations that don't have specs yet
       const { data } = await supabase
         .from("registrations")
-        .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_color")
+        .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_trim, vehicle_color")
         .in("payment_status", ["paid", "comped"])
         .order("car_number", { ascending: true });
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     } else if (registration_id) {
       const { data } = await supabase
         .from("registrations")
-        .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_color")
+        .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_trim, vehicle_color")
         .eq("id", registration_id)
         .single();
 
@@ -122,7 +122,7 @@ ${Object.entries(SPEC_SCHEMA).map(([k, v]) => `  "${k}": ${v}`).join("\n")}`,
             },
             {
               role: "user",
-              content: `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}${reg.vehicle_color ? ` (${reg.vehicle_color})` : ""}`,
+              content: `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}${reg.vehicle_trim ? ` ${reg.vehicle_trim}` : ""}${reg.vehicle_color ? ` (${reg.vehicle_color})` : ""}`,
             },
           ],
         });

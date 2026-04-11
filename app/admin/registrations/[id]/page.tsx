@@ -23,6 +23,7 @@ type EditForm = {
   vehicle_year: string;
   vehicle_make: string;
   vehicle_model: string;
+  vehicle_trim: string;
   vehicle_color: string;
   story: string;
   award_category: string;
@@ -284,6 +285,7 @@ export default function RegistrationDetailPage() {
       vehicle_year: String(registration.vehicle_year),
       vehicle_make: registration.vehicle_make,
       vehicle_model: registration.vehicle_model,
+      vehicle_trim: registration.vehicle_trim || "",
       vehicle_color: registration.vehicle_color || "",
       story: registration.story || "",
       award_category: registration.award_category || "",
@@ -358,6 +360,7 @@ export default function RegistrationDetailPage() {
         vehicle_year: parseInt(form.vehicle_year),
         vehicle_make: form.vehicle_make,
         vehicle_model: form.vehicle_model,
+        vehicle_trim: form.vehicle_trim || null,
         vehicle_color: form.vehicle_color || null,
         story: form.story || null,
         award_category: awardValue,
@@ -733,6 +736,12 @@ export default function RegistrationDetailPage() {
                 <input type="text" id="vehicle_model" name="vehicle_model" value={form.vehicle_model} onChange={handleFormChange} required />
               </div>
               <div className="form-group">
+                <label htmlFor="vehicle_trim">Trim</label>
+                <input type="text" id="vehicle_trim" name="vehicle_trim" value={form.vehicle_trim} onChange={handleFormChange} placeholder="e.g., GT, SS, TRD Pro" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
                 <label htmlFor="vehicle_color">Color</label>
                 <input type="text" id="vehicle_color" name="vehicle_color" value={form.vehicle_color} onChange={handleFormChange} />
               </div>
@@ -843,6 +852,7 @@ export default function RegistrationDetailPage() {
                 <DetailRow label="Year" value={String(r.vehicle_year)} />
                 <DetailRow label="Make" value={r.vehicle_make} />
                 <DetailRow label="Model" value={r.vehicle_model} />
+                {r.vehicle_trim && <DetailRow label="Trim" value={r.vehicle_trim} />}
                 <DetailRow label="Color" value={r.vehicle_color || "—"} />
               </DetailSection>
 
