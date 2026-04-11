@@ -87,9 +87,18 @@ export default function TiersPage() {
     }
     if (sponsors) {
       for (const s of sponsors as Sponsor[]) {
-        if (grouped[s.sponsorship_level]) {
-          grouped[s.sponsorship_level].push(s);
+        // Skip archived sponsors
+        if (s.status === "archived") continue;
+        // Match by exact name or prefix (handles old format "Premier Sponsor ($1,000)")
+        const match = fetchedTiers.find((t) => s.sponsorship_level === t.name || s.sponsorship_level.startsWith(t.name));
+        if (match && grouped[match.name]) {
+          grouped[match.name].push(s);
         }
+      }
+      // Sort each group: paid first, then committed/engaged, then pipeline
+      const statusOrder: Record<string, number> = { paid: 0, committed: 1, engaged: 2, inquired: 3, prospect: 4 };
+      for (const key of Object.keys(grouped)) {
+        grouped[key].sort((a, b) => (statusOrder[a.status] ?? 5) - (statusOrder[b.status] ?? 5));
       }
     }
     setSponsorsByTier(grouped);
@@ -258,6 +267,11 @@ export default function TiersPage() {
                   <span style={{ fontSize: "0.95rem", color: "var(--text-light)" }}>
                     ${(tier.price_cents / 100).toLocaleString()}
                   </span>
+                  {sponsors.length > 0 && (
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
+                      ({sponsors.length})
+                    </span>
+                  )}
                   <span
                     style={{
                       display: "inline-block",
@@ -292,47 +306,40 @@ export default function TiersPage() {
 
               {/* Sponsors list */}
               <div style={{ marginBottom: isEditing ? "1.5rem" : 0 }}>
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: "var(--text-light)",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  Sponsors in this tier:
-                </div>
                 {sponsors.length === 0 ? (
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-light)", margin: "0.25rem 0 0" }}>
-                    No sponsors in this tier yet
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-light)", margin: 0 }}>
+                    No active sponsors in this tier
                   </p>
                 ) : (
-                  <ul style={{ margin: "0.25rem 0 0", paddingLeft: "1.25rem", listStyle: "disc" }}>
-                    {sponsors.map((s) => {
-                      const sc = statusColors[s.status] || statusColors.prospect;
-                      return (
-                        <li key={s.id} style={{ fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                          {s.company} &mdash; {s.name}{" "}
-                          <span
-                            style={{
-                              display: "inline-block",
-                              padding: "0.15rem 0.5rem",
-                              fontSize: "0.65rem",
-                              fontWeight: 600,
-                              textTransform: "uppercase",
-                              background: sc.bg,
-                              color: sc.color,
-                              verticalAlign: "middle",
-                            }}
-                          >
-                            {statusLabels[s.status] || s.status}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #eee", textAlign: "left" }}>
+                        <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)" }}>Company</th>
+                        <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)" }}>Contact</th>
+                        <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)" }}>Status</th>
+                        <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", textAlign: "right" }}>Paid</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sponsors.map((s) => {
+                        const sc = statusColors[s.status] || statusColors.prospect;
+                        return (
+                          <tr key={s.id} style={{ borderBottom: "1px solid #f5f5f5" }}>
+                            <td style={{ padding: "0.5rem 0.75rem", fontWeight: 500 }}>{s.company}</td>
+                            <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-light)" }}>{s.name}</td>
+                            <td style={{ padding: "0.5rem 0.75rem" }}>
+                              <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", background: sc.bg, color: sc.color }}>
+                                {statusLabels[s.status] || s.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 500, color: s.amount_paid > 0 ? "#2e7d32" : "var(--text-light)" }}>
+                              {s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </div>
 
