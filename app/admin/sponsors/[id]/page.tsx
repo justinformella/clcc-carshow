@@ -576,7 +576,7 @@ export default function SponsorDetailPage() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="amount_paid">Sponsorship Amount ($)</label>
+                <label htmlFor="amount_paid">Base Sponsorship Amount ($)</label>
                 <input type="number" id="amount_paid" name="amount_paid" value={form.amount_paid} onChange={handleFormChange} min="0" step="0.01" />
               </div>
               <div className="form-group">
@@ -644,7 +644,7 @@ export default function SponsorDetailPage() {
             <DetailRow label="Level" value={s.sponsorship_level} />
             <DetailRow label="Status" value={<SponsorStatusBadge status={s.status} />} />
             <DetailRow
-              label="Amount Paid"
+              label="Base Sponsorship Amount"
               value={s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
             />
             {s.donation_cents > 0 && (
