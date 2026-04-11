@@ -644,7 +644,7 @@ export default function SponsorDetailPage() {
             <DetailRow label="Level" value={s.sponsorship_level} />
             <DetailRow label="Status" value={<SponsorStatusBadge status={s.status} />} />
             <DetailRow
-              label="Sponsorship Paid"
+              label="Amount Paid"
               value={s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
             />
             {s.donation_cents > 0 && (
