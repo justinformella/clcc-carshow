@@ -10,8 +10,12 @@ import {
   helpRequestConfirmationEmail,
   helpRequestAdminNotificationEmail,
   helpRequestReplyNotificationEmail,
+  sponsorAdminNotificationEmail,
+  sponsorPaymentLinkEmail,
+  sponsorReceiptEmail,
+  sponsorPaymentAdminNotificationEmail,
 } from "@/lib/email-templates";
-import type { Registration, HelpRequest } from "@/types/database";
+import type { Registration, HelpRequest, Sponsor } from "@/types/database";
 
 type Tab = "configuration" | "emails";
 
@@ -107,6 +111,38 @@ const sampleHelpReplyHtml = helpRequestReplyNotificationEmail(
   "Hi Jane! Absolutely — we can update your vehicle info. I've swapped it to the 1970 Chevelle. You're all set!",
   "Mike"
 ).html;
+
+const sampleSponsor: Sponsor = {
+  id: "sample-sponsor",
+  name: "Frank Franco",
+  company: "Weatherwise Heating & Cooling",
+  email: "frank@weatherwise.com",
+  phone: "815-555-0199",
+  website: "https://weatherwise.com",
+  sponsorship_level: "Premier Sponsor",
+  message: null,
+  status: "paid",
+  amount_paid: 100000,
+  donation_cents: 25000,
+  notes: null,
+  assigned_to: null,
+  paid_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  payment_token: null,
+  payment_method: "stripe",
+  check_note: null,
+  original_level: null,
+  logo_url: null,
+  pixel_logo_url: null,
+  stripe_session_id: null,
+  stripe_payment_intent_id: null,
+};
+
+const sampleSponsorInquiryHtml = sponsorAdminNotificationEmail(sampleSponsor, "#").html;
+const sampleSponsorPaymentLinkHtml = sponsorPaymentLinkEmail(sampleSponsor, "Premier Sponsor", "$1,000", "https://crystallakecarshow.com/sponsor/pay/sample-token").html;
+const sampleSponsorReceiptHtml = sponsorReceiptEmail(sampleSponsor, "Premier Sponsor", "$1,000", "$250", "$1,250", "Logo on event signage and website\nSocial media recognition\n2 complimentary registrations").html;
+const sampleSponsorPaymentAdminHtml = sponsorPaymentAdminNotificationEmail(sampleSponsor, "Premier Sponsor", "$1,000", "stripe", null, "#").html;
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("configuration");
@@ -441,6 +477,31 @@ export default function SettingsPage() {
               name="Help Request Reply"
               description="Sent to the submitter when an admin replies to their help request from the admin help desk."
               previewHtml={sampleHelpReplyHtml}
+            />
+
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", fontWeight: 400, margin: "2rem 0 1rem", paddingTop: "1rem", borderTop: "1px solid #eee" }}>
+              Sponsor Email Templates
+            </h3>
+
+            <TemplateRow
+              name="Sponsor Inquiry Notification"
+              description="Sent to admins when a new sponsor inquiry comes in via the website form."
+              previewHtml={sampleSponsorInquiryHtml}
+            />
+            <TemplateRow
+              name="Sponsor Payment Link"
+              description="Sent to the sponsor with a unique payment link when generated from the admin sponsor detail page."
+              previewHtml={sampleSponsorPaymentLinkHtml}
+            />
+            <TemplateRow
+              name="Sponsor Receipt"
+              description="Sent to the sponsor after payment is confirmed. Includes tier, donation breakdown, benefits, and tax receipt info."
+              previewHtml={sampleSponsorReceiptHtml}
+            />
+            <TemplateRow
+              name="Sponsor Payment Admin Notification"
+              description="Sent to admins when a sponsor completes payment (card or check). Includes company, tier, amount, and payment method."
+              previewHtml={sampleSponsorPaymentAdminHtml}
             />
           </div>
         </div>
