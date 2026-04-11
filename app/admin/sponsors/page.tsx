@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Sponsor, SponsorStatus, Admin } from "@/types/database";
 
+type SortField = "company" | "name" | "status" | "sponsorship_level" | "amount_paid" | "created_at";
+
 export default function SponsorsPage() {
   const router = useRouter();
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -13,6 +15,13 @@ export default function SponsorsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const toggleSort = (f: SortField) => {
+    if (sortField === f) { setSortDir(sortDir === "asc" ? "desc" : "asc"); }
+    else { setSortField(f); setSortDir(f === "amount_paid" || f === "created_at" ? "desc" : "asc"); }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +54,19 @@ export default function SponsorsPage() {
       (assigneeFilter === "unassigned" ? !s.assigned_to : s.assigned_to === assigneeFilter);
 
     return matchesSearch && matchesStatus && matchesAssignee;
+  }).sort((a, b) => {
+    const statusOrder: Record<string, number> = { prospect: 0, inquired: 1, engaged: 2, paid: 3, archived: 4 };
+    let cmp = 0;
+    if (sortField === "amount_paid") {
+      cmp = (a.amount_paid || 0) - (b.amount_paid || 0);
+    } else if (sortField === "created_at") {
+      cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    } else if (sortField === "status") {
+      cmp = (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0);
+    } else {
+      cmp = (a[sortField] || "").toString().localeCompare((b[sortField] || "").toString());
+    }
+    return sortDir === "asc" ? cmp : -cmp;
   });
 
   if (loading) {
@@ -170,14 +192,14 @@ export default function SponsorsPage() {
           <thead>
             <tr style={{ background: "var(--cream)", textAlign: "left" }}>
               <th style={{ ...thStyle, width: "60px" }}></th>
-              <th style={thStyle}>Company</th>
-              <th style={thStyle}>Contact</th>
-              <th style={thStyle}>Level</th>
-              <th style={thStyle}>Status</th>
+              <SortTh field="company" label="Company" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+              <SortTh field="name" label="Contact" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+              <SortTh field="sponsorship_level" label="Level" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+              <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
               <th style={thStyle}>Assigned To</th>
-              <th style={thStyle}>Amount Paid</th>
+              <SortTh field="amount_paid" label="Received" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
               <th style={thStyle}>Payment</th>
-              <th style={thStyle}>Date</th>
+              <SortTh field="created_at" label="Date" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
             </tr>
           </thead>
           <tbody>
@@ -318,6 +340,18 @@ function getLogoSrc(sponsor: Sponsor): string | null {
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
   }
   return null;
+}
+
+function SortTh({ field, label, sortField, sortDir, onSort }: { field: SortField; label: string; sortField: SortField; sortDir: string; onSort: (f: SortField) => void }) {
+  const active = sortField === field;
+  return (
+    <th
+      onClick={() => onSort(field)}
+      style={{ ...thStyle, cursor: "pointer", userSelect: "none" }}
+    >
+      {label} {active ? (sortDir === "asc" ? "▲" : "▼") : ""}
+    </th>
+  );
 }
 
 const thStyle: React.CSSProperties = {

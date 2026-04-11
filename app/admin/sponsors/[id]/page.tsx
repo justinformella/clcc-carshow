@@ -576,7 +576,7 @@ export default function SponsorDetailPage() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="amount_paid">Sponsorship Paid ($)</label>
+                <label htmlFor="amount_paid">Sponsorship Amount ($)</label>
                 <input type="number" id="amount_paid" name="amount_paid" value={form.amount_paid} onChange={handleFormChange} min="0" step="0.01" />
               </div>
               <div className="form-group">
@@ -688,7 +688,7 @@ export default function SponsorDetailPage() {
             {s.status === "paid" ? (
               <div>
                 <p style={{ color: "#2e7d32", fontWeight: 600, fontSize: "0.95rem", margin: "0 0 0.5rem" }}>
-                  Paid via {s.payment_method === "stripe" ? "Credit Card" : s.payment_method === "check" ? "Check" : "Unknown"}
+                  Paid via {s.payment_method === "stripe" ? "Credit Card" : s.payment_method === "check" ? "Check" : s.payment_method === "cash" ? "Cash" : s.payment_method || "Unknown"}
                 </p>
                 {s.amount_paid > 0 && (
                   <p style={{ fontSize: "0.9rem", color: "#666", margin: "0 0 0.75rem" }}>
@@ -1048,7 +1048,7 @@ const FIELD_LABELS: Record<string, string> = {
   sponsorship_level: "Sponsorship Level",
   message: "Message",
   status: "Status",
-  amount_paid: "Amount Paid",
+  amount_paid: "Sponsorship Amount",
   notes: "Notes",
   assigned_to: "Assigned To",
 };

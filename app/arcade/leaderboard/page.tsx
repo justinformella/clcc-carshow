@@ -119,53 +119,56 @@ function Leaderboard() {
               return (
                 <div
                   key={entry.id}
+                  onClick={() => entry.full_name && setRevealedId(isRevealed ? null : entry.id)}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "40px 60px 1fr 80px",
+                    gridTemplateColumns: "40px 70px 1fr 90px",
                     gap: "0.5rem",
                     alignItems: "center",
-                    padding: "0.5rem",
+                    padding: "0.65rem 0.75rem",
                     background: isTop3 ? "rgba(255,215,0,0.08)" : C.bgMid,
                     border: `1px solid ${isTop3 ? C.goldDark : C.border}`,
+                    cursor: entry.full_name ? "pointer" : "default",
                   }}
                 >
                   {/* Rank */}
-                  <span style={{ fontFamily: FONT, fontSize: "0.7rem", color: isTop3 ? C.gold : C.midGray }}>
+                  <span style={{ fontFamily: FONT, fontSize: "0.8rem", color: isTop3 ? C.gold : C.midGray }}>
                     {i + 1}
                   </span>
 
                   {/* Initials */}
-                  <span
-                    onClick={() => entry.full_name && setRevealedId(isRevealed ? null : entry.id)}
-                    style={{
+                  <div>
+                    <span style={{
                       fontFamily: FONT,
-                      fontSize: "0.65rem",
+                      fontSize: "0.75rem",
                       color: isTop3 ? C.gold : C.white,
-                      cursor: entry.full_name ? "pointer" : "default",
-                      textDecoration: entry.full_name ? "underline" : "none",
-                      textDecorationStyle: "dotted" as const,
-                    }}
-                    title={entry.full_name || undefined}
-                  >
-                    {isRevealed && entry.full_name ? entry.full_name : entry.initials}
-                  </span>
+                      display: "block",
+                    }}>
+                      {entry.initials}
+                    </span>
+                    {entry.full_name && (
+                      <span style={{ fontFamily: FONT, fontSize: "0.4rem", color: C.midGray, display: "block", marginTop: "0.15rem" }}>
+                        {entry.full_name}
+                      </span>
+                    )}
+                  </div>
 
                   {/* Car */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", overflow: "hidden" }}>
                     {entry.car_pixel_art && (
                       <img
                         src={entry.car_pixel_art}
                         alt=""
-                        style={{ width: "32px", height: "20px", objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }}
+                        style={{ width: "56px", height: "35px", objectFit: "contain", imageRendering: "pixelated", flexShrink: 0 }}
                       />
                     )}
-                    <span style={{ fontFamily: FONT, fontSize: "0.4rem", color: C.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontFamily: FONT, fontSize: "0.55rem", color: C.gray, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {entry.car_name}
                     </span>
                   </div>
 
                   {/* Score */}
-                  <span style={{ fontFamily: FONT, fontSize: "0.6rem", color: isTop3 ? C.gold : C.white, textAlign: "right" }}>
+                  <span style={{ fontFamily: FONT, fontSize: "0.75rem", color: isTop3 ? C.gold : C.white, textAlign: "right" }}>
                     {formatScore(activeGame, entry.score)}
                   </span>
                 </div>
