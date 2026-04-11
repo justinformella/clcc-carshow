@@ -84,7 +84,7 @@ export function confirmationEmail(reg: Registration): { subject: string; html: s
       <tr>
         <td style="padding:20px 24px;">
           <p style="margin:0 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
-          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">Saturday, May 17, 2026</p>
+          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">Sunday, May 17, 2026</p>
           <p style="margin:0 0 8px; font-size:15px; color:#444;">Grant, Brink &amp; Williams Streets<br/>Downtown Crystal Lake, IL</p>
           <a href="${GOOGLE_MAPS_URL}" style="font-size:14px; color:#c9a84c; text-decoration:none; font-weight:600;">View on Google Maps &rarr;</a>
         </td>
@@ -222,7 +222,7 @@ export function multiVehicleConfirmationEmail(
       <tr>
         <td style="padding:20px 24px;">
           <p style="margin:0 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
-          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">Saturday, May 17, 2026</p>
+          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">Sunday, May 17, 2026</p>
           <p style="margin:0 0 8px; font-size:15px; color:#444;">Grant, Brink &amp; Williams Streets<br/>Downtown Crystal Lake, IL</p>
           <a href="${GOOGLE_MAPS_URL}" style="font-size:14px; color:#c9a84c; text-decoration:none; font-weight:600;">View on Google Maps &rarr;</a>
         </td>
