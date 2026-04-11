@@ -39,6 +39,8 @@ export default function SponsorDetailPage() {
   const [generatingToken, setGeneratingToken] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [sendingReceipt, setSendingReceipt] = useState(false);
+  const [receiptSent, setReceiptSent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [stripeDetails, setStripeDetails] = useState<StripePaymentDetails | null>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
@@ -253,6 +255,20 @@ export default function SponsorDetailPage() {
       alert(err instanceof Error ? err.message : "Failed to send email");
     } finally {
       setSendingEmail(false);
+    }
+  };
+
+  const handleSendReceipt = async () => {
+    setSendingReceipt(true);
+    try {
+      const res = await fetch(`/api/sponsors/${id}/send-receipt`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setReceiptSent(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to send receipt");
+    } finally {
+      setSendingReceipt(false);
     }
   };
 
@@ -609,6 +625,12 @@ export default function SponsorDetailPage() {
               label="Amount Paid"
               value={s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
             />
+            {s.donation_cents > 0 && (
+              <DetailRow
+                label="Additional Donation"
+                value={<span style={{ color: "#2e7d32", fontWeight: 600 }}>${(s.donation_cents / 100).toLocaleString()}</span>}
+              />
+            )}
             {s.paid_at && (
               <DetailRow label="Paid At" value={new Date(s.paid_at).toLocaleString()} />
             )}
@@ -641,10 +663,15 @@ export default function SponsorDetailPage() {
                   Paid via {s.payment_method === "stripe" ? "Credit Card" : s.payment_method === "check" ? "Check" : "Unknown"}
                 </p>
                 {s.amount_paid > 0 && (
-                  <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+                  <p style={{ fontSize: "0.9rem", color: "#666", margin: "0 0 0.75rem" }}>
                     Amount: ${(s.amount_paid / 100).toLocaleString()}
+                    {s.donation_cents > 0 && ` (includes $${(s.donation_cents / 100).toLocaleString()} donation)`}
                   </p>
                 )}
+                <button onClick={handleSendReceipt} disabled={sendingReceipt}
+                  style={{ padding: "0.5rem 1.2rem", background: "var(--charcoal)", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.8rem", letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {sendingReceipt ? "Sending..." : receiptSent ? "Receipt Sent ✓" : "Send Receipt Email"}
+                </button>
               </div>
             ) : !paymentToken ? (
               <button onClick={handleGenerateToken} disabled={generatingToken}
@@ -672,6 +699,12 @@ export default function SponsorDetailPage() {
               <div style={{ marginTop: "1rem", background: "#fff3e0", border: "1px solid #ffe0b2", padding: "0.75rem 1rem", fontSize: "0.85rem", color: "#e65100" }}>
                 <strong>Check Pending</strong>
                 {s.check_note && <span> &mdash; {s.check_note}</span>}
+                <div style={{ marginTop: "0.5rem" }}>
+                  <button onClick={handleSendReceipt} disabled={sendingReceipt}
+                    style={{ padding: "0.4rem 1rem", background: "var(--charcoal)", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.75rem", letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
+                    {sendingReceipt ? "Sending..." : receiptSent ? "Receipt Sent ✓" : "Send Receipt Email"}
+                  </button>
+                </div>
               </div>
             )}
 

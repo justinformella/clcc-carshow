@@ -447,7 +447,9 @@ export function sponsorPaymentLinkEmail(
 export function sponsorReceiptEmail(
   sponsor: Sponsor,
   tierName: string,
-  amountDollars: string,
+  tierAmountDollars: string,
+  donationDollars: string | null,
+  totalDollars: string,
   benefits: string
 ): { subject: string; html: string } {
   const benefitsHtml = benefits
@@ -474,8 +476,18 @@ export function sponsorReceiptEmail(
         <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${tierName}</td>
       </tr>
       <tr>
-        <td style="padding:8px 0; font-size:14px; color:#888;">Amount Paid</td>
-        <td style="padding:8px 0; font-size:14px; color:#2c2c2c; font-weight:600;">${amountDollars}</td>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Sponsorship Amount</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${tierAmountDollars}</td>
+      </tr>
+      ${donationDollars ? `
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Additional Donation</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${donationDollars}</td>
+      </tr>
+      ` : ""}
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888; border-top:1px solid #eee;">Total Paid</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c; font-weight:600; border-top:1px solid #eee;">${totalDollars}</td>
       </tr>
     </table>
     ${benefitsHtml ? `

@@ -229,10 +229,16 @@ export async function sendSponsorReceipt(sponsorId: string) {
     .single();
 
   const tierName = tier?.name || sponsor.sponsorship_level;
-  const amountDollars = `$${(sponsor.amount_paid / 100).toLocaleString()}`;
+  const tierAmountCents = tier?.price_cents || sponsor.amount_paid;
+  const donationCents = sponsor.donation_cents || 0;
+  const totalCents = sponsor.amount_paid || (tierAmountCents + donationCents);
+
+  const tierAmountDollars = `$${(tierAmountCents / 100).toLocaleString()}`;
+  const donationDollars = donationCents > 0 ? `$${(donationCents / 100).toLocaleString()}` : null;
+  const totalDollars = `$${(totalCents / 100).toLocaleString()}`;
   const benefits = tier?.benefits || "";
 
-  const { subject, html } = sponsorReceiptEmail(sponsor as Sponsor, tierName, amountDollars, benefits);
+  const { subject, html } = sponsorReceiptEmail(sponsor as Sponsor, tierName, tierAmountDollars, donationDollars, totalDollars, benefits);
 
   const result = await sendWithRetry({ from: FROM_EMAIL, to: sponsor.email, subject, html });
   console.log("[sponsor-receipt] Sent to:", sponsor.email, "resend_id:", result.id);
