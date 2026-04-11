@@ -489,6 +489,10 @@ export function sponsorReceiptEmail(
         <td style="padding:8px 0; font-size:14px; color:#888; border-top:1px solid #eee;">Total Paid</td>
         <td style="padding:8px 0; font-size:14px; color:#2c2c2c; font-weight:600; border-top:1px solid #eee;">${totalDollars}</td>
       </tr>
+      <tr>
+        <td style="padding:8px 0; font-size:14px; color:#888;">Payment Method</td>
+        <td style="padding:8px 0; font-size:14px; color:#2c2c2c;">${sponsor.payment_method === "stripe" ? "Credit Card" : sponsor.payment_method === "check" ? "Check" : "—"}</td>
+      </tr>
     </table>
     ${benefitsHtml ? `
     <h2 style="margin:0 0 12px; font-size:18px; color:#2c2c2c;">Your Sponsorship Includes</h2>

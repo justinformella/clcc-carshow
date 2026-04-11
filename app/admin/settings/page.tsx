@@ -141,7 +141,7 @@ const sampleSponsor: Sponsor = {
 
 const sampleSponsorInquiryHtml = sponsorAdminNotificationEmail(sampleSponsor, "#").html;
 const sampleSponsorPaymentLinkHtml = sponsorPaymentLinkEmail(sampleSponsor, "Premier Sponsor", "$1,000", "https://crystallakecarshow.com/sponsor/pay/sample-token").html;
-const sampleSponsorReceiptHtml = sponsorReceiptEmail(sampleSponsor, "Premier Sponsor", "$1,000", "$250", "$1,250", "Logo on event signage and website\nSocial media recognition\n2 complimentary registrations").html;
+const sampleSponsorReceiptHtml = sponsorReceiptEmail(sampleSponsor, "Premier Sponsor", "$1,000", "$250", "$1,250", "Logo on event signage and website\nSocial media recognition\n2 complimentary vehicle registrations").html;
 const sampleSponsorPaymentAdminHtml = sponsorPaymentAdminNotificationEmail(sampleSponsor, "Premier Sponsor", "$1,000", "stripe", null, "#").html;
 
 export default function SettingsPage() {
