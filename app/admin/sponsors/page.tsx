@@ -263,7 +263,9 @@ export default function SponsorsPage() {
                     {s.assigned_to ? (admins.find((a) => a.id === s.assigned_to)?.name || "—") : "—"}
                   </td>
                   <td style={tdStyle}>
-                    {s.sponsorship_amount > 0 ? `$${(s.sponsorship_amount / 100).toLocaleString()}` : "—"}
+                    {s.status === "paid" && s.sponsorship_amount > 0
+                      ? `$${(((s.sponsorship_amount || 0) + (s.donation_cents || 0)) / 100).toLocaleString()}`
+                      : "—"}
                   </td>
                   <td style={tdStyle}>
                     {s.payment_method === "stripe" ? (
