@@ -61,6 +61,9 @@ export default function RegistrationDetailPage() {
   const [contactSending, setContactSending] = useState(false);
   const [siblingRegs, setSiblingRegs] = useState<Registration[]>([]);
   const [vehicleSpec, setVehicleSpec] = useState<Record<string, string | number | null> | null>(null);
+  const [editingSpecs, setEditingSpecs] = useState(false);
+  const [specForm, setSpecForm] = useState<Record<string, string>>({});
+  const [savingSpecs, setSavingSpecs] = useState(false);
 
   const fetchRegistration = useCallback(async () => {
     const supabase = createClient();
@@ -378,6 +381,69 @@ export default function RegistrationDetailPage() {
       setForm(null);
       await fetchRegistration();
       fetchAuditLog();
+    }
+  };
+
+  const SPEC_FIELDS = [
+    { key: "category", label: "Category", type: "text" },
+    { key: "body_style", label: "Body Style", type: "text" },
+    { key: "country_of_origin", label: "Origin", type: "text" },
+    { key: "era", label: "Era", type: "text" },
+    { key: "engine_type", label: "Engine Type", type: "text" },
+    { key: "cylinders", label: "Cylinders", type: "number" },
+    { key: "displacement_liters", label: "Displacement (L)", type: "number" },
+    { key: "horsepower", label: "Horsepower", type: "number" },
+    { key: "drive_type", label: "Drive Type", type: "text" },
+    { key: "transmission_type", label: "Transmission Type", type: "text" },
+    { key: "num_gears", label: "Gears", type: "number" },
+    { key: "weight_lbs", label: "Weight (lbs)", type: "number" },
+    { key: "original_msrp", label: "Original MSRP", type: "number" },
+    { key: "redline_rpm", label: "Redline RPM", type: "number" },
+    { key: "top_speed_mph", label: "Top Speed (MPH)", type: "number" },
+    { key: "production_numbers", label: "Production Numbers", type: "number" },
+    { key: "notable_features", label: "Notable Features", type: "text" },
+  ];
+
+  const startSpecEdit = () => {
+    const initial: Record<string, string> = {};
+    for (const f of SPEC_FIELDS) {
+      initial[f.key] = vehicleSpec?.[f.key] != null ? String(vehicleSpec[f.key]) : "";
+    }
+    setSpecForm(initial);
+    setEditingSpecs(true);
+  };
+
+  const handleSpecSave = async () => {
+    if (!registration) return;
+    setSavingSpecs(true);
+    const supabase = createClient();
+
+    const updates: Record<string, string | number | null> = { registration_id: registration.id };
+    for (const f of SPEC_FIELDS) {
+      const val = specForm[f.key]?.trim();
+      if (!val) {
+        updates[f.key] = null;
+      } else if (f.type === "number") {
+        updates[f.key] = parseFloat(val) || 0;
+      } else {
+        updates[f.key] = val;
+      }
+    }
+
+    const { error } = await supabase
+      .from("vehicle_specs")
+      .upsert(updates, { onConflict: "registration_id" });
+
+    setSavingSpecs(false);
+    if (!error) {
+      setEditingSpecs(false);
+      // Refresh specs
+      const { data: specData } = await supabase
+        .from("vehicle_specs")
+        .select("*")
+        .eq("registration_id", registration.id)
+        .maybeSingle();
+      setVehicleSpec(specData);
     }
   };
 
@@ -857,8 +923,13 @@ export default function RegistrationDetailPage() {
               </DetailSection>
 
               {/* Vehicle Specs (enriched) */}
-              {vehicleSpec && (
+              {vehicleSpec && !editingSpecs && (
                 <DetailSection title="Vehicle Intelligence">
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem" }}>
+                    <button onClick={startSpecEdit} style={{ fontSize: "0.8rem", color: "var(--gold)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                      Edit
+                    </button>
+                  </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0" }}>
                     {vehicleSpec.category && <DetailRow label="Category" value={String(vehicleSpec.category)} />}
                     {vehicleSpec.body_style && <DetailRow label="Body Style" value={String(vehicleSpec.body_style)} />}
@@ -889,6 +960,48 @@ export default function RegistrationDetailPage() {
                       </div>
                     </div>
                   )}
+                </DetailSection>
+              )}
+
+              {/* Vehicle Intelligence Edit Mode */}
+              {editingSpecs && (
+                <DetailSection title="Edit Vehicle Intelligence">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    {SPEC_FIELDS.map((f) => (
+                      <div key={f.key} style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                        <label style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", fontWeight: 600 }}>
+                          {f.label}
+                        </label>
+                        {f.key === "notable_features" ? (
+                          <input
+                            type="text"
+                            value={specForm[f.key] || ""}
+                            onChange={(e) => setSpecForm({ ...specForm, [f.key]: e.target.value })}
+                            placeholder="Comma-separated features"
+                            style={{ padding: "0.4rem 0.6rem", border: "1px solid #ddd", fontSize: "0.85rem", fontFamily: "'Inter', sans-serif" }}
+                          />
+                        ) : (
+                          <input
+                            type={f.type === "number" ? "number" : "text"}
+                            value={specForm[f.key] || ""}
+                            onChange={(e) => setSpecForm({ ...specForm, [f.key]: e.target.value })}
+                            step={f.key === "displacement_liters" ? "0.1" : undefined}
+                            style={{ padding: "0.4rem 0.6rem", border: "1px solid #ddd", fontSize: "0.85rem", fontFamily: "'Inter', sans-serif" }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+                    <button onClick={handleSpecSave} disabled={savingSpecs}
+                      style={{ padding: "0.5rem 1.5rem", background: "var(--gold)", color: "var(--charcoal)", border: "none", fontWeight: 600, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer" }}>
+                      {savingSpecs ? "Saving..." : "Save"}
+                    </button>
+                    <button onClick={() => setEditingSpecs(false)}
+                      style={{ padding: "0.5rem 1.5rem", background: "none", color: "var(--text-light)", border: "1px solid #ddd", fontSize: "0.8rem", cursor: "pointer" }}>
+                      Cancel
+                    </button>
+                  </div>
                 </DetailSection>
               )}
 
