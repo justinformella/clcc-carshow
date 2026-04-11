@@ -315,17 +315,35 @@ export default function HelpRequestDetailPage() {
                           {new Date(msg.created_at).toLocaleString()}
                         </span>
                       </div>
-                      <p
-                        style={{
-                          fontSize: "0.9rem",
-                          color: "var(--charcoal)",
-                          lineHeight: 1.6,
-                          margin: 0,
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {msg.body}
-                      </p>
+                      {/<[a-z][\s\S]*>/i.test(msg.body) ? (
+                        <div
+                          style={{
+                            fontSize: "0.9rem",
+                            color: "var(--charcoal)",
+                            lineHeight: 1.6,
+                            margin: 0,
+                            overflow: "auto",
+                          }}
+                          dangerouslySetInnerHTML={{
+                            __html: msg.body
+                              .replace(/<script[\s\S]*?<\/script>/gi, "")
+                              .replace(/on\w+\s*=\s*"[^"]*"/gi, "")
+                              .replace(/on\w+\s*=\s*'[^']*'/gi, ""),
+                          }}
+                        />
+                      ) : (
+                        <p
+                          style={{
+                            fontSize: "0.9rem",
+                            color: "var(--charcoal)",
+                            lineHeight: 1.6,
+                            margin: 0,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {msg.body}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
