@@ -213,15 +213,15 @@ export default function SponsorsPage() {
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--cream)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
-                  <td style={{ ...tdStyle, width: "72px", textAlign: "center" }}>
+                  <td style={{ ...tdStyle, width: "88px", textAlign: "center" }}>
                     {logoSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={logoSrc}
                         alt={s.company}
                         style={{
-                          width: "56px",
-                          height: "56px",
+                          width: "72px",
+                          height: "72px",
                           objectFit: "contain",
                           borderRadius: "4px",
                           background: "var(--cream)",
@@ -234,8 +234,8 @@ export default function SponsorsPage() {
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          width: "56px",
-                          height: "56px",
+                          width: "72px",
+                          height: "72px",
                           borderRadius: "4px",
                           background: "var(--cream)",
                           fontFamily: "'Playfair Display', serif",
