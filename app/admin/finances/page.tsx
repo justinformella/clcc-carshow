@@ -840,6 +840,7 @@ export default function FinancesPage() {
           <tbody>
             {sponsorTierData.map((t) => {
               const paidCents = t.paid.reduce((s, sp) => s + (sp.amount_paid || 0), 0);
+              const paidDonations = t.paid.reduce((s, sp) => s + (sp.donation_cents || 0), 0);
               const committedCount = t.engaged.length + t.committed.length;
               const committedCents = committedCount * t.priceCents;
               const pipelineCount = t.inquired.length + t.prospect.length;
@@ -881,6 +882,9 @@ export default function FinancesPage() {
                   </td>
                   <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: paidCents > 0 ? "#2e7d32" : "var(--text-light)" }}>
                     {paidCents > 0 ? fmtMoney(paidCents) : "—"}
+                    {paidDonations > 0 && (
+                      <div style={{ fontSize: "0.7rem", fontWeight: 400, color: "#2e7d32" }}>+ {fmtMoney(paidDonations)} donations</div>
+                    )}
                   </td>
                   <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 500, color: committedCents > 0 ? "#1565c0" : "var(--text-light)" }}>
                     {committedCents > 0 ? fmtMoney(committedCents) : "—"}
@@ -951,6 +955,7 @@ export default function FinancesPage() {
                     <span style={{ fontSize: "0.75rem", color }}>
                       {extractTierName(s.sponsorship_level)}
                       {s.amount_paid ? ` · ${fmtMoney(s.amount_paid)}` : ` · ${fmtMoney(getTierPrice(s.sponsorship_level))}`}
+                      {s.donation_cents > 0 && <span style={{ opacity: 0.7 }}> + {fmtMoney(s.donation_cents)}</span>}
                     </span>
                   </div>
                 ))
