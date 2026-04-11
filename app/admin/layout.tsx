@@ -261,7 +261,9 @@ export default function AdminLayout({
                 </p>
               )}
               {group.items.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"));
+                // Check if a more specific sibling nav item matches this path
+                const hasBetterMatch = allNavItems.some((other) => other.href !== item.href && other.href.startsWith(item.href + "/") && (pathname === other.href || pathname.startsWith(other.href + "/")));
+                const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/") && !hasBetterMatch);
                 return (
                   <Link
                     key={item.href}
