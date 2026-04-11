@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { token, sponsor_id, name, company, email, phone, website, selected_level } = body;
+  const { token, sponsor_id, name, company, email, phone, website, selected_level, donation_cents } = body;
 
   if (!token || !sponsor_id || !selected_level) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -60,27 +60,45 @@ export async function POST(request: NextRequest) {
     ? sponsor.original_level
     : undefined;
 
+  const donationCents = typeof donation_cents === "number" && donation_cents > 0 ? donation_cents : 0;
+
+  const lineItems: Array<{ price_data: { currency: string; product_data: { name: string; description?: string }; unit_amount: number }; quantity: number }> = [
+    {
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: `${tier.name} — Crystal Lake Cars & Caffeine`,
+          description: `Sponsorship for the 2026 Crystal Lake Cars & Caffeine Car Show`,
+        },
+        unit_amount: tier.price_cents,
+      },
+      quantity: 1,
+    },
+  ];
+
+  if (donationCents > 0) {
+    lineItems.push({
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: "Additional Donation — Crystal Lake Cars & Caffeine",
+        },
+        unit_amount: donationCents,
+      },
+      quantity: 1,
+    });
+  }
+
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: `${tier.name} — Crystal Lake Cars & Caffeine`,
-            description: `Sponsorship for the 2026 Crystal Lake Cars & Caffeine Car Show`,
-          },
-          unit_amount: tier.price_cents,
-        },
-        quantity: 1,
-      },
-    ],
+    line_items: lineItems,
     customer_email: email,
     metadata: {
       sponsor_id,
       payment_token: token,
       tier_name: selected_level,
+      donation_cents: String(donationCents),
       ...(upgradedFrom ? { upgraded_from: upgradedFrom } : {}),
     },
     success_url: `${siteUrl}/sponsor/pay/success?session_id={CHECKOUT_SESSION_ID}`,

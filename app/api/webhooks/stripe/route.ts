@@ -121,11 +121,15 @@ export async function POST(request: NextRequest) {
     if (sponsorId) {
       const supabase = createServerClient();
 
+      const donationCents = parseInt(session.metadata?.donation_cents || "0", 10) || 0;
+      const tierAmount = (session.amount_total || 0) - donationCents;
+
       const { error } = await supabase
         .from("sponsors")
         .update({
           status: "paid",
-          amount_paid: session.amount_total,
+          amount_paid: tierAmount,
+          donation_cents: donationCents,
           paid_at: new Date().toISOString(),
           payment_method: "stripe",
           stripe_session_id: session.id,

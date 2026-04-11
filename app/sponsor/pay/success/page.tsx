@@ -19,6 +19,8 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
   let company = decodeURIComponent(params.company || "");
   let tierName = decodeURIComponent(params.level || "");
   let amountDisplay = "";
+  let amountPaidCents = 0;
+  let donationCents = 0;
 
   if (sessionId) {
     const stripe = getStripe();
@@ -29,14 +31,16 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
       const supabase = createServerClient();
       const { data: sponsor } = await supabase
         .from("sponsors")
-        .select("company, sponsorship_level, amount_paid")
+        .select("company, sponsorship_level, amount_paid, donation_cents")
         .eq("id", sponsorId)
         .single();
 
       if (sponsor) {
         company = sponsor.company;
         tierName = sponsor.sponsorship_level;
+        amountPaidCents = sponsor.amount_paid;
         amountDisplay = `$${(sponsor.amount_paid / 100).toLocaleString()}`;
+        donationCents = sponsor.donation_cents || 0;
       }
     }
 
@@ -102,8 +106,20 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
                   )}
                   {amountDisplay && (
                     <tr>
-                      <td style={{ padding: "6px 0", fontSize: 14, color: "#888", width: 140 }}>Amount</td>
+                      <td style={{ padding: "6px 0", fontSize: 14, color: "#888", width: 140 }}>Sponsorship</td>
                       <td style={{ padding: "6px 0", fontSize: 14, color: "var(--charcoal)", fontWeight: 600 }}>{amountDisplay}</td>
+                    </tr>
+                  )}
+                  {donationCents > 0 && (
+                    <tr>
+                      <td style={{ padding: "6px 0", fontSize: 14, color: "#888", width: 140 }}>Additional Donation</td>
+                      <td style={{ padding: "6px 0", fontSize: 14, color: "#2e7d32", fontWeight: 600 }}>${(donationCents / 100).toLocaleString()}</td>
+                    </tr>
+                  )}
+                  {donationCents > 0 && (
+                    <tr>
+                      <td style={{ padding: "6px 0", fontSize: 14, color: "#888", width: 140 }}>Total</td>
+                      <td style={{ padding: "6px 0", fontSize: 14, color: "var(--charcoal)", fontWeight: 700 }}>${((amountPaidCents + donationCents) / 100).toLocaleString()}</td>
                     </tr>
                   )}
                   <tr>

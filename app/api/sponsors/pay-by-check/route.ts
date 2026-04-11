@@ -4,7 +4,7 @@ import { sendSponsorCheckAdminNotification } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { token, sponsor_id, name, company, email, phone, website, selected_level, check_note } = body;
+  const { token, sponsor_id, name, company, email, phone, website, selected_level, donation_cents, check_note } = body;
 
   if (!token || !sponsor_id || !selected_level) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       status: "committed",
       payment_method: "check",
       check_note: check_note || null,
+      donation_cents: typeof donation_cents === "number" && donation_cents > 0 ? donation_cents : 0,
     })
     .eq("id", sponsor_id);
 

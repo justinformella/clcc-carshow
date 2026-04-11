@@ -25,6 +25,8 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
   const initialLevel = assignedTier?.name || sponsor.sponsorship_level;
 
   const [selectedLevel, setSelectedLevel] = useState(initialLevel);
+  const [donationAmount, setDonationAmount] = useState(0);
+  const [customDonation, setCustomDonation] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"card" | "check" | null>(null);
   const [checkNote, setCheckNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +56,7 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
           phone: form.phone || null,
           website: form.website || null,
           selected_level: selectedLevel,
+          donation_cents: donationAmount * 100,
         }),
       });
       const data = await res.json();
@@ -81,6 +84,7 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
           phone: form.phone || null,
           website: form.website || null,
           selected_level: selectedLevel,
+          donation_cents: donationAmount * 100,
           check_note: checkNote,
         }),
       });
@@ -343,6 +347,86 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
                 );
               })}
             </div>
+
+            {/* Additional Donation */}
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", fontWeight: 600, color: "var(--charcoal)", marginBottom: "0.5rem", paddingBottom: "0.5rem", borderBottom: "1px solid #eee", marginTop: "2rem" }}>
+              Additional Donation
+            </h2>
+            <p style={{ fontSize: "0.9rem", color: "var(--text-light)", marginBottom: "1rem", lineHeight: 1.6 }}>
+              Want to give a little extra? All additional donations go directly to supporting the event and our community.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+              {[0, 100, 250, 500].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => { setDonationAmount(amt); setCustomDonation(""); }}
+                  style={{
+                    padding: "0.6rem 1.2rem",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    border: donationAmount === amt && !customDonation ? "2px solid var(--gold, #c9a84c)" : "1px solid #ddd",
+                    background: donationAmount === amt && !customDonation ? "#fffdf7" : "var(--white, #fff)",
+                    color: "var(--charcoal)",
+                    cursor: "pointer",
+                    minWidth: "80px",
+                  }}
+                >
+                  {amt === 0 ? "None" : `$${amt}`}
+                </button>
+              ))}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--charcoal)" }}>$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Other"
+                  value={customDonation}
+                  onChange={(e) => {
+                    setCustomDonation(e.target.value);
+                    const val = parseInt(e.target.value);
+                    setDonationAmount(val > 0 ? val : 0);
+                  }}
+                  style={{
+                    width: "100px",
+                    padding: "0.6rem 0.8rem",
+                    fontSize: "0.95rem",
+                    border: customDonation ? "2px solid var(--gold, #c9a84c)" : "1px solid #ddd",
+                    background: customDonation ? "#fffdf7" : "var(--white, #fff)",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Total summary */}
+            {currentTier && (
+              <div style={{
+                background: "#f8f5f0",
+                padding: "1rem 1.25rem",
+                marginBottom: "1.5rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                fontSize: "1rem",
+              }}>
+                <div style={{ color: "var(--text-light)" }}>
+                  {donationAmount > 0 ? (
+                    <>
+                      <span>{currentTier.name}: ${(currentTier.price_cents / 100).toLocaleString()}</span>
+                      <span style={{ margin: "0 0.5rem" }}>+</span>
+                      <span>Donation: ${donationAmount.toLocaleString()}</span>
+                    </>
+                  ) : (
+                    <span>{currentTier.name}</span>
+                  )}
+                </div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.4rem", fontWeight: 600, color: "var(--charcoal)" }}>
+                  ${((currentTier.price_cents / 100) + donationAmount).toLocaleString()}
+                </div>
+              </div>
+            )}
 
             {/* Payment */}
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", fontWeight: 600, color: "var(--charcoal)", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px solid #eee", marginTop: "2rem" }}>

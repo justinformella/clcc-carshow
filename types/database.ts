@@ -204,6 +204,7 @@ export type Sponsor = {
   original_level: string | null;
   stripe_session_id: string | null;
   stripe_payment_intent_id: string | null;
+  donation_cents: number;
 };
 
 export type SponsorAuditLogEntry = {
@@ -221,6 +222,16 @@ export type SponsorshipTier = {
   benefits: string;
   display_order: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ShowExpense = {
+  id: string;
+  description: string;
+  amount_cents: number;
+  memo: string | null;
+  date: string;
   created_at: string;
   updated_at: string;
 };
