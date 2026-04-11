@@ -134,9 +134,10 @@ type GamePhase = "arriving" | "visiting" | "welcome" | "showroom" | "score";
 interface BmwShowroomProps {
   playerCar: RaceCar;
   onBack: () => void;
+  onGameEnd?: (data: { game: string; score: number; metadata?: Record<string, unknown> }) => void;
 }
 
-export default function BmwShowroom({ playerCar, onBack }: BmwShowroomProps) {
+export default function BmwShowroom({ playerCar, onBack, onGameEnd }: BmwShowroomProps) {
   const [gamePhase, setGamePhase] = useState<GamePhase>("arriving");
   const [carIndex, setCarIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -598,9 +599,18 @@ export default function BmwShowroom({ playerCar, onBack }: BmwShowroomProps) {
             {scoreLabel}
           </p>
 
+          {onGameEnd && (
+            <button
+              onClick={() => onGameEnd({ game: "bmwshowroom", score: totalScore, metadata: { maxScore } })}
+              style={{ ...goldBtnStyle, background: "#22c55e", border: "2px solid #166534", marginBottom: "1rem" }}
+            >
+              SAVE SCORE
+            </button>
+          )}
+
           <button
             onClick={onBack}
-            style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "1rem" }}
+            style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline", marginTop: "0.5rem" }}
           >
             BACK TO GARAGE
           </button>

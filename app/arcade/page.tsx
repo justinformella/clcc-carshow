@@ -13,8 +13,35 @@ import DetailTech from "./components/DetailTech";
 import SmokeShow from "./components/SmokeShow";
 import BmwShowroom from "./components/BmwShowroom";
 
-type Phase = "loading" | "title" | "select" | "action-menu";
+type Phase = "loading" | "title" | "select" | "action-menu" | "score-entry";
 type ActiveGame = "drag" | "dyno" | "detail" | "smokeshow" | "bmwshowroom" | null;
+
+export type ScoreData = {
+  game: string;
+  score: number;
+  metadata?: Record<string, unknown>;
+};
+
+function formatScore(game: string, score: number): string {
+  if (game === "drag") return `${score.toFixed(2)}s`;
+  if (game === "cruise") {
+    const m = Math.floor(score / 60);
+    const s = (score % 60).toFixed(1);
+    return m > 0 ? `${m}:${s.padStart(4, "0")}` : `${s}s`;
+  }
+  if (game === "smokeshow") return `${Math.round(score)}%`;
+  if (game === "detail") return `${Math.round(score)}/100`;
+  if (game === "bmwshowroom") return `${Math.round(score)} PTS`;
+  return String(score);
+}
+
+const GAME_LABELS: Record<string, string> = {
+  drag: "DRAG RACE",
+  cruise: "ROUTE 14 SPEED RUN",
+  smokeshow: "SMOKE SHOW",
+  detail: "DETAIL TECH",
+  bmwshowroom: "BMW SHOWROOM",
+};
 
 export default function RacePageWrapper() {
   return (
@@ -27,11 +54,17 @@ export default function RacePageWrapper() {
 function RacePage() {
   const searchParams = useSearchParams();
   const preselectedCarId = searchParams.get("car");
+  const scoreSubmit = searchParams.get("scoreSubmit");
   const [cars, setCars] = useState<RaceCar[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
   const [playerCar, setPlayerCar] = useState<RaceCar | null>(null);
   const [activeGame, setActiveGame] = useState<ActiveGame>(null);
   const [generating, setGenerating] = useState(false);
+  const [scoreData, setScoreData] = useState<ScoreData | null>(null);
+  const [initials, setInitials] = useState(["", "", ""]);
+  const [fullName, setFullName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // Fetch cars (once on mount)
   useEffect(() => {
@@ -49,6 +82,25 @@ function RacePage() {
           flipped: c.flipped || false,
         }));
         setCars(raceCars);
+
+        // Handle Route 14 score submission return
+        if (scoreSubmit === "1") {
+          const game = searchParams.get("game") || "";
+          const score = parseFloat(searchParams.get("score") || "0");
+          const returnCarId = searchParams.get("car") || "";
+          const carName = searchParams.get("carName") || "";
+          const carPixelArt = searchParams.get("carPixelArt") || "";
+          if (game && score > 0) {
+            const target = raceCars.find((c) => c.id === returnCarId);
+            if (target) setPlayerCar(target);
+            else setPlayerCar({ id: returnCarId, name: carName, pixelArt: carPixelArt } as RaceCar);
+            setScoreData({ game, score });
+            setPhase("score-entry");
+            window.history.replaceState({}, "", "/arcade");
+            return;
+          }
+        }
+
         if (carId) {
           const target = raceCars.find((c) => c.id === carId);
           if (target) {
@@ -79,6 +131,59 @@ function RacePage() {
     window.scrollTo(0, 0);
   }, []);
 
+  const onGameEnd = useCallback((data: ScoreData) => {
+    setScoreData(data);
+    setActiveGame(null);
+    setInitials(["", "", ""]);
+    setFullName("");
+    setSubmitted(false);
+    setPhase("score-entry");
+    window.scrollTo(0, 0);
+  }, []);
+
+  const handleScoreSubmit = async () => {
+    if (!scoreData || !playerCar || initials.some((c) => !c)) return;
+    setSubmitting(true);
+    try {
+      await fetch("/api/arcade/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          game: scoreData.game,
+          initials: initials.join(""),
+          score: scoreData.score,
+          carId: playerCar.id,
+          carName: playerCar.name,
+          carPixelArt: playerCar.pixelArt || null,
+          fullName: fullName || null,
+          metadata: scoreData.metadata || {},
+        }),
+      });
+      setSubmitted(true);
+    } catch {
+      // silently fail
+    }
+    setSubmitting(false);
+  };
+
+  const handleInitialChange = (index: number, value: string) => {
+    const letter = value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
+    const next = [...initials];
+    next[index] = letter;
+    setInitials(next);
+    if (letter && index < 2) {
+      const nextInput = document.getElementById(`initial-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleInitialKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !initials[index] && index > 0) {
+      const prev = document.getElementById(`initial-${index - 1}`);
+      prev?.focus();
+    }
+  };
+
   const handleGenerateAll = async () => {
     setGenerating(true);
     try {
@@ -98,16 +203,140 @@ function RacePage() {
   if (activeGame && playerCar) {
     switch (activeGame) {
       case "drag":
-        return <DragRace playerCar={playerCar} cars={cars} onBack={backToMenu} />;
+        return <DragRace playerCar={playerCar} cars={cars} onBack={backToMenu} onGameEnd={onGameEnd} />;
       case "dyno":
         return <DynoRoom playerCar={playerCar} onBack={backToMenu} />;
       case "detail":
-        return <DetailTech playerCar={playerCar} onBack={backToMenu} />;
+        return <DetailTech playerCar={playerCar} onBack={backToMenu} onGameEnd={onGameEnd} />;
       case "smokeshow":
-        return <SmokeShow playerCar={playerCar} onBack={backToMenu} />;
+        return <SmokeShow playerCar={playerCar} onBack={backToMenu} onGameEnd={onGameEnd} />;
       case "bmwshowroom":
-        return <BmwShowroom playerCar={playerCar} onBack={backToMenu} />;
+        return <BmwShowroom playerCar={playerCar} onBack={backToMenu} onGameEnd={onGameEnd} />;
     }
+  }
+
+  // ─── SCORE ENTRY ───
+  if (phase === "score-entry" && scoreData) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ textAlign: "center", maxWidth: "500px", margin: "0 auto" }}>
+          <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, letterSpacing: "0.2em", marginBottom: "1.5rem" }}>
+            {GAME_LABELS[scoreData.game] || scoreData.game.toUpperCase()}
+          </p>
+
+          <p style={{ fontFamily: FONT, fontSize: "0.65rem", color: C.midGray, marginBottom: "0.5rem" }}>YOUR SCORE</p>
+          <p style={{ fontFamily: FONT, fontSize: "clamp(1.5rem, 5vw, 2.5rem)", color: C.gold, marginBottom: "2rem", textShadow: "0 0 15px rgba(255,215,0,0.3)" }}>
+            {formatScore(scoreData.game, scoreData.score)}
+          </p>
+
+          {!submitted ? (
+            <>
+              <p style={{ fontFamily: FONT, fontSize: "clamp(0.6rem, 1.8vw, 0.8rem)", color: C.white, marginBottom: "1.5rem" }}>
+                ENTER YOUR INITIALS
+              </p>
+
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", marginBottom: "1.5rem" }}>
+                {[0, 1, 2].map((i) => (
+                  <input
+                    key={i}
+                    id={`initial-${i}`}
+                    type="text"
+                    maxLength={1}
+                    value={initials[i]}
+                    onChange={(e) => handleInitialChange(i, e.target.value)}
+                    onKeyDown={(e) => handleInitialKeyDown(i, e)}
+                    autoFocus={i === 0}
+                    style={{
+                      width: "60px",
+                      height: "70px",
+                      textAlign: "center",
+                      fontFamily: FONT,
+                      fontSize: "2rem",
+                      color: C.gold,
+                      background: C.bgMid,
+                      border: `3px solid ${initials[i] ? C.gold : C.border}`,
+                      outline: "none",
+                      textTransform: "uppercase",
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <p style={{ fontFamily: FONT, fontSize: "0.45rem", color: C.midGray, marginBottom: "0.5rem" }}>YOUR NAME (OPTIONAL)</p>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder=""
+                  maxLength={50}
+                  style={{
+                    width: "100%",
+                    maxWidth: "280px",
+                    padding: "0.5rem 0.75rem",
+                    fontFamily: FONT,
+                    fontSize: "0.6rem",
+                    color: C.white,
+                    background: C.bgMid,
+                    border: `2px solid ${C.border}`,
+                    outline: "none",
+                    textAlign: "center",
+                  }}
+                />
+              </div>
+
+              <button
+                onClick={handleScoreSubmit}
+                disabled={submitting || initials.some((c) => !c)}
+                style={{
+                  ...goldBtnStyle,
+                  fontSize: "0.9rem",
+                  padding: "0.75rem 2.5rem",
+                  opacity: submitting || initials.some((c) => !c) ? 0.5 : 1,
+                  cursor: submitting || initials.some((c) => !c) ? "not-allowed" : "pointer",
+                }}
+              >
+                {submitting ? "SAVING..." : "SUBMIT"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ fontFamily: FONT, fontSize: "clamp(0.8rem, 2.5vw, 1.2rem)", color: C.gold, marginBottom: "0.5rem", animation: "blink8bit 0.5s step-end 3" }}>
+                SCORE SAVED!
+              </p>
+              <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, marginBottom: "2rem" }}>
+                {initials.join("")}{fullName ? ` — ${fullName}` : ""}
+              </p>
+              <style>{`@keyframes blink8bit { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
+
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
+                <Link
+                  href={`/arcade/leaderboard?game=${scoreData.game}`}
+                  style={{ ...goldBtnStyle, textDecoration: "none", fontSize: "0.7rem", padding: "0.6rem 1.5rem" }}
+                >
+                  VIEW LEADERBOARD
+                </Link>
+                <button
+                  onClick={backToMenu}
+                  style={{ ...pixelBtnStyle, fontSize: "0.7rem", padding: "0.6rem 1.5rem" }}
+                >
+                  BACK TO GARAGE
+                </button>
+              </div>
+            </>
+          )}
+
+          {!submitted && (
+            <button
+              onClick={backToMenu}
+              style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.6rem", cursor: "pointer", textDecoration: "underline", marginTop: "1.5rem", display: "block", margin: "1.5rem auto 0" }}
+            >
+              SKIP
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   // ─── LOADING ───
@@ -157,6 +386,9 @@ function RacePage() {
           >
             ENTER GARAGE
           </button>
+          <Link href="/arcade/leaderboard" style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.gold, textDecoration: "underline", marginTop: "0.75rem" }}>
+            LEADERBOARD
+          </Link>
           <p style={{ fontFamily: FONT, fontSize: "0.6rem", color: C.midGray, margin: "0.75rem 0" }}>OR</p>
           <Link href="/8bit" style={{ ...goldBtnStyle, fontSize: "0.7rem", padding: "0.75rem 2rem", background: C.bgMid, color: C.midGray, border: `2px solid ${C.border}`, textDecoration: "none" }}>BACK TO THE CRYSTAL LAKE CAR SHOW HOME PAGE →</Link>
         </div>
@@ -209,8 +441,11 @@ function RacePage() {
             </button>
           ))}
         </div>
-        <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-          <button onClick={() => { stopMenuMusic(); startSelectMusic(); setPlayerCar(null); setPhase("select"); window.scrollTo(0, 0); window.history.replaceState({}, "", "/arcade"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}>
+        <div style={{ textAlign: "center", marginTop: "1.5rem", display: "flex", gap: "1.5rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <Link href="/arcade/leaderboard" style={{ fontFamily: FONT, fontSize: "0.7rem", color: C.gold, textDecoration: "underline" }}>
+            LEADERBOARD
+          </Link>
+          <button onClick={() => { stopMenuMusic(); startSelectMusic(); setPlayerCar(null); setPhase("select"); window.scrollTo(0, 0); window.history.replaceState({}, "", "/arcade"); }} style={{ background: "none", border: "none", color: C.midGray, fontFamily: FONT, fontSize: "0.7rem", cursor: "pointer", textDecoration: "underline" }}>
             PICK DIFFERENT CAR
           </button>
         </div>

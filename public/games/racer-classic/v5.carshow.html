@@ -421,17 +421,18 @@
 
       document.body.appendChild(overlay);
 
-      // Redirect to /race with the same car
-      var raceUrl = '/arcade' + (playerCarData ? '?car=' + playerCarData.id : '');
+      // Redirect to arcade with score data for leaderboard
+      var scoreUrl = '/arcade?scoreSubmit=1&game=cruise&score=' + totalRaceTime.toFixed(2);
+      if (playerCarData) {
+        scoreUrl += '&car=' + encodeURIComponent(playerCarData.id);
+        scoreUrl += '&carName=' + encodeURIComponent(playerCarData.name);
+        if (playerCarData.pixelArt) scoreUrl += '&carPixelArt=' + encodeURIComponent(playerCarData.pixelArt);
+      }
+      var backUrl = '/arcade' + (playerCarData ? '?car=' + playerCarData.id : '');
 
       document.getElementById('finish-continue').addEventListener('click', function() {
-        window.location.href = raceUrl;
+        window.location.href = scoreUrl;
       });
-
-      // Also auto-redirect after 10 seconds
-      setTimeout(function() {
-        if (raceFinished) window.location.href = raceUrl;
-      }, 10000);
     }
 
     //=========================================================================

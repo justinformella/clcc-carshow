@@ -12,9 +12,10 @@ type SmokeParticle = { x: number; y: number; vx: number; vy: number; life: numbe
 interface SmokeShowProps {
   playerCar: RaceCar;
   onBack: () => void;
+  onGameEnd?: (data: { game: string; score: number; metadata?: Record<string, unknown> }) => void;
 }
 
-export default function SmokeShow({ playerCar, onBack }: SmokeShowProps) {
+export default function SmokeShow({ playerCar, onBack, onGameEnd }: SmokeShowProps) {
   const [gamePhase, setGamePhase] = useState<GamePhase>("arriving");
   const [displayRpm, setDisplayRpm] = useState(0);
   const [peakRpm, setPeakRpm] = useState(0);
@@ -117,7 +118,7 @@ export default function SmokeShow({ playerCar, onBack }: SmokeShowProps) {
   // Handle tap/keypress for burnout
   const handleTap = useCallback(() => {
     if (phaseRef.current !== "burnout") return;
-    const add = 300 + Math.random() * 300;
+    const add = 270 + Math.random() * 280;
     rpmRef.current = Math.min(rpmRef.current + add, redline);
     if (rpmRef.current > peakRpmRef.current) peakRpmRef.current = rpmRef.current;
   }, [redline]);
@@ -262,7 +263,7 @@ export default function SmokeShow({ playerCar, onBack }: SmokeShowProps) {
 
         if (phase === "burnout") {
           // RPM decay
-          rpmRef.current = Math.max(800, rpmRef.current - 25);
+          rpmRef.current = Math.max(800, rpmRef.current - 28);
           updateEngine(rpmRef.current, (rpmRef.current / redline) * 100);
           updateScreech(rpmRef.current);
           setDisplayRpm(Math.round(rpmRef.current));
@@ -451,6 +452,14 @@ export default function SmokeShow({ playerCar, onBack }: SmokeShowProps) {
             {score}%<span style={{ fontSize: "0.8rem", color: C.midGray }}> SMOKE SHOW</span>
           </p>
           <p style={{ fontFamily: FONT, fontSize: "0.7rem", color: labelColor, marginTop: "0.3rem", letterSpacing: "0.15em" }}>{label}</p>
+          {onGameEnd && (
+            <button
+              onClick={() => { cancelAnimationFrame(animRef.current); stopEngine(); stopScreech(); onGameEnd({ game: "smokeshow", score, metadata: { peakRpm, redline } }); }}
+              style={{ ...goldBtnStyle, marginTop: "1rem", background: "#22c55e", border: "2px solid #166534" }}
+            >
+              SAVE SCORE
+            </button>
+          )}
         </div>
       )}
 

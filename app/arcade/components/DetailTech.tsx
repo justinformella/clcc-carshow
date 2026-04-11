@@ -9,6 +9,7 @@ const DETAIL_LOGO_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/obje
 interface DetailTechProps {
   playerCar: RaceCar;
   onBack: () => void;
+  onGameEnd?: (data: { game: string; score: number; metadata?: Record<string, unknown> }) => void;
 }
 
 function DetailReveal({ exteriorScore, interiorScore }: { exteriorScore: number; interiorScore: number }) {
@@ -65,7 +66,7 @@ function DetailReveal({ exteriorScore, interiorScore }: { exteriorScore: number;
   );
 }
 
-export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
+export default function DetailTech({ playerCar, onBack, onGameEnd }: DetailTechProps) {
   const [detailState, setDetailState] = useState<"idle" | "exterior" | "interior" | "sweep" | "reveal">("idle");
   const [detailProgress, setDetailProgress] = useState(0);
   const [exteriorScore, setExteriorScore] = useState(0);
@@ -701,7 +702,19 @@ export default function DetailTech({ playerCar, onBack }: DetailTechProps) {
       )}
 
       {detailState === "reveal" && (
-        <DetailReveal exteriorScore={exteriorScore} interiorScore={interiorScore} />
+        <>
+          <DetailReveal exteriorScore={exteriorScore} interiorScore={interiorScore} />
+          {onGameEnd && (
+            <div style={{ textAlign: "center", marginTop: "1rem" }}>
+              <button
+                onClick={() => { cancelAnimationFrame(detailAnimRef.current); onGameEnd({ game: "detail", score: Math.round(exteriorScore * 0.6 + interiorScore * 0.4), metadata: { exteriorScore, interiorScore } }); }}
+                style={{ ...goldBtnStyle, background: "#22c55e", border: "2px solid #166534" }}
+              >
+                SAVE SCORE
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <button

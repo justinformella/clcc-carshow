@@ -113,9 +113,10 @@ interface DragRaceProps {
   playerCar: RaceCar;
   cars: RaceCar[];
   onBack: () => void;
+  onGameEnd?: (data: { game: string; score: number; metadata?: Record<string, unknown> }) => void;
 }
 
-export default function DragRace({ playerCar, cars, onBack }: DragRaceProps) {
+export default function DragRace({ playerCar, cars, onBack, onGameEnd }: DragRaceProps) {
   // ─── State ───
   const [phase, setPhase] = useState<DragPhase>("matchup");
   const [opponentCar, setOpponentCar] = useState<RaceCar | null>(null);
@@ -881,7 +882,12 @@ export default function DragRace({ playerCar, cars, onBack }: DragRaceProps) {
                   </p>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
+                {onGameEnd && (
+                  <button onClick={() => onGameEnd({ game: "drag", score: playerTime / 1000, metadata: { reactionTime: reactionTime / 1000, jumped, winner } })} style={{ ...goldBtnStyle, background: "#22c55e", border: "2px solid #166534" }}>
+                    SAVE SCORE
+                  </button>
+                )}
                 <button onClick={tryAgain} style={goldBtnStyle}>TRY AGAIN</button>
                 <button onClick={onBack} style={pixelBtnStyle}>
                   BACK TO GARAGE
