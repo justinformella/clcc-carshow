@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Sponsor, SponsorStatus, Admin } from "@/types/database";
 
-type SortField = "company" | "name" | "status" | "sponsorship_level" | "sponsorship_amount" | "created_at";
+type SortField = "company" | "name" | "status" | "sponsorship_level" | "sponsorship_amount";
 
 export default function SponsorsPage() {
   const router = useRouter();
@@ -15,12 +15,12 @@ export default function SponsorsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
-  const [sortField, setSortField] = useState<SortField>("created_at");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortField, setSortField] = useState<SortField>("status");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const toggleSort = (f: SortField) => {
     if (sortField === f) { setSortDir(sortDir === "asc" ? "desc" : "asc"); }
-    else { setSortField(f); setSortDir(f === "sponsorship_amount" || f === "created_at" ? "desc" : "asc"); }
+    else { setSortField(f); setSortDir(f === "sponsorship_amount" ? "desc" : "asc"); }
   };
 
   useEffect(() => {
@@ -55,12 +55,10 @@ export default function SponsorsPage() {
 
     return matchesSearch && matchesStatus && matchesAssignee;
   }).sort((a, b) => {
-    const statusOrder: Record<string, number> = { prospect: 0, inquired: 1, engaged: 2, paid: 3, archived: 4 };
+    const statusOrder: Record<string, number> = { paid: 0, committed: 1, engaged: 1, inquired: 2, prospect: 3, archived: 4 };
     let cmp = 0;
     if (sortField === "sponsorship_amount") {
       cmp = (a.sponsorship_amount || 0) - (b.sponsorship_amount || 0);
-    } else if (sortField === "created_at") {
-      cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     } else if (sortField === "status") {
       cmp = (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0);
     } else {
@@ -199,7 +197,6 @@ export default function SponsorsPage() {
               <th style={thStyle}>Assigned To</th>
               <SortTh field="sponsorship_amount" label="Received" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
               <th style={thStyle}>Payment</th>
-              <SortTh field="created_at" label="Date" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
             </tr>
           </thead>
           <tbody>
@@ -216,15 +213,15 @@ export default function SponsorsPage() {
                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--cream)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
-                  <td style={{ ...tdStyle, width: "60px", textAlign: "center" }}>
+                  <td style={{ ...tdStyle, width: "72px", textAlign: "center" }}>
                     {logoSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={logoSrc}
                         alt={s.company}
                         style={{
-                          width: "44px",
-                          height: "44px",
+                          width: "56px",
+                          height: "56px",
                           objectFit: "contain",
                           borderRadius: "4px",
                           background: "var(--cream)",
@@ -237,8 +234,8 @@ export default function SponsorsPage() {
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          width: "44px",
-                          height: "44px",
+                          width: "56px",
+                          height: "56px",
                           borderRadius: "4px",
                           background: "var(--cream)",
                           fontFamily: "'Playfair Display', serif",
@@ -280,16 +277,13 @@ export default function SponsorsPage() {
                       <span style={{ fontSize: "0.8rem", color: "#999" }}>—</span>
                     )}
                   </td>
-                  <td style={tdStyle}>
-                    {new Date(s.created_at).toLocaleDateString()}
-                  </td>
                 </tr>
               );
             })}
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={8}
                   style={{
                     ...tdStyle,
                     textAlign: "center",
