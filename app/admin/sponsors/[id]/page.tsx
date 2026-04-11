@@ -15,6 +15,7 @@ type EditForm = {
   message: string;
   status: string;
   amount_paid: string;
+  donation: string;
   notes: string;
   assigned_to: string;
 };
@@ -116,6 +117,7 @@ export default function SponsorDetailPage() {
       message: sponsor.message || "",
       status: sponsor.status,
       amount_paid: String(sponsor.amount_paid / 100),
+      donation: String((sponsor.donation_cents || 0) / 100),
       notes: sponsor.notes || "",
       assigned_to: sponsor.assigned_to || "",
     });
@@ -163,6 +165,7 @@ export default function SponsorDetailPage() {
         message: form.message || null,
         status: form.status,
         amount_paid: Math.round(parseFloat(form.amount_paid || "0") * 100),
+        donation_cents: Math.round(parseFloat(form.donation || "0") * 100),
         notes: form.notes || null,
         assigned_to: form.assigned_to || null,
         ...paidAtUpdate,
@@ -570,8 +573,12 @@ export default function SponsorDetailPage() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="amount_paid">Amount Paid ($)</label>
+                <label htmlFor="amount_paid">Sponsorship Paid ($)</label>
                 <input type="number" id="amount_paid" name="amount_paid" value={form.amount_paid} onChange={handleFormChange} min="0" step="0.01" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="donation">Additional Donation ($)</label>
+                <input type="number" id="donation" name="donation" value={form.donation} onChange={handleFormChange} min="0" step="0.01" />
               </div>
             </div>
             <div className="form-group">
@@ -622,7 +629,7 @@ export default function SponsorDetailPage() {
             <DetailRow label="Level" value={s.sponsorship_level} />
             <DetailRow label="Status" value={<SponsorStatusBadge status={s.status} />} />
             <DetailRow
-              label="Amount Paid"
+              label="Sponsorship Paid"
               value={s.amount_paid > 0 ? `$${(s.amount_paid / 100).toLocaleString()}` : "—"}
             />
             {s.donation_cents > 0 && (

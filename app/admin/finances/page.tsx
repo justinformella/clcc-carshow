@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Registration, Sponsor, AdCampaign, SponsorshipTier } from "@/types/database";
+import type { Registration, Sponsor, AdCampaign, SponsorshipTier, ShowExpense } from "@/types/database";
 import { REGISTRATION_PRICE_CENTS, MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
 import {
   AreaChart,
@@ -54,6 +54,7 @@ export default function FinancesPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [tiers, setTiers] = useState<SponsorshipTier[]>([]);
+  const [expenses, setExpenses] = useState<ShowExpense[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailModal, setDetailModal] = useState<"registration" | "sponsorship" | "donation" | null>(null);
   const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS_DEFAULT);
@@ -67,7 +68,7 @@ export default function FinancesPage() {
     const fetchData = async () => {
       const supabase = createClient();
 
-      const [regResult, sponsorResult, campaignResult, settingResult, tierResult] = await Promise.all([
+      const [regResult, sponsorResult, campaignResult, settingResult, tierResult, expenseResult] = await Promise.all([
         supabase
           .from("registrations")
           .select("*")
@@ -89,12 +90,17 @@ export default function FinancesPage() {
           .select("*")
           .eq("is_active", true)
           .order("display_order"),
+        supabase
+          .from("show_expenses")
+          .select("*")
+          .order("date", { ascending: false }),
       ]);
 
       setRegistrations(regResult.data || []);
       setSponsors((sponsorResult.data as Sponsor[]) || []);
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
       setTiers((tierResult.data as SponsorshipTier[]) || []);
+      setExpenses((expenseResult.data as ShowExpense[]) || []);
       if (settingResult.data?.value) {
         const v = parseInt(settingResult.data.value, 10);
         if (!isNaN(v)) setMaxRegistrations(v);
@@ -109,14 +115,15 @@ export default function FinancesPage() {
   const paidRegs = registrations.filter((r) => r.payment_status === "paid");
   const pendingRegs = registrations.filter((r) => r.payment_status === "pending");
   const refundedRegs = registrations.filter((r) => r.payment_status === "refunded");
+  const paidSponsors = sponsors.filter((s) => s.status === "paid" || s.status === "engaged");
 
   const regRevenue = paidRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
-  const donationRevenue = paidRegs.reduce((sum, r) => sum + (r.donation_cents || 0), 0);
-  const donorCount = paidRegs.filter((r) => (r.donation_cents || 0) > 0).length;
-  const refundedAmount = refundedRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
-
-  const paidSponsors = sponsors.filter((s) => s.status === "paid" || s.status === "engaged");
   const sponsorRevenue = paidSponsors.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+  const regDonationRevenue = paidRegs.reduce((sum, r) => sum + (r.donation_cents || 0), 0);
+  const sponsorDonationRevenue = paidSponsors.reduce((sum, s) => sum + (s.donation_cents || 0), 0);
+  const donationRevenue = regDonationRevenue + sponsorDonationRevenue;
+  const donorCount = paidRegs.filter((r) => (r.donation_cents || 0) > 0).length + paidSponsors.filter((s) => (s.donation_cents || 0) > 0).length;
+  const refundedAmount = refundedRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
 
   const pendingSponsors = sponsors.filter((s) =>
     s.status === "prospect" || s.status === "inquired"
@@ -131,7 +138,7 @@ export default function FinancesPage() {
 
   // Stripe fee estimate: applied to each paid registration (incl. donation) and paid sponsor
   const regFees = paidRegs.reduce((sum, r) => sum + estimateStripeFee((r.amount_paid || 0) + (r.donation_cents || 0)), 0);
-  const sponsorFees = paidSponsors.reduce((sum, s) => sum + estimateStripeFee(s.amount_paid || 0), 0);
+  const sponsorFees = paidSponsors.reduce((sum, s) => sum + estimateStripeFee((s.amount_paid || 0) + (s.donation_cents || 0)), 0);
   const totalFees = regFees + sponsorFees;
 
   const netAfterFees = totalRevenue - totalFees;
@@ -152,7 +159,8 @@ export default function FinancesPage() {
 
   const totalAdSpend = campaigns.reduce((sum, c) => sum + (c.spent_cents || 0), 0);
 
-  const netForCharity = totalRevenue - totalFees - refundedAmount - totalAdSpend;
+  const totalShowExpenses = expenses.reduce((sum, e) => sum + e.amount_cents, 0);
+  const netForCharity = totalRevenue - totalFees - refundedAmount - totalAdSpend - totalShowExpenses;
 
   // Sponsorship tier breakdown
   const tierBreakdown: Record<string, { count: number; total: number }> = {};
@@ -442,7 +450,7 @@ export default function FinancesPage() {
               lineHeight: 1,
             }}
           >
-            {fmtMoney(totalFees + refundedAmount + totalAdSpend)}
+            {fmtMoney(totalFees + refundedAmount + totalAdSpend + totalShowExpenses)}
           </p>
         </div>
       </div>
@@ -526,7 +534,7 @@ export default function FinancesPage() {
               })() },
               { label: "Gross Revenue", value: fmtMoney(fullCapacityTotal), highlight: true, detail: "total before fees" },
               { label: "Est. Stripe Fees", value: `- ${fmtMoney(Math.round(estimateStripeFee(REGISTRATION_PRICE_CENTS) * maxRegistrations + (fullCapacityDonations > 0 ? estimateStripeFee(Math.round(avgDonationPerReg)) * maxRegistrations : 0)))}`, detail: "~2.9% + $0.30/txn" },
-              { label: "Net to Charity", value: fmtMoney(fullCapacityTotal - Math.round(estimateStripeFee(REGISTRATION_PRICE_CENTS) * maxRegistrations + (fullCapacityDonations > 0 ? estimateStripeFee(Math.round(avgDonationPerReg)) * maxRegistrations : 0)) - totalAdSpend), highlight: true, detail: "after fees & ad spend", gold: true },
+              { label: "Net to Charity", value: fmtMoney(fullCapacityTotal - Math.round(estimateStripeFee(REGISTRATION_PRICE_CENTS) * maxRegistrations + (fullCapacityDonations > 0 ? estimateStripeFee(Math.round(avgDonationPerReg)) * maxRegistrations : 0)) - totalAdSpend - totalShowExpenses), highlight: true, detail: "after fees, ad spend & expenses", gold: true },
             ].map((item) => (
               <div key={item.label} style={{ background: "var(--charcoal)", padding: "1.25rem 1rem" }}>
                 <p style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "rgba(255,255,255,0.35)", marginBottom: "0.4rem" }}>{item.label}</p>
@@ -824,18 +832,18 @@ export default function FinancesPage() {
               <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#2e7d32", textAlign: "center" }}>Paid</th>
               <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#1565c0", textAlign: "center" }}>Committed</th>
               <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#e65100", textAlign: "center" }}>Pipeline</th>
-              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Collected</th>
-              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Expected</th>
-              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Potential</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#2e7d32", textAlign: "right" }}>Paid $</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#1565c0", textAlign: "right" }}>Committed $</th>
+              <th style={{ padding: "0.6rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "#e65100", textAlign: "right" }}>Pipeline $</th>
             </tr>
           </thead>
           <tbody>
             {sponsorTierData.map((t) => {
-              const collectedCents = t.paid.reduce((s, sp) => s + (sp.amount_paid || 0), 0);
+              const paidCents = t.paid.reduce((s, sp) => s + (sp.amount_paid || 0), 0);
               const committedCount = t.engaged.length + t.committed.length;
-              const expectedCents = collectedCents + committedCount * t.priceCents;
+              const committedCents = committedCount * t.priceCents;
               const pipelineCount = t.inquired.length + t.prospect.length;
-              const potentialCents = expectedCents + pipelineCount * t.priceCents;
+              const pipelineCents = pipelineCount * t.priceCents;
               const totalSponsors = t.paid.length + committedCount + pipelineCount;
 
               if (totalSponsors === 0) return null;
@@ -871,14 +879,14 @@ export default function FinancesPage() {
                       <span style={{ color: "#ccc" }}>—</span>
                     )}
                   </td>
-                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: collectedCents > 0 ? "#2e7d32" : "var(--text-light)" }}>
-                    {collectedCents > 0 ? fmtMoney(collectedCents) : "—"}
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: paidCents > 0 ? "#2e7d32" : "var(--text-light)" }}>
+                    {paidCents > 0 ? fmtMoney(paidCents) : "—"}
                   </td>
-                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 500, color: expectedCents > collectedCents ? "#1565c0" : "var(--text-light)" }}>
-                    {fmtMoney(expectedCents)}
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 500, color: committedCents > 0 ? "#1565c0" : "var(--text-light)" }}>
+                    {committedCents > 0 ? fmtMoney(committedCents) : "—"}
                   </td>
-                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", color: "var(--text-light)" }}>
-                    {potentialCents > expectedCents ? fmtMoney(potentialCents) : "—"}
+                  <td style={{ padding: "0.75rem 1rem", textAlign: "right", color: pipelineCents > 0 ? "#e65100" : "var(--text-light)" }}>
+                    {pipelineCents > 0 ? fmtMoney(pipelineCents) : "—"}
                   </td>
                 </tr>
               );
@@ -901,13 +909,10 @@ export default function FinancesPage() {
                 {fmtMoney(sponsorTierData.reduce((s, t) => s + t.paid.reduce((s2, sp) => s2 + (sp.amount_paid || 0), 0), 0))}
               </td>
               <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#1565c0" }}>
-                {fmtMoney(sponsorTierData.reduce((s, t) => {
-                  const collected = t.paid.reduce((s2, sp) => s2 + (sp.amount_paid || 0), 0);
-                  return s + collected + (t.engaged.length + t.committed.length) * t.priceCents;
-                }, 0))}
+                {fmtMoney(sponsorTierData.reduce((s, t) => s + (t.engaged.length + t.committed.length) * t.priceCents, 0))}
               </td>
-              <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600 }}>
-                {fmtMoney(totalSponsorPipeline)}
+              <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#e65100" }}>
+                {fmtMoney(sponsorTierData.reduce((s, t) => s + (t.inquired.length + t.prospect.length) * t.priceCents, 0))}
               </td>
             </tr>
           </tfoot>
@@ -984,6 +989,7 @@ export default function FinancesPage() {
             <LedgerRow label="Less: Stripe Processing Fees (est.)" amount={-totalFees} />
             <LedgerRow label="Less: Refunds Issued" amount={-refundedAmount} />
             <LedgerRow label="Less: Ad Spend" amount={-totalAdSpend} />
+            <LedgerRow label="Less: Show Expenses" amount={-totalShowExpenses} />
             <LedgerRow
               label="Net Available for Charity"
               amount={netForCharity}
@@ -994,6 +1000,13 @@ export default function FinancesPage() {
           </tbody>
         </table>
       </div>
+
+      {/* ── 5b. Show Expenses Ledger ── */}
+      <ExpenseLedger expenses={expenses} onUpdate={async () => {
+        const supabase = createClient();
+        const { data } = await supabase.from("show_expenses").select("*").order("date", { ascending: false });
+        setExpenses((data as ShowExpense[]) || []);
+      }} />
 
       {/* ── 6. Transaction History ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.75rem" }}>
@@ -1482,3 +1495,227 @@ const thStyle: React.CSSProperties = {
 const tdStyle: React.CSSProperties = {
   padding: "0.8rem 1rem",
 };
+
+function ExpenseLedger({ expenses, onUpdate }: { expenses: ShowExpense[]; onUpdate: () => void }) {
+  const [adding, setAdding] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ description: "", amount: "", memo: "", date: new Date().toISOString().split("T")[0] });
+  const [saving, setSaving] = useState(false);
+
+  const resetForm = () => {
+    setForm({ description: "", amount: "", memo: "", date: new Date().toISOString().split("T")[0] });
+    setAdding(false);
+    setEditId(null);
+  };
+
+  const handleSave = async () => {
+    if (!form.description || !form.amount) return;
+    setSaving(true);
+    const supabase = (await import("@/lib/supabase")).createClient();
+    const amountCents = Math.round(parseFloat(form.amount) * 100);
+
+    if (editId) {
+      await supabase.from("show_expenses").update({
+        description: form.description,
+        amount_cents: amountCents,
+        memo: form.memo || null,
+        date: form.date,
+        updated_at: new Date().toISOString(),
+      }).eq("id", editId);
+    } else {
+      await supabase.from("show_expenses").insert({
+        description: form.description,
+        amount_cents: amountCents,
+        memo: form.memo || null,
+        date: form.date,
+      });
+    }
+
+    resetForm();
+    setSaving(false);
+    onUpdate();
+  };
+
+  const handleEdit = (e: ShowExpense) => {
+    setForm({
+      description: e.description,
+      amount: (e.amount_cents / 100).toFixed(2),
+      memo: e.memo || "",
+      date: e.date,
+    });
+    setEditId(e.id);
+    setAdding(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this expense?")) return;
+    const supabase = (await import("@/lib/supabase")).createClient();
+    await supabase.from("show_expenses").delete().eq("id", id);
+    onUpdate();
+  };
+
+  const total = expenses.reduce((s, e) => s + e.amount_cents, 0);
+
+  const inputStyle: React.CSSProperties = {
+    padding: "0.4rem 0.6rem",
+    fontSize: "0.85rem",
+    border: "1px solid #ddd",
+    fontFamily: "'Inter', sans-serif",
+  };
+
+  const smallBtnStyle: React.CSSProperties = {
+    padding: "0.25rem 0.6rem",
+    fontSize: "0.65rem",
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    border: "1px solid #ddd",
+    background: "var(--cream)",
+    color: "var(--charcoal)",
+    cursor: "pointer",
+  };
+
+  return (
+    <div
+      style={{
+        background: "var(--white)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        padding: "1.5rem 2rem",
+        marginBottom: "3rem",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <h2
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "1.4rem",
+            fontWeight: 400,
+          }}
+        >
+          Show Expenses
+        </h2>
+        {!adding && (
+          <button
+            onClick={() => setAdding(true)}
+            style={{
+              padding: "0.5rem 1.2rem",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              background: "var(--charcoal)",
+              color: "var(--white)",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Add Expense
+          </button>
+        )}
+      </div>
+
+      {/* Add / Edit form */}
+      {adding && (
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-end", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+          <div style={{ flex: 2, minWidth: "180px" }}>
+            <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginBottom: "0.25rem" }}>Description</label>
+            <input
+              type="text"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="e.g. Event insurance"
+              style={{ ...inputStyle, width: "100%" }}
+            />
+          </div>
+          <div style={{ minWidth: "100px" }}>
+            <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginBottom: "0.25rem" }}>Amount ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              placeholder="0.00"
+              style={{ ...inputStyle, width: "100%" }}
+            />
+          </div>
+          <div style={{ minWidth: "130px" }}>
+            <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginBottom: "0.25rem" }}>Date</label>
+            <input
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+              style={{ ...inputStyle, width: "100%" }}
+            />
+          </div>
+          <div style={{ flex: 2, minWidth: "180px" }}>
+            <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-light)", marginBottom: "0.25rem" }}>Memo</label>
+            <input
+              type="text"
+              value={form.memo}
+              onChange={(e) => setForm({ ...form, memo: e.target.value })}
+              placeholder="Optional notes"
+              style={{ ...inputStyle, width: "100%" }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "0.4rem" }}>
+            <button onClick={handleSave} disabled={saving || !form.description || !form.amount} style={{ ...smallBtnStyle, background: "var(--charcoal)", color: "#fff", opacity: saving || !form.description || !form.amount ? 0.5 : 1 }}>
+              {saving ? "Saving..." : editId ? "Update" : "Save"}
+            </button>
+            <button onClick={resetForm} style={smallBtnStyle}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Expense list */}
+      {expenses.length === 0 && !adding ? (
+        <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>No expenses recorded yet.</p>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid #eee", textAlign: "left" }}>
+              <th style={{ padding: "0.5rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)" }}>Date</th>
+              <th style={{ padding: "0.5rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)" }}>Description</th>
+              <th style={{ padding: "0.5rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)" }}>Memo</th>
+              <th style={{ padding: "0.5rem 1rem", fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", textAlign: "right" }}>Amount</th>
+              <th style={{ padding: "0.5rem 1rem", width: "80px" }} />
+            </tr>
+          </thead>
+          <tbody>
+            {expenses.map((e) => (
+              <tr key={e.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <td style={{ padding: "0.6rem 1rem", color: "var(--text-light)", whiteSpace: "nowrap" }}>
+                  {new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </td>
+                <td style={{ padding: "0.6rem 1rem", fontWeight: 500 }}>{e.description}</td>
+                <td style={{ padding: "0.6rem 1rem", color: "var(--text-light)" }}>{e.memo || "—"}</td>
+                <td style={{ padding: "0.6rem 1rem", textAlign: "right", fontWeight: 600, color: "#c62828" }}>
+                  {fmtMoney(e.amount_cents)}
+                </td>
+                <td style={{ padding: "0.6rem 1rem", textAlign: "right" }}>
+                  <div style={{ display: "flex", gap: "0.3rem", justifyContent: "flex-end" }}>
+                    <button onClick={() => handleEdit(e)} style={{ ...smallBtnStyle, fontSize: "0.6rem", padding: "0.15rem 0.4rem" }}>Edit</button>
+                    <button onClick={() => handleDelete(e.id)} style={{ ...smallBtnStyle, fontSize: "0.6rem", padding: "0.15rem 0.4rem", color: "#c62828" }}>Del</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {expenses.length > 0 && (
+            <tfoot>
+              <tr style={{ borderTop: "2px solid #ddd" }}>
+                <td />
+                <td style={{ padding: "0.6rem 1rem", fontWeight: 600 }}>Total</td>
+                <td />
+                <td style={{ padding: "0.6rem 1rem", textAlign: "right", fontWeight: 600, color: "#c62828" }}>
+                  {fmtMoney(total)}
+                </td>
+                <td />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      )}
+    </div>
+  );
+}
