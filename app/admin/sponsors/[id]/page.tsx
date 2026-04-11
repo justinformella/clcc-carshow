@@ -16,6 +16,7 @@ type EditForm = {
   status: string;
   amount_paid: string;
   donation: string;
+  payment_method: string;
   notes: string;
   assigned_to: string;
 };
@@ -118,6 +119,7 @@ export default function SponsorDetailPage() {
       status: sponsor.status,
       amount_paid: String(sponsor.amount_paid / 100),
       donation: String((sponsor.donation_cents || 0) / 100),
+      payment_method: sponsor.payment_method || "",
       notes: sponsor.notes || "",
       assigned_to: sponsor.assigned_to || "",
     });
@@ -166,6 +168,7 @@ export default function SponsorDetailPage() {
         status: form.status,
         amount_paid: Math.round(parseFloat(form.amount_paid || "0") * 100),
         donation_cents: Math.round(parseFloat(form.donation || "0") * 100),
+        payment_method: form.payment_method || null,
         notes: form.notes || null,
         assigned_to: form.assigned_to || null,
         ...paidAtUpdate,
@@ -581,6 +584,18 @@ export default function SponsorDetailPage() {
                 <input type="number" id="donation" name="donation" value={form.donation} onChange={handleFormChange} min="0" step="0.01" />
               </div>
             </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="payment_method">Payment Method</label>
+                <select id="payment_method" name="payment_method" value={form.payment_method} onChange={handleFormChange}>
+                  <option value="">Not Set</option>
+                  <option value="stripe">Credit Card (Stripe)</option>
+                  <option value="check">Check</option>
+                  <option value="cash">Cash</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
             <div className="form-group">
               <label htmlFor="message">Message</label>
               <textarea id="message" name="message" value={form.message} onChange={handleFormChange} />
@@ -636,6 +651,12 @@ export default function SponsorDetailPage() {
               <DetailRow
                 label="Additional Donation"
                 value={<span style={{ color: "#2e7d32", fontWeight: 600 }}>${(s.donation_cents / 100).toLocaleString()}</span>}
+              />
+            )}
+            {s.payment_method && (
+              <DetailRow
+                label="Payment Method"
+                value={s.payment_method === "stripe" ? "Credit Card (Stripe)" : s.payment_method === "check" ? "Check" : s.payment_method === "cash" ? "Cash" : s.payment_method}
               />
             )}
             {s.paid_at && (
