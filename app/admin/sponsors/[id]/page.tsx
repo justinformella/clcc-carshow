@@ -931,17 +931,29 @@ export default function SponsorDetailPage() {
                       </span>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                      {Object.entries(entry.changed_fields).map(([field, vals]) => (
-                        <div key={field} style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
-                          <span style={{ fontWeight: 500, color: "var(--charcoal)" }}>
-                            {formatFieldLabel(field)}
-                          </span>
-                          {": "}
-                          {formatAuditValue(vals.old)}
-                          {" \u2192 "}
-                          {formatAuditValue(vals.new)}
-                        </div>
-                      ))}
+                      {entry.changed_fields._activity ? (() => {
+                        const activity = entry.changed_fields._activity as unknown as { action: string; details?: string };
+                        return (
+                          <div style={{ fontSize: "0.8rem", color: "var(--charcoal)" }}>
+                            <span style={{ fontWeight: 500 }}>{activity.action}</span>
+                            {activity.details && (
+                              <span style={{ color: "var(--text-light)" }}>{" — "}{activity.details}</span>
+                            )}
+                          </div>
+                        );
+                      })() : (
+                        Object.entries(entry.changed_fields).map(([field, vals]) => (
+                          <div key={field} style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
+                            <span style={{ fontWeight: 500, color: "var(--charcoal)" }}>
+                              {formatFieldLabel(field)}
+                            </span>
+                            {": "}
+                            {formatAuditValue(vals.old)}
+                            {" \u2192 "}
+                            {formatAuditValue(vals.new)}
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 ))}

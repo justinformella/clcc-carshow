@@ -19,6 +19,19 @@ const FROM_EMAIL = "Crystal Lake Cars & Caffeine <noreply@crystallakecarshow.com
 const REPLY_TO = "info@crystallakecarshow.com";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
+async function logSponsorActivity(sponsorId: string, action: string, details?: string) {
+  try {
+    const supabase = createServerClient();
+    await supabase.from("sponsor_audit_log").insert({
+      sponsor_id: sponsorId,
+      changed_fields: { _activity: { action, details: details || null } },
+      actor_email: "system",
+    });
+  } catch (err) {
+    console.error("[sponsor-activity] Failed to log:", err);
+  }
+}
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function sendWithRetry(
@@ -206,6 +219,7 @@ export async function sendSponsorPaymentLink(sponsorId: string) {
   const result = await sendWithRetry({ from: FROM_EMAIL, to: sponsor.email, subject, html });
   console.log("[sponsor-payment-link] Sent to:", sponsor.email, "resend_id:", result.id);
   await logEmail(null, "sponsor_payment_link", sponsor.email, subject, result.id ?? null);
+  await logSponsorActivity(sponsorId, "Payment link email sent", `To: ${sponsor.email}`);
 }
 
 export async function sendSponsorReceipt(sponsorId: string) {
@@ -243,6 +257,7 @@ export async function sendSponsorReceipt(sponsorId: string) {
   const result = await sendWithRetry({ from: FROM_EMAIL, to: sponsor.email, subject, html });
   console.log("[sponsor-receipt] Sent to:", sponsor.email, "resend_id:", result.id);
   await logEmail(null, "sponsor_receipt", sponsor.email, subject, result.id ?? null);
+  await logSponsorActivity(sponsorId, "Receipt email sent", `To: ${sponsor.email}`);
 }
 
 export async function sendSponsorPaymentAdminNotification(sponsorId: string, paymentMethod: "stripe" | "check") {
