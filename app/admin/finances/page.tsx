@@ -115,7 +115,8 @@ export default function FinancesPage() {
   const paidRegs = registrations.filter((r) => r.payment_status === "paid");
   const pendingRegs = registrations.filter((r) => r.payment_status === "pending");
   const refundedRegs = registrations.filter((r) => r.payment_status === "refunded");
-  const paidSponsors = sponsors.filter((s) => s.status === "paid" || s.status === "engaged");
+  const paidSponsors = sponsors.filter((s) => s.status === "paid");
+  const confirmedSponsors = sponsors.filter((s) => s.status === "paid" || s.status === "engaged");
 
   const regRevenue = paidRegs.reduce((sum, r) => sum + (r.amount_paid || 0), 0);
   const sponsorRevenue = paidSponsors.reduce((sum, s) => sum + (s.sponsorship_amount || 0), 0);
@@ -475,7 +476,7 @@ export default function FinancesPage() {
         <SummaryCard
           label="Sponsorship Revenue"
           value={fmtMoney(sponsorRevenue)}
-          note={`${paidSponsors.length} sponsor${paidSponsors.length !== 1 ? "s" : ""} confirmed`}
+          note={`${paidSponsors.length} paid · ${confirmedSponsors.length - paidSponsors.length} committed`}
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>}
           onClick={() => setDetailModal("sponsorship")}
         />
@@ -1266,17 +1267,17 @@ export default function FinancesPage() {
                     <tr key={s.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
                       <td style={modalTdStyle}>{s.company}</td>
                       <td style={modalTdStyle}>{s.sponsorship_level}</td>
-                      <td style={modalTdStyle}>{s.status === "engaged" ? "Committed" : "Paid"}</td>
+                      <td style={modalTdStyle}><span style={{ background: "#e8f5e9", color: "#2e7d32", padding: "0.1rem 0.4rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase" }}>Paid</span></td>
                       <td style={modalTdStyle}>{fmtMoney(s.sponsorship_amount || 0)}</td>
                     </tr>
                   ))}
                   {paidSponsors.length === 0 && (
-                    <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No confirmed sponsors yet</td></tr>
+                    <tr><td colSpan={4} style={{ ...modalTdStyle, textAlign: "center", color: "var(--text-light)" }}>No paid sponsors yet</td></tr>
                   )}
                 </tbody>
                 <tfoot>
                   <tr style={{ fontWeight: 600, borderTop: "2px solid #ddd" }}>
-                    <td colSpan={3} style={modalTdStyle}>Total</td>
+                    <td colSpan={3} style={modalTdStyle}>Total (Paid)</td>
                     <td style={modalTdStyle}>{fmtMoney(sponsorRevenue)}</td>
                   </tr>
                 </tfoot>
