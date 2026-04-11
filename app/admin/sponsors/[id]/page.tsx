@@ -749,66 +749,140 @@ export default function SponsorDetailPage() {
             <div style={{ background: "var(--white)", padding: "2rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "1.5rem" }}>
               <SectionHeading>Payment Details</SectionHeading>
               {stripeLoading ? (
-                <p style={{ color: "#888", fontSize: "0.9rem" }}>Loading Stripe details...</p>
+                <p style={{ color: "var(--text-light)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Loading payment details...</p>
               ) : stripeError ? (
-                <div>
+                <div style={{ marginTop: "0.5rem" }}>
                   <p style={{ color: "#c00", fontSize: "0.85rem" }}>{stripeError}</p>
                   <button onClick={() => fetchStripeDetails(
                     s.stripe_payment_intent_id
                       ? { paymentIntentId: s.stripe_payment_intent_id }
                       : { sessionId: s.stripe_session_id! }
-                  )} style={{ fontSize: "0.8rem", color: "var(--gold)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                  )} style={{ marginTop: "0.4rem", padding: "0.3rem 0.8rem", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", cursor: "pointer", background: "var(--white)", color: "var(--charcoal)", border: "1px solid #ddd" }}>
                     Retry
                   </button>
                 </div>
               ) : stripeDetails ? (
-                <div>
+                <>
+                  {/* Card Info */}
                   {stripeDetails.card && (
                     <>
                       <DetailRow label="Card" value={`${stripeDetails.card.brand?.toUpperCase() || "Card"} \u2022\u2022\u2022\u2022 ${stripeDetails.card.last4}`} />
-                      <DetailRow label="Expiry" value={`${String(stripeDetails.card.exp_month).padStart(2, "0")}/${stripeDetails.card.exp_year}`} />
+                      <DetailRow label="Expires" value={`${String(stripeDetails.card.exp_month).padStart(2, "0")}/${stripeDetails.card.exp_year}`} />
                       {stripeDetails.card.funding && <DetailRow label="Funding" value={stripeDetails.card.funding} />}
                       {stripeDetails.card.country && <DetailRow label="Card Country" value={stripeDetails.card.country} />}
                       {stripeDetails.card.wallet && <DetailRow label="Wallet" value={stripeDetails.card.wallet} />}
                     </>
                   )}
+
+                  {/* Paid At */}
                   {stripeDetails.payment?.created && (
-                    <DetailRow label="Payment Date" value={new Date(stripeDetails.payment.created * 1000).toLocaleString()} />
+                    <DetailRow label="Paid At" value={new Date(stripeDetails.payment.created * 1000).toLocaleString()} />
                   )}
+
+                  {/* Links */}
                   {(stripeDetails.links.receipt_url || stripeDetails.links.dashboard_url) && (
-                    <div style={{ display: "flex", gap: "1rem", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #eee" }}>
-                      {stripeDetails.links.receipt_url && (
-                        <a href={stripeDetails.links.receipt_url} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: "0.85rem", color: "var(--gold)" }}>
-                          View Receipt
-                        </a>
-                      )}
-                      {stripeDetails.links.dashboard_url && (
-                        <a href={stripeDetails.links.dashboard_url} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: "0.85rem", color: "var(--gold)" }}>
-                          View in Stripe
-                        </a>
-                      )}
+                    <div style={{ display: "flex", gap: "1rem", marginTop: "0.3rem" }}>
+                      <span style={{ minWidth: "140px", color: "var(--text-light)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em", paddingTop: "0.1rem" }}>Links</span>
+                      <div style={{ display: "flex", gap: "1rem", fontSize: "0.9rem" }}>
+                        {stripeDetails.links.receipt_url && (
+                          <a href={stripeDetails.links.receipt_url} target="_blank" rel="noopener noreferrer" style={{ color: "#1565c0", textDecoration: "underline" }}>
+                            View Receipt
+                          </a>
+                        )}
+                        {stripeDetails.links.dashboard_url && (
+                          <a href={stripeDetails.links.dashboard_url} target="_blank" rel="noopener noreferrer" style={{ color: "#1565c0", textDecoration: "underline" }}>
+                            View in Stripe
+                          </a>
+                        )}
+                      </div>
                     </div>
                   )}
+
+                  {/* Billing Details */}
                   {stripeDetails.billing && (stripeDetails.billing.name || stripeDetails.billing.address) && (
                     <>
-                      {stripeDetails.billing.name && <DetailRow label="Billing Name" value={stripeDetails.billing.name} />}
+                      <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "1rem 0 0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f0f0f0" }}>Billing Details</h4>
+                      {stripeDetails.billing.name && <DetailRow label="Name" value={stripeDetails.billing.name} />}
                       {stripeDetails.billing.address && (
-                        <DetailRow label="Billing Address" value={
+                        <DetailRow label="Address" value={
                           [stripeDetails.billing.address.line1, stripeDetails.billing.address.line2, stripeDetails.billing.address.city, stripeDetails.billing.address.state, stripeDetails.billing.address.postal_code, stripeDetails.billing.address.country].filter(Boolean).join(", ")
                         } />
                       )}
                     </>
                   )}
-                  {stripeDetails.risk?.risk_level && (
-                    <DetailRow label="Risk Level" value={
-                      stripeDetails.risk.risk_level === "normal" ? "Normal" :
-                      stripeDetails.risk.risk_level === "elevated" ? "Elevated" :
-                      stripeDetails.risk.risk_level
-                    } />
+
+                  {/* Risk Assessment */}
+                  {stripeDetails.risk && (
+                    <>
+                      <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "1rem 0 0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f0f0f0" }}>Risk Assessment</h4>
+                      {stripeDetails.risk.risk_level && (
+                        <div style={{ display: "flex", gap: "1rem", fontSize: "0.9rem" }}>
+                          <span style={{ minWidth: "140px", color: "var(--text-light)", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em", paddingTop: "0.1rem" }}>Risk Level</span>
+                          <span style={{
+                            display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em",
+                            background: stripeDetails.risk.risk_level === "normal" ? "#e8f5e9" : stripeDetails.risk.risk_level === "elevated" ? "#fff3e0" : "#fce4ec",
+                            color: stripeDetails.risk.risk_level === "normal" ? "#2e7d32" : stripeDetails.risk.risk_level === "elevated" ? "#e65100" : "#b71c1c",
+                          }}>
+                            {stripeDetails.risk.risk_level}
+                          </span>
+                        </div>
+                      )}
+                      {stripeDetails.risk.risk_score != null && <DetailRow label="Risk Score" value={String(stripeDetails.risk.risk_score)} />}
+                      {stripeDetails.risk.network_status && <DetailRow label="Network" value={stripeDetails.risk.network_status} />}
+                    </>
                   )}
-                </div>
+
+                  {/* Fees */}
+                  {stripeDetails.fees && (
+                    <>
+                      <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "1rem 0 0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f0f0f0" }}>Fees</h4>
+                      <DetailRow label="Stripe Fee" value={`$${(stripeDetails.fees.stripe_fee / 100).toFixed(2)}`} />
+                      <DetailRow label="Net Amount" value={`$${(stripeDetails.fees.net / 100).toFixed(2)}`} />
+                    </>
+                  )}
+
+                  {/* Refunds */}
+                  {stripeDetails.refunds && stripeDetails.refunds.length > 0 && (
+                    <>
+                      <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "1rem 0 0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f0f0f0" }}>Refunds</h4>
+                      {stripeDetails.refunds.map((refund: { id: string; status: string | null; amount: number; reason: string | null; created: number }) => (
+                        <div key={refund.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0", borderBottom: "1px solid rgba(0,0,0,0.04)", fontSize: "0.85rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <span style={{
+                              display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em",
+                              background: refund.status === "succeeded" ? "#e8f5e9" : "#fff3e0",
+                              color: refund.status === "succeeded" ? "#2e7d32" : "#e65100",
+                            }}>
+                              {refund.status}
+                            </span>
+                            <span>${(refund.amount / 100).toFixed(2)}</span>
+                            {refund.reason && <span style={{ color: "var(--text-light)", fontSize: "0.8rem" }}>({refund.reason.replace(/_/g, " ")})</span>}
+                          </div>
+                          <span style={{ color: "var(--text-light)", fontSize: "0.8rem" }}>{new Date(refund.created * 1000).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Dispute */}
+                  {stripeDetails.dispute && (
+                    <>
+                      <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "1rem 0 0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f0f0f0" }}>Dispute</h4>
+                      <div style={{ background: "#fce4ec", padding: "0.75rem 1rem", fontSize: "0.85rem", color: "#b71c1c" }}>
+                        <div style={{ fontWeight: 600, marginBottom: "0.3rem" }}>Dispute — {stripeDetails.dispute.status.replace(/_/g, " ")}</div>
+                        <div>Amount: ${(stripeDetails.dispute.amount / 100).toFixed(2)}</div>
+                        <div>Reason: {stripeDetails.dispute.reason.replace(/_/g, " ")}</div>
+                        <div>Opened: {new Date(stripeDetails.dispute.created * 1000).toLocaleString()}</div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Stripe IDs */}
+                  <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", margin: "1rem 0 0.5rem", paddingTop: "0.75rem", borderTop: "1px solid #f0f0f0" }}>Stripe IDs</h4>
+                  <DetailRow label="Session ID" value={s.stripe_session_id || "—"} />
+                  <DetailRow label="Payment Intent" value={s.stripe_payment_intent_id || "—"} />
+                  {stripeDetails.charge_id && <DetailRow label="Charge ID" value={stripeDetails.charge_id} />}
+                </>
               ) : null}
             </div>
           )}
