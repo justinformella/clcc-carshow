@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { initAudio, startEngine, updateEngine, stopEngine } from "@/lib/race-audio";
+import { initAudio, startEngine, updateEngine, stopEngine, getAudioContext } from "@/lib/race-audio";
 import { RaceCar, C, FONT, pageStyle, goldBtnStyle } from "@/lib/race-types";
 
 const IVY_HALL_BG = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/8bit/ivy-hall.png`;
@@ -77,7 +77,7 @@ export default function SmokeShow({ playerCar, onBack, onGameEnd }: SmokeShowPro
   const startScreech = useCallback(() => {
     if (screechNodeRef.current) return;
     try {
-      const actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const actx = getAudioContext();
       const bufferSize = actx.sampleRate * 2;
       const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
       const data = buffer.getChannelData(0);

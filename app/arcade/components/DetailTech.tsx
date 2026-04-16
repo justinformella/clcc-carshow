@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { initAudio, stopAll } from "@/lib/race-audio";
+import { initAudio, stopAll, getAudioContext } from "@/lib/race-audio";
 import { RaceCar, C, FONT, pageStyle, goldBtnStyle, pixelBtnStyle } from "@/lib/race-types";
 
 const DETAIL_BAY_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/pixel-art/detail-bay.png`;
@@ -23,7 +23,7 @@ function DetailReveal({ exteriorScore, interiorScore }: { exteriorScore: number;
     if (revealed < 1) {
       const timer = setTimeout(() => {
         try {
-          const actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+          const actx = getAudioContext();
           const osc = actx.createOscillator();
           const gain = actx.createGain();
           osc.connect(gain); gain.connect(actx.destination);
@@ -213,7 +213,7 @@ export default function DetailTech({ playerCar, onBack, onGameEnd }: DetailTechP
 
   const playSpraySound = useCallback(() => {
     try {
-      const actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const actx = getAudioContext();
       const bufferSize = actx.sampleRate * 0.08;
       const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -231,7 +231,7 @@ export default function DetailTech({ playerCar, onBack, onGameEnd }: DetailTechP
 
   const playSparkleSound = useCallback(() => {
     try {
-      const actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const actx = getAudioContext();
       const osc = actx.createOscillator();
       const gain = actx.createGain();
       osc.connect(gain); gain.connect(actx.destination);
@@ -245,7 +245,7 @@ export default function DetailTech({ playerCar, onBack, onGameEnd }: DetailTechP
 
   const playSweepSound = useCallback(() => {
     try {
-      const actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const actx = getAudioContext();
       const osc = actx.createOscillator();
       const gain = actx.createGain();
       osc.connect(gain); gain.connect(actx.destination);

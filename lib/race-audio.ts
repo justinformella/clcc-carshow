@@ -3,8 +3,12 @@
 
 let ctx: AudioContext | null = null;
 
+const ACtor = typeof window !== "undefined"
+  ? window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+  : AudioContext;
+
 function getCtx(): AudioContext {
-  if (!ctx) ctx = new AudioContext();
+  if (!ctx) ctx = new ACtor();
   if (ctx.state === "suspended") ctx.resume();
   return ctx;
 }
@@ -152,6 +156,16 @@ export function playLoseJingle() {
 
 let currentAudio: HTMLAudioElement | null = null;
 let currentTrack: string | null = null;
+let pendingRetry = false;
+
+function retryPendingMusic() {
+  if (!pendingRetry || !currentAudio) return;
+  currentAudio.play().then(() => {
+    pendingRetry = false;
+    document.removeEventListener("touchstart", retryPendingMusic, true);
+    document.removeEventListener("click", retryPendingMusic, true);
+  }).catch(() => {});
+}
 
 function playTrack(src: string, volume = 0.4) {
   // Don't restart if already playing this track
@@ -160,12 +174,20 @@ function playTrack(src: string, volume = 0.4) {
   const audio = new Audio(src);
   audio.loop = true;
   audio.volume = volume;
-  audio.play().catch(() => { /* autoplay blocked — will play on next interaction */ });
+  audio.play().catch(() => {
+    // Autoplay blocked on mobile — retry on next user gesture
+    pendingRetry = true;
+    document.addEventListener("touchstart", retryPendingMusic, true);
+    document.addEventListener("click", retryPendingMusic, true);
+  });
   currentAudio = audio;
   currentTrack = src;
 }
 
 function stopMusicPlayer() {
+  pendingRetry = false;
+  document.removeEventListener("touchstart", retryPendingMusic, true);
+  document.removeEventListener("click", retryPendingMusic, true);
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.src = "";
