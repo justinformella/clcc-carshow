@@ -2,6 +2,7 @@
 // All sounds use square/triangle waves for authentic NES chiptune feel
 
 let ctx: AudioContext | null = null;
+let audioUnlocked = false;
 
 function getCtx(): AudioContext {
   if (!ctx) {
@@ -13,12 +14,26 @@ function getCtx(): AudioContext {
 }
 
 /**
- * Call from a user-gesture handler (click/tap) to ensure the
- * AudioContext is created and resumed before any async callbacks
- * (setInterval, requestAnimationFrame) try to use it.
+ * Call from a user-gesture handler (click/tap) to unlock audio on
+ * mobile Safari. Creates the AudioContext, resumes it, and plays a
+ * silent buffer to fully unlock the audio pipeline on iOS.
  */
 export function initAudio() {
-  getCtx();
+  const c = getCtx();
+  if (!audioUnlocked) {
+    // iOS Safari requires an actual audio operation within a user gesture
+    // to fully unlock the audio pipeline — a silent buffer does the trick
+    try {
+      const buf = c.createBuffer(1, 1, c.sampleRate);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.connect(c.destination);
+      src.start(0);
+      audioUnlocked = true;
+    } catch {
+      // Swallow — context is still usable, just may not be unlocked yet
+    }
+  }
 }
 
 export function getAudioContext(): AudioContext {
@@ -173,6 +188,10 @@ function playTrack(src: string, volume = 0.4) {
   const audio = new Audio(src);
   audio.loop = true;
   audio.volume = volume;
+  audio.setAttribute("playsinline", "");
+  audio.preload = "auto";
+  // Ensure AudioContext is resumed before playing music
+  if (ctx && ctx.state === "suspended") ctx.resume();
   audio.play().catch(() => {
     // Autoplay blocked on mobile — retry on next user gesture
     pendingRetry = true;

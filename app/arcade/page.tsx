@@ -12,9 +12,10 @@ import DynoRoom from "./components/DynoRoom";
 import DetailTech from "./components/DetailTech";
 import SmokeShow from "./components/SmokeShow";
 import BmwShowroom from "./components/BmwShowroom";
+import WindTunnel from "./components/WindTunnel";
 
 type Phase = "loading" | "title" | "select" | "action-menu" | "score-entry";
-type ActiveGame = "drag" | "dyno" | "detail" | "smokeshow" | "bmwshowroom" | null;
+type ActiveGame = "drag" | "dyno" | "detail" | "smokeshow" | "bmwshowroom" | "windtunnel" | null;
 
 export type ScoreData = {
   game: string;
@@ -32,6 +33,7 @@ function formatScore(game: string, score: number): string {
   if (game === "smokeshow") return `${Math.round(score)}%`;
   if (game === "detail") return `${Math.round(score)}/100`;
   if (game === "bmwshowroom") return `${Math.round(score)} PTS`;
+  if (game === "windtunnel") return `${Math.round(score)}/100`;
   return String(score);
 }
 
@@ -41,6 +43,7 @@ const GAME_LABELS: Record<string, string> = {
   smokeshow: "SMOKE SHOW",
   detail: "DETAIL TECH",
   bmwshowroom: "BMW SHOWROOM",
+  windtunnel: "WIND TUNNEL",
 };
 
 export default function RacePageWrapper() {
@@ -212,6 +215,8 @@ function RacePage() {
         return <SmokeShow playerCar={playerCar} onBack={backToMenu} onGameEnd={onGameEnd} />;
       case "bmwshowroom":
         return <BmwShowroom playerCar={playerCar} onBack={backToMenu} onGameEnd={onGameEnd} />;
+      case "windtunnel":
+        return <WindTunnel playerCar={playerCar} onBack={backToMenu} onGameEnd={onGameEnd} />;
     }
   }
 
@@ -374,7 +379,6 @@ function RacePage() {
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem" }}>
           <p style={{ fontFamily: FONT, fontSize: "0.65rem", color: C.gold, letterSpacing: "0.25em" }}>CLCC ARCADE</p>
           <h1 style={{ fontFamily: FONT, fontSize: "clamp(1.1rem, 4vw, 1.8rem)", color: C.white, textShadow: "0 0 20px rgba(255,215,0,0.3)" }}>WELCOME TO REDLINE MOTOR CONDOS</h1>
-          <p style={{ fontFamily: FONT, fontSize: "0.7rem", color: C.midGray, lineHeight: 2 }}>{cars.length} VEHICLES IN THE GARAGE</p>
           <button
             onClick={() => {
               initAudio();
@@ -428,6 +432,7 @@ function RacePage() {
             { label: "DETAIL YOUR CAR AT DETAIL TECH", icon: "icon-detail", action: () => { stopMenuMusic(); setActiveGame("detail"); window.scrollTo(0, 0); } },
             { label: "SMOKE SHOW AT IVY HALL", icon: "icon-smokeshow", iconSize: 120, action: () => { stopMenuMusic(); setActiveGame("smokeshow"); window.scrollTo(0, 0); } },
             { label: "TAKE A DRIVE TO ANDERSON BMW", icon: "icon-anderson-bmw", iconSize: 120, action: () => { stopMenuMusic(); setActiveGame("bmwshowroom"); window.scrollTo(0, 0); } },
+            { label: "WIND TUNNEL AT CIDEAS", icon: "icon-cideas", action: () => { stopMenuMusic(); setActiveGame("windtunnel"); window.scrollTo(0, 0); } },
           ].map((item) => (
             <button key={item.label} onClick={item.action} style={{ ...pixelBtnStyle, width: "100%", padding: "0.75rem 1rem", fontSize: "0.75rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}`, display: "flex", alignItems: "center", gap: "0.75rem", textAlign: "left", minHeight: "120px" }}>
               <div style={{ width: "96px", height: "96px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
