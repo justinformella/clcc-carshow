@@ -291,6 +291,46 @@ function registerNowHtml(unsubscribeUrl: string): string {
   return marketingHtmlShell(content, unsubscribeUrl);
 }
 
+export function customMarketingEmailHtml(
+  subject: string,
+  body: string,
+  ctaLabel?: string,
+  ctaUrl?: string,
+  unsubscribeUrl: string = "#"
+): string {
+  const paragraphs = body
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p style="margin:0 0 16px; font-size:15px; color:#333; line-height:1.7;">${p.replace(/\n/g, "<br/>")}</p>`)
+    .join("\n");
+
+  const ctaHtml = ctaLabel && ctaUrl ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 28px;">
+      <tr><td align="center">
+        <a href="${ctaUrl}" style="display:inline-block; padding:16px 40px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:16px; border-radius:6px; letter-spacing:0.04em;">
+          ${ctaLabel}
+        </a>
+      </td></tr>
+    </table>
+  ` : "";
+
+  const content = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr><td style="border-top:3px solid #c9a84c; font-size:0; line-height:0;">&nbsp;</td></tr>
+    </table>
+    <h1 style="margin:0 0 20px; font-size:24px; color:#2c2c2c; font-weight:700;">${subject}</h1>
+    ${paragraphs}
+    ${ctaHtml}
+    <p style="margin:24px 0 0; font-size:14px; color:#888;">
+      Best,<br/>
+      Crystal Lake Cars &amp; Caffeine Team
+    </p>
+  `;
+
+  return marketingHtmlShell(content, unsubscribeUrl);
+}
+
 export function getMarketingEmailHtml(
   templateKey: MarketingTemplateKey,
   unsubscribeUrl: string

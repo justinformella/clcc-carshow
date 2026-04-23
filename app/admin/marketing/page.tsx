@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { MARKETING_TEMPLATES } from "@/types/database";
 import type { AdCampaign, MarketingProspect, MarketingSend } from "@/types/database";
-import { getMarketingPreviewHtml } from "@/lib/marketing-email-templates";
+import { getMarketingPreviewHtml, customMarketingEmailHtml } from "@/lib/marketing-email-templates";
 
 type RegistrationUtm = {
   id: string;
@@ -141,6 +141,11 @@ function EmailOutreachTab() {
         setSelectedIds={setSelectedIds}
         selectedTemplate={selectedTemplate}
         regMap={regMap}
+      />
+      <ComposeCustomEmailSection
+        prospects={prospects}
+        selectedIds={selectedIds}
+        onSent={fetchProspects}
       />
       <SendCampaignSection
         prospects={prospects}
@@ -552,6 +557,194 @@ function ProspectListSection({
 }
 
 // ─── Send Campaign ───
+
+// ─── Compose Custom Email ───
+
+function ComposeCustomEmailSection({
+  prospects,
+  selectedIds,
+  onSent,
+}: {
+  prospects: ProspectWithSends[];
+  selectedIds: Set<string>;
+  onSent: () => void;
+}) {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [ctaLabel, setCtaLabel] = useState("Register Now");
+  const [ctaUrl, setCtaUrl] = useState("https://crystallakecarshow.com/register");
+  const [showPreview, setShowPreview] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const eligibleSelected = prospects.filter(
+    (p) => selectedIds.has(p.id) && !p.unsubscribed
+  );
+
+  useEffect(() => {
+    if (showPreview && iframeRef.current && subject && body) {
+      const doc = iframeRef.current.contentDocument;
+      if (doc) {
+        doc.open();
+        doc.write(customMarketingEmailHtml(subject, body, ctaLabel || undefined, ctaUrl || undefined));
+        doc.close();
+      }
+    }
+  }, [showPreview, subject, body, ctaLabel, ctaUrl]);
+
+  const handleSend = async () => {
+    if (!subject || !body) {
+      alert("Subject and body are required.");
+      return;
+    }
+    if (eligibleSelected.length === 0) {
+      alert("No eligible recipients selected. Select prospects from the list above.");
+      return;
+    }
+
+    const msg = `Send "${subject}" to ${eligibleSelected.length} recipient${eligibleSelected.length === 1 ? "" : "s"}?`;
+    if (!confirm(msg)) return;
+
+    setSending(true);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/marketing/send-custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject,
+          body,
+          cta_label: ctaLabel || null,
+          cta_url: ctaUrl || null,
+          prospect_ids: eligibleSelected.map((p) => p.id),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Send failed");
+      } else {
+        setResult(data);
+        onSent();
+      }
+    } catch {
+      alert("Send failed");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={sectionHeadingStyle}>Compose Custom Email</h2>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}>
+        <div>
+          <label style={labelStyle}>Subject</label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="e.g. Don't miss out! Registration is open..."
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Body</label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Write your email here. Use blank lines to separate paragraphs."
+            rows={10}
+            style={{ ...inputStyle, resize: "vertical", minHeight: "200px", lineHeight: 1.6 }}
+          />
+        </div>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>CTA Button Label (optional)</label>
+            <input
+              type="text"
+              value={ctaLabel}
+              onChange={(e) => setCtaLabel(e.target.value)}
+              placeholder="e.g. Register Now"
+              style={inputStyle}
+            />
+          </div>
+          <div style={{ flex: 2 }}>
+            <label style={labelStyle}>CTA Button URL (optional)</label>
+            <input
+              type="url"
+              value={ctaUrl}
+              onChange={(e) => setCtaUrl(e.target.value)}
+              placeholder="https://crystallakecarshow.com/register"
+              style={inputStyle}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <button
+          onClick={() => setShowPreview(!showPreview)}
+          disabled={!subject || !body}
+          style={{
+            ...smallBtnStyle,
+            opacity: !subject || !body ? 0.5 : 1,
+            cursor: !subject || !body ? "not-allowed" : "pointer",
+          }}
+        >
+          {showPreview ? "Hide Preview" : "Preview Email"}
+        </button>
+        <span style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
+          <strong>{eligibleSelected.length}</strong> eligible recipient{eligibleSelected.length === 1 ? "" : "s"} selected
+          {selectedIds.size > eligibleSelected.length && (
+            <span style={{ color: "#e65100" }}>
+              {" "}({selectedIds.size - eligibleSelected.length} excluded: unsubscribed)
+            </span>
+          )}
+        </span>
+      </div>
+
+      {showPreview && (
+        <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+          <iframe
+            ref={iframeRef}
+            style={{
+              width: "640px",
+              maxWidth: "100%",
+              height: "600px",
+              border: "1px solid #ddd",
+              background: "#f5f5f5",
+            }}
+            title="Custom email preview"
+          />
+        </div>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <button
+          onClick={handleSend}
+          disabled={sending || !subject || !body || eligibleSelected.length === 0}
+          style={{
+            ...btnStyle(sending || !subject || !body || eligibleSelected.length === 0),
+            background: sending || !subject || !body || eligibleSelected.length === 0 ? "#ccc" : "var(--gold)",
+          }}
+        >
+          {sending ? "Sending..." : `Send to ${eligibleSelected.length} Recipient${eligibleSelected.length === 1 ? "" : "s"}`}
+        </button>
+        {result && (
+          <span style={{ fontSize: "0.85rem", color: result.failed > 0 ? "#e65100" : "#2e7d32" }}>
+            Sent: {result.sent}
+            {result.failed > 0 && ` | Failed: ${result.failed}`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Send Campaign (Template-based) ───
 
 function SendCampaignSection({
   prospects,
