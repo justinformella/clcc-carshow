@@ -647,12 +647,10 @@ export default function SponsorDetailPage() {
               label="Base Sponsorship Amount"
               value={s.sponsorship_amount > 0 ? `$${(s.sponsorship_amount / 100).toLocaleString()}` : "—"}
             />
-            {s.donation_cents > 0 && (
-              <DetailRow
-                label="Additional Donation"
-                value={<span style={{ color: "#2e7d32", fontWeight: 600 }}>${(s.donation_cents / 100).toLocaleString()}</span>}
-              />
-            )}
+            <DetailRow
+              label="Additional Donation"
+              value={s.donation_cents > 0 ? <span style={{ color: "#2e7d32", fontWeight: 600 }}>${(s.donation_cents / 100).toLocaleString()}</span> : "—"}
+            />
             {s.payment_method && (
               <DetailRow
                 label="Payment Method"
