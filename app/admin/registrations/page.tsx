@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useMemo, useCallback, useTransition, memo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -652,12 +653,14 @@ export default function RegistrationsPage() {
               {/* Image */}
               {(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url) ? (
                 <div style={{ position: "relative" }}>
-                  <img
+                  <Image
                     src={(show8bit ? (reg.pixel_art_url || reg.ai_image_url) : reg.ai_image_url)!}
                     alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
-                    loading="lazy"
+                    width={480}
+                    height={270}
                     style={{
                       width: "100%",
+                      height: "auto",
                       aspectRatio: "16/9",
                       objectFit: "cover",
                       display: "block",
@@ -665,6 +668,7 @@ export default function RegistrationsPage() {
                       background: show8bit ? "#0d0d1a" : "transparent",
                       transform: "none",
                     }}
+                    unoptimized={show8bit}
                   />
                   {show8bit && (
                     <span style={{ position: "absolute", bottom: "4px", right: "6px", fontSize: "0.6rem", color: "rgba(255,255,255,0.7)", pointerEvents: "none" }}>

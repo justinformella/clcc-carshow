@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { RaceCar, C, FONT, pageStyle, pixelBtnStyle } from "@/lib/race-types";
 
@@ -85,9 +86,9 @@ export default function CarSelect({ cars, onSelect, generating, onGenerateAll }:
             >
               <div style={{ width: "100%", aspectRatio: "16/9", background: "#000", overflow: "hidden", lineHeight: 0 }}>
                 {car.pixelArt ? (
-                  <img src={car.pixelArt} alt={car.name} style={{ display: "block", width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", imageRendering: "pixelated" }} />
+                  <Image src={car.pixelArt} alt={car.name} width={416} height={234} style={{ display: "block", width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", imageRendering: "pixelated" }} unoptimized />
                 ) : car.aiImage ? (
-                  <img src={car.aiImage} alt={car.name} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }} />
+                  <Image src={car.aiImage} alt={car.name} width={416} height={234} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }} />
                 ) : (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: C.border, fontFamily: FONT, fontSize: "0.75rem" }}>NO IMAGE</div>
                 )}

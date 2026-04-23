@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 type SponsorEntry = {
@@ -31,9 +31,8 @@ export default function HeroSponsors() {
   return (
     <section className="hero-sponsors-bar">
       <div className="hero-sponsors-bar-inner">
-        {tiers.map((tier, i) => (
+        {tiers.map((tier) => (
           <div key={tier.label} style={{ display: "contents" }}>
-            {/* removed tier divider */}
             {tier.isPresenting ? (
               <div className="hero-sponsors-bar-presenting">
                 <span className="hero-sponsors-bar-label">Presented by</span>
@@ -41,11 +40,7 @@ export default function HeroSponsors() {
                   <SponsorLink key={s.company} sponsor={s}>
                     <div className="hero-sponsors-bar-logo" style={{ padding: "0.8rem 1.5rem" }}>
                       {getLogoSrc(s) ? (
-                        <img
-                          src={getLogoSrc(s)!}
-                          alt={s.company}
-                          style={{ maxHeight: "100px", maxWidth: "360px", objectFit: "contain" }}
-                        />
+                        <SponsorImage src={getLogoSrc(s)!} alt={s.company} maxHeight={100} maxWidth={360} />
                       ) : (
                         <span className="hero-sponsors-bar-name" style={{ color: "var(--charcoal)" }}>{s.company}</span>
                       )}
@@ -61,11 +56,7 @@ export default function HeroSponsors() {
                     <SponsorLink key={s.company} sponsor={s}>
                       <div className="hero-sponsors-bar-logo" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
                         {getLogoSrc(s) ? (
-                          <img
-                            src={getLogoSrc(s)!}
-                            alt={s.company}
-                            style={{ maxHeight: "90px", maxWidth: "320px", objectFit: "contain" }}
-                          />
+                          <SponsorImage src={getLogoSrc(s)!} alt={s.company} maxHeight={90} maxWidth={320} />
                         ) : (
                           <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>{s.company}</span>
                         )}
@@ -79,6 +70,19 @@ export default function HeroSponsors() {
         ))}
       </div>
     </section>
+  );
+}
+
+function SponsorImage({ src, alt, maxHeight, maxWidth }: { src: string; alt: string; maxHeight: number; maxWidth: number }) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={maxWidth}
+      height={maxHeight}
+      style={{ maxHeight: `${maxHeight}px`, maxWidth: `${maxWidth}px`, width: "auto", height: "auto", objectFit: "contain" }}
+      unoptimized={src.includes("google.com/s2/favicons")}
+    />
   );
 }
 

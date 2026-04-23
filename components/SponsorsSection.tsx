@@ -1,6 +1,6 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import { useState, useEffect } from "react";
 
 type SponsorEntry = {
@@ -227,6 +227,19 @@ export default function SponsorsSection() {
   );
 }
 
+function SponsorImage({ src, alt, maxHeight, maxWidth }: { src: string; alt: string; maxHeight: number; maxWidth: number }) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={maxWidth}
+      height={maxHeight}
+      style={{ maxHeight: `${maxHeight}px`, maxWidth: `${maxWidth}px`, width: "auto", height: "auto", objectFit: "contain" }}
+      unoptimized={src.includes("google.com/s2/favicons")}
+    />
+  );
+}
+
 function getLogoSrc(sponsor: SponsorEntry): string | null {
   if (sponsor.logo_url) return sponsor.logo_url;
   if (sponsor.website) {
@@ -268,7 +281,9 @@ function PresentingSponsorTier({ tier }: { tier: SponsorTier }) {
                 background: "var(--white)",
                 border: "2px solid var(--gold)",
                 padding: "3rem 4rem",
-                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 maxWidth: "600px",
                 margin: "0 auto",
                 position: "relative",
@@ -284,21 +299,13 @@ function PresentingSponsorTier({ tier }: { tier: SponsorTier }) {
               }}
             >
               {/* Gold corner accents */}
-              <div style={{ position: "absolute", top: "-1px", left: "-1px", width: "24px", height: "24px", borderTop: "3px solid var(--gold)", borderLeft: "3px solid var(--gold)" }} />
-              <div style={{ position: "absolute", top: "-1px", right: "-1px", width: "24px", height: "24px", borderTop: "3px solid var(--gold)", borderRight: "3px solid var(--gold)" }} />
-              <div style={{ position: "absolute", bottom: "-1px", left: "-1px", width: "24px", height: "24px", borderBottom: "3px solid var(--gold)", borderLeft: "3px solid var(--gold)" }} />
-              <div style={{ position: "absolute", bottom: "-1px", right: "-1px", width: "24px", height: "24px", borderBottom: "3px solid var(--gold)", borderRight: "3px solid var(--gold)" }} />
+              <div style={{ position: "absolute", top: "-2px", left: "-2px", width: "24px", height: "24px", borderTop: "3px solid var(--gold)", borderLeft: "3px solid var(--gold)" }} />
+              <div style={{ position: "absolute", top: "-2px", right: "-2px", width: "24px", height: "24px", borderTop: "3px solid var(--gold)", borderRight: "3px solid var(--gold)" }} />
+              <div style={{ position: "absolute", bottom: "-2px", left: "-2px", width: "24px", height: "24px", borderBottom: "3px solid var(--gold)", borderLeft: "3px solid var(--gold)" }} />
+              <div style={{ position: "absolute", bottom: "-2px", right: "-2px", width: "24px", height: "24px", borderBottom: "3px solid var(--gold)", borderRight: "3px solid var(--gold)" }} />
 
               {logoSrc && (
-                <img
-                  src={logoSrc}
-                  alt={s.company}
-                  style={{
-                    maxHeight: "120px",
-                    maxWidth: "320px",
-                    objectFit: "contain",
-                  }}
-                />
+                <SponsorImage src={logoSrc} alt={s.company} maxHeight={120} maxWidth={320} />
               )}
             </div>
           </SponsorLink>
@@ -350,15 +357,7 @@ function StandardSponsorTier({ tier }: { tier: SponsorTier }) {
                 }}
               >
                 {logoSrc && (
-                  <img
-                    src={logoSrc}
-                    alt={s.company}
-                    style={{
-                      maxHeight: "80px",
-                      maxWidth: "240px",
-                      objectFit: "contain",
-                    }}
-                  />
+                  <SponsorImage src={logoSrc} alt={s.company} maxHeight={80} maxWidth={240} />
                 )}
               </div>
             </SponsorLink>
