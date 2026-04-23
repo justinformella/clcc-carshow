@@ -273,6 +273,10 @@ export default function SponsorsPage() {
                       <span style={{ fontSize: "0.8rem", background: "#fff3e0", color: "#e65100", padding: "2px 8px", borderRadius: 4 }}>
                         Check{s.status !== "paid" ? " (pending)" : ""}
                       </span>
+                    ) : s.payment_method ? (
+                      <span style={{ fontSize: "0.8rem", background: "#e3f2fd", color: "#1565c0", padding: "2px 8px", borderRadius: 4 }}>
+                        {s.payment_method.charAt(0).toUpperCase() + s.payment_method.slice(1)}
+                      </span>
                     ) : (
                       <span style={{ fontSize: "0.8rem", color: "#999" }}>—</span>
                     )}

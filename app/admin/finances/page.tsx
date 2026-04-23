@@ -841,7 +841,7 @@ export default function FinancesPage() {
           </thead>
           <tbody>
             {sponsorTierData.map((t) => {
-              const paidCents = t.paid.reduce((s, sp) => s + (sp.sponsorship_amount || 0), 0);
+              const paidCents = t.paid.reduce((s, sp) => s + (sp.sponsorship_amount || 0) + (sp.donation_cents || 0), 0);
               const paidDonations = t.paid.reduce((s, sp) => s + (sp.donation_cents || 0), 0);
               const committedCount = t.engaged.length + t.committed.length;
               const committedCents = committedCount * t.priceCents;
@@ -912,7 +912,7 @@ export default function FinancesPage() {
                 {sponsorTierData.reduce((s, t) => s + t.inquired.length + t.prospect.length, 0)}
               </td>
               <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#2e7d32" }}>
-                {fmtMoney(sponsorTierData.reduce((s, t) => s + t.paid.reduce((s2, sp) => s2 + (sp.sponsorship_amount || 0), 0), 0))}
+                {fmtMoney(sponsorTierData.reduce((s, t) => s + t.paid.reduce((s2, sp) => s2 + (sp.sponsorship_amount || 0) + (sp.donation_cents || 0), 0), 0))}
               </td>
               <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 600, color: "#1565c0" }}>
                 {fmtMoney(sponsorTierData.reduce((s, t) => s + (t.engaged.length + t.committed.length) * t.priceCents, 0))}
@@ -956,8 +956,7 @@ export default function FinancesPage() {
                     <span style={{ fontWeight: 500, color: "var(--charcoal)" }}>{s.company}</span>
                     <span style={{ fontSize: "0.75rem", color }}>
                       {extractTierName(s.sponsorship_level)}
-                      {s.sponsorship_amount ? ` · ${fmtMoney(s.sponsorship_amount)}` : ` · ${fmtMoney(getTierPrice(s.sponsorship_level))}`}
-                      {s.donation_cents > 0 && <span style={{ opacity: 0.7 }}> + {fmtMoney(s.donation_cents)}</span>}
+                      {` · ${fmtMoney((s.sponsorship_amount || 0) + (s.donation_cents || 0) || getTierPrice(s.sponsorship_level))}`}
                     </span>
                   </div>
                 ))
