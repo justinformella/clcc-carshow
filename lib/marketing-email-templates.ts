@@ -291,6 +291,38 @@ function registerNowHtml(unsubscribeUrl: string): string {
   return marketingHtmlShell(content, unsubscribeUrl);
 }
 
+// Convert simple markdown to email-safe HTML
+function markdownToEmailHtml(text: string): string {
+  const blocks = text.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);
+  const pStyle = 'style="margin:0 0 16px; font-size:15px; color:#333; line-height:1.7;"';
+  const liStyle = 'style="padding:3px 0; font-size:15px; color:#333; line-height:1.7;"';
+
+  return blocks.map((block) => {
+    const lines = block.split("\n");
+
+    // Check if this block is a bullet list
+    if (lines.every((l) => /^[-*]\s/.test(l.trim()))) {
+      const items = lines.map((l) => {
+        const content = inlineMarkdown(l.trim().replace(/^[-*]\s+/, ""));
+        return `<li ${liStyle}>${content}</li>`;
+      }).join("");
+      return `<ul style="margin:0 0 16px; padding-left:20px;">${items}</ul>`;
+    }
+
+    // Regular paragraph
+    const content = lines.map((l) => inlineMarkdown(l)).join("<br/>");
+    return `<p ${pStyle}>${content}</p>`;
+  }).join("\n");
+}
+
+// Handle inline formatting: **bold**, *italic*, [links](url)
+function inlineMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#c9a84c; text-decoration:underline;">$1</a>');
+}
+
 export function customMarketingEmailHtml(
   subject: string,
   body: string,
@@ -298,12 +330,7 @@ export function customMarketingEmailHtml(
   ctaUrl?: string,
   unsubscribeUrl: string = "#"
 ): string {
-  const paragraphs = body
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p style="margin:0 0 16px; font-size:15px; color:#333; line-height:1.7;">${p.replace(/\n/g, "<br/>")}</p>`)
-    .join("\n");
+  const paragraphs = markdownToEmailHtml(body);
 
   const ctaHtml = ctaLabel && ctaUrl ? `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 28px;">

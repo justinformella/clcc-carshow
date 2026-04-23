@@ -655,10 +655,20 @@ function ComposeCustomEmailSection({
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Write your email here. Use blank lines to separate paragraphs."
+            placeholder="Write your email here. Supports basic formatting — see guide below."
             rows={10}
             style={{ ...inputStyle, resize: "vertical", minHeight: "200px", lineHeight: 1.6 }}
           />
+          <div style={{ marginTop: "0.5rem", padding: "0.75rem 1rem", background: "#fafafa", border: "1px solid #eee", fontSize: "0.78rem", color: "var(--text-light)", lineHeight: 1.8 }}>
+            <strong style={{ color: "var(--charcoal)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Formatting Guide</strong>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.25rem 2rem", marginTop: "0.4rem" }}>
+              <span><code style={{ background: "#eee", padding: "1px 4px" }}>**bold text**</code> → <strong>bold text</strong></span>
+              <span><code style={{ background: "#eee", padding: "1px 4px" }}>*italic text*</code> → <em>italic text</em></span>
+              <span><code style={{ background: "#eee", padding: "1px 4px" }}>[link text](https://url)</code> → link</span>
+              <span><code style={{ background: "#eee", padding: "1px 4px" }}>- bullet item</code> → bullet list</span>
+              <span>Blank line → new paragraph</span>
+            </div>
+          </div>
         </div>
         <div style={{ display: "flex", gap: "1rem" }}>
           <div style={{ flex: 1 }}>
