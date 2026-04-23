@@ -44,7 +44,7 @@ export default function HeroSponsors() {
                         <img
                           src={getLogoSrc(s)!}
                           alt={s.company}
-                          style={{ maxHeight: "70px", maxWidth: "280px", objectFit: "contain" }}
+                          style={{ maxHeight: "100px", maxWidth: "360px", objectFit: "contain" }}
                         />
                       ) : (
                         <span className="hero-sponsors-bar-name" style={{ color: "var(--charcoal)" }}>{s.company}</span>
@@ -64,7 +64,7 @@ export default function HeroSponsors() {
                           <img
                             src={getLogoSrc(s)!}
                             alt={s.company}
-                            style={{ maxHeight: "56px", maxWidth: "200px", objectFit: "contain" }}
+                            style={{ maxHeight: "90px", maxWidth: "320px", objectFit: "contain" }}
                           />
                         ) : (
                           <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>{s.company}</span>
