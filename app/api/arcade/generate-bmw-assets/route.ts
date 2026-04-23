@@ -90,6 +90,52 @@ const BMW_ASSETS = [
     removeBg: true,
     aspectRatio: "1:1",
   },
+  // CIDEAS Wind Tunnel
+  {
+    slug: "cideas-windtunnel",
+    prompt: "8-bit pixel art simple dark wind tunnel background, minimal design, dark navy blue solid walls, subtle horizontal grid lines on floor, very clean and uncluttered, no cars, no equipment, flat 2D side-scrolling game background style, 16-bit era aesthetic",
+    removeBg: false,
+    aspectRatio: "16:9",
+  },
+  {
+    slug: "icon-cideas",
+    prompt: "8-bit pixel art icon of a wind tunnel with airflow lines and a car silhouette inside, retro video game style, 16-bit era aesthetic, solid black background",
+    removeBg: true,
+    aspectRatio: "1:1",
+  },
+  // Spoilers (3 variants) - flat 2D side-view
+  { slug: "aero-spoiler-1", prompt: "simple flat 2D pixel art of a small car lip spoiler, pure side view silhouette, matte black, very simple shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-spoiler-2", prompt: "simple flat 2D pixel art of a tall GT rear wing on two stands, pure side view silhouette, carbon fiber dark gray, very simple shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-spoiler-3", prompt: "simple flat 2D pixel art of a swan neck rear wing spoiler, pure side view silhouette, red, very simple shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  // Front Splitters (3 variants)
+  { slug: "aero-splitter-1", prompt: "simple flat 2D pixel art of a thin front lip splitter, pure side view silhouette, black, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-splitter-2", prompt: "simple flat 2D pixel art of a front splitter with small vertical fins, pure side view silhouette, dark gray, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-splitter-3", prompt: "simple flat 2D pixel art of a deep front air dam, pure side view silhouette, red, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  // Side Skirts (3 variants)
+  { slug: "aero-sideskirts-1", prompt: "simple flat 2D pixel art of thin side skirt extensions, pure side view, black horizontal strip, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-sideskirts-2", prompt: "simple flat 2D pixel art of side skirts with vents, pure side view, dark gray, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-sideskirts-3", prompt: "simple flat 2D pixel art of wide body side skirts, pure side view, red accent, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  // Rear Diffusers (3 variants)
+  { slug: "aero-diffuser-1", prompt: "simple flat 2D pixel art of a small rear diffuser with 3 fins, pure side view silhouette, black, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-diffuser-2", prompt: "simple flat 2D pixel art of a rear diffuser with 5 fins, pure side view silhouette, dark gray, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-diffuser-3", prompt: "simple flat 2D pixel art of a large F1 rear diffuser, pure side view silhouette, red, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  // Canards (3 variants)
+  { slug: "aero-canards-1", prompt: "simple flat 2D pixel art of small front canard winglets, pure side view silhouette, black, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-canards-2", prompt: "simple flat 2D pixel art of medium front dive plane canards, pure side view silhouette, dark gray, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  { slug: "aero-canards-3", prompt: "simple flat 2D pixel art of large aggressive front canards, pure side view silhouette, red, very simple flat shape, pixel art sprite on transparent background", removeBg: true, aspectRatio: "1:1" },
+  // Grasslot Boys Detailing
+  {
+    slug: "sponsor-grasslot-boys",
+    prompt: "8-bit pixel art logo for Grasslot Boys Detailing, a car detailing business, bold text with detailing imagery like a sponge or spray bottle, retro video game style, 16-bit era aesthetic, clean transparent background",
+    removeBg: true,
+    aspectRatio: "1:1",
+  },
+  {
+    slug: "icon-grasslot-boys",
+    prompt: "8-bit pixel art icon of a car being detailed and polished, sponge and soap bubbles, retro video game style, 16-bit era aesthetic, solid black background",
+    removeBg: true,
+    aspectRatio: "1:1",
+  },
 ];
 
 export async function POST(req: Request) {

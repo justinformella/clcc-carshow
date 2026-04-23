@@ -42,7 +42,7 @@ export default function Arcade8Bit() {
       {/* Section header */}
       <h2 style={{ ...sectionTitleStyle(), fontSize: "clamp(1.5rem, 4vw, 2.5rem)" }}>CLCC ARCADE</h2>
       <p style={{ fontFamily: FONT, fontSize: "clamp(0.45rem, 1.2vw, 0.55rem)", color: COLORS.midGray, marginBottom: "2.5rem", letterSpacing: "0.15em" }}>
-        SPONSORED BY REDLINE MOTOR CONDOS · URW AUTOMOTIVE · THE DETAIL TECH · ANDERSON BMW
+        SPONSORED BY REDLINE MOTOR CONDOS · URW AUTOMOTIVE · THE DETAIL TECH · ANDERSON BMW · CIDEAS
       </p>
 
       {/* Arcade Cabinet */}

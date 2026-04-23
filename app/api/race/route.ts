@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const { data: specs } = await supabase
       .from("vehicle_specs")
-      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type, body_style, country_of_origin, era, production_numbers, redline_rpm, top_speed_mph, num_gears, transmission_type");
+      .select("registration_id, horsepower, weight_lbs, displacement_liters, cylinders, engine_type, category, drive_type, body_style, country_of_origin, era, production_numbers, redline_rpm, top_speed_mph, num_gears, transmission_type, drag_coefficient");
 
     if (!registrations || registrations.length === 0) {
       return NextResponse.json({ cars: [] });
@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
           pixelRear: r.pixel_rear_url || null,
           aiImage: r.ai_image_url || null,
           flipped: r.pixel_art_flipped || false,
+          dragCoefficient: spec.drag_coefficient || 0.35,
         };
       });
 

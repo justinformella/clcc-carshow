@@ -29,6 +29,7 @@ export type RaceCar = {
   pixelRear: string | null;
   aiImage: string | null;
   flipped: boolean;
+  dragCoefficient: number;
 };
 
 export type SceneryDef = { type: string; color: string; w: number; h: number; rare?: boolean };

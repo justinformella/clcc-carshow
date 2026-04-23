@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 
-const VALID_GAMES = ["drag", "cruise", "smokeshow", "detail", "bmwshowroom"];
+const VALID_GAMES = ["drag", "cruise", "smokeshow", "detail", "bmwshowroom", "windtunnel"];
 const ASC_GAMES = ["drag", "cruise"]; // lower score = better
 
 export async function POST(req: NextRequest) {

@@ -13,6 +13,7 @@ const GAMES = [
   { key: "smokeshow", label: "SMOKE SHOW" },
   { key: "detail", label: "DETAIL TECH" },
   { key: "bmwshowroom", label: "BMW SHOWROOM" },
+  { key: "windtunnel", label: "WIND TUNNEL" },
 ];
 
 function formatScore(game: string, score: number): string {
@@ -25,6 +26,7 @@ function formatScore(game: string, score: number): string {
   if (game === "smokeshow") return `${Math.round(score)}%`;
   if (game === "detail") return `${Math.round(score)}/100`;
   if (game === "bmwshowroom") return `${Math.round(score)} PTS`;
+  if (game === "windtunnel") return `${Math.round(score)}/100`;
   return String(score);
 }
 
