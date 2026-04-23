@@ -426,12 +426,12 @@ function RacePage() {
         `}</style>
         <div className="action-grid">
           {[
-            { label: "DRAG RACE", icon: "icon-drag-race", action: () => { stopMenuMusic(); setActiveGame("drag"); window.scrollTo(0, 0); } },
-            { label: "ROUTE 14 SPEED RUN", icon: "icon-cruise", action: () => { stopMenuMusic(); window.location.href = `/games/racer-classic/v5.carshow.html?car=${playerCar.id}`; } },
-            { label: "DYNO RUN AT URW", icon: "sponsor-a090b21c-c91c-4d9f-add9-510c62e455ad", action: () => { stopMenuMusic(); setActiveGame("dyno"); window.scrollTo(0, 0); } },
-            { label: "DETAIL YOUR CAR AT DETAIL TECH", icon: "icon-detail", action: () => { stopMenuMusic(); setActiveGame("detail"); window.scrollTo(0, 0); } },
-            { label: "SMOKE SHOW AT IVY HALL", icon: "icon-smokeshow", iconSize: 120, action: () => { stopMenuMusic(); setActiveGame("smokeshow"); window.scrollTo(0, 0); } },
-            { label: "TAKE A DRIVE TO ANDERSON BMW", icon: "icon-anderson-bmw", iconSize: 120, action: () => { stopMenuMusic(); setActiveGame("bmwshowroom"); window.scrollTo(0, 0); } },
+            { label: "DRAG RACE", icon: "icon-drag-race", action: () => { initAudio(); stopMenuMusic(); setActiveGame("drag"); window.scrollTo(0, 0); } },
+            { label: "ROUTE 14 SPEED RUN", icon: "icon-cruise", action: () => { initAudio(); stopMenuMusic(); window.location.href = `/games/racer-classic/v5.carshow.html?car=${playerCar.id}`; } },
+            { label: "DYNO RUN AT URW", icon: "sponsor-a090b21c-c91c-4d9f-add9-510c62e455ad", action: () => { initAudio(); stopMenuMusic(); setActiveGame("dyno"); window.scrollTo(0, 0); } },
+            { label: "DETAIL YOUR CAR AT DETAIL TECH", icon: "icon-detail", action: () => { initAudio(); stopMenuMusic(); setActiveGame("detail"); window.scrollTo(0, 0); } },
+            { label: "SMOKE SHOW AT IVY HALL", icon: "icon-smokeshow", iconSize: 120, action: () => { initAudio(); stopMenuMusic(); setActiveGame("smokeshow"); window.scrollTo(0, 0); } },
+            { label: "TAKE A DRIVE TO ANDERSON BMW", icon: "icon-anderson-bmw", iconSize: 120, action: () => { initAudio(); stopMenuMusic(); setActiveGame("bmwshowroom"); window.scrollTo(0, 0); } },
           ].map((item) => (
             <button key={item.label} onClick={item.action} style={{ ...pixelBtnStyle, width: "100%", padding: "0.75rem 1rem", fontSize: "0.75rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}`, display: "flex", alignItems: "center", gap: "0.75rem", textAlign: "left", minHeight: "120px" }}>
               <div style={{ width: "96px", height: "96px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
