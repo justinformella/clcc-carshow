@@ -31,7 +31,6 @@ export default function CarSelect({ cars, onSelect, generating, onGenerateAll }:
             Redline Motor Condos
           </h1>
           <p style={{ fontFamily: FONT, fontSize: "0.75rem", color: C.white, margin: "0 0 0.5rem" }}>Choose Your Ride</p>
-          <p style={{ color: C.midGray, fontFamily: FONT, fontSize: "0.7rem", marginBottom: "0.5rem" }}>{cars.length} VEHICLES IN THE GARAGE</p>
           <Link href="/arcade/leaderboard" style={{ fontFamily: FONT, fontSize: "0.55rem", color: C.gold, textDecoration: "underline" }}>
             LEADERBOARD
           </Link>
