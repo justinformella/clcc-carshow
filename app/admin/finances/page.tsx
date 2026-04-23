@@ -956,7 +956,7 @@ export default function FinancesPage() {
                     <span style={{ fontWeight: 500, color: "var(--charcoal)" }}>{s.company}</span>
                     <span style={{ fontSize: "0.75rem", color }}>
                       {extractTierName(s.sponsorship_level)}
-                      {` · ${fmtMoney((s.sponsorship_amount || 0) + (s.donation_cents || 0) || getTierPrice(s.sponsorship_level))}`}
+                      {` · ${fmtMoney(s.status === "paid" ? (s.sponsorship_amount || 0) + (s.donation_cents || 0) : getTierPrice(s.sponsorship_level))}`}
                     </span>
                   </div>
                 ))
