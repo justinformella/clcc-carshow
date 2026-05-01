@@ -23,7 +23,7 @@ export default function CharitySection() {
             </p>
             <div className="charity-goal">
               <p className="charity-goal-label">2026 Fundraising Goal</p>
-              <p className="charity-goal-amount">$10,000</p>
+              <p className="charity-goal-amount">$15,000</p>
             </div>
           </div>
           <div className="charity-impact">

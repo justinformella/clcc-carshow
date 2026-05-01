@@ -96,10 +96,6 @@ export default function AboutCharitySection() {
             </p>
             <div className="about-charity-impact">
               <div className="impact-card">
-                <p className="impact-number">$10K</p>
-                <p className="impact-label">2026 Fundraising Goal</p>
-              </div>
-              <div className="impact-card">
                 <p className="impact-number">800+</p>
                 <p className="impact-label">Families served monthly</p>
               </div>

@@ -457,6 +457,60 @@ export default function FinancesPage() {
         </div>
       </div>
 
+      {/* ── Cars to Goal ── */}
+      {(() => {
+        const CHARITY_GOAL = 1500000;
+        const remaining = Math.max(0, CHARITY_GOAL - netForCharity);
+        const netPerReg = REGISTRATION_PRICE_CENTS - estimateStripeFee(REGISTRATION_PRICE_CENTS);
+        const carsNeeded = remaining > 0 ? Math.ceil(remaining / netPerReg) : 0;
+        const goalPct = Math.min(100, (netForCharity / CHARITY_GOAL) * 100);
+        return (
+          <div
+            style={{
+              background: "var(--white)",
+              border: "1px solid rgba(0,0,0,0.08)",
+              padding: "1.5rem 2rem",
+              marginBottom: "2rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "2rem",
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-4l2-3h6l4 3h4v4h-2"/><path d="M5 10V6h4"/><path d="M14 6h4v4"/>
+              </svg>
+              <div>
+                <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-light)", marginBottom: "0.15rem" }}>
+                  Cars to $15K Goal
+                </p>
+                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "var(--charcoal)", lineHeight: 1 }}>
+                  {netForCharity >= CHARITY_GOAL ? (
+                    <span style={{ color: "var(--gold)" }}>Goal Reached!</span>
+                  ) : (
+                    <>{carsNeeded} <span style={{ fontSize: "0.9rem", color: "var(--text-light)", fontFamily: "'Inter', sans-serif" }}>more registrations</span></>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: "200px" }}>
+              <div style={{ height: "10px", background: "rgba(0,0,0,0.06)", borderRadius: "5px", overflow: "hidden" }}>
+                <div style={{ width: `${goalPct}%`, height: "100%", background: "linear-gradient(90deg, var(--gold), var(--gold-light))", borderRadius: "5px", transition: "width 0.8s ease" }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.4rem", fontSize: "0.7rem", color: "var(--text-light)" }}>
+                <span>{fmtMoney(netForCharity)} raised</span>
+                <span>{fmtMoney(CHARITY_GOAL)} goal</span>
+              </div>
+            </div>
+            <div style={{ textAlign: "right", fontSize: "0.75rem", color: "var(--text-light)", lineHeight: 1.6 }}>
+              <p>Net per registration: {fmtMoney(netPerReg)}</p>
+              <p>Remaining: {fmtMoney(remaining)}</p>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── 2. KPI Summary Cards (4) ── */}
       <div
         style={{

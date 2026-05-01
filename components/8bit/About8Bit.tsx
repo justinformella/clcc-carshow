@@ -143,7 +143,7 @@ export default function About8Bit() {
             }}
           >
             <div style={{ textAlign: "center" }}>
-              <span style={impactNumStyle}>$10K</span>
+              <span style={impactNumStyle}>$15K</span>
               <span style={statLabelStyle}>GOAL</span>
             </div>
             <div style={{ textAlign: "center" }}>

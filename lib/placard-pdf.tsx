@@ -32,6 +32,7 @@ const BLACK = "#000000";
 const DARK = "#1C1C1C";
 const MID = "#555555";
 const RULE = "#999999";
+const GOLD = "#D4A44A";
 
 /* ── Styles ─────────────────────────────────────────────────────── */
 const s = StyleSheet.create({
@@ -49,35 +50,34 @@ const s = StyleSheet.create({
     backgroundColor: BLACK,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    gap: 14,
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    gap: 18,
   },
   logo: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   bannerTextWrap: {
-    flex: 1,
     flexDirection: "column",
   },
   bannerTitle: {
-    fontFamily: "Inter",
+    fontFamily: "Playfair Display",
     fontWeight: 700,
-    fontSize: 14,
+    fontSize: 18,
     color: "#FFFFFF",
     letterSpacing: 0.5,
-    textTransform: "uppercase",
   },
   bannerSubtitle: {
     fontFamily: "Inter",
     fontWeight: 600,
     fontSize: 9,
-    color: "#CCCCCC",
-    letterSpacing: 0.3,
+    color: GOLD,
+    letterSpacing: 1.5,
     textTransform: "uppercase",
-    marginTop: 3,
+    marginTop: 4,
   },
 
   /* ── Body (two columns) ────────────────────────── */
@@ -88,54 +88,55 @@ const s = StyleSheet.create({
 
   /* Left column — vehicle info */
   leftCol: {
-    width: "60%",
-    paddingTop: 28,
-    paddingLeft: 32,
-    paddingRight: 28,
-    paddingBottom: 24,
+    width: "58%",
+    paddingTop: 32,
+    paddingLeft: 36,
+    paddingRight: 32,
+    paddingBottom: 28,
     flexDirection: "column",
+    justifyContent: "center",
   },
 
   /* Right column — car number */
   rightCol: {
-    width: "40%",
-    paddingTop: 28,
-    paddingHorizontal: 28,
-    paddingBottom: 24,
+    width: "42%",
+    paddingTop: 32,
+    paddingHorizontal: 32,
+    paddingBottom: 28,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    borderLeftWidth: 1.5,
+    borderLeftWidth: 2,
     borderLeftColor: BLACK,
   },
 
-  /* ── Field labels & values (no boxes) ──────────── */
+  /* ── Field labels & values ──────────────────────── */
   fieldLabel: {
     fontFamily: "Inter",
     fontWeight: 700,
-    fontSize: 8,
+    fontSize: 9,
     color: MID,
-    letterSpacing: 1.8,
+    letterSpacing: 2,
     textTransform: "uppercase",
-    marginBottom: 2,
+    marginBottom: 3,
   },
   fieldValue: {
     fontFamily: "Inter",
     fontWeight: 600,
-    fontSize: 18,
+    fontSize: 24,
     color: DARK,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   fieldRule: {
     height: 1,
     backgroundColor: RULE,
-    marginBottom: 18,
+    marginBottom: 22,
   },
 
   /* Side-by-side row for year/make */
   fieldRow: {
     flexDirection: "row",
-    gap: 24,
+    gap: 28,
   },
   fieldGroupNarrow: {
     width: "28%",
@@ -150,16 +151,16 @@ const s = StyleSheet.create({
   storyLabel: {
     fontFamily: "Inter",
     fontWeight: 700,
-    fontSize: 8,
+    fontSize: 9,
     color: MID,
-    letterSpacing: 1.8,
+    letterSpacing: 2,
     textTransform: "uppercase",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   storyText: {
     fontFamily: "Inter",
     fontWeight: 400,
-    fontSize: 12,
+    fontSize: 14,
     color: DARK,
     lineHeight: 1.7,
   },
@@ -168,17 +169,17 @@ const s = StyleSheet.create({
   numberLabel: {
     fontFamily: "Inter",
     fontWeight: 700,
-    fontSize: 10,
+    fontSize: 12,
     color: MID,
-    letterSpacing: 2,
+    letterSpacing: 2.5,
     textTransform: "uppercase",
     textAlign: "center",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   carNumber: {
     fontFamily: "Playfair Display",
     fontWeight: 700,
-    fontSize: 120,
+    fontSize: 160,
     color: BLACK,
     textAlign: "center",
     lineHeight: 1,
@@ -186,19 +187,19 @@ const s = StyleSheet.create({
 
   /* ── Footer ────────────────────────────────────── */
   footer: {
-    borderTopWidth: 1.5,
+    borderTopWidth: 2,
     borderTopColor: BLACK,
-    paddingVertical: 8,
-    paddingHorizontal: 28,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
     flexDirection: "row",
     justifyContent: "space-between",
   },
   footerText: {
     fontFamily: "Inter",
     fontWeight: 600,
-    fontSize: 7,
+    fontSize: 8,
     color: MID,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
   },
 });
@@ -217,7 +218,9 @@ function PlacardPage({
       <View style={s.banner}>
         <Image src={logoUrl} style={s.logo} />
         <View style={s.bannerTextWrap}>
-          <Text style={s.bannerTitle}>Crystal Lake Cars &amp; Caffeine</Text>
+          <Text style={s.bannerTitle}>
+            2026 Crystal Lake Cars &amp; Caffeine Charity Car Show
+          </Text>
           <Text style={s.bannerSubtitle}>
             All Entry Proceeds Benefit the Crystal Lake Food Pantry
           </Text>

@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration, EmailLog, AuditLogEntry, StripePaymentDetails } from "@/types/database";
 import { AWARD_CATEGORIES } from "@/types/database";
-import { openPlacardPrintWindow } from "@/lib/placard-print";
 import dynamic from "next/dynamic";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), { ssr: false });
@@ -447,10 +446,31 @@ export default function RegistrationDetailPage() {
     }
   };
 
-  const handlePrint = () => {
+  const [downloadingPlacard, setDownloadingPlacard] = useState(false);
+  const handleDownloadPlacard = useCallback(async () => {
     if (!registration) return;
-    openPlacardPrintWindow([registration]);
-  };
+    setDownloadingPlacard(true);
+    try {
+      const [{ pdf }, { PlacardDocument }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/lib/placard-pdf"),
+      ]);
+      const logoUrl = `${window.location.origin}/images/CLCC_Logo2026.png`;
+      const blob = await pdf(<PlacardDocument registrations={[registration]} logoUrl={logoUrl} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Placard-${registration.car_number}-${registration.vehicle_year}-${registration.vehicle_make}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Placard PDF failed:", err);
+    } finally {
+      setDownloadingPlacard(false);
+    }
+  }, [registration]);
 
   const handleGenerateImage = async () => {
     if (!registration) return;
@@ -602,6 +622,14 @@ export default function RegistrationDetailPage() {
               onClick={handleCheckIn}
               variant={r.checked_in ? "secondary" : "primary"}
             />
+            {r.checked_in && (
+              <ActionButton
+                label={downloadingPlacard ? "Generating..." : "Download Placard"}
+                onClick={handleDownloadPlacard}
+                variant="secondary"
+                disabled={downloadingPlacard}
+              />
+            )}
             <ActionButton label="Edit" onClick={startEdit} variant="secondary" />
             {/* More dropdown */}
             <div ref={menuRef} style={{ position: "relative", display: "flex" }}>
@@ -638,10 +666,6 @@ export default function RegistrationDetailPage() {
                     label={sendingEmail ? "Sending..." : "Resend Confirmation"}
                     onClick={() => { handleResendConfirmation(); setMenuOpen(false); }}
                     disabled={sendingEmail}
-                  />
-                  <DropdownItem
-                    label="Print Placard"
-                    onClick={() => { handlePrint(); setMenuOpen(false); }}
                   />
                   <DropdownItem
                     label="Contact Registrant"

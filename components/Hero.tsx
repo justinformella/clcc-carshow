@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CountdownTimer from "./CountdownTimer";
+import CharityProgress from "./CharityProgress";
 
 export default function Hero() {
   return (
@@ -25,6 +26,7 @@ export default function Hero() {
           </a>
         </div>
       </div>
+      <CharityProgress />
     </section>
   );
 }

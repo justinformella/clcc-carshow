@@ -260,6 +260,22 @@ export default function RegistrationsPage() {
             </button>
           )}
           <button
+            onClick={() => router.push("/admin/registrations/quick-add")}
+            style={{
+              padding: "0.6rem 1.5rem",
+              background: "var(--gold)",
+              color: "var(--charcoal)",
+              border: "none",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              cursor: "pointer",
+            }}
+          >
+            On-Site Quick Add
+          </button>
+          <button
             onClick={() => router.push("/admin/registrations/new")}
             style={{
               padding: "0.6rem 1.5rem",

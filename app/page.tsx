@@ -9,6 +9,7 @@ import WeatherPolicy from "@/components/WeatherPolicy";
 import FAQ from "@/components/FAQ";
 import Gallery from "@/components/Gallery";
 import SponsorsSection from "@/components/SponsorsSection";
+import CommunityBanner from "@/components/CommunityBanner";
 import Footer from "@/components/Footer";
 import StickyRegisterBar from "@/components/StickyRegisterBar";
 
@@ -23,6 +24,7 @@ export default function Home() {
       <AboutCharitySection />
       <ScheduleAwards />
       <SpectatorBanner />
+      <CommunityBanner />
       <WeatherPolicy />
       <FAQ />
       <SponsorsSection />

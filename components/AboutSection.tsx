@@ -36,7 +36,7 @@ export default function AboutSection() {
                 <div className="intro-stat-label">Visitors</div>
               </div>
               <div className="intro-stat">
-                <div className="intro-stat-number">$10K</div>
+                <div className="intro-stat-number">$15K</div>
                 <div className="intro-stat-label">Charity Goal</div>
               </div>
             </div>
