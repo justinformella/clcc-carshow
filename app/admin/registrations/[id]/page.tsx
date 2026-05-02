@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration, EmailLog, AuditLogEntry, StripePaymentDetails } from "@/types/database";
-import { AWARD_CATEGORIES } from "@/types/database";
+import { AWARD_CATEGORIES, REGISTRATION_PRICE_CENTS } from "@/types/database";
 import dynamic from "next/dynamic";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), { ssr: false });
@@ -27,6 +27,9 @@ type EditForm = {
   story: string;
   award_category: string;
   payment_status: string;
+  amount_paid: string;
+  donation_cents: string;
+  payment_method: string;
 };
 
 export default function RegistrationDetailPage() {
@@ -188,6 +191,31 @@ export default function RegistrationDetailPage() {
     }
   };
 
+  const handleRecordCash = async () => {
+    if (!registration) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("registrations")
+      .update({
+        payment_status: "paid",
+        payment_method: "cash",
+        amount_paid: REGISTRATION_PRICE_CENTS,
+        paid_at: new Date().toISOString(),
+      })
+      .eq("id", registration.id);
+
+    if (!error) {
+      setRegistration({
+        ...registration,
+        payment_status: "paid",
+        payment_method: "cash",
+        amount_paid: REGISTRATION_PRICE_CENTS,
+        paid_at: new Date().toISOString(),
+      });
+      fetchAuditLog();
+    }
+  };
+
   const handleResendConfirmation = async () => {
     if (!registration) return;
     setSendingEmail(true);
@@ -292,6 +320,9 @@ export default function RegistrationDetailPage() {
       story: registration.story || "",
       award_category: registration.award_category || "",
       payment_status: registration.payment_status,
+      amount_paid: String(registration.amount_paid || 0),
+      donation_cents: String(registration.donation_cents || 0),
+      payment_method: registration.payment_method || "",
     });
     setEditing(true);
   };
@@ -367,6 +398,9 @@ export default function RegistrationDetailPage() {
         story: form.story || null,
         award_category: awardValue,
         payment_status: form.payment_status,
+        payment_method: form.payment_method || null,
+        amount_paid: parseInt(form.amount_paid) || 0,
+        donation_cents: parseInt(form.donation_cents) || 0,
         ...paidAtUpdate,
       })
       .eq("id", registration.id);
@@ -622,6 +656,13 @@ export default function RegistrationDetailPage() {
               onClick={handleCheckIn}
               variant={r.checked_in ? "secondary" : "primary"}
             />
+            {r.payment_status === "pending" && (
+              <ActionButton
+                label={`Cash Paid — $${(REGISTRATION_PRICE_CENTS / 100).toFixed(0)}`}
+                onClick={handleRecordCash}
+                variant="primary"
+              />
+            )}
             {r.checked_in && (
               <ActionButton
                 label={downloadingPlacard ? "Generating..." : "Download Placard"}
@@ -864,6 +905,41 @@ export default function RegistrationDetailPage() {
                   <option value="comped">Comped</option>
                   <option value="refunded">Refunded</option>
                   <option value="archived">Archived</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="amount_paid">Amount Paid ($)</label>
+                <input
+                  type="number"
+                  id="amount_paid"
+                  name="amount_paid"
+                  value={(parseInt(form.amount_paid) / 100).toFixed(2)}
+                  onChange={(e) => setForm({ ...form, amount_paid: String(Math.round(parseFloat(e.target.value || "0") * 100)) })}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="donation_cents">Donation ($)</label>
+                <input
+                  type="number"
+                  id="donation_cents"
+                  name="donation_cents"
+                  value={(parseInt(form.donation_cents || "0") / 100).toFixed(2)}
+                  onChange={(e) => setForm({ ...form, donation_cents: String(Math.round(parseFloat(e.target.value || "0") * 100)) })}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="payment_method">Payment Method</label>
+                <select id="payment_method" name="payment_method" value={form.payment_method || ""} onChange={handleFormChange}>
+                  <option value="">Unknown</option>
+                  <option value="stripe">Stripe</option>
+                  <option value="cash">Cash</option>
+                  <option value="comp">Comp</option>
                 </select>
               </div>
             </div>
@@ -1179,6 +1255,7 @@ export default function RegistrationDetailPage() {
 
               <DetailSection title="Payment">
                 <DetailRow label="Status" value={r.payment_status} />
+                <DetailRow label="Method" value={r.payment_method ? r.payment_method.charAt(0).toUpperCase() + r.payment_method.slice(1) : "—"} />
                 <DetailRow label="This Registration" value={`$${(r.amount_paid / 100).toFixed(2)}`} />
                 {(r.donation_cents || 0) > 0 && (
                   <DetailRow label="Donation" value={`$${(r.donation_cents / 100).toFixed(2)}`} />

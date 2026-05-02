@@ -10,6 +10,7 @@ import FAQ from "@/components/FAQ";
 import Gallery from "@/components/Gallery";
 import SponsorsSection from "@/components/SponsorsSection";
 import CommunityBanner from "@/components/CommunityBanner";
+import ArcadeBanner from "@/components/ArcadeBanner";
 import Footer from "@/components/Footer";
 import StickyRegisterBar from "@/components/StickyRegisterBar";
 
@@ -25,6 +26,7 @@ export default function Home() {
       <ScheduleAwards />
       <SpectatorBanner />
       <CommunityBanner />
+      <ArcadeBanner />
       <WeatherPolicy />
       <FAQ />
       <SponsorsSection />

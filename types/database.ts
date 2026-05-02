@@ -23,6 +23,7 @@ export type Registration = {
   stripe_session_id: string | null;
   stripe_payment_intent_id: string | null;
   payment_status: "pending" | "paid" | "comped" | "refunded" | "archived";
+  payment_method: string | null;
   amount_paid: number;
   donation_cents: number;
   // Privacy

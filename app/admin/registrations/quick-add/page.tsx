@@ -82,6 +82,7 @@ export default function QuickAddPage() {
         amount_paid: REGISTRATION_PRICE_CENTS,
         donation_cents: donationCents,
         payment_status: "paid",
+        payment_method: "cash",
         paid_at: new Date().toISOString(),
         checked_in: true,
         checked_in_at: new Date().toISOString(),

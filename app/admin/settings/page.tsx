@@ -40,6 +40,7 @@ const sampleReg: Registration = {
   stripe_session_id: null,
   stripe_payment_intent_id: null,
   payment_status: "paid",
+  payment_method: "stripe",
   amount_paid: 3000,
   donation_cents: 0,
   hide_owner_details: false,
