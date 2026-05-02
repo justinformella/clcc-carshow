@@ -108,6 +108,9 @@ export default function ArcadeBanner() {
                 <img
                   src={car.pixelArt}
                   alt={car.name}
+                  onError={(e) => {
+                    (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                  }}
                   style={{
                     maxWidth: "90%",
                     maxHeight: "90%",
