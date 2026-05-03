@@ -3,13 +3,13 @@ import { generateCarImage } from "@/lib/generate-car-image";
 
 export async function POST(request: NextRequest) {
   try {
-    const { registrationId, model } = await request.json();
+    const { registrationId, model, quality } = await request.json();
 
     if (!registrationId) {
       return NextResponse.json({ error: "Registration ID required" }, { status: 400 });
     }
 
-    const imageUrl = await generateCarImage(registrationId, model || undefined);
+    const imageUrl = await generateCarImage(registrationId, model || undefined, quality || "high");
 
     return NextResponse.json({ imageUrl });
   } catch (err) {

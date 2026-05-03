@@ -44,6 +44,7 @@ export default function RegistrationDetailPage() {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageModel, setImageModel] = useState("auto");
+  const [imageQuality, setImageQuality] = useState("high");
   const [imageGenElapsed, setImageGenElapsed] = useState(0);
   const imageTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [generatingPixelArt, setGeneratingPixelArt] = useState(false);
@@ -520,6 +521,7 @@ export default function RegistrationDetailPage() {
         body: JSON.stringify({
           registrationId: registration.id,
           model: imageModel === "auto" ? undefined : imageModel,
+          quality: imageQuality,
         }),
       });
 
@@ -1730,8 +1732,21 @@ export default function RegistrationDetailPage() {
                     <option value="imagen-4.0-generate-001">Imagen 4</option>
                     <option value="imagen-4.0-fast-generate-001">Imagen 4 Fast</option>
                     <option value="imagen-4.0-ultra-generate-001">Imagen 4 Ultra</option>
-                    <option value="openai">OpenAI</option>
+                    <option value="openai">GPT Image 2</option>
                   </select>
+                  {imageModel === "openai" && (
+                    <select
+                      value={imageQuality}
+                      onChange={(e) => setImageQuality(e.target.value)}
+                      style={{ padding: "0.25rem 0.4rem", fontSize: "0.65rem", border: "1px solid #ddd", borderRadius: "2px", background: "var(--white)", cursor: "pointer" }}
+                      title="Quality"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="auto">Quality: Auto</option>
+                    </select>
+                  )}
                   <button
                     onClick={handleGenerateImage}
                     disabled={generatingImage}
@@ -1996,6 +2011,8 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
   const [status, setStatus] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [model, setModel] = useState("auto");
+  const [quality, setQuality] = useState("medium");
+  const [background, setBackground] = useState("auto");
   const fileRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -2030,7 +2047,7 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
       const res = await fetch("/api/registrations/pixel-art/regenerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registration_id: registrationId, type, model: model === "auto" ? undefined : model }),
+        body: JSON.stringify({ registration_id: registrationId, type, model: model === "auto" ? undefined : model, quality, background }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -2090,8 +2107,33 @@ function PixelArtActions({ registrationId, type, hasBgStrip, hasOriginal }: {
             <option value="imagen-4.0-generate-001">Imagen 4</option>
             <option value="imagen-4.0-fast-generate-001">Imagen 4 Fast</option>
             <option value="imagen-4.0-ultra-generate-001">Imagen 4 Ultra</option>
-            <option value="openai">OpenAI</option>
+            <option value="openai">GPT Image 2</option>
           </select>
+          {model === "openai" && (
+            <>
+              <select
+                value={quality}
+                onChange={(e) => setQuality(e.target.value)}
+                style={{ padding: "0.15rem 0.25rem", fontSize: "0.6rem", border: "1px solid #ddd", borderRadius: "2px", background: "var(--white)", cursor: "pointer" }}
+                title="Quality"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="auto">Quality: Auto</option>
+              </select>
+              <select
+                value={background}
+                onChange={(e) => setBackground(e.target.value)}
+                style={{ padding: "0.15rem 0.25rem", fontSize: "0.6rem", border: "1px solid #ddd", borderRadius: "2px", background: "var(--white)", cursor: "pointer" }}
+                title="Background"
+              >
+                <option value="auto">BG: Auto</option>
+                <option value="transparent">Transparent</option>
+                <option value="opaque">Opaque</option>
+              </select>
+            </>
+          )}
           <button onClick={handleRegen} style={btnStyle}>Regen</button>
           {hasBgStrip && hasOriginal && (
             <button onClick={handleStrip} style={btnStyle}>Strip BG</button>

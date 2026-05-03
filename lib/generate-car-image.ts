@@ -53,7 +53,9 @@ async function describeCarWithGemini(
   }
 }
 
-export async function generateCarImage(registrationId: string, preferredModel?: string): Promise<string> {
+export type OpenAIQuality = "low" | "medium" | "high" | "auto";
+
+export async function generateCarImage(registrationId: string, preferredModel?: string, openaiQuality: OpenAIQuality = "high"): Promise<string> {
   const supabase = createServerClient();
 
   const { data: reg, error: fetchError } = await supabase
@@ -103,13 +105,13 @@ export async function generateCarImage(registrationId: string, preferredModel?: 
   let buffer: Buffer | null = null;
 
   if (preferredModel === "openai") {
-    buffer = await generateWithOpenAI(prompt);
+    buffer = await generateWithOpenAI(prompt, openaiQuality);
   } else if (preferredModel && geminiKey) {
     try {
       buffer = await generateWithImagen(geminiKey, prompt, preferredModel);
     } catch (err) {
       console.error(`${preferredModel} failed, falling back to OpenAI:`, err);
-      buffer = await generateWithOpenAI(prompt);
+      buffer = await generateWithOpenAI(prompt, openaiQuality);
     }
   } else if (geminiKey) {
     // Default fallback chain
@@ -128,10 +130,10 @@ export async function generateCarImage(registrationId: string, preferredModel?: 
     }
     if (!buffer) {
       console.log("All Imagen models failed, falling back to OpenAI");
-      buffer = await generateWithOpenAI(prompt);
+      buffer = await generateWithOpenAI(prompt, openaiQuality);
     }
   } else {
-    buffer = await generateWithOpenAI(prompt);
+    buffer = await generateWithOpenAI(prompt, openaiQuality);
   }
 
   const fileName = `${registrationId}.png`;
@@ -200,16 +202,16 @@ async function generateWithImagen(apiKey: string, prompt: string, model: string 
   return Buffer.from(b64, "base64");
 }
 
-async function generateWithOpenAI(prompt: string): Promise<Buffer> {
+async function generateWithOpenAI(prompt: string, quality: OpenAIQuality = "high"): Promise<Buffer> {
   const OpenAI = (await import("openai")).default;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model: "gpt-image-2",
     prompt,
     n: 1,
     size: "1536x1024",
-    quality: "high",
+    quality,
   });
 
   const imageData = response.data?.[0];

@@ -290,7 +290,16 @@ async function tryImagenModel(model: string, prompt: string, aspectRatio: string
   return null;
 }
 
-export async function generateImage(prompt: string, aspectRatio: string = "16:9", preferredModel?: string): Promise<Buffer> {
+export type OpenAIQuality = "low" | "medium" | "high" | "auto";
+export type OpenAIBackground = "auto" | "transparent" | "opaque";
+
+export async function generateImage(
+  prompt: string,
+  aspectRatio: string = "16:9",
+  preferredModel?: string,
+  openaiQuality: OpenAIQuality = "medium",
+  openaiBackground: OpenAIBackground = "auto"
+): Promise<Buffer> {
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
 
   // If a specific model is requested, try it first (or exclusively for OpenAI)
@@ -313,11 +322,12 @@ export async function generateImage(prompt: string, aspectRatio: string = "16:9"
   const OpenAI = (await import("openai")).default;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model: "gpt-image-2",
     prompt,
     n: 1,
     size: "1536x1024",
-    quality: "medium",
+    quality: openaiQuality,
+    background: openaiBackground,
   });
 
   const imageData = response.data?.[0];
