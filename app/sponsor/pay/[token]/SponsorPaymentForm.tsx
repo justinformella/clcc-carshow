@@ -37,7 +37,10 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
   const assignedTierIndex = assignedTier ? tiers.findIndex((t) => t.id === assignedTier.id) : -1;
   // Only show tiers at or above the assigned level (lower display_order = higher rank)
   const availableTiers = tiers.filter((t) => t.display_order <= (assignedTier?.display_order ?? 999));
-  const priceDollars = currentTier ? `$${(currentTier.price_cents / 100).toLocaleString()}` : "";
+  // Use sponsor's custom amount if set, otherwise tier price
+  const sponsorAmountCents = sponsor.sponsorship_amount > 0 ? sponsor.sponsorship_amount : null;
+  const effectivePriceCents = sponsorAmountCents ?? (currentTier?.price_cents || 0);
+  const priceDollars = effectivePriceCents > 0 ? `$${(effectivePriceCents / 100).toLocaleString()}` : "";
 
   const handleCardPayment = async () => {
     setSubmitting(true);
@@ -335,7 +338,7 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
                         )}
                       </div>
                       <span style={{ fontSize: "1.3rem", fontWeight: 700, color: isSelected ? "var(--gold, #c9a84c)" : "var(--charcoal)" }}>
-                        ${(tier.price_cents / 100).toLocaleString()}
+                        ${((isSelected && sponsorAmountCents ? sponsorAmountCents : tier.price_cents) / 100).toLocaleString()}
                       </span>
                     </div>
                     {tier.benefits && (
@@ -414,7 +417,7 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
                 <div style={{ color: "var(--text-light)" }}>
                   {donationAmount > 0 ? (
                     <>
-                      <span>{currentTier.name}: ${(currentTier.price_cents / 100).toLocaleString()}</span>
+                      <span>{currentTier.name}: ${(effectivePriceCents / 100).toLocaleString()}</span>
                       <span style={{ margin: "0 0.5rem" }}>+</span>
                       <span>Donation: ${donationAmount.toLocaleString()}</span>
                     </>
@@ -423,7 +426,7 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
                   )}
                 </div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.4rem", fontWeight: 600, color: "var(--charcoal)" }}>
-                  ${((currentTier.price_cents / 100) + donationAmount).toLocaleString()}
+                  ${((effectivePriceCents / 100) + donationAmount).toLocaleString()}
                 </div>
               </div>
             )}

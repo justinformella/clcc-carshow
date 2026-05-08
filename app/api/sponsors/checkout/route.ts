@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
           name: `${tier.name} — Crystal Lake Cars & Caffeine`,
           description: `Sponsorship for the 2026 Crystal Lake Cars & Caffeine Car Show`,
         },
-        unit_amount: tier.price_cents,
+        unit_amount: sponsor.sponsorship_amount > 0 ? sponsor.sponsorship_amount : tier.price_cents,
       },
       quantity: 1,
     },

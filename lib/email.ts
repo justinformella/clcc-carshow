@@ -211,7 +211,8 @@ export async function sendSponsorPaymentLink(sponsorId: string) {
     .single();
 
   const tierName = tier?.name || sponsor.sponsorship_level;
-  const amountDollars = tier ? `$${(tier.price_cents / 100).toLocaleString()}` : "See payment page";
+  const amountCents = sponsor.sponsorship_amount > 0 ? sponsor.sponsorship_amount : (tier?.price_cents || 0);
+  const amountDollars = amountCents > 0 ? `$${(amountCents / 100).toLocaleString()}` : "See payment page";
   const paymentUrl = `${SITE_URL}/sponsor/pay/${sponsor.payment_token}`;
 
   const { subject, html } = sponsorPaymentLinkEmail(sponsor as Sponsor, tierName, amountDollars, paymentUrl);
