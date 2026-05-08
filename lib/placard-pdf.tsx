@@ -47,18 +47,19 @@ const s = StyleSheet.create({
 
   /* ── Header banner ─────────────────────────────── */
   banner: {
-    backgroundColor: BLACK,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 32,
     gap: 18,
+    borderBottomWidth: 3,
+    borderBottomColor: GOLD,
   },
   logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   bannerTextWrap: {
     flexDirection: "column",
@@ -67,7 +68,7 @@ const s = StyleSheet.create({
     fontFamily: "Playfair Display",
     fontWeight: 700,
     fontSize: 18,
-    color: "#FFFFFF",
+    color: DARK,
     letterSpacing: 0.5,
   },
   bannerSubtitle: {
