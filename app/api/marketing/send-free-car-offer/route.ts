@@ -16,19 +16,31 @@ function generateCode(): string {
   return Array.from(bytes).map((b) => chars[b % chars.length]).join("");
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = createServerClient();
+  const reqBody = await request.json().catch(() => ({}));
+  const selectedIds: string[] | undefined = reqBody.registration_ids;
+  const customSubject: string | undefined = reqBody.subject;
+  const customBody: string | undefined = reqBody.body;
 
-  const { data: regs } = await supabase
+  // Fetch paid registrations — optionally filtered to selected IDs
+  let query = supabase
     .from("registrations")
     .select("id, first_name, email")
-    .in("payment_status", ["paid"])
+    .in("payment_status", ["paid", "comped"])
     .order("created_at", { ascending: true });
+
+  if (selectedIds && selectedIds.length > 0) {
+    query = query.in("id", selectedIds);
+  }
+
+  const { data: regs } = await query;
 
   if (!regs || regs.length === 0) {
     return NextResponse.json({ error: "No paid registrations found" }, { status: 400 });
   }
 
+  // Dedupe by email — one code per person
   const seen = new Set<string>();
   const unique: typeof regs = [];
   for (const r of regs) {
@@ -39,16 +51,16 @@ export async function POST() {
     }
   }
 
+  // Skip anyone who already has a code
   const { data: existingCodes } = await supabase
     .from("promo_codes")
     .select("email");
 
   const existingEmails = new Set((existingCodes || []).map((c: { email: string }) => c.email.toLowerCase()));
-
   const toSend = unique.filter((r) => !existingEmails.has(r.email.toLowerCase()));
 
   if (toSend.length === 0) {
-    return NextResponse.json({ sent: 0, skipped: unique.length, message: "All registrants already have promo codes" });
+    return NextResponse.json({ sent: 0, skipped: unique.length, message: "All selected registrants already have promo codes" });
   }
 
   const resend = getResend();
@@ -66,7 +78,7 @@ export async function POST() {
       });
 
       const registerUrl = `${SITE_URL}/register?promo=${code}`;
-      const { subject, html } = freeCarOfferEmail(reg.first_name, code, registerUrl);
+      const { subject, html } = freeCarOfferEmail(reg.first_name, code, registerUrl, customSubject, customBody);
 
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,

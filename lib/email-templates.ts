@@ -736,22 +736,34 @@ export function helpRequestAdminNotificationEmail(
   };
 }
 
+export const FREE_CAR_DEFAULT_SUBJECT = "CLCC 2026 Car Show - Complimentary extra car registration";
+export const FREE_CAR_DEFAULT_BODY = `Over the past few weeks we've been approached by show members who have multiple cars in their collection that have expressed interest in exhibiting an additional car. In recognition to our core members who have registered in advance, we're extending to you a code for an additional complimentary registration.
+
+Just click the link below — your promo code is already applied.`;
+
 export function freeCarOfferEmail(
   firstName: string,
   promoCode: string,
-  registerUrl: string
+  registerUrl: string,
+  customSubject?: string,
+  customBody?: string
 ): { subject: string; html: string } {
+  const emailSubject = customSubject || FREE_CAR_DEFAULT_SUBJECT;
+
+  const bodyText = customBody || FREE_CAR_DEFAULT_BODY;
+  const bodyHtml = bodyText
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">${p.replace(/\n/g, "<br/>").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>")}</p>`)
+    .join("\n");
+
   const content = `
-    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c; text-align:center;">Bring Another Ride — On Us!</h1>
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c; text-align:center;">${emailSubject}</h1>
     <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
       Hi ${firstName},
     </p>
-    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
-      Thank you for being part of the 2026 Crystal Lake Cars &amp; Caffeine Car Show! We&rsquo;d love to see even more of your collection on the streets of downtown Crystal Lake.
-    </p>
-    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
-      As a thank you for registering, here&rsquo;s a <strong>free registration</strong> for one additional vehicle. Just click the link below &mdash; your promo code is already applied.
-    </p>
+    ${bodyHtml}
 
     <!-- CTA button -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
@@ -800,7 +812,7 @@ export function freeCarOfferEmail(
   `;
 
   return {
-    subject: "You've earned a free car registration! 🚗",
+    subject: emailSubject,
     html: htmlShell(content),
   };
 }

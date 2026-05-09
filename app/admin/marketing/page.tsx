@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase";
 import { MARKETING_TEMPLATES } from "@/types/database";
 import type { AdCampaign, MarketingProspect, MarketingSend } from "@/types/database";
 import { getMarketingPreviewHtml, customMarketingEmailHtml } from "@/lib/marketing-email-templates";
+import { freeCarOfferEmail, FREE_CAR_DEFAULT_SUBJECT, FREE_CAR_DEFAULT_BODY } from "@/lib/email-templates";
 
 type RegistrationUtm = {
   id: string;
@@ -84,7 +85,50 @@ function TabButton({ label, active, onClick }: { label: string; active: boolean;
 // EMAIL OUTREACH TAB
 // ════════════════════════════════════════════════════════════
 
+type EmailSubTab = "prospects" | "free-car" | "compose";
+
 function EmailOutreachTab() {
+  const [subTab, setSubTab] = useState<EmailSubTab>("prospects");
+
+  return (
+    <>
+      {/* Subtabs */}
+      <div style={{ display: "flex", gap: 0, marginBottom: "1.5rem", borderBottom: "2px solid #eee" }}>
+        {([
+          { key: "prospects" as const, label: "Prospect Outreach" },
+          { key: "compose" as const, label: "Compose Email" },
+          { key: "free-car" as const, label: "Free Car Promo" },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setSubTab(t.key)}
+            style={{
+              padding: "0.6rem 1.25rem",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              background: "transparent",
+              border: "none",
+              borderBottom: subTab === t.key ? "3px solid var(--gold)" : "3px solid transparent",
+              color: subTab === t.key ? "var(--charcoal)" : "var(--text-light)",
+              cursor: "pointer",
+              transition: "color 0.2s, border-color 0.2s",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "prospects" && <ProspectOutreachSubTab />}
+      {subTab === "compose" && <ComposeEmailSubTab />}
+      {subTab === "free-car" && <FreeCarPromoSection />}
+    </>
+  );
+}
+
+function ProspectOutreachSubTab() {
   const [prospects, setProspects] = useState<ProspectWithSends[]>([]);
   const [regMap, setRegMap] = useState<Map<string, RegistrationMatch>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -108,7 +152,6 @@ function EmailOutreachTab() {
     const map = new Map<string, RegistrationMatch>();
     for (const r of (regResult.data || []) as RegistrationMatch[]) {
       const key = r.email.toLowerCase();
-      // Keep the most relevant match (paid > pending > others)
       const existing = map.get(key);
       if (!existing || (r.payment_status === "paid" && existing.payment_status !== "paid")) {
         map.set(key, r);
@@ -120,21 +163,14 @@ function EmailOutreachTab() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchProspects();
-  }, [fetchProspects]);
+  useEffect(() => { fetchProspects(); }, [fetchProspects]);
 
   if (loading) {
-    return (
-      <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
-        Loading...
-      </p>
-    );
+    return <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>Loading...</p>;
   }
 
   return (
     <>
-      <FreeCarPromoSection />
       <ImportSection onImported={fetchProspects} />
       <ProspectListSection
         prospects={prospects}
@@ -142,11 +178,6 @@ function EmailOutreachTab() {
         setSelectedIds={setSelectedIds}
         selectedTemplate={selectedTemplate}
         regMap={regMap}
-      />
-      <ComposeCustomEmailSection
-        prospects={prospects}
-        selectedIds={selectedIds}
-        onSent={fetchProspects}
       />
       <SendCampaignSection
         prospects={prospects}
@@ -159,49 +190,202 @@ function EmailOutreachTab() {
   );
 }
 
-// ─── Free Car Promo ───
+function ComposeEmailSubTab() {
+  const [prospects, setProspects] = useState<ProspectWithSends[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-function FreeCarPromoSection() {
-  const [promoStats, setPromoStats] = useState<{ total: number; used: number; remaining: number } | null>(null);
-  const [loadingStats, setLoadingStats] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<{ sent: number; skipped: number; failed: number } | null>(null);
+  const fetchProspects = useCallback(async () => {
+    const supabase = createClient();
+    const [prospectResult, sendResult] = await Promise.all([
+      supabase.from("marketing_prospects").select("*").order("created_at", { ascending: false }),
+      supabase.from("marketing_sends").select("*").order("sent_at", { ascending: false }),
+    ]);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const supabase = createClient();
-        const { data: codes } = await supabase.from("promo_codes").select("id, used");
-        const total = codes?.length || 0;
-        const usedCount = codes?.filter((c: { used: boolean }) => c.used).length || 0;
-        setPromoStats({ total, used: usedCount, remaining: total - usedCount });
-      } catch {
-        // silently fail
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-    fetchStats();
+    const sends = sendResult.data || [];
+    const combined = (prospectResult.data || []).map((p: MarketingProspect) => ({
+      ...p,
+      sends: sends.filter((s: MarketingSend) => s.prospect_id === p.id),
+    }));
+
+    setProspects(combined);
+    setLoading(false);
   }, []);
 
+  useEffect(() => { fetchProspects(); }, [fetchProspects]);
+
+  if (loading) {
+    return <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>Loading...</p>;
+  }
+
+  // Quick select controls for the compose section
+  const eligible = prospects.filter((p) => !p.unsubscribed);
+
+  return (
+    <>
+      <div style={cardStyle}>
+        <h2 style={sectionHeadingStyle}>Select Recipients</h2>
+        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem", alignItems: "center" }}>
+          <button
+            onClick={() => {
+              if (selectedIds.size === eligible.length) setSelectedIds(new Set());
+              else setSelectedIds(new Set(eligible.map((p) => p.id)));
+            }}
+            style={smallBtnStyle}
+          >
+            {selectedIds.size === eligible.length && eligible.length > 0 ? "Deselect All" : `Select All (${eligible.length})`}
+          </button>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
+            <strong>{selectedIds.size}</strong> selected of <strong>{eligible.length}</strong> eligible
+          </span>
+        </div>
+        <div style={{ maxHeight: "300px", overflow: "auto", border: "1px solid #eee" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
+            <thead>
+              <tr style={{ background: "#fafafa", position: "sticky", top: 0 }}>
+                <th style={{ ...prospectThStyle, width: "36px" }} />
+                <th style={prospectThStyle}>Email</th>
+                <th style={prospectThStyle}>Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eligible.map((p) => (
+                <tr key={p.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                  <td style={{ padding: "0.4rem 0.75rem" }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(p.id)}
+                      onChange={() => {
+                        const next = new Set(selectedIds);
+                        if (next.has(p.id)) next.delete(p.id);
+                        else next.add(p.id);
+                        setSelectedIds(next);
+                      }}
+                      style={{ cursor: "pointer" }}
+                    />
+                  </td>
+                  <td style={{ padding: "0.4rem 0.75rem" }}>{p.email}</td>
+                  <td style={{ padding: "0.4rem 0.75rem", color: "var(--text-light)" }}>{p.name || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <ComposeCustomEmailSection
+        prospects={prospects}
+        selectedIds={selectedIds}
+        onSent={fetchProspects}
+      />
+    </>
+  );
+}
+
+// ─── Free Car Promo ───
+
+type PromoRegistrant = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  vehicle_year: number;
+  vehicle_make: string;
+  vehicle_model: string;
+  hasCode: boolean;
+  codeUsed: boolean;
+};
+
+function FreeCarPromoSection() {
+  const [registrants, setRegistrants] = useState<PromoRegistrant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ sent: number; skipped: number; failed: number } | null>(null);
+  const [promoSubject, setPromoSubject] = useState(FREE_CAR_DEFAULT_SUBJECT);
+  const [promoBody, setPromoBody] = useState(FREE_CAR_DEFAULT_BODY);
+  const [showPromoPreview, setShowPromoPreview] = useState(false);
+  const promoIframeRef = useRef<HTMLIFrameElement>(null);
+
+  const fetchData = useCallback(async () => {
+    const supabase = createClient();
+    const [regResult, codeResult] = await Promise.all([
+      supabase.from("registrations").select("id, first_name, last_name, email, vehicle_year, vehicle_make, vehicle_model").in("payment_status", ["paid", "comped"]).order("created_at", { ascending: true }),
+      supabase.from("promo_codes").select("email, used"),
+    ]);
+
+    const codes = codeResult.data || [];
+    const codeMap = new Map<string, boolean>();
+    for (const c of codes as { email: string; used: boolean }[]) {
+      codeMap.set(c.email.toLowerCase(), c.used);
+    }
+
+    // Dedupe by email
+    const seen = new Set<string>();
+    const unique: PromoRegistrant[] = [];
+    for (const r of (regResult.data || []) as { id: string; first_name: string; last_name: string; email: string; vehicle_year: number; vehicle_make: string; vehicle_model: string }[]) {
+      const key = r.email.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push({
+          ...r,
+          hasCode: codeMap.has(key),
+          codeUsed: codeMap.get(key) || false,
+        });
+      }
+    }
+
+    setRegistrants(unique);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const eligible = registrants.filter((r) => !r.hasCode);
+  const totalCodes = registrants.filter((r) => r.hasCode).length;
+  const usedCodes = registrants.filter((r) => r.codeUsed).length;
+
+  const handleToggle = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const handleSelectEligible = () => {
+    if (selectedIds.size === eligible.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(eligible.map((r) => r.id)));
+    }
+  };
+
   const handleSend = async () => {
+    const toSend = registrants.filter((r) => selectedIds.has(r.id) && !r.hasCode);
+    if (toSend.length === 0) {
+      alert("No eligible registrants selected.");
+      return;
+    }
+    if (!confirm(`Send free car offer to ${toSend.length} registrant${toSend.length !== 1 ? "s" : ""}?`)) return;
+
     setSending(true);
     setSendResult(null);
     try {
       const res = await fetch("/api/marketing/send-free-car-offer", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          registration_ids: toSend.map((r) => r.id),
+          subject: promoSubject,
+          body: promoBody,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Failed to send free car offers");
+        alert(data.error || "Failed to send");
       } else {
         setSendResult({ sent: data.sent || 0, skipped: data.skipped || 0, failed: data.failed || 0 });
-        // Refresh stats
-        const supabase = createClient();
-        const { data: codes } = await supabase.from("promo_codes").select("id, used");
-        const total = codes?.length || 0;
-        const usedCount = codes?.filter((c: { used: boolean }) => c.used).length || 0;
-        setPromoStats({ total, used: usedCount, remaining: total - usedCount });
+        setSelectedIds(new Set());
+        fetchData();
       }
     } catch {
       alert("Failed to send free car offers");
@@ -210,48 +394,154 @@ function FreeCarPromoSection() {
     }
   };
 
+  if (loading) {
+    return (
+      <div style={cardStyle}>
+        <h2 style={sectionHeadingStyle}>Free Car Promo</h2>
+        <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={cardStyle}>
       <h2 style={sectionHeadingStyle}>Free Car Promo</h2>
 
-      {loadingStats ? (
-        <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>Loading promo stats...</p>
-      ) : promoStats ? (
-        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
-          <strong>{promoStats.total}</strong> codes generated{" · "}
-          <strong>{promoStats.used}</strong> redeemed{" · "}
-          <strong>{promoStats.remaining}</strong> remaining
-        </p>
-      ) : (
-        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
-          No promo codes yet.
-        </p>
-      )}
-
-      <button
-        onClick={handleSend}
-        disabled={sending}
-        style={btnStyle(sending)}
-      >
-        {sending ? "Sending..." : "Send Free Car Offer"}
-      </button>
-
-      {sendResult && (
-        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginTop: "0.75rem" }}>
-          Sent to <strong>{sendResult.sent}</strong> registrant{sendResult.sent !== 1 ? "s" : ""},{" "}
-          <strong>{sendResult.skipped}</strong> skipped (already have codes)
-          {sendResult.failed > 0 && (
-            <span style={{ color: "#c0392b" }}>
-              , <strong>{sendResult.failed}</strong> failed
-            </span>
-          )}
-        </p>
-      )}
-
-      <p style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.75rem", lineHeight: 1.5 }}>
-        Generates unique promo codes and sends an email to all paid registrants who don&apos;t have a code yet.
-        Each code allows one free additional vehicle registration.
+      <p style={{ fontSize: "0.8rem", color: "var(--text-light)", marginBottom: "1rem", lineHeight: 1.5 }}>
+        Send unique promo codes to paid &amp; comped registrants for one free additional vehicle registration.
+        The CTA button and promo code are added automatically.
       </p>
+
+      {/* Subject & Body */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
+        <div>
+          <label style={labelStyle}>Subject</label>
+          <input
+            type="text"
+            value={promoSubject}
+            onChange={(e) => setPromoSubject(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Body (shown above the register button &amp; promo code)</label>
+          <textarea
+            value={promoBody}
+            onChange={(e) => setPromoBody(e.target.value)}
+            rows={5}
+            style={{ ...inputStyle, resize: "vertical", minHeight: "100px", lineHeight: 1.6 }}
+          />
+          <p style={{ fontSize: "0.7rem", color: "var(--text-light)", marginTop: "0.3rem" }}>
+            Supports **bold** and *italic*. Blank lines create new paragraphs. &quot;Hi [Name]&quot; is added automatically.
+          </p>
+        </div>
+        <div>
+          <button
+            onClick={() => {
+              setShowPromoPreview(!showPromoPreview);
+              if (!showPromoPreview) {
+                setTimeout(() => {
+                  if (promoIframeRef.current) {
+                    const doc = promoIframeRef.current.contentDocument;
+                    if (doc) {
+                      doc.open();
+                      doc.write(freeCarOfferEmail("John", "ABC123", "#", promoSubject, promoBody).html);
+                      doc.close();
+                    }
+                  }
+                }, 50);
+              }
+            }}
+            style={smallBtnStyle}
+          >
+            {showPromoPreview ? "Hide Preview" : "Preview Email"}
+          </button>
+        </div>
+      </div>
+
+      {showPromoPreview && (
+        <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+          <iframe
+            ref={promoIframeRef}
+            style={{ width: "640px", maxWidth: "100%", height: "600px", border: "1px solid #ddd", background: "#f5f5f5" }}
+            title="Free car promo preview"
+          />
+        </div>
+      )}
+
+      {/* Stats */}
+      <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", fontSize: "0.85rem" }}>
+        <span><strong style={{ color: "var(--charcoal)" }}>{registrants.length}</strong> paid registrants</span>
+        <span><strong style={{ color: "#2e7d32" }}>{totalCodes}</strong> codes sent</span>
+        <span><strong style={{ color: "#1565c0" }}>{usedCodes}</strong> redeemed</span>
+        <span><strong style={{ color: "var(--gold)" }}>{eligible.length}</strong> eligible</span>
+        {selectedIds.size > 0 && <span><strong style={{ color: "#7b1fa2" }}>{selectedIds.size}</strong> selected</span>}
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={handleSelectEligible} style={smallBtnStyle}>
+          {selectedIds.size === eligible.length && eligible.length > 0 ? "Deselect All" : `Select All Eligible (${eligible.length})`}
+        </button>
+        <button
+          onClick={handleSend}
+          disabled={sending || selectedIds.size === 0}
+          style={{
+            ...btnStyle(sending || selectedIds.size === 0),
+            background: sending || selectedIds.size === 0 ? "#ccc" : "var(--gold)",
+          }}
+        >
+          {sending ? "Sending..." : `Send to ${selectedIds.size} Registrant${selectedIds.size !== 1 ? "s" : ""}`}
+        </button>
+        {sendResult && (
+          <span style={{ fontSize: "0.85rem", color: sendResult.failed > 0 ? "#e65100" : "#2e7d32" }}>
+            Sent: {sendResult.sent}{sendResult.skipped > 0 && ` · Skipped: ${sendResult.skipped}`}{sendResult.failed > 0 && ` · Failed: ${sendResult.failed}`}
+          </span>
+        )}
+      </div>
+
+      {/* Registrant list */}
+      <div style={{ maxHeight: "400px", overflow: "auto", border: "1px solid #eee" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
+          <thead>
+            <tr style={{ background: "#fafafa", position: "sticky", top: 0 }}>
+              <th style={{ ...prospectThStyle, width: "36px" }} />
+              <th style={prospectThStyle}>Name</th>
+              <th style={prospectThStyle}>Email</th>
+              <th style={prospectThStyle}>Vehicle</th>
+              <th style={{ ...prospectThStyle, textAlign: "center" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {registrants.map((r) => (
+              <tr key={r.id} style={{ borderBottom: "1px solid #f0f0f0", opacity: r.hasCode ? 0.6 : 1 }}>
+                <td style={{ padding: "0.5rem 0.75rem" }}>
+                  {!r.hasCode && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(r.id)}
+                      onChange={() => handleToggle(r.id)}
+                      style={{ cursor: "pointer" }}
+                    />
+                  )}
+                </td>
+                <td style={{ padding: "0.5rem 0.75rem", fontWeight: 500 }}>{r.first_name} {r.last_name}</td>
+                <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-light)" }}>{r.email}</td>
+                <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-light)" }}>{r.vehicle_year} {r.vehicle_make} {r.vehicle_model}</td>
+                <td style={{ padding: "0.5rem 0.75rem", textAlign: "center" }}>
+                  {r.codeUsed ? (
+                    <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "2px 8px", background: "#e8f5e9", color: "#2e7d32", textTransform: "uppercase" }}>Redeemed</span>
+                  ) : r.hasCode ? (
+                    <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "2px 8px", background: "#e3f2fd", color: "#1565c0", textTransform: "uppercase" }}>Sent</span>
+                  ) : (
+                    <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "2px 8px", background: "#fff3e0", color: "#e65100", textTransform: "uppercase" }}>Eligible</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
