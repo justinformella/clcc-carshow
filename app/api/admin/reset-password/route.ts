@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { getResend } from "@/lib/resend";
 import { adminPasswordResetEmail } from "@/lib/email-templates";
 
-const FROM_EMAIL = "Crystal Lake Cars & Coffee <noreply@crystallakecarshow.com>";
+const FROM_EMAIL = "Crystal Lake Cars & Caffeine <info@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
 function createAuthClient(request: NextRequest) {

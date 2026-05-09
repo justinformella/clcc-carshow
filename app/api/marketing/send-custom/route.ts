@@ -4,8 +4,7 @@ import { getResend } from "@/lib/resend";
 import { customMarketingEmailHtml } from "@/lib/marketing-email-templates";
 import crypto from "crypto";
 
-const FROM_EMAIL = "Crystal Lake Cars & Caffeine <noreply@crystallakecarshow.com>";
-const REPLY_TO = "info@crystallakecarshow.com";
+const FROM_EMAIL = "Crystal Lake Cars & Caffeine <info@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 const HMAC_SECRET = process.env.UNSUBSCRIBE_HMAC_SECRET || "clcc-unsub-default-key";
 
@@ -21,7 +20,7 @@ async function sendWithRetry(
   retries = 3
 ): Promise<{ id?: string }> {
   const resend = getResend();
-  const sendParams = { reply_to: REPLY_TO, ...params };
+  const sendParams = { ...params };
   for (let attempt = 0; attempt < retries; attempt++) {
     const { data, error } = await resend.emails.send(sendParams);
     if (!error) return { id: data?.id ?? undefined };

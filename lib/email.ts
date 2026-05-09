@@ -15,8 +15,7 @@ import {
 } from "@/lib/email-templates";
 import type { Registration, Sponsor, HelpRequest, HelpRequestMessage } from "@/types/database";
 
-const FROM_EMAIL = "Crystal Lake Cars & Caffeine <noreply@crystallakecarshow.com>";
-const REPLY_TO = "info@crystallakecarshow.com";
+const FROM_EMAIL = "Crystal Lake Cars & Caffeine <info@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
 async function logSponsorActivity(sponsorId: string, action: string, details?: string) {
@@ -39,7 +38,7 @@ async function sendWithRetry(
   retries = 3
 ): Promise<{ id?: string }> {
   const resend = getResend();
-  const sendParams = { replyTo: REPLY_TO, ...params };
+  const sendParams = { ...params };
   for (let attempt = 0; attempt < retries; attempt++) {
     const { data, error } = await resend.emails.send(sendParams);
     if (!error) return { id: data?.id ?? undefined };

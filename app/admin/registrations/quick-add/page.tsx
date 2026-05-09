@@ -218,7 +218,7 @@ export default function QuickAddPage() {
             Credit Card Registration
           </p>
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent("https://crystallakecarshow.com/register")}`}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent("https://crystallakecarshow.com/register?mode=walkin&utm_source=day-of&utm_medium=qr")}`}
             alt="QR Code to registration page"
             width={200}
             height={200}
@@ -235,7 +235,7 @@ export default function QuickAddPage() {
             Scan to register &amp; pay by card
           </p>
           <p style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.25rem" }}>
-            crystallakecarshow.com/register
+            crystallakecarshow.com/register (walk-in)
           </p>
           <button
             onClick={() => window.print()}

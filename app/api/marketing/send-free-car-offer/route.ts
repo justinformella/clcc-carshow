@@ -4,8 +4,7 @@ import { getResend } from "@/lib/resend";
 import { freeCarOfferEmail } from "@/lib/email-templates";
 import crypto from "crypto";
 
-const FROM_EMAIL = "Crystal Lake Cars & Caffeine <noreply@crystallakecarshow.com>";
-const REPLY_TO = "info@crystallakecarshow.com";
+const FROM_EMAIL = "Crystal Lake Cars & Caffeine <info@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -82,7 +81,6 @@ export async function POST(request: Request) {
 
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,
-        replyTo: REPLY_TO,
         to: reg.email,
         subject,
         html,

@@ -11,7 +11,7 @@ export default function QRPage() {
   const [utmMedium] = useState("qr");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const registerUrl = `${BASE_URL}?utm_source=${utmSource}&utm_medium=${utmMedium}`;
+  const registerUrl = `${BASE_URL}?utm_source=${utmSource}&utm_medium=${utmMedium}&mode=walkin`;
 
   useEffect(() => {
     QRCode.toDataURL(registerUrl, {

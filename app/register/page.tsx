@@ -39,6 +39,7 @@ function RegisterContent() {
     utm_campaign: searchParams.get("utm_campaign") || "",
   });
 
+  const isWalkin = searchParams.get("mode") === "walkin";
   const promoFromUrl = searchParams.get("promo") || "";
   const [promoCode, setPromoCode] = useState(promoFromUrl);
   const [promoValidated, setPromoValidated] = useState(false);
@@ -361,72 +362,78 @@ function RegisterContent() {
                       required
                     />
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="phone">Phone</label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={owner.phone}
-                      onChange={handleOwnerChange}
-                    />
-                  </div>
+                  {!isWalkin && (
+                    <div className="form-group">
+                      <label htmlFor="phone">Phone</label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={owner.phone}
+                        onChange={handleOwnerChange}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="address_street">Street Address *</label>
-                  <input
-                    type="text"
-                    id="address_street"
-                    name="address_street"
-                    value={owner.address_street}
-                    onChange={handleOwnerChange}
-                    placeholder="e.g., 123 Main St"
-                    required
-                  />
-                </div>
+                {!isWalkin && (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="address_street">Street Address *</label>
+                      <input
+                        type="text"
+                        id="address_street"
+                        name="address_street"
+                        value={owner.address_street}
+                        onChange={handleOwnerChange}
+                        placeholder="e.g., 123 Main St"
+                        required
+                      />
+                    </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="address_city">City *</label>
-                    <input
-                      type="text"
-                      id="address_city"
-                      name="address_city"
-                      value={owner.address_city}
-                      onChange={handleOwnerChange}
-                      placeholder="e.g., Crystal Lake"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="address_state">State *</label>
-                    <input
-                      type="text"
-                      id="address_state"
-                      name="address_state"
-                      value={owner.address_state}
-                      onChange={handleOwnerChange}
-                      placeholder="e.g., IL"
-                      maxLength={2}
-                      required
-                    />
-                  </div>
-                </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="address_city">City *</label>
+                        <input
+                          type="text"
+                          id="address_city"
+                          name="address_city"
+                          value={owner.address_city}
+                          onChange={handleOwnerChange}
+                          placeholder="e.g., Crystal Lake"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="address_state">State *</label>
+                        <input
+                          type="text"
+                          id="address_state"
+                          name="address_state"
+                          value={owner.address_state}
+                          onChange={handleOwnerChange}
+                          placeholder="e.g., IL"
+                          maxLength={2}
+                          required
+                        />
+                      </div>
+                    </div>
 
-                <div className="form-group" style={{ maxWidth: "200px" }}>
-                  <label htmlFor="address_zip">ZIP Code *</label>
-                  <input
-                    type="text"
-                    id="address_zip"
-                    name="address_zip"
-                    value={owner.address_zip}
-                    onChange={handleOwnerChange}
-                    placeholder="e.g., 60014"
-                    maxLength={10}
-                    required
-                  />
-                </div>
+                    <div className="form-group" style={{ maxWidth: "200px" }}>
+                      <label htmlFor="address_zip">ZIP Code *</label>
+                      <input
+                        type="text"
+                        id="address_zip"
+                        name="address_zip"
+                        value={owner.address_zip}
+                        onChange={handleOwnerChange}
+                        placeholder="e.g., 60014"
+                        maxLength={10}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div
                   style={{
@@ -574,23 +581,25 @@ function RegisterContent() {
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor={`story_${index}`}>
-                        Car Story (optional)
-                      </label>
-                      <textarea
-                        id={`story_${index}`}
-                        name="story"
-                        value={vehicle.story}
-                        onChange={(e) => handleVehicleChange(index, e)}
-                        placeholder="Tell us about your car — how you got it, what it means to you, fun facts..."
-                      />
-                    </div>
+                    {!isWalkin && (
+                      <div className="form-group">
+                        <label htmlFor={`story_${index}`}>
+                          Car Story (optional)
+                        </label>
+                        <textarea
+                          id={`story_${index}`}
+                          name="story"
+                          value={vehicle.story}
+                          onChange={(e) => handleVehicleChange(index, e)}
+                          placeholder="Tell us about your car — how you got it, what it means to you, fun facts..."
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
 
                 {/* Add Vehicle Button */}
-                {canAddMore && !promoValidated && (
+                {canAddMore && !promoValidated && !isWalkin && (
                   <button
                     type="button"
                     onClick={addVehicle}
@@ -611,18 +620,18 @@ function RegisterContent() {
                 )}
 
                 {/* Promo Code */}
-                <div style={{ marginTop: "2rem", marginBottom: "1.5rem", padding: "1.25rem", background: promoValidated ? "#e8f5e9" : "#f8f5f0", border: promoValidated ? "2px solid #2e7d32" : "1px solid #e0e0e0" }}>
+                {!isWalkin && <div style={{ marginTop: "2rem", marginBottom: "1.5rem", padding: "1.25rem", background: promoValidated ? "#e8f5e9" : "#f8f5f0", border: promoValidated ? "2px solid #2e7d32" : "1px solid #e0e0e0" }}>
                   <p style={{ fontSize: "0.9rem", fontWeight: 600, color: promoValidated ? "#2e7d32" : "var(--charcoal)", marginBottom: promoValidated ? "0" : "0.75rem" }}>
                     {promoValidated ? "\u2713 Promo code applied \u2014 free registration!" : "Have a promo code?"}
                   </p>
                   {!promoValidated && (
-                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "stretch", flexWrap: "wrap" }}>
                       <input
                         type="text"
                         value={promoCode}
                         onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(""); setPromoValidated(false); }}
                         placeholder="Enter code"
-                        style={{ flex: 1, padding: "0.6rem 1rem", border: promoError ? "1px solid #c62828" : "1px solid #ddd", fontSize: "1rem", fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em", textTransform: "uppercase" }}
+                        style={{ flex: 1, minWidth: "180px", padding: "0.6rem 1rem", border: promoError ? "1px solid #c62828" : "1px solid #ddd", fontSize: "1rem", fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em", textTransform: "uppercase" }}
                       />
                       <button
                         type="button"
@@ -635,7 +644,7 @@ function RegisterContent() {
                     </div>
                   )}
                   {promoError && <p style={{ color: "#c62828", fontSize: "0.85rem", marginTop: "0.5rem" }}>{promoError}</p>}
-                </div>
+                </div>}
 
                 {/* Summary */}
                 <div
