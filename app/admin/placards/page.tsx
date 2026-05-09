@@ -9,6 +9,7 @@ export default function PlacardsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
+  const [generatingBlanks, setGeneratingBlanks] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,6 +73,32 @@ export default function PlacardsPage() {
     }
   }, [registrations, selectedIds]);
 
+  const handleDownloadBlanks = useCallback(async () => {
+    setGeneratingBlanks(true);
+    try {
+      const [{ pdf }, { BlankPlacardDocument }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/lib/placard-pdf"),
+      ]);
+
+      const logoUrl = `${window.location.origin}/images/CLCC_Logo2026.png`;
+      const blob = await pdf(<BlankPlacardDocument count={20} logoUrl={logoUrl} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CLCC-Blank-Placards.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Blank PDF generation failed:", err);
+      alert("Failed to generate blank placards.");
+    } finally {
+      setGeneratingBlanks(false);
+    }
+  }, []);
+
   if (loading) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
@@ -108,7 +135,25 @@ export default function PlacardsPage() {
             {selectedIds.size > 0 && ` · ${selectedIds.size} selected`}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button
+            onClick={handleDownloadBlanks}
+            disabled={generatingBlanks}
+            style={{
+              padding: "0.6rem 1.5rem",
+              background: "var(--white)",
+              color: "var(--charcoal)",
+              border: "1px solid #ddd",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              cursor: generatingBlanks ? "not-allowed" : "pointer",
+              opacity: generatingBlanks ? 0.6 : 1,
+            }}
+          >
+            {generatingBlanks ? "Generating..." : "Download Blanks"}
+          </button>
           <button
             onClick={selectAll}
             style={{
