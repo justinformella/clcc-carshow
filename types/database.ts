@@ -237,6 +237,18 @@ export type ShowExpense = {
   updated_at: string;
 };
 
+export type PromoCode = {
+  id: string;
+  code: string;
+  registration_id: string;
+  email: string;
+  used: boolean;
+  used_at: string | null;
+  used_by_registration_id: string | null;
+  sent_at: string | null;
+  created_at: string;
+};
+
 /** @deprecated Use sponsorship_tiers table instead. Kept for reference. */
 export const SPONSORSHIP_LEVELS = [
   "Presenting Sponsor ($2,500)",

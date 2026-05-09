@@ -39,6 +39,12 @@ function RegisterContent() {
     utm_campaign: searchParams.get("utm_campaign") || "",
   });
 
+  const promoFromUrl = searchParams.get("promo") || "";
+  const [promoCode, setPromoCode] = useState(promoFromUrl);
+  const [promoValidated, setPromoValidated] = useState(false);
+  const [promoError, setPromoError] = useState("");
+  const [validatingPromo, setValidatingPromo] = useState(false);
+
   const [spotsRemaining, setSpotsRemaining] = useState<number | null>(null);
   const [maxRegistrations, setMaxRegistrations] = useState(MAX_REGISTRATIONS);
   const [submitting, setSubmitting] = useState(false);
@@ -105,9 +111,41 @@ function RegisterContent() {
     vehicles.length < MAX_VEHICLES_PER_CHECKOUT &&
     (spotsRemaining === null || vehicles.length < spotsRemaining);
 
-  const regCents = vehicles.length * REGISTRATION_PRICE_CENTS;
-  const totalCents = regCents + donationCents;
-  const totalDisplay = `$${totalCents / 100}`;
+  const regCents = promoValidated ? 0 : vehicles.length * REGISTRATION_PRICE_CENTS;
+  const totalCents = regCents + (promoValidated ? 0 : donationCents);
+  const totalDisplay = promoValidated ? "$0.00 (Free)" : `$${totalCents / 100}`;
+
+  const validatePromo = async () => {
+    if (!promoCode || !owner.email) {
+      setPromoError("Enter your email address first");
+      return;
+    }
+    setValidatingPromo(true);
+    setPromoError("");
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoCode, email: owner.email }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPromoValidated(true);
+        setPromoError("");
+        // Trim to single vehicle when promo is applied
+        if (vehicles.length > 1) {
+          setVehicles([vehicles[0]]);
+        }
+      } else {
+        setPromoValidated(false);
+        setPromoError(data.error || "Invalid code");
+      }
+    } catch {
+      setPromoError("Failed to validate code");
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +163,8 @@ function RegisterContent() {
             ...v,
             vehicle_year: parseInt(v.vehicle_year),
           })),
-          donation_cents: donationCents,
+          donation_cents: promoValidated ? 0 : donationCents,
+          promo_code: promoValidated ? promoCode : null,
           utm_source: utmRef.current.utm_source || undefined,
           utm_medium: utmRef.current.utm_medium || undefined,
           utm_campaign: utmRef.current.utm_campaign || undefined,
@@ -136,6 +175,11 @@ function RegisterContent() {
 
       if (!res.ok) {
         throw new Error(data.error || "Something went wrong");
+      }
+
+      if (data.comped) {
+        window.location.href = `/register/success?comped=true`;
+        return;
       }
 
       // Redirect to Stripe Checkout
@@ -546,7 +590,7 @@ function RegisterContent() {
                 ))}
 
                 {/* Add Vehicle Button */}
-                {canAddMore && (
+                {canAddMore && !promoValidated && (
                   <button
                     type="button"
                     onClick={addVehicle}
@@ -565,6 +609,33 @@ function RegisterContent() {
                     + Add Another Vehicle
                   </button>
                 )}
+
+                {/* Promo Code */}
+                <div style={{ marginTop: "2rem", marginBottom: "1.5rem", padding: "1.25rem", background: promoValidated ? "#e8f5e9" : "#f8f5f0", border: promoValidated ? "2px solid #2e7d32" : "1px solid #e0e0e0" }}>
+                  <p style={{ fontSize: "0.9rem", fontWeight: 600, color: promoValidated ? "#2e7d32" : "var(--charcoal)", marginBottom: promoValidated ? "0" : "0.75rem" }}>
+                    {promoValidated ? "\u2713 Promo code applied \u2014 free registration!" : "Have a promo code?"}
+                  </p>
+                  {!promoValidated && (
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start" }}>
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(""); setPromoValidated(false); }}
+                        placeholder="Enter code"
+                        style={{ flex: 1, padding: "0.6rem 1rem", border: promoError ? "1px solid #c62828" : "1px solid #ddd", fontSize: "1rem", fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em", textTransform: "uppercase" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={validatePromo}
+                        disabled={validatingPromo || !promoCode}
+                        style={{ padding: "0.6rem 1.5rem", background: "var(--gold)", color: "var(--charcoal)", border: "none", fontWeight: 600, fontSize: "0.85rem", cursor: validatingPromo || !promoCode ? "not-allowed" : "pointer", opacity: validatingPromo || !promoCode ? 0.6 : 1, whiteSpace: "nowrap" }}
+                      >
+                        {validatingPromo ? "Checking..." : "Apply"}
+                      </button>
+                    </div>
+                  )}
+                  {promoError && <p style={{ color: "#c62828", fontSize: "0.85rem", marginTop: "0.5rem" }}>{promoError}</p>}
+                </div>
 
                 {/* Summary */}
                 <div
@@ -585,18 +656,29 @@ function RegisterContent() {
                       marginBottom: "0.5rem",
                     }}
                   >
-                    {donationCents > 0 ? "Total" : "Registration Fee"}
+                    {promoValidated ? "Registration Fee" : donationCents > 0 ? "Total" : "Registration Fee"}
                   </p>
                   <p
                     style={{
                       fontFamily: "'Playfair Display', serif",
                       fontSize: "2.5rem",
-                      color: "var(--charcoal)",
+                      color: promoValidated ? "#2e7d32" : "var(--charcoal)",
                     }}
                   >
                     {totalDisplay}
                   </p>
-                  {(vehicles.length > 1 || donationCents > 0) && (
+                  {promoValidated ? (
+                    <p
+                      style={{
+                        fontSize: "0.9rem",
+                        color: "#2e7d32",
+                        marginTop: "0.25rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Free with promo code
+                    </p>
+                  ) : (vehicles.length > 1 || donationCents > 0) && (
                     <div
                       style={{
                         fontSize: "0.9rem",
@@ -629,6 +711,7 @@ function RegisterContent() {
                 </div>
 
                 {/* Donation Section */}
+                {!promoValidated && (
                 <div
                   style={{
                     marginTop: "1.5rem",
@@ -765,6 +848,7 @@ function RegisterContent() {
                     </p>
                   )}
                 </div>
+                )}
 
                 <button
                   type="submit"
@@ -775,7 +859,7 @@ function RegisterContent() {
                     cursor: submitting ? "not-allowed" : "pointer",
                   }}
                 >
-                  {submitting ? "Processing..." : "Proceed to Payment"}
+                  {submitting ? "Processing..." : promoValidated ? "Complete Registration" : "Proceed to Payment"}
                 </button>
               </div>
             </form>

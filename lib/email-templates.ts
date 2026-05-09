@@ -736,6 +736,75 @@ export function helpRequestAdminNotificationEmail(
   };
 }
 
+export function freeCarOfferEmail(
+  firstName: string,
+  promoCode: string,
+  registerUrl: string
+): { subject: string; html: string } {
+  const content = `
+    <h1 style="margin:0 0 16px; font-size:24px; color:#2c2c2c; text-align:center;">Bring Another Ride — On Us!</h1>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Hi ${firstName},
+    </p>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      Thank you for being part of the 2026 Crystal Lake Cars &amp; Caffeine Car Show! We&rsquo;d love to see even more of your collection on the streets of downtown Crystal Lake.
+    </p>
+    <p style="margin:0 0 20px; font-size:15px; color:#333; line-height:1.6;">
+      As a thank you for registering, here&rsquo;s a <strong>free registration</strong> for one additional vehicle. Just click the link below &mdash; your promo code is already applied.
+    </p>
+
+    <!-- CTA button -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr><td align="center">
+        <a href="${registerUrl}" style="display:inline-block; padding:16px 40px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:16px; letter-spacing:0.04em;">
+          Register Your Free Car
+        </a>
+      </td></tr>
+    </table>
+
+    <!-- Promo code display -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr><td align="center">
+        <table cellpadding="0" cellspacing="0" style="border:2px solid #c9a84c; padding:16px 32px; text-align:center;">
+          <tr>
+            <td>
+              <span style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.1em;">Your Promo Code</span><br/>
+              <span style="font-size:28px; font-weight:700; color:#2c2c2c; letter-spacing:0.15em;">${promoCode}</span>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+
+    <p style="margin:0 0 20px; font-size:13px; color:#888; line-height:1.5; text-align:center;">
+      This code is valid for one free vehicle registration and is tied to your email address.
+    </p>
+
+    <!-- Event details -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px; background:#f8f5f0;">
+      <tr>
+        <td style="padding:16px 24px;">
+          <p style="margin:0 0 8px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
+          <p style="margin:0; font-size:14px; color:#333;">
+            <strong>Sunday, May 17, 2026</strong><br/>
+            Grant, Brink &amp; Williams Streets &middot; Downtown Crystal Lake, IL
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:0; font-size:14px; color:#888;">
+      See you at the show,<br/>
+      Crystal Lake Cars &amp; Caffeine Team
+    </p>
+  `;
+
+  return {
+    subject: "You've earned a free car registration! 🚗",
+    html: htmlShell(content),
+  };
+}
+
 export function helpRequestReplyNotificationEmail(
   submitterName: string,
   requestNumber: number,

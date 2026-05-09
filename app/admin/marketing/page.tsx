@@ -134,6 +134,7 @@ function EmailOutreachTab() {
 
   return (
     <>
+      <FreeCarPromoSection />
       <ImportSection onImported={fetchProspects} />
       <ProspectListSection
         prospects={prospects}
@@ -155,6 +156,103 @@ function EmailOutreachTab() {
         onSent={fetchProspects}
       />
     </>
+  );
+}
+
+// ─── Free Car Promo ───
+
+function FreeCarPromoSection() {
+  const [promoStats, setPromoStats] = useState<{ total: number; used: number; remaining: number } | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{ sent: number; skipped: number; failed: number } | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const supabase = createClient();
+        const { data: codes } = await supabase.from("promo_codes").select("id, used");
+        const total = codes?.length || 0;
+        const usedCount = codes?.filter((c: { used: boolean }) => c.used).length || 0;
+        setPromoStats({ total, used: usedCount, remaining: total - usedCount });
+      } catch {
+        // silently fail
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const handleSend = async () => {
+    setSending(true);
+    setSendResult(null);
+    try {
+      const res = await fetch("/api/marketing/send-free-car-offer", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to send free car offers");
+      } else {
+        setSendResult({ sent: data.sent || 0, skipped: data.skipped || 0, failed: data.failed || 0 });
+        // Refresh stats
+        const supabase = createClient();
+        const { data: codes } = await supabase.from("promo_codes").select("id, used");
+        const total = codes?.length || 0;
+        const usedCount = codes?.filter((c: { used: boolean }) => c.used).length || 0;
+        setPromoStats({ total, used: usedCount, remaining: total - usedCount });
+      }
+    } catch {
+      alert("Failed to send free car offers");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={sectionHeadingStyle}>Free Car Promo</h2>
+
+      {loadingStats ? (
+        <p style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>Loading promo stats...</p>
+      ) : promoStats ? (
+        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
+          <strong>{promoStats.total}</strong> codes generated{" · "}
+          <strong>{promoStats.used}</strong> redeemed{" · "}
+          <strong>{promoStats.remaining}</strong> remaining
+        </p>
+      ) : (
+        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
+          No promo codes yet.
+        </p>
+      )}
+
+      <button
+        onClick={handleSend}
+        disabled={sending}
+        style={btnStyle(sending)}
+      >
+        {sending ? "Sending..." : "Send Free Car Offer"}
+      </button>
+
+      {sendResult && (
+        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginTop: "0.75rem" }}>
+          Sent to <strong>{sendResult.sent}</strong> registrant{sendResult.sent !== 1 ? "s" : ""},{" "}
+          <strong>{sendResult.skipped}</strong> skipped (already have codes)
+          {sendResult.failed > 0 && (
+            <span style={{ color: "#c0392b" }}>
+              , <strong>{sendResult.failed}</strong> failed
+            </span>
+          )}
+        </p>
+      )}
+
+      <p style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.75rem", lineHeight: 1.5 }}>
+        Generates unique promo codes and sends an email to all paid registrants who don&apos;t have a code yet.
+        Each code allows one free additional vehicle registration.
+      </p>
+    </div>
   );
 }
 

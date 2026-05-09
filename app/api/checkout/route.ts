@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
     const rawDonation = Number(body.donation_cents) || 0;
     const donationCents = Math.max(0, Math.min(rawDonation, 50000)); // cap at $500
 
+    const promoCode = body.promo_code ? String(body.promo_code).toUpperCase().trim() : null;
+
     // Validate required owner fields
     if (!first_name || !last_name || !email) {
       return NextResponse.json(
@@ -128,6 +130,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate promo code if provided
+    let validPromo: { id: string; code: string; email: string } | null = null;
+    if (promoCode) {
+      const { data: promo } = await supabase
+        .from("promo_codes")
+        .select("id, code, email, used")
+        .eq("code", promoCode)
+        .single();
+
+      if (!promo) {
+        return NextResponse.json({ error: "Invalid promo code." }, { status: 400 });
+      }
+      if (promo.used) {
+        return NextResponse.json({ error: "This promo code has already been used." }, { status: 400 });
+      }
+      if (promo.email.toLowerCase() !== email.toLowerCase().trim()) {
+        return NextResponse.json({ error: "This promo code is not associated with your email address." }, { status: 400 });
+      }
+      if (vehicles.length > 1) {
+        return NextResponse.json({ error: "Promo codes can only be used for a single vehicle." }, { status: 400 });
+      }
+      validPromo = promo;
+    }
+
     // Build rows to insert — donation stored on first row only
     const rows = vehicles.map((v, index) => ({
       first_name,
@@ -198,6 +224,39 @@ export async function POST(request: NextRequest) {
           }
         })
         .catch(() => {});
+    }
+
+    // If promo code is valid, skip Stripe — mark as comped immediately
+    if (validPromo) {
+      const regId = registrations[0].id;
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+      await supabase
+        .from("registrations")
+        .update({
+          payment_status: "comped",
+          amount_paid: 0,
+        })
+        .eq("id", regId);
+
+      // Mark promo code as used
+      await supabase
+        .from("promo_codes")
+        .update({
+          used: true,
+          used_at: new Date().toISOString(),
+          used_by_registration_id: regId,
+        })
+        .eq("id", validPromo.id);
+
+      // Generate car image in background
+      fetch(`${siteUrl}/api/generate-car-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registrationId: regId }),
+      }).catch(() => {});
+
+      return NextResponse.json({ comped: true, registrationId: regId });
     }
 
     // Create Stripe Checkout Session with one line item per vehicle
