@@ -35,6 +35,8 @@ const RULE = "#999999";
 const GOLD = "#D4A44A";
 
 /* ── Styles ─────────────────────────────────────────────────────── */
+const HALF_HEIGHT = 4.25 * 72; // 4.25 inches in points
+
 const s = StyleSheet.create({
   page: {
     width: "11in",
@@ -45,21 +47,34 @@ const s = StyleSheet.create({
     flexDirection: "column",
   },
 
+  /* ── Half-page container ─────────────────────────── */
+  halfPage: {
+    height: HALF_HEIGHT,
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  halfDivider: {
+    height: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#cccccc",
+    borderBottomStyle: "dashed",
+  },
+
   /* ── Header banner ─────────────────────────────── */
   banner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 32,
-    gap: 18,
+    gap: 14,
     borderBottomWidth: 3,
     borderBottomColor: GOLD,
   },
   logo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   bannerTextWrap: {
     flexDirection: "column",
@@ -90,10 +105,10 @@ const s = StyleSheet.create({
   /* Left column — vehicle info */
   leftCol: {
     width: "58%",
-    paddingTop: 32,
+    paddingTop: 16,
     paddingLeft: 36,
     paddingRight: 32,
-    paddingBottom: 28,
+    paddingBottom: 12,
     flexDirection: "column",
     justifyContent: "center",
   },
@@ -101,9 +116,9 @@ const s = StyleSheet.create({
   /* Right column — car number */
   rightCol: {
     width: "42%",
-    paddingTop: 32,
+    paddingTop: 16,
     paddingHorizontal: 32,
-    paddingBottom: 28,
+    paddingBottom: 12,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
@@ -124,14 +139,14 @@ const s = StyleSheet.create({
   fieldValue: {
     fontFamily: "Inter",
     fontWeight: 600,
-    fontSize: 24,
+    fontSize: 20,
     color: DARK,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   fieldRule: {
     height: 1,
     backgroundColor: RULE,
-    marginBottom: 22,
+    marginBottom: 14,
   },
 
   /* Side-by-side row for year/make */
@@ -148,24 +163,6 @@ const s = StyleSheet.create({
     flexDirection: "column",
   },
 
-  /* Story section */
-  storyLabel: {
-    fontFamily: "Inter",
-    fontWeight: 700,
-    fontSize: 9,
-    color: MID,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  storyText: {
-    fontFamily: "Inter",
-    fontWeight: 400,
-    fontSize: 14,
-    color: DARK,
-    lineHeight: 1.7,
-  },
-
   /* ── Car number (right col) ────────────────────── */
   numberLabel: {
     fontFamily: "Inter",
@@ -180,7 +177,7 @@ const s = StyleSheet.create({
   carNumber: {
     fontFamily: "Playfair Display",
     fontWeight: 700,
-    fontSize: 160,
+    fontSize: 120,
     color: BLACK,
     textAlign: "center",
     lineHeight: 1,
@@ -205,8 +202,8 @@ const s = StyleSheet.create({
   },
 });
 
-/* ── Single placard page ────────────────────────────────────────── */
-function PlacardPage({
+/* ── Single placard (half-page, 11" x 4.25") ──────────────────── */
+function PlacardHalf({
   reg,
   logoUrl,
 }: {
@@ -214,7 +211,7 @@ function PlacardPage({
   logoUrl: string;
 }) {
   return (
-    <Page size="LETTER" orientation="landscape" style={s.page}>
+    <View style={s.halfPage}>
       {/* ── Header banner ──────────────────────────── */}
       <View style={s.banner}>
         <Image src={logoUrl} style={s.logo} />
@@ -267,16 +264,7 @@ function PlacardPage({
             <>
               <Text style={s.fieldLabel}>Color</Text>
               <Text style={s.fieldValue}>{reg.vehicle_color}</Text>
-              <View style={s.fieldRule} />
             </>
-          )}
-
-          {/* STORY */}
-          {reg.story && (
-            <View style={{ flex: 1 }}>
-              <Text style={s.storyLabel}>About This Car</Text>
-              <Text style={s.storyText}>{reg.story}</Text>
-            </View>
           )}
         </View>
 
@@ -289,16 +277,13 @@ function PlacardPage({
 
       {/* ── Footer ─────────────────────────────────── */}
       <View style={s.footer}>
-        <Text style={s.footerText}>
-          All proceeds benefit the Crystal Lake Food Pantry
-        </Text>
         <Text style={s.footerText}>crystallakecarshow.com</Text>
       </View>
-    </Page>
+    </View>
   );
 }
 
-/* ── Full document ──────────────────────────────────────────────── */
+/* ── Full document — two placards per page ─────────────────────── */
 export function PlacardDocument({
   registrations,
   logoUrl,
@@ -306,13 +291,30 @@ export function PlacardDocument({
   registrations: Registration[];
   logoUrl: string;
 }) {
+  // Pair registrations: [0,1], [2,3], etc. Last page may have only one.
+  const pages: (Registration | null)[][] = [];
+  for (let i = 0; i < registrations.length; i += 2) {
+    pages.push([
+      registrations[i],
+      registrations[i + 1] || null,
+    ]);
+  }
+
   return (
     <Document
       title="CLCC Car Show Placards"
       author="Crystal Lake Cars & Caffeine"
     >
-      {registrations.map((reg) => (
-        <PlacardPage key={reg.id} reg={reg} logoUrl={logoUrl} />
+      {pages.map((pair, pageIdx) => (
+        <Page key={pageIdx} size="LETTER" orientation="landscape" style={s.page}>
+          <PlacardHalf reg={pair[0]!} logoUrl={logoUrl} />
+          {pair[1] && (
+            <>
+              <View style={s.halfDivider} />
+              <PlacardHalf reg={pair[1]} logoUrl={logoUrl} />
+            </>
+          )}
+        </Page>
       ))}
     </Document>
   );
