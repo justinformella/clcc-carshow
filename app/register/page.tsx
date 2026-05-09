@@ -780,7 +780,7 @@ function RegisterContent() {
                           background: donationCents === preset ? "var(--gold)" : "var(--white)",
                           color: donationCents === preset ? "var(--charcoal)" : "var(--charcoal)",
                           border: `2px solid ${donationCents === preset ? "var(--gold)" : "rgba(201,168,76,0.5)"}`,
-                          width: "auto",
+                          textAlign: "center",
                         }}
                       >
                         +${preset / 100}
@@ -806,7 +806,7 @@ function RegisterContent() {
                         background: showCustomDonation ? "var(--gold)" : "var(--white)",
                         color: "var(--charcoal)",
                         border: `2px solid ${showCustomDonation ? "var(--gold)" : "rgba(201,168,76,0.5)"}`,
-                        width: "auto",
+                        textAlign: "center",
                       }}
                     >
                       Custom
