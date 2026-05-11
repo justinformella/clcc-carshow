@@ -329,7 +329,7 @@ function BlankPlacardHalf({ logoUrl }: { logoUrl: string }) {
           <View style={blankLine} />
         </View>
 
-        <View style={{ ...s.rightCol, justifyContent: "flex-start" }}>
+        <View style={s.rightCol}>
           <Text style={s.numberLabel}>Car No.</Text>
         </View>
       </View>
