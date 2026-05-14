@@ -159,26 +159,12 @@ function ComposeEmailSubTab() {
     }));
     setProspects(combinedProspects);
 
-    // Build unified recipient list, deduped by email
+    // Build unified recipient list, deduped by email.
+    // Priority: sponsors > registrants > prospects (sponsors win dedup)
     const seen = new Set<string>();
     const all: ComposeRecipient[] = [];
 
-    // Registrants first
-    for (const r of (regResult.data || []) as { id: string; first_name: string; last_name: string; email: string; payment_status: string }[]) {
-      const key = r.email.toLowerCase();
-      if (!seen.has(key)) {
-        seen.add(key);
-        all.push({
-          id: `reg_${r.id}`,
-          email: r.email,
-          name: `${r.first_name} ${r.last_name}`,
-          type: "registrant",
-          status: r.payment_status,
-        });
-      }
-    }
-
-    // Sponsors
+    // Sponsors first (so they aren't hidden by registrant dupes)
     for (const s of (sponsorResult.data || []) as { id: string; name: string; company: string; email: string; status: string }[]) {
       const key = s.email.toLowerCase();
       if (!seen.has(key)) {
@@ -189,6 +175,21 @@ function ComposeEmailSubTab() {
           name: s.company || s.name,
           type: "sponsor",
           status: s.status,
+        });
+      }
+    }
+
+    // Registrants
+    for (const r of (regResult.data || []) as { id: string; first_name: string; last_name: string; email: string; payment_status: string }[]) {
+      const key = r.email.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        all.push({
+          id: `reg_${r.id}`,
+          email: r.email,
+          name: `${r.first_name} ${r.last_name}`,
+          type: "registrant",
+          status: r.payment_status,
         });
       }
     }
