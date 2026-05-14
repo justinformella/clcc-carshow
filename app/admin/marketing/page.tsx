@@ -3,9 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { MARKETING_TEMPLATES } from "@/types/database";
 import type { AdCampaign, MarketingProspect, MarketingSend } from "@/types/database";
-import { getMarketingPreviewHtml, customMarketingEmailHtml } from "@/lib/marketing-email-templates";
+import { customMarketingEmailHtml } from "@/lib/marketing-email-templates";
 import { freeCarOfferEmail, FREE_CAR_DEFAULT_SUBJECT, FREE_CAR_DEFAULT_BODY } from "@/lib/email-templates";
 
 type RegistrationUtm = {
@@ -16,16 +15,9 @@ type RegistrationUtm = {
   payment_status: string;
 };
 
-type RegistrationMatch = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  payment_status: string;
-};
-
 type ProspectWithSends = MarketingProspect & { sends: MarketingSend[] };
 
-type Tab = "email" | "announcements" | "ads";
+type Tab = "email" | "ads";
 
 export default function MarketingPage() {
   const [activeTab, setActiveTab] = useState<Tab>("email");
@@ -46,12 +38,10 @@ export default function MarketingPage() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 0, marginBottom: "1.5rem", borderBottom: "2px solid #eee" }}>
         <TabButton label="Email Outreach" active={activeTab === "email"} onClick={() => setActiveTab("email")} />
-        <TabButton label="Announcements" active={activeTab === "announcements"} onClick={() => setActiveTab("announcements")} />
         <TabButton label="Ad Campaigns" active={activeTab === "ads"} onClick={() => setActiveTab("ads")} />
       </div>
 
       {activeTab === "email" && <EmailOutreachTab />}
-      {activeTab === "announcements" && <AnnouncementsTab />}
       {activeTab === "ads" && <AdCampaignsTab />}
     </>
   );
@@ -85,19 +75,19 @@ function TabButton({ label, active, onClick }: { label: string; active: boolean;
 // EMAIL OUTREACH TAB
 // ════════════════════════════════════════════════════════════
 
-type EmailSubTab = "prospects" | "free-car" | "compose";
+type EmailSubTab = "compose" | "free-car" | "import";
 
 function EmailOutreachTab() {
-  const [subTab, setSubTab] = useState<EmailSubTab>("prospects");
+  const [subTab, setSubTab] = useState<EmailSubTab>("compose");
 
   return (
     <>
       {/* Subtabs */}
       <div style={{ display: "flex", gap: 0, marginBottom: "1.5rem", borderBottom: "2px solid #eee" }}>
         {([
-          { key: "prospects" as const, label: "Prospect Outreach" },
           { key: "compose" as const, label: "Compose Email" },
           { key: "free-car" as const, label: "Free Car Promo" },
+          { key: "import" as const, label: "Import Prospects" },
         ]).map((t) => (
           <button
             key={t.key}
@@ -121,161 +111,263 @@ function EmailOutreachTab() {
         ))}
       </div>
 
-      {subTab === "prospects" && <ProspectOutreachSubTab />}
       {subTab === "compose" && <ComposeEmailSubTab />}
       {subTab === "free-car" && <FreeCarPromoSection />}
+      {subTab === "import" && <ImportProspectsSubTab />}
     </>
   );
 }
 
-function ProspectOutreachSubTab() {
-  const [prospects, setProspects] = useState<ProspectWithSends[]>([]);
-  const [regMap, setRegMap] = useState<Map<string, RegistrationMatch>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>(MARKETING_TEMPLATES[0].key);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+function ImportProspectsSubTab() {
+  return <ImportSection onImported={() => {}} />;
+}
 
-  const fetchProspects = useCallback(async () => {
+type ComposeRecipient = {
+  id: string;
+  email: string;
+  name: string;
+  type: "prospect" | "registrant" | "sponsor";
+  status: string;
+  prospectId?: string;
+};
+
+type RecipientFilter = "all" | "prospect" | "registrant" | "sponsor";
+
+function ComposeEmailSubTab() {
+  const [recipients, setRecipients] = useState<ComposeRecipient[]>([]);
+  const [prospects, setProspects] = useState<ProspectWithSends[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [typeFilter, setTypeFilter] = useState<RecipientFilter>("all");
+  const [search, setSearch] = useState("");
+
+  const fetchData = useCallback(async () => {
     const supabase = createClient();
-    const [prospectResult, sendResult, regResult] = await Promise.all([
+    const [prospectResult, sendResult, regResult, sponsorResult] = await Promise.all([
       supabase.from("marketing_prospects").select("*").order("created_at", { ascending: false }),
       supabase.from("marketing_sends").select("*").order("sent_at", { ascending: false }),
-      supabase.from("registrations").select("first_name, last_name, email, payment_status"),
+      supabase.from("registrations").select("id, first_name, last_name, email, payment_status").in("payment_status", ["paid", "comped", "pending"]),
+      supabase.from("sponsors").select("id, name, company, email, status").neq("status", "archived"),
     ]);
 
     const sends = sendResult.data || [];
-    const combined = (prospectResult.data || []).map((p: MarketingProspect) => ({
+    const combinedProspects = (prospectResult.data || []).map((p: MarketingProspect) => ({
       ...p,
       sends: sends.filter((s: MarketingSend) => s.prospect_id === p.id),
     }));
+    setProspects(combinedProspects);
 
-    const map = new Map<string, RegistrationMatch>();
-    for (const r of (regResult.data || []) as RegistrationMatch[]) {
+    // Build unified recipient list, deduped by email
+    const seen = new Set<string>();
+    const all: ComposeRecipient[] = [];
+
+    // Registrants first
+    for (const r of (regResult.data || []) as { id: string; first_name: string; last_name: string; email: string; payment_status: string }[]) {
       const key = r.email.toLowerCase();
-      const existing = map.get(key);
-      if (!existing || (r.payment_status === "paid" && existing.payment_status !== "paid")) {
-        map.set(key, r);
+      if (!seen.has(key)) {
+        seen.add(key);
+        all.push({
+          id: `reg_${r.id}`,
+          email: r.email,
+          name: `${r.first_name} ${r.last_name}`,
+          type: "registrant",
+          status: r.payment_status,
+        });
       }
     }
 
-    setRegMap(map);
-    setProspects(combined);
+    // Sponsors
+    for (const s of (sponsorResult.data || []) as { id: string; name: string; company: string; email: string; status: string }[]) {
+      const key = s.email.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        all.push({
+          id: `spon_${s.id}`,
+          email: s.email,
+          name: s.company || s.name,
+          type: "sponsor",
+          status: s.status,
+        });
+      }
+    }
+
+    // Prospects
+    for (const p of combinedProspects) {
+      if (p.unsubscribed) continue;
+      const key = p.email.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        all.push({
+          id: `pros_${p.id}`,
+          email: p.email,
+          name: p.name || "",
+          type: "prospect",
+          status: "prospect",
+          prospectId: p.id,
+        });
+      }
+    }
+
+    setRecipients(all);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchProspects(); }, [fetchProspects]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
     return <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>Loading...</p>;
   }
 
-  return (
-    <>
-      <ImportSection onImported={fetchProspects} />
-      <ProspectListSection
-        prospects={prospects}
-        selectedIds={selectedIds}
-        setSelectedIds={setSelectedIds}
-        selectedTemplate={selectedTemplate}
-        regMap={regMap}
-      />
-      <SendCampaignSection
-        prospects={prospects}
-        selectedIds={selectedIds}
-        selectedTemplate={selectedTemplate}
-        setSelectedTemplate={setSelectedTemplate}
-        onSent={fetchProspects}
-      />
-    </>
-  );
-}
+  const searchLower = search.toLowerCase();
+  const filtered = recipients.filter((r) => {
+    if (typeFilter !== "all" && r.type !== typeFilter) return false;
+    if (searchLower && !r.email.toLowerCase().includes(searchLower) && !r.name.toLowerCase().includes(searchLower)) return false;
+    return true;
+  });
 
-function ComposeEmailSubTab() {
-  const [prospects, setProspects] = useState<ProspectWithSends[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectedEmails = recipients.filter((r) => selectedIds.has(r.id)).map((r) => r.email);
+  const selectedProspectIds = recipients.filter((r) => selectedIds.has(r.id) && r.prospectId).map((r) => r.prospectId!);
 
-  const fetchProspects = useCallback(async () => {
-    const supabase = createClient();
-    const [prospectResult, sendResult] = await Promise.all([
-      supabase.from("marketing_prospects").select("*").order("created_at", { ascending: false }),
-      supabase.from("marketing_sends").select("*").order("sent_at", { ascending: false }),
-    ]);
+  const typeCounts = {
+    all: recipients.length,
+    registrant: recipients.filter((r) => r.type === "registrant").length,
+    sponsor: recipients.filter((r) => r.type === "sponsor").length,
+    prospect: recipients.filter((r) => r.type === "prospect").length,
+  };
 
-    const sends = sendResult.data || [];
-    const combined = (prospectResult.data || []).map((p: MarketingProspect) => ({
-      ...p,
-      sends: sends.filter((s: MarketingSend) => s.prospect_id === p.id),
-    }));
+  const statusBadge = (type: string, status: string) => {
+    const configs: Record<string, { label: string; bg: string; color: string }> = {
+      paid: { label: "Paid", bg: "#e8f5e9", color: "#2e7d32" },
+      comped: { label: "Comped", bg: "#ede7f6", color: "#5e35b1" },
+      pending: { label: "Pending", bg: "#fff3e0", color: "#e65100" },
+      engaged: { label: "Committed", bg: "#e3f2fd", color: "#1565c0" },
+      prospect: { label: "Prospect", bg: "#f5f5f5", color: "#666" },
+      inquired: { label: "Inquired", bg: "#e3f2fd", color: "#1565c0" },
+    };
+    const c = configs[status] || { label: status, bg: "#f5f5f5", color: "#666" };
+    return (
+      <span style={{ fontSize: "0.65rem", fontWeight: 600, padding: "2px 6px", background: c.bg, color: c.color, textTransform: "uppercase" }}>
+        {c.label}
+      </span>
+    );
+  };
 
-    setProspects(combined);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchProspects(); }, [fetchProspects]);
-
-  if (loading) {
-    return <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>Loading...</p>;
-  }
-
-  // Quick select controls for the compose section
-  const eligible = prospects.filter((p) => !p.unsubscribed);
+  const typeBadge = (type: string) => {
+    const configs: Record<string, { label: string; bg: string; color: string }> = {
+      registrant: { label: "Registrant", bg: "#e3f2fd", color: "#1565c0" },
+      sponsor: { label: "Sponsor", bg: "#fce4ec", color: "#c62828" },
+      prospect: { label: "Prospect", bg: "#f5f5f5", color: "#666" },
+    };
+    const c = configs[type] || { label: type, bg: "#f5f5f5", color: "#666" };
+    return (
+      <span style={{ fontSize: "0.65rem", fontWeight: 600, padding: "2px 6px", background: c.bg, color: c.color, textTransform: "uppercase" }}>
+        {c.label}
+      </span>
+    );
+  };
 
   return (
     <>
       <div style={cardStyle}>
         <h2 style={sectionHeadingStyle}>Select Recipients</h2>
+
+        {/* Filters */}
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+          {(["all", "registrant", "sponsor", "prospect"] as RecipientFilter[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              style={{
+                padding: "0.35rem 0.8rem",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                border: typeFilter === t ? "2px solid var(--gold)" : "1px solid #ddd",
+                background: typeFilter === t ? "#fffdf7" : "var(--white)",
+                color: "var(--charcoal)",
+                cursor: "pointer",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {t === "all" ? "All" : t === "registrant" ? "Registrants" : t === "sponsor" ? "Sponsors" : "Prospects"} ({typeCounts[t]})
+            </button>
+          ))}
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search..."
+            style={{ padding: "0.35rem 0.6rem", border: "1px solid #ddd", fontSize: "0.75rem", fontFamily: "'Inter', sans-serif", width: "160px" }}
+          />
+        </div>
+
+        {/* Select controls */}
         <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem", alignItems: "center" }}>
           <button
             onClick={() => {
-              if (selectedIds.size === eligible.length) setSelectedIds(new Set());
-              else setSelectedIds(new Set(eligible.map((p) => p.id)));
+              if (selectedIds.size === filtered.length && filtered.length > 0) setSelectedIds(new Set());
+              else setSelectedIds(new Set(filtered.map((r) => r.id)));
             }}
             style={smallBtnStyle}
           >
-            {selectedIds.size === eligible.length && eligible.length > 0 ? "Deselect All" : `Select All (${eligible.length})`}
+            {selectedIds.size === filtered.length && filtered.length > 0 ? "Deselect All" : `Select Shown (${filtered.length})`}
           </button>
+          {selectedIds.size > 0 && (
+            <button onClick={() => setSelectedIds(new Set())} style={smallBtnStyle}>Clear Selection</button>
+          )}
           <span style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
-            <strong>{selectedIds.size}</strong> selected of <strong>{eligible.length}</strong> eligible
+            <strong>{selectedIds.size}</strong> selected
           </span>
         </div>
-        <div style={{ maxHeight: "300px", overflow: "auto", border: "1px solid #eee" }}>
+
+        {/* Table */}
+        <div style={{ maxHeight: "400px", overflow: "auto", border: "1px solid #eee" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
             <thead>
               <tr style={{ background: "#fafafa", position: "sticky", top: 0 }}>
                 <th style={{ ...prospectThStyle, width: "36px" }} />
-                <th style={prospectThStyle}>Email</th>
                 <th style={prospectThStyle}>Name</th>
+                <th style={prospectThStyle}>Email</th>
+                <th style={{ ...prospectThStyle, textAlign: "center" }}>Type</th>
+                <th style={{ ...prospectThStyle, textAlign: "center" }}>Status</th>
               </tr>
             </thead>
             <tbody>
-              {eligible.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
+              {filtered.map((r) => (
+                <tr key={r.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
                   <td style={{ padding: "0.4rem 0.75rem" }}>
                     <input
                       type="checkbox"
-                      checked={selectedIds.has(p.id)}
+                      checked={selectedIds.has(r.id)}
                       onChange={() => {
                         const next = new Set(selectedIds);
-                        if (next.has(p.id)) next.delete(p.id);
-                        else next.add(p.id);
+                        if (next.has(r.id)) next.delete(r.id);
+                        else next.add(r.id);
                         setSelectedIds(next);
                       }}
                       style={{ cursor: "pointer" }}
                     />
                   </td>
-                  <td style={{ padding: "0.4rem 0.75rem" }}>{p.email}</td>
-                  <td style={{ padding: "0.4rem 0.75rem", color: "var(--text-light)" }}>{p.name || "—"}</td>
+                  <td style={{ padding: "0.4rem 0.75rem", fontWeight: 500 }}>{r.name || "—"}</td>
+                  <td style={{ padding: "0.4rem 0.75rem", color: "var(--text-light)" }}>{r.email}</td>
+                  <td style={{ padding: "0.4rem 0.75rem", textAlign: "center" }}>{typeBadge(r.type)}</td>
+                  <td style={{ padding: "0.4rem 0.75rem", textAlign: "center" }}>{statusBadge(r.type, r.status)}</td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-light)" }}>No recipients match your filter</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
       <ComposeCustomEmailSection
         prospects={prospects}
-        selectedIds={selectedIds}
-        onSent={fetchProspects}
+        selectedIds={new Set(selectedProspectIds)}
+        selectedEmails={selectedEmails}
+        onSent={fetchData}
       />
     </>
   );
@@ -611,350 +703,17 @@ function ImportSection({ onImported }: { onImported: () => void }) {
   );
 }
 
-// ─── Prospect List ───
-
-type SortKey = "name" | "email" | "source" | "created_at" | "sends" | "status" | "registered";
-type SortDir = "asc" | "desc";
-
-type StatusFilter = "all" | "ready" | "sent" | "unsubscribed";
-type SourceFilter = "all" | "import" | "manual";
-type RegisteredFilter = "all" | "paid" | "pending" | "not_registered";
-type EmailedFilter = "all" | "emailed" | "not_emailed";
-
-function ProspectListSection({
-  prospects,
-  selectedIds,
-  setSelectedIds,
-  selectedTemplate,
-  regMap,
-}: {
-  prospects: ProspectWithSends[];
-  selectedIds: Set<string>;
-  setSelectedIds: (ids: Set<string>) => void;
-  selectedTemplate: string;
-  regMap: Map<string, RegistrationMatch>;
-}) {
-  const [sortKey, setSortKey] = useState<SortKey>("created_at");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
-  const [registeredFilter, setRegisteredFilter] = useState<RegisteredFilter>("all");
-  const [emailedFilter, setEmailedFilter] = useState<EmailedFilter>("all");
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir(key === "created_at" ? "desc" : "asc");
-    }
-  };
-
-  const getStatus = (p: ProspectWithSends) => {
-    if (p.unsubscribed) return "unsubscribed";
-    if (p.sends.some((s) => s.template_key === selectedTemplate && s.status === "sent")) return "sent";
-    return "ready";
-  };
-
-  const getRegStatus = (p: ProspectWithSends) => {
-    const reg = regMap.get(p.email.toLowerCase());
-    return reg ? reg.payment_status : null;
-  };
-
-  const searchLower = search.toLowerCase();
-  const filtered = prospects.filter((p) => {
-    if (searchLower && !(p.email.toLowerCase().includes(searchLower) || (p.name || "").toLowerCase().includes(searchLower))) {
-      return false;
-    }
-    if (statusFilter !== "all" && getStatus(p) !== statusFilter) return false;
-    if (sourceFilter !== "all" && p.source !== sourceFilter) return false;
-    if (registeredFilter !== "all") {
-      const regStatus = getRegStatus(p);
-      if (registeredFilter === "not_registered" && regStatus !== null) return false;
-      if (registeredFilter === "paid" && regStatus !== "paid") return false;
-      if (registeredFilter === "pending" && regStatus !== "pending") return false;
-    }
-    if (emailedFilter !== "all") {
-      const hasBeenEmailed = p.sends.some((s) => s.status === "sent");
-      if (emailedFilter === "emailed" && !hasBeenEmailed) return false;
-      if (emailedFilter === "not_emailed" && hasBeenEmailed) return false;
-    }
-    return true;
-  });
-
-  const sorted = [...filtered].sort((a, b) => {
-    const dir = sortDir === "asc" ? 1 : -1;
-    switch (sortKey) {
-      case "name": {
-        const regA = regMap.get(a.email.toLowerCase());
-        const regB = regMap.get(b.email.toLowerCase());
-        const nameA = a.name || (regA ? `${regA.first_name} ${regA.last_name}` : "");
-        const nameB = b.name || (regB ? `${regB.first_name} ${regB.last_name}` : "");
-        return dir * nameA.localeCompare(nameB);
-      }
-      case "email":
-        return dir * a.email.localeCompare(b.email);
-      case "source":
-        return dir * a.source.localeCompare(b.source);
-      case "created_at":
-        return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      case "sends":
-        return dir * (a.sends.filter((s) => s.status === "sent").length - b.sends.filter((s) => s.status === "sent").length);
-      case "status": {
-        const order = { ready: 0, sent: 1, unsubscribed: 2 };
-        return dir * (order[getStatus(a)] - order[getStatus(b)]);
-      }
-      case "registered": {
-        const order: Record<string, number> = { paid: 0, pending: 1 };
-        const aVal = getRegStatus(a);
-        const bVal = getRegStatus(b);
-        const aOrder = aVal !== null ? (order[aVal] ?? 2) : 3;
-        const bOrder = bVal !== null ? (order[bVal] ?? 2) : 3;
-        return dir * (aOrder - bOrder);
-      }
-      default:
-        return 0;
-    }
-  });
-
-  const eligible = filtered.filter((p) => !p.unsubscribed);
-
-  const handleToggle = (id: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedIds(next);
-  };
-
-  const handleSelectShown = () => {
-    setSelectedIds(new Set(eligible.map((p) => p.id)));
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedIds(new Set());
-  };
-
-  const sortArrow = (key: SortKey) => {
-    if (sortKey !== key) return "";
-    return sortDir === "asc" ? " \u25B2" : " \u25BC";
-  };
-
-  const sortableThStyle = (key: SortKey): React.CSSProperties => ({
-    ...prospectThStyle,
-    cursor: "pointer",
-    userSelect: "none",
-    color: sortKey === key ? "var(--gold)" : "var(--text-light)",
-  });
-
-  const selectedCount = [...selectedIds].filter((id) => {
-    const p = prospects.find((pr) => pr.id === id);
-    return p && !p.unsubscribed;
-  }).length;
-
-  return (
-    <div style={cardStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-        <h2 style={{ ...sectionHeadingStyle, marginBottom: 0, borderBottom: "none", paddingBottom: 0 }}>
-          Prospect List
-        </h2>
-        <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", color: "var(--text-light)" }}>
-          <span><strong style={{ color: "var(--charcoal)" }}>{prospects.length}</strong> total</span>
-          {filtered.length !== prospects.length && (
-            <span><strong style={{ color: "var(--charcoal)" }}>{filtered.length}</strong> shown</span>
-          )}
-          <span><strong style={{ color: "var(--gold)" }}>{eligible.length}</strong> eligible</span>
-          {selectedCount > 0 && (
-            <span><strong style={{ color: "#1565c0" }}>{selectedCount}</strong> selected</span>
-          )}
-        </div>
-      </div>
-
-      {prospects.length === 0 ? (
-        <p style={{ fontSize: "0.85rem", color: "var(--text-light)", padding: "1rem 0" }}>
-          No prospects imported yet. Use the import section above.
-        </p>
-      ) : (
-        <>
-          {/* Toolbar: filters + actions in one row */}
-          <div style={{
-            display: "flex",
-            gap: "0.5rem",
-            marginBottom: "0.75rem",
-            flexWrap: "wrap",
-            alignItems: "center",
-            padding: "0.6rem 0.75rem",
-            background: "#fafafa",
-            border: "1px solid #eee",
-          }}>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
-              style={{
-                padding: "0.4rem 0.6rem",
-                border: "1px solid #ddd",
-                fontSize: "0.8rem",
-                fontFamily: "'Inter', sans-serif",
-                width: "180px",
-              }}
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              style={filterSelectStyle}
-            >
-              <option value="all">All Statuses</option>
-              <option value="ready">Ready</option>
-              <option value="sent">Sent</option>
-              <option value="unsubscribed">Unsubscribed</option>
-            </select>
-            <select
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
-              style={filterSelectStyle}
-            >
-              <option value="all">All Sources</option>
-              <option value="import">Import</option>
-              <option value="manual">Manual</option>
-            </select>
-            <select
-              value={registeredFilter}
-              onChange={(e) => setRegisteredFilter(e.target.value as RegisteredFilter)}
-              style={filterSelectStyle}
-            >
-              <option value="all">All Registration</option>
-              <option value="paid">Paid</option>
-              <option value="pending">Pending</option>
-              <option value="not_registered">Not Registered</option>
-            </select>
-            <select
-              value={emailedFilter}
-              onChange={(e) => setEmailedFilter(e.target.value as EmailedFilter)}
-              style={filterSelectStyle}
-            >
-              <option value="all">All Emailed</option>
-              <option value="emailed">Previously Emailed</option>
-              <option value="not_emailed">Never Emailed</option>
-            </select>
-
-            <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <button onClick={handleSelectShown} style={toolbarLinkStyle}>
-                Select shown ({eligible.length})
-              </button>
-              <span style={{ color: "#ddd" }}>|</span>
-              <button onClick={handleDeselectAll} style={toolbarLinkStyle}>
-                Clear
-              </button>
-            </div>
-          </div>
-
-          <div style={{ overflow: "auto", maxHeight: "400px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
-              <thead>
-                <tr style={{ background: "var(--cream)", textAlign: "left", position: "sticky", top: 0, zIndex: 1 }}>
-                  <th style={{ ...prospectThStyle, width: "36px", paddingRight: 0 }}></th>
-                  <th style={{ ...sortableThStyle("email"), minWidth: "180px" }} onClick={() => handleSort("email")}>Email{sortArrow("email")}</th>
-                  <th style={sortableThStyle("name")} onClick={() => handleSort("name")}>Name{sortArrow("name")}</th>
-                  <th style={{ ...sortableThStyle("registered"), textAlign: "center" }} onClick={() => handleSort("registered")}>Registered{sortArrow("registered")}</th>
-                  <th style={{ ...sortableThStyle("source"), textAlign: "center" }} onClick={() => handleSort("source")}>Source{sortArrow("source")}</th>
-                  <th style={{ ...sortableThStyle("status"), textAlign: "center" }} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
-                  <th style={{ ...sortableThStyle("sends"), textAlign: "center" }} onClick={() => handleSort("sends")}>Sends{sortArrow("sends")}</th>
-                  <th style={{ ...sortableThStyle("created_at"), textAlign: "right" }} onClick={() => handleSort("created_at")}>Added{sortArrow("created_at")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((p) => {
-                  const alreadySent = p.sends.some(
-                    (s) => s.template_key === selectedTemplate && s.status === "sent"
-                  );
-                  const isEligible = !p.unsubscribed;
-                  const dimmed = p.unsubscribed;
-                  const reg = regMap.get(p.email.toLowerCase());
-                  const displayName = p.name || (reg ? `${reg.first_name} ${reg.last_name}` : null);
-
-                  return (
-                    <tr
-                      key={p.id}
-                      onClick={() => isEligible && handleToggle(p.id)}
-                      style={{
-                        borderBottom: "1px solid #f0f0f0",
-                        opacity: dimmed ? 0.45 : 1,
-                        cursor: isEligible ? "pointer" : "default",
-                        background: selectedIds.has(p.id) ? "rgba(21, 101, 192, 0.04)" : "transparent",
-                      }}
-                    >
-                      <td style={{ ...prospectTdStyle, paddingRight: 0 }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(p.id)}
-                          disabled={!isEligible}
-                          onChange={() => handleToggle(p.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{ cursor: isEligible ? "pointer" : "default" }}
-                        />
-                      </td>
-                      <td style={{ ...prospectTdStyle, fontWeight: 500 }}>{p.email}</td>
-                      <td style={{ ...prospectTdStyle, color: displayName ? "var(--charcoal)" : "#ccc" }}>
-                        {displayName || "\u2014"}
-                        {!p.name && reg && (
-                          <span style={{ fontSize: "0.7rem", color: "var(--text-light)", marginLeft: "0.3rem" }}>(reg)</span>
-                        )}
-                      </td>
-                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>
-                        {reg ? (
-                          <span style={badgeStyle(
-                            reg.payment_status === "paid" ? "#e8f5e9" : reg.payment_status === "pending" ? "#fff3e0" : "#f5f5f5",
-                            reg.payment_status === "paid" ? "#2e7d32" : reg.payment_status === "pending" ? "#e65100" : "#616161",
-                          )}>
-                            {reg.payment_status}
-                          </span>
-                        ) : (
-                          <span style={{ color: "#ccc" }}>{"\u2014"}</span>
-                        )}
-                      </td>
-                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>
-                        <span style={badgeStyle(p.source === "import" ? "#e3f2fd" : "#f3e5f5", p.source === "import" ? "#1565c0" : "#7b1fa2")}>
-                          {p.source}
-                        </span>
-                      </td>
-                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>
-                        {p.unsubscribed ? (
-                          <span style={badgeStyle("#ffebee", "#c62828")}>Unsub</span>
-                        ) : alreadySent ? (
-                          <span style={badgeStyle("#e8f5e9", "#2e7d32")}>Sent</span>
-                        ) : (
-                          <span style={badgeStyle("#f5f5f5", "#616161")}>Ready</span>
-                        )}
-                      </td>
-                      <td style={{ ...prospectTdStyle, textAlign: "center" }}>{p.sends.filter((s) => s.status === "sent").length}</td>
-                      <td style={{ ...prospectTdStyle, textAlign: "right", whiteSpace: "nowrap", color: "var(--text-light)", fontSize: "0.78rem" }}>
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── Send Campaign ───
-
 // ─── Compose Custom Email ───
 
 function ComposeCustomEmailSection({
   prospects,
   selectedIds,
+  selectedEmails,
   onSent,
 }: {
   prospects: ProspectWithSends[];
   selectedIds: Set<string>;
+  selectedEmails?: string[];
   onSent: () => void;
 }) {
   const [subject, setSubject] = useState("");
@@ -969,6 +728,7 @@ function ComposeCustomEmailSection({
   const eligibleSelected = prospects.filter(
     (p) => selectedIds.has(p.id) && !p.unsubscribed
   );
+  const totalRecipients = selectedEmails ? selectedEmails.length : eligibleSelected.length;
 
   useEffect(() => {
     if (showPreview && iframeRef.current && subject && body) {
@@ -986,12 +746,12 @@ function ComposeCustomEmailSection({
       alert("Subject and body are required.");
       return;
     }
-    if (eligibleSelected.length === 0) {
-      alert("No eligible recipients selected. Select prospects from the list above.");
+    if (totalRecipients === 0) {
+      alert("No recipients selected. Select recipients from the list above.");
       return;
     }
 
-    const msg = `Send "${subject}" to ${eligibleSelected.length} recipient${eligibleSelected.length === 1 ? "" : "s"}?`;
+    const msg = `Send "${subject}" to ${totalRecipients} recipient${totalRecipients === 1 ? "" : "s"}?`;
     if (!confirm(msg)) return;
 
     setSending(true);
@@ -1007,6 +767,7 @@ function ComposeCustomEmailSection({
           cta_label: ctaLabel || null,
           cta_url: ctaUrl || null,
           prospect_ids: eligibleSelected.map((p) => p.id),
+          emails: selectedEmails || [],
         }),
       });
       const data = await res.json();
@@ -1095,12 +856,7 @@ function ComposeCustomEmailSection({
           {showPreview ? "Hide Preview" : "Preview Email"}
         </button>
         <span style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
-          <strong>{eligibleSelected.length}</strong> eligible recipient{eligibleSelected.length === 1 ? "" : "s"} selected
-          {selectedIds.size > eligibleSelected.length && (
-            <span style={{ color: "#e65100" }}>
-              {" "}({selectedIds.size - eligibleSelected.length} excluded: unsubscribed)
-            </span>
-          )}
+          <strong>{totalRecipients}</strong> recipient{totalRecipients === 1 ? "" : "s"} selected
         </span>
       </div>
 
@@ -1123,13 +879,13 @@ function ComposeCustomEmailSection({
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
         <button
           onClick={handleSend}
-          disabled={sending || !subject || !body || eligibleSelected.length === 0}
+          disabled={sending || !subject || !body || totalRecipients === 0}
           style={{
-            ...btnStyle(sending || !subject || !body || eligibleSelected.length === 0),
-            background: sending || !subject || !body || eligibleSelected.length === 0 ? "#ccc" : "var(--gold)",
+            ...btnStyle(sending || !subject || !body || totalRecipients === 0),
+            background: sending || !subject || !body || totalRecipients === 0 ? "#ccc" : "var(--gold)",
           }}
         >
-          {sending ? "Sending..." : `Send to ${eligibleSelected.length} Recipient${eligibleSelected.length === 1 ? "" : "s"}`}
+          {sending ? "Sending..." : `Send to ${totalRecipients} Recipient${totalRecipients === 1 ? "" : "s"}`}
         </button>
         {result && (
           <span style={{ fontSize: "0.85rem", color: result.failed > 0 ? "#e65100" : "#2e7d32" }}>
@@ -1137,329 +893,6 @@ function ComposeCustomEmailSection({
             {result.failed > 0 && ` | Failed: ${result.failed}`}
           </span>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Send Campaign (Template-based) ───
-
-function SendCampaignSection({
-  prospects,
-  selectedIds,
-  selectedTemplate,
-  setSelectedTemplate,
-  onSent,
-}: {
-  prospects: ProspectWithSends[];
-  selectedIds: Set<string>;
-  selectedTemplate: string;
-  setSelectedTemplate: (key: string) => void;
-  onSent: () => void;
-}) {
-  const [showPreview, setShowPreview] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const template = MARKETING_TEMPLATES.find((t) => t.key === selectedTemplate)!;
-  const eligibleSelected = prospects.filter(
-    (p) => selectedIds.has(p.id) && !p.unsubscribed
-  );
-
-  useEffect(() => {
-    if (showPreview && iframeRef.current) {
-      const doc = iframeRef.current.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(getMarketingPreviewHtml(selectedTemplate as Parameters<typeof getMarketingPreviewHtml>[0]));
-        doc.close();
-      }
-    }
-  }, [showPreview, selectedTemplate]);
-
-  const handleSend = async () => {
-    if (eligibleSelected.length === 0) {
-      alert("No eligible recipients selected.");
-      return;
-    }
-
-    const msg = `Send "${template.label}" to ${eligibleSelected.length} recipient${eligibleSelected.length === 1 ? "" : "s"}?`;
-    if (!confirm(msg)) return;
-
-    setSending(true);
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/marketing/send-campaign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateKey: selectedTemplate,
-          prospectIds: eligibleSelected.map((p) => p.id),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Send failed");
-      } else {
-        setResult(data);
-        onSent();
-      }
-    } catch {
-      alert("Send failed");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div style={cardStyle}>
-      <h2 style={sectionHeadingStyle}>Send Campaign</h2>
-
-      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "1rem" }}>
-        <div style={{ flex: 1, minWidth: "200px" }}>
-          <label style={labelStyle}>Template</label>
-          <select
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
-            style={inputStyle}
-          >
-            {MARKETING_TEMPLATES.map((t) => (
-              <option key={t.key} value={t.key}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button onClick={() => setShowPreview(!showPreview)} style={smallBtnStyle}>
-          {showPreview ? "Hide Preview" : "Preview"}
-        </button>
-      </div>
-
-      {showPreview && (
-        <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-          <iframe
-            ref={iframeRef}
-            style={{
-              width: "640px",
-              maxWidth: "100%",
-              height: "600px",
-              border: "1px solid #ddd",
-              background: "#f5f5f5",
-            }}
-            title="Template preview"
-          />
-        </div>
-      )}
-
-      <div style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
-        <strong>{eligibleSelected.length}</strong> eligible recipient{eligibleSelected.length === 1 ? "" : "s"} selected
-        {selectedIds.size > eligibleSelected.length && (
-          <span style={{ color: "#e65100" }}>
-            {" "}({selectedIds.size - eligibleSelected.length} excluded: unsubscribed)
-          </span>
-        )}
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-        <button
-          onClick={handleSend}
-          disabled={sending || eligibleSelected.length === 0}
-          style={{
-            ...btnStyle(sending || eligibleSelected.length === 0),
-            background: sending || eligibleSelected.length === 0 ? "#ccc" : "var(--gold)",
-          }}
-        >
-          {sending ? "Sending..." : `Send to ${eligibleSelected.length} Recipient${eligibleSelected.length === 1 ? "" : "s"}`}
-        </button>
-        {result && (
-          <span style={{ fontSize: "0.85rem", color: result.failed > 0 ? "#e65100" : "#2e7d32" }}>
-            Sent: {result.sent}
-            {result.failed > 0 && ` | Failed: ${result.failed}`}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════
-// ANNOUNCEMENTS TAB
-// ════════════════════════════════════════════════════════════
-
-type Recipient = { id: string; first_name: string; last_name: string; email: string };
-
-function AnnouncementsTab() {
-  const [registrations, setRegistrations] = useState<Recipient[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [sendToAll, setSendToAll] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<{ sent: number; failed: number } | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("registrations")
-        .select("id, first_name, last_name, email")
-        .in("payment_status", ["paid", "comped"])
-        .order("car_number", { ascending: true });
-      setRegistrations(data || []);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  const handleToggleRecipient = (id: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedIds(next);
-  };
-
-  const handleSend = async () => {
-    if (!subject.trim() || !body.trim()) {
-      alert("Subject and body are required.");
-      return;
-    }
-
-    const recipientIds = sendToAll
-      ? registrations.map((r) => r.id)
-      : Array.from(selectedIds);
-
-    if (recipientIds.length === 0) {
-      alert("No recipients selected.");
-      return;
-    }
-
-    const confirmMsg = `Send announcement to ${recipientIds.length} recipient${recipientIds.length === 1 ? "" : "s"}?`;
-    if (!confirm(confirmMsg)) return;
-
-    setSending(true);
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/email/send-announcement", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: subject.trim(), body: body.trim(), recipientIds }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Failed to send");
-      } else {
-        setResult(data);
-      }
-    } catch {
-      alert("Failed to send announcement.");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
-        Loading...
-      </p>
-    );
-  }
-
-  return (
-    <div style={cardStyle}>
-      <h2 style={sectionHeadingStyle}>Send Announcement</h2>
-      <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "1rem" }}>
-        Send a freeform email to paid and comped registrants. Uses the announcement email template.
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div>
-          <label style={labelStyle}>Subject</label>
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            style={inputStyle}
-            placeholder="Event update: parking info..."
-          />
-        </div>
-        <div>
-          <label style={labelStyle}>Body</label>
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={6}
-            style={{ ...inputStyle, resize: "vertical" }}
-            placeholder="Write your announcement message here..."
-          />
-        </div>
-
-        <div>
-          <label style={labelStyle}>Recipients</label>
-          <div style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
-              <input type="radio" checked={sendToAll} onChange={() => setSendToAll(true)} />
-              All paid & comped registrants ({registrations.length})
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
-              <input type="radio" checked={!sendToAll} onChange={() => setSendToAll(false)} />
-              Select specific
-            </label>
-          </div>
-
-          {!sendToAll && (
-            <div style={{ maxHeight: "200px", overflow: "auto", border: "1px solid #ddd", padding: "0.5rem" }}>
-              {registrations.map((r) => (
-                <label
-                  key={r.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.35rem 0.5rem",
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(r.id)}
-                    onChange={() => handleToggleRecipient(r.id)}
-                  />
-                  {r.first_name} {r.last_name} — {r.email}
-                </label>
-              ))}
-              {registrations.length === 0 && (
-                <p style={{ color: "var(--text-light)", fontSize: "0.85rem", padding: "0.5rem" }}>
-                  No paid registrations yet.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-          <button
-            onClick={handleSend}
-            disabled={sending}
-            style={{
-              ...btnStyle(sending),
-              background: sending ? "#ccc" : "var(--gold)",
-            }}
-          >
-            {sending ? "Sending..." : "Send Announcement"}
-          </button>
-          {result && (
-            <span style={{ fontSize: "0.85rem", color: result.failed > 0 ? "#e65100" : "#2e7d32" }}>
-              Sent: {result.sent}{result.failed > 0 ? `, Failed: ${result.failed}` : ""}
-            </span>
-          )}
-        </div>
       </div>
     </div>
   );
