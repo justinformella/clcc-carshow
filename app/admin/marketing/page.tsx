@@ -140,6 +140,8 @@ function ComposeEmailSubTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [typeFilter, setTypeFilter] = useState<RecipientFilter>("all");
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<"name" | "email" | "type" | "status">("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const fetchData = useCallback(async () => {
     const supabase = createClient();
@@ -223,7 +225,23 @@ function ComposeEmailSubTab() {
     if (typeFilter !== "all" && r.type !== typeFilter) return false;
     if (searchLower && !r.email.toLowerCase().includes(searchLower) && !r.name.toLowerCase().includes(searchLower)) return false;
     return true;
+  }).sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    switch (sortKey) {
+      case "name": return dir * (a.name || "").localeCompare(b.name || "");
+      case "email": return dir * a.email.localeCompare(b.email);
+      case "type": return dir * a.type.localeCompare(b.type);
+      case "status": return dir * a.status.localeCompare(b.status);
+      default: return 0;
+    }
   });
+
+  const handleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const sortArrow = (key: typeof sortKey) => sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
 
   const selectedEmails = recipients.filter((r) => selectedIds.has(r.id)).map((r) => r.email);
   const selectedProspectIds = recipients.filter((r) => selectedIds.has(r.id) && r.prospectId).map((r) => r.prospectId!);
@@ -326,10 +344,10 @@ function ComposeEmailSubTab() {
             <thead>
               <tr style={{ background: "#fafafa", position: "sticky", top: 0 }}>
                 <th style={{ ...prospectThStyle, width: "36px" }} />
-                <th style={prospectThStyle}>Name</th>
-                <th style={prospectThStyle}>Email</th>
-                <th style={{ ...prospectThStyle, textAlign: "center" }}>Type</th>
-                <th style={{ ...prospectThStyle, textAlign: "center" }}>Status</th>
+                <th style={{ ...prospectThStyle, cursor: "pointer", userSelect: "none", color: sortKey === "name" ? "var(--gold)" : undefined }} onClick={() => handleSort("name")}>Name{sortArrow("name")}</th>
+                <th style={{ ...prospectThStyle, cursor: "pointer", userSelect: "none", color: sortKey === "email" ? "var(--gold)" : undefined }} onClick={() => handleSort("email")}>Email{sortArrow("email")}</th>
+                <th style={{ ...prospectThStyle, textAlign: "center", cursor: "pointer", userSelect: "none", color: sortKey === "type" ? "var(--gold)" : undefined }} onClick={() => handleSort("type")}>Type{sortArrow("type")}</th>
+                <th style={{ ...prospectThStyle, textAlign: "center", cursor: "pointer", userSelect: "none", color: sortKey === "status" ? "var(--gold)" : undefined }} onClick={() => handleSort("status")}>Status{sortArrow("status")}</th>
               </tr>
             </thead>
             <tbody>
