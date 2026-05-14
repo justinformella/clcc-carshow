@@ -833,6 +833,7 @@ function ComposeCustomEmailSection({
               <span><code style={{ background: "#eee", padding: "1px 4px" }}>*italic text*</code> → <em>italic text</em></span>
               <span><code style={{ background: "#eee", padding: "1px 4px" }}>[link text](https://url)</code> → link</span>
               <span><code style={{ background: "#eee", padding: "1px 4px" }}>- bullet item</code> → bullet list</span>
+              <span><code style={{ background: "#eee", padding: "1px 4px" }}>&gt; indented text</code> → indented text</span>
               <span>Blank line → new paragraph</span>
             </div>
           </div>

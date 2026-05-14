@@ -309,6 +309,12 @@ function markdownToEmailHtml(text: string): string {
       return `<ul style="margin:0 0 16px; padding-left:20px;">${items}</ul>`;
     }
 
+    // Check if this block is a blockquote
+    if (lines.every((l) => /^>\s?/.test(l.trim()))) {
+      const content = lines.map((l) => inlineMarkdown(l.trim().replace(/^>\s?/, ""))).join("<br/>");
+      return `<div style="margin:0 0 16px; padding-left:24px; font-size:15px; color:#333; line-height:1.7;">${content}</div>`;
+    }
+
     // Regular paragraph
     const content = lines.map((l) => inlineMarkdown(l)).join("<br/>");
     return `<p ${pStyle}>${content}</p>`;
