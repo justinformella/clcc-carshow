@@ -75,6 +75,7 @@ export default function CharityProgress() {
           .charity-progress {
             background: rgba(0,0,0,0.6);
             padding: 1.5rem 1.25rem;
+            margin-top: 1.75rem;
           }
           .charity-progress-inner {
             flex-direction: column;
@@ -87,13 +88,11 @@ export default function CharityProgress() {
             letter-spacing: 0.2em;
           }
           .charity-progress-amount {
-            font-size: 1.1rem;
-            white-space: normal;
+            font-size: 1rem;
+            white-space: nowrap;
           }
           .charity-progress-amount-goal {
-            font-size: 0.8rem;
-            display: block;
-            margin-top: 0.15rem;
+            font-size: 0.85rem;
           }
         }
       `}</style>
