@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
 Return ONLY a JSON object with these fields (no markdown, no code fences, just raw JSON):
 {
-  "year": <number or null if uncertain>,
+  "year": <single number, best guess, or null if truly unknown>,
   "make": "<manufacturer>",
   "model": "<model name>",
   "color": "<color>",
@@ -57,7 +57,7 @@ Be specific about the model year when possible. Use common manufacturer names (e
             },
           ],
           generationConfig: {
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
             temperature: 0.1,
           },
         }),
@@ -85,9 +85,31 @@ Be specific about the model year when possible. Use common manufacturer names (e
 
     try {
       const result = JSON.parse(jsonStr);
+      // Normalize year — handle ranges like "1975-1989" by taking the midpoint
+      if (typeof result.year === "string") {
+        const match = result.year.match(/(\d{4})/);
+        result.year = match ? parseInt(match[1]) : null;
+      }
       return NextResponse.json(result);
     } catch (parseErr) {
+      // Try to extract partial data if JSON is truncated
       console.error("Failed to parse Gemini response as JSON:", jsonStr);
+      try {
+        const makeMatch = jsonStr.match(/"make"\s*:\s*"([^"]+)"/);
+        const modelMatch = jsonStr.match(/"model"\s*:\s*"([^"]+)"/);
+        const yearMatch = jsonStr.match(/"year"\s*:\s*"?(\d{4})/);
+        const colorMatch = jsonStr.match(/"color"\s*:\s*"([^"]+)"/);
+        if (makeMatch) {
+          return NextResponse.json({
+            year: yearMatch ? parseInt(yearMatch[1]) : null,
+            make: makeMatch[1],
+            model: modelMatch?.[1] || null,
+            color: colorMatch?.[1] || null,
+            confidence: 0.7,
+            notes: "Partial identification (response was truncated)",
+          });
+        }
+      } catch {}
       return NextResponse.json({ error: "Failed to parse AI response", raw: text }, { status: 500 });
     }
   } catch (err) {
