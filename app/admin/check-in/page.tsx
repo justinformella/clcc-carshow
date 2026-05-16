@@ -72,11 +72,11 @@ export default function CheckInPage() {
     }
   };
 
-  // Build candidate list string for AI matching
+  // Build candidate list for AI matching — all unchecked registrations
   const buildCandidateList = () => {
     const unchecked = registrations.filter((r) => !r.checked_in);
     return unchecked.map((r, i) => (
-      `${i}: #${r.car_number} ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}${r.vehicle_color ? ` (${r.vehicle_color})` : ""}`
+      `${i}:#${r.car_number} ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}${r.vehicle_color ? ` (${r.vehicle_color})` : ""}`
     )).join("\n");
   };
 

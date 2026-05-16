@@ -24,31 +24,15 @@ export async function POST(request: NextRequest) {
   const hasCandidates = candidatesJson && candidatesJson.length > 2;
 
   const prompt = hasCandidates
-    ? `You are an expert car identifier working at a car show check-in.
-
-TASK 1: Identify the car in this photo. Determine the year, make, model, and color.
-
-TASK 2: Match it against these registered vehicles and rank by likelihood of being the SAME physical car:
+    ? `Identify the car in this photo, then match it to these registrations:
 ${candidatesJson}
 
-Use your automotive expertise:
-- Chassis codes, internal designations, and model names are interchangeable (e.g. a "930" IS a "911 Turbo", a "W124" IS a "300E", an "E30" IS a "325i")
-- Paint colors vary in name — match by actual color appearance, not exact name
-- Consider the generation/era of the car — a 1978 and 1987 of the same generation are plausible matches
-- Do NOT match classic/vintage versions with modern versions of the same nameplate
+Chassis codes = model names (930=911 Turbo, E30=325i, W124=300E, etc). Colors vary by name. Don't match classic to modern.
 
-Return ONLY this JSON (no code fences, no other text):
-{
-  "year": <number or null>,
-  "make": "<manufacturer>",
-  "model": "<model name>",
-  "color": "<color>",
-  "confidence": <0.0 to 1.0>,
-  "notes": "<description>",
-  "matches": [{"i": <index>, "score": <0-100>}]
-}
+Return ONLY raw JSON, no markdown, no explanation:
+{"year":NUM,"make":"STR","model":"STR","color":"STR","confidence":0.0-1.0,"notes":"brief","matches":[{"i":IDX,"score":0-100}]}
 
-The matches array should only include plausible matches, ordered best first. Score 90+ means very likely the same car. Score 50-89 means possible. Omit anything below 40.`
+matches: best match first, only plausible matches, omit below 40.`
     : `You are an expert car identifier. Look at this photo and identify the vehicle.
 
 Return ONLY this JSON (no code fences, no other text):
@@ -83,7 +67,7 @@ Be specific about the model year when possible. Use common manufacturer names (e
             },
           ],
           generationConfig: {
-            maxOutputTokens: 2048,
+            maxOutputTokens: 8192,
             temperature: 0.1,
           },
         }),
