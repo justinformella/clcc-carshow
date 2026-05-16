@@ -72,14 +72,13 @@ export default function CheckInPage() {
     }
   };
 
-  // Fuzzy match registrations against AI-identified car
-  const findMatches = (id: CarIdentification): Registration[] => {
+  // Fuzzy match registrations against AI-identified car, then AI-rank the top candidates
+  const findMatches = async (id: CarIdentification): Promise<Registration[]> => {
     if (!id.make && !id.model) return [];
 
     const normalize = (s: string) => s.toLowerCase().replace(/[-_]/g, " ").trim();
     const idMake = normalize(id.make || "");
     const idModel = normalize(id.model || "");
-    const idColor = normalize(id.color || "");
     const idYear = id.year;
 
     // Common name aliases
@@ -98,19 +97,55 @@ export default function CheckInPage() {
       return false;
     };
 
-    return registrations
-      .filter((r) => !r.checked_in)
+    // First pass: broad fuzzy filter by make
+    const candidates = registrations
+      .filter((r) => !r.checked_in && makeMatches(r.vehicle_make))
+      .slice(0, 20); // cap at 20 for the AI call
+
+    if (candidates.length === 0) return [];
+    if (candidates.length === 1) return candidates;
+
+    // Second pass: AI ranks the candidates
+    try {
+      const candidateList = candidates.map((r, i) => (
+        `${i}: #${r.car_number} ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}${r.vehicle_color ? ` (${r.vehicle_color})` : ""}`
+      )).join("\n");
+
+      const identified = `${idYear || "unknown year"} ${id.make} ${id.model}${id.color ? ` in ${id.color}` : ""}${id.notes ? ` — ${id.notes}` : ""}`;
+
+      const res = await fetch("/api/identify-car/rank", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identified, candidates: candidateList }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // data.ranked is an array of indices in order of best match
+        if (Array.isArray(data.ranked)) {
+          return data.ranked
+            .filter((i: number) => i >= 0 && i < candidates.length)
+            .slice(0, 5)
+            .map((i: number) => candidates[i]);
+        }
+      }
+    } catch {
+      // Fall back to simple scoring if AI ranking fails
+    }
+
+    // Fallback: simple score-based sort
+    const idColor = normalize(id.color || "");
+    return candidates
       .map((r) => {
         let score = 0;
-        if (makeMatches(r.vehicle_make)) score += 40;
         if (normalize(r.vehicle_model).includes(idModel) || idModel.includes(normalize(r.vehicle_model))) score += 30;
         if (idYear && Math.abs(r.vehicle_year - idYear) <= 2) score += 20;
         if (idYear && r.vehicle_year === idYear) score += 10;
         if (idColor && r.vehicle_color && normalize(r.vehicle_color).includes(idColor)) score += 10;
         return { reg: r, score };
       })
-      .filter((m) => m.score >= 40)
       .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
       .map((m) => m.reg);
   };
 
@@ -158,7 +193,8 @@ export default function CheckInPage() {
         setPhotoMatches([]);
       } else {
         setCarId(data);
-        setPhotoMatches(findMatches(data));
+        const matches = await findMatches(data);
+        setPhotoMatches(matches);
       }
     } catch {
       setCarId({ year: null, make: null, model: null, color: null, confidence: 0, notes: "Failed to identify" });
