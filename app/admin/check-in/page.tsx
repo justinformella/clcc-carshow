@@ -325,52 +325,65 @@ export default function CheckInPage() {
               <p style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-light)", marginBottom: "0.75rem" }}>
                 {photoMatches.length} match{photoMatches.length !== 1 ? "es" : ""} found — tap to check in
               </p>
-              {photoMatches.map((m) => (
-                <div
-                  key={m.reg.id}
-                  onClick={async () => { await handleCheckIn(m.reg); dismissPhotoResults(); }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1rem",
-                    padding: "0.75rem 1rem",
-                    marginBottom: "0.5rem",
-                    background: "#f8f5f0",
-                    cursor: "pointer",
-                    border: m.score >= 80 ? "2px solid var(--gold)" : "1px solid #e0e0e0",
-                    transition: "background 0.15s",
-                  }}
-                >
-                  {m.reg.ai_image_url && (
-                    <img src={m.reg.ai_image_url} alt="" style={{ width: "60px", height: "40px", objectFit: "cover", borderRadius: "3px", flexShrink: 0 }} />
-                  )}
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--charcoal)" }}>
+              {photoMatches.map((m) => {
+                const unpaid = m.reg.payment_status === "pending";
+                return (
+                  <div
+                    key={m.reg.id}
+                    onClick={async () => { if (!unpaid) { await handleCheckIn(m.reg); dismissPhotoResults(); } }}
+                    style={{
+                      padding: "1rem",
+                      marginBottom: "0.5rem",
+                      background: unpaid ? "#fef2f2" : "#f8f5f0",
+                      cursor: unpaid ? "default" : "pointer",
+                      border: unpaid ? "2px solid #fca5a5" : m.score >= 80 ? "2px solid var(--gold)" : "1px solid #e0e0e0",
+                      transition: "background 0.15s",
+                    }}
+                  >
+                    <p style={{ fontWeight: 600, fontSize: "1rem", color: "var(--charcoal)", marginBottom: "0.25rem" }}>
                       <span style={{ color: "var(--gold)" }}>#{m.reg.car_number}</span>{" "}
                       {m.reg.vehicle_year} {m.reg.vehicle_make} {m.reg.vehicle_model}
                       {m.reg.vehicle_color ? ` — ${m.reg.vehicle_color}` : ""}
                     </p>
-                    <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-light)", marginBottom: "0.75rem" }}>
                       {m.reg.first_name} {m.reg.last_name}
-                      <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: m.score >= 80 ? "#2e7d32" : m.score >= 50 ? "#e65100" : "#999" }}>
+                      <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", fontWeight: 600, color: m.score >= 80 ? "#2e7d32" : m.score >= 50 ? "#e65100" : "#999" }}>
                         {m.score}% match
                       </span>
                     </p>
+                    {unpaid ? (
+                      <span style={{
+                        display: "block",
+                        padding: "0.6rem",
+                        background: "#fef2f2",
+                        color: "#b91c1c",
+                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        textAlign: "center",
+                        border: "1px solid #fca5a5",
+                      }}>
+                        Not Paid — Cannot Check In
+                      </span>
+                    ) : (
+                      <span style={{
+                        display: "block",
+                        padding: "0.6rem",
+                        background: "var(--gold)",
+                        color: "var(--charcoal)",
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        textAlign: "center",
+                      }}>
+                        Check In
+                      </span>
+                    )}
                   </div>
-                  <span style={{
-                    padding: "0.4rem 1rem",
-                    background: "var(--gold)",
-                    color: "var(--charcoal)",
-                    fontWeight: 700,
-                    fontSize: "0.8rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    flexShrink: 0,
-                  }}>
-                    Check In
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -491,35 +504,36 @@ export default function CheckInPage() {
                       {reg.vehicle_year} {reg.vehicle_make} {reg.vehicle_model}
                       {reg.vehicle_color ? ` — ${reg.vehicle_color}` : ""}
                     </p>
-                    {reg.award_category && (
-                      <p
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "var(--gold)",
-                          marginTop: "0.2rem",
-                        }}
-                      >
-                        {reg.award_category}
-                      </p>
-                    )}
+                    <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.3rem" }}>
+                      {reg.payment_status === "paid" && (
+                        <span style={{ fontSize: "0.65rem", fontWeight: 600, padding: "2px 6px", background: "#e8f5e9", color: "#2e7d32", textTransform: "uppercase" }}>Paid</span>
+                      )}
+                      {reg.payment_status === "comped" && (
+                        <span style={{ fontSize: "0.65rem", fontWeight: 600, padding: "2px 6px", background: "#ede7f6", color: "#5e35b1", textTransform: "uppercase" }}>Comped</span>
+                      )}
+                      {reg.award_category && (
+                        <span style={{ fontSize: "0.65rem", fontWeight: 600, padding: "2px 6px", background: "#fff8e1", color: "#f9a825", textTransform: "uppercase" }}>{reg.award_category}</span>
+                      )}
+                    </div>
                   </div>
                   <button
-                    onClick={() => handleCheckIn(reg)}
+                    onClick={() => !isUnpaid && handleCheckIn(reg)}
+                    disabled={isUnpaid}
                     style={{
                       padding: "0.8rem 1.5rem",
-                      background: reg.checked_in ? "#e8f5e9" : "var(--gold)",
-                      color: reg.checked_in ? "#2e7d32" : "var(--charcoal)",
-                      border: "none",
+                      background: isUnpaid ? "#f5f5f5" : reg.checked_in ? "#e8f5e9" : "var(--gold)",
+                      color: isUnpaid ? "#999" : reg.checked_in ? "#2e7d32" : "var(--charcoal)",
+                      border: isUnpaid ? "1px solid #ddd" : "none",
                       fontSize: "0.8rem",
                       fontWeight: 700,
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
-                      cursor: "pointer",
+                      cursor: isUnpaid ? "not-allowed" : "pointer",
                       whiteSpace: "nowrap",
                       minWidth: "110px",
                     }}
                   >
-                    {reg.checked_in ? "Undo" : "Check In"}
+                    {isUnpaid ? "Unpaid" : reg.checked_in ? "Undo" : "Check In"}
                   </button>
                 </div>
                 {reg.checked_in && reg.checked_in_at && (
