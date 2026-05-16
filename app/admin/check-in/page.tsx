@@ -425,6 +425,7 @@ export default function CheckInPage() {
               {reg.ai_image_url ? (
                 <img
                   src={reg.ai_image_url}
+                  loading="lazy"
                   className="checkin-thumb"
                   alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
                   style={{
