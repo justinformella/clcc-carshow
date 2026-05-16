@@ -277,10 +277,10 @@ function PresentingSponsorTier({ tier }: { tier: SponsorTier }) {
         return (
           <SponsorLink key={s.company} sponsor={s}>
             <div
+              className="sponsor-presenting-card"
               style={{
                 background: "var(--white)",
                 border: "2px solid var(--gold)",
-                padding: "3rem 4rem",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -318,33 +318,16 @@ function PresentingSponsorTier({ tier }: { tier: SponsorTier }) {
 /* ─── Standard tiers: Premier, Gold, Community ─── */
 function StandardSponsorTier({ tier }: { tier: SponsorTier }) {
   return (
-    <div style={{ marginBottom: "3.5rem" }}>
+    <div className="sponsor-tier-row">
       <p className="sponsor-tier-label">{tier.label}</p>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          gap: "2rem",
-        }}
-      >
+      <div className="sponsor-tier-grid">
         {tier.sponsors.map((s) => {
           const logoSrc = getLogoSrc(s);
           return (
             <SponsorLink key={s.company} sponsor={s}>
               <div
-                style={{
-                  background: "var(--white)",
-                  border: "1px solid rgba(0,0,0,0.08)",
-                  padding: "2.5rem 3rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "320px",
-                  transition: "transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease",
-                  cursor: s.website ? "pointer" : "default",
-                }}
+                className="sponsor-card"
+                style={{ cursor: s.website ? "pointer" : "default" }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-4px)";
                   e.currentTarget.style.boxShadow = "0 12px 36px rgba(0,0,0,0.08)";
