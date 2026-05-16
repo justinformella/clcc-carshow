@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Registration, EmailLog, AuditLogEntry, StripePaymentDetails } from "@/types/database";
-import { AWARD_CATEGORIES, REGISTRATION_PRICE_CENTS } from "@/types/database";
+import type { Registration, EmailLog, AuditLogEntry, StripePaymentDetails, AwardCategory } from "@/types/database";
+import { REGISTRATION_PRICE_CENTS } from "@/types/database";
 import dynamic from "next/dynamic";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), { ssr: false });
@@ -67,6 +67,20 @@ export default function RegistrationDetailPage() {
   const [editingSpecs, setEditingSpecs] = useState(false);
   const [specForm, setSpecForm] = useState<Record<string, string>>({});
   const [savingSpecs, setSavingSpecs] = useState(false);
+  const [awardCategories, setAwardCategories] = useState<AwardCategory[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("award_categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+      setAwardCategories((data as AwardCategory[]) || []);
+    };
+    fetchCategories();
+  }, []);
 
   const fetchRegistration = useCallback(async () => {
     const supabase = createClient();
@@ -891,8 +905,8 @@ export default function RegistrationDetailPage() {
                 <label htmlFor="award_category">Award Winner</label>
                 <select id="award_category" name="award_category" value={form.award_category} onChange={handleFormChange}>
                   <option value="">No Award</option>
-                  {AWARD_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {awardCategories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
                 <span style={{ fontSize: "0.75rem", color: "var(--text-light)", marginTop: "0.3rem", display: "block" }}>

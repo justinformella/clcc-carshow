@@ -64,17 +64,14 @@ export type RegistrationInsert = Omit<
   amount_paid?: number;
 };
 
-export const AWARD_CATEGORIES = [
-  "Best Classic (Pre-2000)",
-  "Best Modern (2000+)",
-  "Best European",
-  "Best Japanese",
-  "Best Domestic",
-  "Best Vanity Plate",
-  "Best Interior",
-  "Best Custom",
-  "Best of Show",
-] as const;
+export type AwardCategory = {
+  id: string;
+  name: string;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
 
 export type Admin = {
   id: string;

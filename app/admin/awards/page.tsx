@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import type { Registration } from "@/types/database";
-import { AWARD_CATEGORIES } from "@/types/database";
+import type { Registration, AwardCategory } from "@/types/database";
 
 type Recommendation = {
   category: string;
@@ -21,6 +20,7 @@ type Tab = "recommendations" | "assigned";
 export default function AwardsPage() {
   const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [categories, setCategories] = useState<AwardCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("recommendations");
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -30,7 +30,7 @@ export default function AwardsPage() {
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
-      const [regRes, recRes] = await Promise.all([
+      const [regRes, recRes, catRes] = await Promise.all([
         supabase
           .from("registrations")
           .select("*")
@@ -40,8 +40,14 @@ export default function AwardsPage() {
           .from("award_recommendations")
           .select("*")
           .order("created_at", { ascending: true }),
+        supabase
+          .from("award_categories")
+          .select("*")
+          .eq("is_active", true)
+          .order("display_order", { ascending: true }),
       ]);
       setRegistrations(regRes.data || []);
+      setCategories((catRes.data as AwardCategory[]) || []);
       if (recRes.data && recRes.data.length > 0) {
         setRecommendations(recRes.data as Recommendation[]);
       }
@@ -250,7 +256,8 @@ export default function AwardsPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {AWARD_CATEGORIES.map((category) => {
+              {categories.map((cat) => {
+                const category = cat.name;
                 const winner = registrations.find((r) => r.award_category === category);
                 return (
                   <div

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
-import { AWARD_CATEGORIES } from "@/types/database";
 
 type Recommendation = {
   category: string;
@@ -33,8 +32,19 @@ export async function POST() {
       .from("vehicle_specs")
       .select("*");
 
+    const { data: categoryRows } = await supabase
+      .from("award_categories")
+      .select("name")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+
+    const activeCategories = (categoryRows ?? []).map((c) => c.name);
+
     if (!registrations || registrations.length === 0) {
       return NextResponse.json({ error: "No registrations to evaluate" }, { status: 400 });
+    }
+    if (activeCategories.length === 0) {
+      return NextResponse.json({ error: "No active award categories configured" }, { status: 400 });
     }
 
     const specMap = new Map((specs || []).map((s) => [s.registration_id, s]));
@@ -60,7 +70,7 @@ export async function POST() {
       return desc;
     }).join("\n");
 
-    const categories = AWARD_CATEGORIES.join(", ");
+    const categories = activeCategories.join(", ");
 
     const openai = new OpenAI({ apiKey });
     const completion = await openai.chat.completions.create({
@@ -75,15 +85,11 @@ export async function POST() {
 Award categories: ${categories}
 
 Rules:
-- Each vehicle can only win ONE award (no duplicates)
-- "Best of Show" should go to the most impressive overall vehicle
-- "Best Classic (Pre-2000)" must be a pre-2000 vehicle
-- "Best Modern (2000+)" must be a 2000 or newer vehicle
-- "Best European" must be from a European country
-- "Best Japanese" must be from a Japanese manufacturer
-- "Best Domestic" must be an American-made vehicle
-- "Best Vanity Plate", "Best Interior", and "Best Custom" — since you can't see these, pick the vehicle most likely to excel in that category based on its type, era, and features. Note that these are more subjective and event-day judges will make the final call.
-- For each recommendation, provide a brief 1-sentence justification
+- Pick exactly one winner per category listed above. Use category names exactly as written.
+- Each vehicle can only win ONE award (no duplicates across categories).
+- Use the category name to infer eligibility (e.g. "Classic (Pre-2000)" means pre-2000; "Modern (2000+)" means 2000 or newer; regional/origin categories like "European", "Asian", "Japanese", "Domestic" should match the vehicle's country of origin; "in Show"/"of Show" is the most impressive overall).
+- For categories you can't directly verify from the data (interior, vanity plate, motorcycle-only, etc.), pick the vehicle most likely to excel based on its type, era, and features. Event-day judges will make the final call.
+- For each recommendation, provide a brief 1-sentence justification.
 
 Return JSON with this structure:
 {

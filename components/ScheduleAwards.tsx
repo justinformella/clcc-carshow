@@ -1,4 +1,16 @@
-export default function ScheduleAwards() {
+import { createServerClient } from "@/lib/supabase-server";
+import type { AwardCategory } from "@/types/database";
+
+export default async function ScheduleAwards() {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("award_categories")
+    .select("name, display_order, is_active")
+    .eq("is_active", true)
+    .order("display_order", { ascending: true });
+
+  const categories = (data ?? []) as Pick<AwardCategory, "name" | "display_order" | "is_active">[];
+
   return (
     <section className="schedule" id="schedule">
       <div className="section-inner">
@@ -38,15 +50,9 @@ export default function ScheduleAwards() {
           <div className="schedule-card">
             <h3>Award Categories</h3>
             <ul className="awards-list">
-              <li>Best of Show</li>
-              <li>Best Classic (Pre-2000)</li>
-              <li>Best Modern (2000+)</li>
-              <li>Best European</li>
-              <li>Best Japanese</li>
-              <li>Best Domestic</li>
-              <li>Best Vanity Plate</li>
-              <li>Best Interior</li>
-              <li>Best Motorcycle</li>
+              {categories.map((c) => (
+                <li key={c.name}>{c.name}</li>
+              ))}
             </ul>
           </div>
         </div>
