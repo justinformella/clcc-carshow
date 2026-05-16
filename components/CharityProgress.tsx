@@ -76,12 +76,14 @@ export default function CharityProgress() {
         }
         @media (max-width: 720px) {
           .charity-progress {
-            padding: 2rem 1.25rem 1.75rem;
+            position: static;
+            padding: 1.25rem 1.25rem 1.75rem;
+            background: rgba(0,0,0,0.55);
           }
           .charity-progress-inner {
             flex-direction: column;
             align-items: stretch;
-            gap: 0.6rem;
+            gap: 0.5rem;
             text-align: center;
           }
           .charity-progress-label {

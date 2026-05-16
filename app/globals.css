@@ -1601,6 +1601,20 @@ footer {
         min-height: 100vh;
         min-height: 100dvh;
         padding-top: 80px;
+        padding-bottom: 0;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .hero > .hero-content {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    section {
+        padding: 5rem 1rem;
     }
 
     .hero-content {
