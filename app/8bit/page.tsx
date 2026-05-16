@@ -12,6 +12,8 @@ import Arcade8Bit from "@/components/8bit/Arcade8Bit";
 import Footer8Bit from "@/components/8bit/Footer8Bit";
 import StickyBar8Bit from "@/components/8bit/StickyBar8Bit";
 
+export const revalidate = 60;
+
 export default function Page80s() {
   return (
     <>

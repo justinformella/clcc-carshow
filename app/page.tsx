@@ -14,6 +14,8 @@ import ArcadeBanner from "@/components/ArcadeBanner";
 import Footer from "@/components/Footer";
 import StickyRegisterBar from "@/components/StickyRegisterBar";
 
+export const revalidate = 60;
+
 export default function Home() {
   return (
     <>
