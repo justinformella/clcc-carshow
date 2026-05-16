@@ -114,6 +114,23 @@ export default function CheckInPage() {
       .map((m) => m.reg);
   };
 
+  // Resize image client-side to avoid huge uploads from phone cameras
+  const resizeImage = (file: File, maxWidth: number = 1024): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.8);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -125,8 +142,10 @@ export default function CheckInPage() {
     setPhotoMatches([]);
 
     try {
+      // Resize before upload to keep request small
+      const resized = await resizeImage(file);
       const fd = new FormData();
-      fd.append("photo", file);
+      fd.append("photo", new File([resized], "photo.jpg", { type: "image/jpeg" }));
       const res = await fetch("/api/identify-car", { method: "POST", body: fd });
       const data = await res.json();
 
