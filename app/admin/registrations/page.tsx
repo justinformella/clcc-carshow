@@ -17,7 +17,7 @@ export default function RegistrationsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [archiving, setArchiving] = useState(false);
-  const [sortBy, setSortBy] = useState<"car_number" | "name" | "date" | "vehicle" | "city">("car_number");
+  const [sortBy, setSortBy] = useState<"car_number" | "name" | "date" | "vehicle" | "city">("date");
   const [show8bit, setShow8bit] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "cards">(() => {
     if (typeof window !== "undefined") {
