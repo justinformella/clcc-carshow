@@ -130,7 +130,11 @@ export default function CheckInPage() {
       const res = await fetch("/api/identify-car", { method: "POST", body: fd });
       const data = await res.json();
 
-      if (!res.ok || !data.make) {
+      if (!res.ok) {
+        console.error("Identify API error:", data);
+        setCarId({ year: null, make: null, model: null, color: null, confidence: 0, notes: data.error || "API error" });
+        setPhotoMatches([]);
+      } else if (!data.make) {
         setCarId(data);
         setPhotoMatches([]);
       } else {
@@ -315,7 +319,10 @@ export default function CheckInPage() {
                   </p>
                 </>
               ) : (
-                <p style={{ color: "#c62828", fontSize: "0.9rem" }}>Could not identify a car in this photo. Try another angle.</p>
+                <p style={{ color: "#c62828", fontSize: "0.9rem" }}>
+                  Could not identify a car in this photo. Try another angle.
+                  {carId?.notes && <span style={{ display: "block", fontSize: "0.8rem", marginTop: "0.3rem", color: "var(--text-light)" }}>{carId.notes}</span>}
+                </p>
               )}
             </div>
           </div>

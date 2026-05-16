@@ -72,14 +72,22 @@ Be specific about the model year when possible. Use common manufacturer names (e
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!text) {
+      console.error("Gemini returned no text. Full response:", JSON.stringify(data));
       return NextResponse.json({ error: "No response from AI" }, { status: 500 });
     }
 
-    // Parse JSON from response (strip code fences if present)
-    const jsonStr = text.replace(/^```json?\n?/, "").replace(/\n?```$/, "").trim();
-    const result = JSON.parse(jsonStr);
+    console.log("Gemini raw response:", text);
 
-    return NextResponse.json(result);
+    // Parse JSON from response (strip code fences if present)
+    const jsonStr = text.replace(/^```json?\n?/m, "").replace(/\n?```$/m, "").trim();
+
+    try {
+      const result = JSON.parse(jsonStr);
+      return NextResponse.json(result);
+    } catch (parseErr) {
+      console.error("Failed to parse Gemini response as JSON:", jsonStr);
+      return NextResponse.json({ error: "Failed to parse AI response", raw: text }, { status: 500 });
+    }
   } catch (err) {
     console.error("Car identification error:", err);
     return NextResponse.json({ error: "Failed to identify car" }, { status: 500 });
