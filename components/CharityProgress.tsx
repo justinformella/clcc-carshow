@@ -26,13 +26,10 @@ export default function CharityProgress() {
     <div className="charity-progress">
       <style>{`
         .charity-progress {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          padding: 3rem 2rem;
+          width: 100%;
+          margin-top: auto;
+          padding: 2rem 1.5rem;
           background: linear-gradient(transparent, rgba(0,0,0,0.75));
-          z-index: 2;
         }
         .charity-progress-inner {
           max-width: 800px;
@@ -42,7 +39,7 @@ export default function CharityProgress() {
           gap: 1.8rem;
         }
         .charity-progress-label {
-          font-size: 1rem;
+          font-size: 0.9rem;
           text-transform: uppercase;
           letter-spacing: 0.15em;
           color: var(--gold);
@@ -51,7 +48,7 @@ export default function CharityProgress() {
         }
         .charity-progress-bar {
           flex: 1;
-          height: 18px;
+          height: 16px;
           background: rgba(255,255,255,0.15);
           border-radius: 9px;
           overflow: hidden;
@@ -66,19 +63,18 @@ export default function CharityProgress() {
         }
         .charity-progress-amount {
           font-family: 'Playfair Display', serif;
-          font-size: 1.5rem;
+          font-size: 1.4rem;
           color: var(--gold);
           white-space: nowrap;
         }
         .charity-progress-amount-goal {
-          font-size: 1rem;
+          font-size: 0.95rem;
           color: rgba(255,255,255,0.5);
         }
-        @media (max-width: 720px) {
+        @media (max-width: 600px) {
           .charity-progress {
-            position: static;
-            padding: 1.25rem 1.25rem 1.75rem;
-            background: rgba(0,0,0,0.55);
+            background: rgba(0,0,0,0.6);
+            padding: 1.5rem 1.25rem;
           }
           .charity-progress-inner {
             flex-direction: column;
