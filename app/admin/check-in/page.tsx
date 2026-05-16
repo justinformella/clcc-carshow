@@ -23,7 +23,7 @@ export default function CheckInPage() {
   // Photo check-in state
   const [identifying, setIdentifying] = useState(false);
   const [carId, setCarId] = useState<CarIdentification | null>(null);
-  const [photoMatches, setPhotoMatches] = useState<Registration[]>([]);
+  const [photoMatches, setPhotoMatches] = useState<{ reg: Registration; score: number }[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -73,7 +73,7 @@ export default function CheckInPage() {
   };
 
   // Fuzzy match registrations against AI-identified car, then AI-rank the top candidates
-  const findMatches = async (id: CarIdentification): Promise<Registration[]> => {
+  const findMatches = async (id: CarIdentification): Promise<{ reg: Registration; score: number }[]> => {
     if (!id.make && !id.model) return [];
 
     const normalize = (s: string) => s.toLowerCase().replace(/[-_]/g, " ").trim();
@@ -100,10 +100,10 @@ export default function CheckInPage() {
     // First pass: broad fuzzy filter by make
     const candidates = registrations
       .filter((r) => !r.checked_in && makeMatches(r.vehicle_make))
-      .slice(0, 20); // cap at 20 for the AI call
+      .slice(0, 30); // cap at 30 for the AI call
 
     if (candidates.length === 0) return [];
-    if (candidates.length === 1) return candidates;
+    if (candidates.length === 1) return [{ reg: candidates[0], score: 80 }];
 
     // Second pass: AI ranks the candidates
     try {
@@ -121,12 +121,19 @@ export default function CheckInPage() {
 
       if (res.ok) {
         const data = await res.json();
-        // data.ranked is an array of indices in order of best match
         if (Array.isArray(data.ranked)) {
+          // Handle both scored format [{i, score}] and plain index format [i]
           return data.ranked
-            .filter((i: number) => i >= 0 && i < candidates.length)
-            .slice(0, 5)
-            .map((i: number) => candidates[i]);
+            .map((entry: { i: number; score: number } | number) => {
+              const idx = typeof entry === "number" ? entry : entry.i;
+              const score = typeof entry === "number" ? 50 : (entry.score || 50);
+              if (idx >= 0 && idx < candidates.length) {
+                return { reg: candidates[idx], score };
+              }
+              return null;
+            })
+            .filter(Boolean)
+            .slice(0, 5) as { reg: Registration; score: number }[];
         }
       }
     } catch {
@@ -137,7 +144,7 @@ export default function CheckInPage() {
     const idColor = normalize(id.color || "");
     return candidates
       .map((r) => {
-        let score = 0;
+        let score = 20; // base score for make match
         if (normalize(r.vehicle_model).includes(idModel) || idModel.includes(normalize(r.vehicle_model))) score += 30;
         if (idYear && Math.abs(r.vehicle_year - idYear) <= 2) score += 20;
         if (idYear && r.vehicle_year === idYear) score += 10;
@@ -145,8 +152,7 @@ export default function CheckInPage() {
         return { reg: r, score };
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-      .map((m) => m.reg);
+      .slice(0, 5);
   };
 
   // Resize image client-side to avoid huge uploads from phone cameras
@@ -388,10 +394,10 @@ export default function CheckInPage() {
               <p style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-light)", marginBottom: "0.75rem" }}>
                 {photoMatches.length} match{photoMatches.length !== 1 ? "es" : ""} found — tap to check in
               </p>
-              {photoMatches.map((r) => (
+              {photoMatches.map((m) => (
                 <div
-                  key={r.id}
-                  onClick={async () => { await handleCheckIn(r); dismissPhotoResults(); }}
+                  key={m.reg.id}
+                  onClick={async () => { await handleCheckIn(m.reg); dismissPhotoResults(); }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -400,21 +406,24 @@ export default function CheckInPage() {
                     marginBottom: "0.5rem",
                     background: "#f8f5f0",
                     cursor: "pointer",
-                    border: "1px solid #e0e0e0",
+                    border: m.score >= 80 ? "2px solid var(--gold)" : "1px solid #e0e0e0",
                     transition: "background 0.15s",
                   }}
                 >
-                  {r.ai_image_url && (
-                    <img src={r.ai_image_url} alt="" style={{ width: "60px", height: "40px", objectFit: "cover", borderRadius: "3px", flexShrink: 0 }} />
+                  {m.reg.ai_image_url && (
+                    <img src={m.reg.ai_image_url} alt="" style={{ width: "60px", height: "40px", objectFit: "cover", borderRadius: "3px", flexShrink: 0 }} />
                   )}
                   <div style={{ flex: 1 }}>
                     <p style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--charcoal)" }}>
-                      <span style={{ color: "var(--gold)" }}>#{r.car_number}</span>{" "}
-                      {r.vehicle_year} {r.vehicle_make} {r.vehicle_model}
-                      {r.vehicle_color ? ` — ${r.vehicle_color}` : ""}
+                      <span style={{ color: "var(--gold)" }}>#{m.reg.car_number}</span>{" "}
+                      {m.reg.vehicle_year} {m.reg.vehicle_make} {m.reg.vehicle_model}
+                      {m.reg.vehicle_color ? ` — ${m.reg.vehicle_color}` : ""}
                     </p>
                     <p style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>
-                      {r.first_name} {r.last_name}
+                      {m.reg.first_name} {m.reg.last_name}
+                      <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: m.score >= 80 ? "#2e7d32" : m.score >= 50 ? "#e65100" : "#999" }}>
+                        {m.score}% match
+                      </span>
                     </p>
                   </div>
                   <span style={{

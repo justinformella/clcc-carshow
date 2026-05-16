@@ -30,21 +30,23 @@ The photo was identified as: ${identified}
 Here are the registered vehicles (index: details):
 ${candidates}
 
-Rank these by how likely each one is the same car from the photo. Consider:
-- Model match (911 Turbo matches "911", "930", "911 Turbo" etc.)
-- Year proximity
-- Color similarity (burgundy ≈ maroon ≈ wine ≈ dark red)
-- Generation/trim details
+Rank these by how likely each one is the SAME PHYSICAL CAR from the photo.
 
-Return ONLY a JSON array of the indices in order from best match to worst match. Only include likely matches (skip obvious non-matches). Example: [3, 7, 1]
+You are an automotive expert. Use your knowledge to:
+- Recognize that manufacturers use different names for the same car (internal codes, trim names, chassis codes, generation names). Match them intelligently.
+- Match colors loosely — paint names vary wildly between what people write and official names. A brownish-red car could be registered as sienna, burgundy, maroon, copper, etc.
+- Prioritize the correct generation/era of the car over exact year — people sometimes register approximate years.
+- Consider the overall body shape and era — don't match a classic to a modern version of the same nameplate.
 
-Return only the JSON array, no other text.`,
+Return ONLY a JSON array of objects with the index and a confidence score (0-100) for each plausible match, ordered best first. Example: [{"i": 3, "score": 95}, {"i": 7, "score": 60}]
+
+Only include cars that could plausibly be the same physical car. Omit obvious non-matches entirely.`,
                 },
               ],
             },
           ],
           generationConfig: {
-            maxOutputTokens: 256,
+            maxOutputTokens: 1024,
             temperature: 0.1,
           },
         }),
