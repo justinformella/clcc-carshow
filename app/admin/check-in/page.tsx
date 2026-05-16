@@ -72,87 +72,12 @@ export default function CheckInPage() {
     }
   };
 
-  // Fuzzy match registrations against AI-identified car, then AI-rank the top candidates
-  const findMatches = async (id: CarIdentification): Promise<{ reg: Registration; score: number }[]> => {
-    if (!id.make && !id.model) return [];
-
-    const normalize = (s: string) => s.toLowerCase().replace(/[-_]/g, " ").trim();
-    const idMake = normalize(id.make || "");
-    const idModel = normalize(id.model || "");
-    const idYear = id.year;
-
-    // Common name aliases
-    const aliases: Record<string, string[]> = {
-      chevrolet: ["chevy"], mercedes: ["mercedes-benz", "mb"], volkswagen: ["vw"],
-      porsche: ["porche"], bmw: ["bimmer"], "harley-davidson": ["harley"],
-    };
-
-    const makeMatches = (regMake: string) => {
-      const rm = normalize(regMake);
-      if (rm.includes(idMake) || idMake.includes(rm)) return true;
-      for (const [key, alts] of Object.entries(aliases)) {
-        if ((rm.includes(key) || alts.some((a) => rm.includes(a))) &&
-            (idMake.includes(key) || alts.some((a) => idMake.includes(a)))) return true;
-      }
-      return false;
-    };
-
-    // First pass: broad fuzzy filter by make
-    const candidates = registrations
-      .filter((r) => !r.checked_in && makeMatches(r.vehicle_make))
-      .slice(0, 30); // cap at 30 for the AI call
-
-    if (candidates.length === 0) return [];
-    if (candidates.length === 1) return [{ reg: candidates[0], score: 80 }];
-
-    // Second pass: AI ranks the candidates
-    try {
-      const candidateList = candidates.map((r, i) => (
-        `${i}: #${r.car_number} ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}${r.vehicle_color ? ` (${r.vehicle_color})` : ""}`
-      )).join("\n");
-
-      const identified = `${idYear || "unknown year"} ${id.make} ${id.model}${id.color ? ` in ${id.color}` : ""}${id.notes ? ` — ${id.notes}` : ""}`;
-
-      const res = await fetch("/api/identify-car/rank", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identified, candidates: candidateList }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.ranked)) {
-          // Handle both scored format [{i, score}] and plain index format [i]
-          return data.ranked
-            .map((entry: { i: number; score: number } | number) => {
-              const idx = typeof entry === "number" ? entry : entry.i;
-              const score = typeof entry === "number" ? 50 : (entry.score || 50);
-              if (idx >= 0 && idx < candidates.length) {
-                return { reg: candidates[idx], score };
-              }
-              return null;
-            })
-            .filter(Boolean)
-            .slice(0, 5) as { reg: Registration; score: number }[];
-        }
-      }
-    } catch {
-      // Fall back to simple scoring if AI ranking fails
-    }
-
-    // Fallback: simple score-based sort
-    const idColor = normalize(id.color || "");
-    return candidates
-      .map((r) => {
-        let score = 20; // base score for make match
-        if (normalize(r.vehicle_model).includes(idModel) || idModel.includes(normalize(r.vehicle_model))) score += 30;
-        if (idYear && Math.abs(r.vehicle_year - idYear) <= 2) score += 20;
-        if (idYear && r.vehicle_year === idYear) score += 10;
-        if (idColor && r.vehicle_color && normalize(r.vehicle_color).includes(idColor)) score += 10;
-        return { reg: r, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+  // Build candidate list string for AI matching
+  const buildCandidateList = () => {
+    const unchecked = registrations.filter((r) => !r.checked_in);
+    return unchecked.map((r, i) => (
+      `${i}: #${r.car_number} ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}${r.vehicle_color ? ` (${r.vehicle_color})` : ""}`
+    )).join("\n");
   };
 
   // Resize image client-side to avoid huge uploads from phone cameras
@@ -187,6 +112,8 @@ export default function CheckInPage() {
       const resized = await resizeImage(file);
       const fd = new FormData();
       fd.append("photo", new File([resized], "photo.jpg", { type: "image/jpeg" }));
+      // Send candidate list with the photo so AI can identify + match in one call
+      fd.append("candidates", buildCandidateList());
       const res = await fetch("/api/identify-car", { method: "POST", body: fd });
       const data = await res.json();
 
@@ -199,7 +126,11 @@ export default function CheckInPage() {
         setPhotoMatches([]);
       } else {
         setCarId(data);
-        const matches = await findMatches(data);
+        // Map AI match indices back to registration objects
+        const unchecked = registrations.filter((r) => !r.checked_in);
+        const matches = (data.matches || [])
+          .filter((m: { i: number; score: number }) => m.i >= 0 && m.i < unchecked.length)
+          .map((m: { i: number; score: number }) => ({ reg: unchecked[m.i], score: m.score }));
         setPhotoMatches(matches);
       }
     } catch {
