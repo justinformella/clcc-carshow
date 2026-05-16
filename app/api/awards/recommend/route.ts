@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 
-type Recommendation = {
-  category: string;
-  car_number: number;
-  justification: string;
-  registration_id?: string;
+const OPTIONS_PER_CATEGORY = 3;
+
+type AIRec = { category: string; rank: number; car_number: number; justification: string };
+
+type Recommendation = AIRec & {
+  registration_id: string | null;
   vehicle: string;
   color: string | null;
   owner: string;
@@ -21,7 +22,6 @@ export async function POST() {
 
     const supabase = createServerClient();
 
-    // Fetch all active registrations with their specs
     const { data: registrations } = await supabase
       .from("registrations")
       .select("id, car_number, vehicle_year, vehicle_make, vehicle_model, vehicle_color, story, first_name, last_name, award_category")
@@ -49,7 +49,6 @@ export async function POST() {
 
     const specMap = new Map((specs || []).map((s) => [s.registration_id, s]));
 
-    // Build vehicle descriptions for GPT
     const vehicleList = registrations.map((r) => {
       const spec = specMap.get(r.id);
       let desc = `#${r.car_number}: ${r.vehicle_year} ${r.vehicle_make} ${r.vehicle_model}`;
@@ -80,31 +79,29 @@ export async function POST() {
       messages: [
         {
           role: "system",
-          content: `You are a car show judge for a charity car show in Crystal Lake, Illinois. You need to recommend ONE winner for each award category based on the registered vehicles.
+          content: `You are a car show judge for a charity car show in Crystal Lake, Illinois. For each award category, recommend the TOP ${OPTIONS_PER_CATEGORY} candidates so a human judge can choose.
 
 Award categories: ${categories}
 
 Rules:
-- Pick exactly one winner per category listed above. Use category names exactly as written.
-- Each vehicle can only win ONE award (no duplicates across categories).
-- Use the category name to infer eligibility (e.g. "Classic (Pre-2000)" means pre-2000; "Modern (2000+)" means 2000 or newer; regional/origin categories like "European", "Asian", "Japanese", "Domestic" should match the vehicle's country of origin; "in Show"/"of Show" is the most impressive overall).
-- For categories you can't directly verify from the data (interior, vanity plate, motorcycle-only, etc.), pick the vehicle most likely to excel based on its type, era, and features. Event-day judges will make the final call.
-- For each recommendation, provide a brief 1-sentence justification.
+- Return exactly ${OPTIONS_PER_CATEGORY} candidates per category, ranked best-first (rank 1 = your top pick).
+- Use category names exactly as written above.
+- Within a single category, do not list the same vehicle twice.
+- A vehicle MAY appear in multiple categories (the human will resolve overlaps when assigning).
+- Use the category name to infer eligibility: "Classic (Pre-2000)" = pre-2000; "Modern (2000+)" = 2000 or newer; origin categories like "European Import", "Asian Import", "Japanese", "Domestic" should match the vehicle's country of origin; "in Show"/"of Show" goes to the most impressive overall; "Motorcycle" should be motorcycles only.
+- For subjective categories you can't directly verify (interior, vanity plate), pick the vehicles most likely to excel based on type, era, and notable features. Event-day judges make the final call.
+- Each candidate needs a brief 1-sentence justification.
 
-Return JSON with this structure:
+Return JSON:
 {
   "recommendations": [
-    {
-      "category": "category name",
-      "car_number": number,
-      "justification": "brief reason"
-    }
+    { "category": "category name", "rank": 1, "car_number": 12, "justification": "brief reason" }
   ]
 }`,
         },
         {
           role: "user",
-          content: `Here are the registered vehicles:\n\n${vehicleList}`,
+          content: `Registered vehicles:\n\n${vehicleList}`,
         },
       ],
     });
@@ -116,28 +113,37 @@ Return JSON with this structure:
 
     const result = JSON.parse(content);
 
-    // Enrich recommendations with full vehicle data
-    const enriched = (result.recommendations || []).map((rec: { category: string; car_number: number; justification: string }) => {
+    const enriched: Recommendation[] = (result.recommendations || []).map((rec: AIRec) => {
       const reg = registrations.find((r) => r.car_number === rec.car_number);
       return {
-        ...rec,
-        registration_id: reg?.id,
+        category: rec.category,
+        rank: rec.rank || 1,
+        car_number: rec.car_number,
+        justification: rec.justification,
+        registration_id: reg?.id ?? null,
         vehicle: reg ? `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}` : "Unknown",
         color: reg?.vehicle_color || null,
         owner: reg ? `${reg.first_name} ${reg.last_name}` : "Unknown",
       };
     });
 
-    // Save to DB — clear old recommendations first
+    enriched.sort((a, b) => {
+      if (a.category !== b.category) {
+        return activeCategories.indexOf(a.category) - activeCategories.indexOf(b.category);
+      }
+      return a.rank - b.rank;
+    });
+
     await supabase.from("award_recommendations").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     if (enriched.length > 0) {
       await supabase.from("award_recommendations").insert(
-        enriched.map((r: Recommendation) => ({
+        enriched.map((r) => ({
           category: r.category,
+          rank: r.rank,
           car_number: r.car_number,
-          registration_id: r.registration_id || null,
+          registration_id: r.registration_id,
           vehicle: r.vehicle,
-          color: r.color || null,
+          color: r.color,
           owner: r.owner,
           justification: r.justification,
         }))

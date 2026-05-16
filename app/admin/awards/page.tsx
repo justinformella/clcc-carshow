@@ -1,21 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration, AwardCategory } from "@/types/database";
 
 type Recommendation = {
   category: string;
+  rank: number;
   car_number: number;
   justification: string;
-  registration_id?: string;
+  registration_id: string | null;
   vehicle: string;
   color: string | null;
   owner: string;
 };
 
 type Tab = "recommendations" | "assigned";
+
+const categoryAnchorId = (name: string) =>
+  "cat-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 export default function AwardsPage() {
   const router = useRouter();
@@ -39,7 +43,7 @@ export default function AwardsPage() {
         supabase
           .from("award_recommendations")
           .select("*")
-          .order("created_at", { ascending: true }),
+          .order("rank", { ascending: true }),
         supabase
           .from("award_categories")
           .select("*")
@@ -72,16 +76,19 @@ export default function AwardsPage() {
   };
 
   const handleAssignAward = async (registrationId: string, category: string) => {
-    setAssigning(category);
+    const key = `${category}::${registrationId}`;
+    setAssigning(key);
     const supabase = createClient();
-    // Clear any existing vehicle with this award
     const existing = registrations.find((r) => r.award_category === category);
-    if (existing) {
+    if (existing && existing.id !== registrationId) {
       await supabase.from("registrations").update({ award_category: null }).eq("id", existing.id);
     }
-    // Assign the award
+    // Also clear any *other* category this same vehicle currently holds, since one car = one award
+    const sameCar = registrations.find((r) => r.id === registrationId && r.award_category && r.award_category !== category);
+    if (sameCar) {
+      await supabase.from("registrations").update({ award_category: null }).eq("id", registrationId);
+    }
     await supabase.from("registrations").update({ award_category: category }).eq("id", registrationId);
-    // Refresh
     const { data } = await supabase
       .from("registrations")
       .select("*")
@@ -102,6 +109,17 @@ export default function AwardsPage() {
     setRegistrations(data || []);
   };
 
+  const recsByCategory = useMemo(() => {
+    const map = new Map<string, Recommendation[]>();
+    for (const r of recommendations) {
+      const list = map.get(r.category) ?? [];
+      list.push(r);
+      map.set(r.category, list);
+    }
+    for (const list of map.values()) list.sort((a, b) => a.rank - b.rank);
+    return map;
+  }, [recommendations]);
+
   const awarded = registrations.filter((r) => r.award_category);
   const tabs: { key: Tab; label: string }[] = [
     { key: "recommendations", label: "AI Recommendations" },
@@ -114,6 +132,12 @@ export default function AwardsPage() {
 
   return (
     <>
+      <style>{`
+        .award-jump-link:hover { background: var(--cream); }
+        .award-row { transition: background 0.15s; }
+        .award-row:hover { background: #fafafa; }
+      `}</style>
+
       <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", fontWeight: 400, marginBottom: "1.5rem" }}>
         Awards
       </h1>
@@ -130,7 +154,7 @@ export default function AwardsPage() {
               borderBottom: tab === t.key ? "2px solid var(--gold)" : "2px solid transparent",
               marginBottom: "-2px",
               color: tab === t.key ? "var(--charcoal)" : "var(--text-light)",
-              cursor: "pointer", transition: "color 0.15s, border-color 0.15s",
+              cursor: "pointer",
             }}
           >
             {t.label}
@@ -141,9 +165,9 @@ export default function AwardsPage() {
       {/* AI Recommendations Tab */}
       {tab === "recommendations" && (
         <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
-              AI analyzes all registered vehicles and their specs to recommend winners for each category.
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", gap: "1rem", flexWrap: "wrap" }}>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-light)", margin: 0, flex: 1, minWidth: "240px" }}>
+              AI ranks the top picks for each category. Pick a winner — assigning one row replaces any other winner in that category.
             </p>
             <button
               onClick={handleGenerateRecommendations}
@@ -165,83 +189,247 @@ export default function AwardsPage() {
           {recommendations.length === 0 && !generating && (
             <div style={{ background: "var(--cream)", padding: "3rem", textAlign: "center", color: "var(--text-light)" }}>
               <p style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>No recommendations yet</p>
-              <p style={{ fontSize: "0.85rem" }}>Click "Generate Recommendations" to let AI analyze your vehicles</p>
+              <p style={{ fontSize: "0.85rem" }}>Click &ldquo;Generate Recommendations&rdquo; to let AI analyze your vehicles</p>
             </div>
           )}
 
           {recommendations.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {recommendations.map((rec) => {
-                const isAssigned = registrations.find((r) => r.award_category === rec.category);
-                return (
-                  <div
-                    key={rec.category}
-                    style={{
-                      background: isAssigned?.id === rec.registration_id ? "#f8fdf8" : "var(--white)",
-                      border: `1px solid ${isAssigned?.id === rec.registration_id ? "#c8e6c9" : "rgba(0,0,0,0.08)"}`,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                      padding: "1rem 1.25rem",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-                        <div style={{
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
-                          background: isAssigned?.id === rec.registration_id ? "linear-gradient(135deg, #2e7d32, #4caf50)" : "linear-gradient(135deg, #c9a84c, #e8c860)",
-                          fontSize: "1.1rem", marginTop: "0.15rem",
-                        }}>
-                          🏆
-                        </div>
-                        <div>
-                        <p style={{ fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--gold)", marginBottom: "0.3rem" }}>
-                          {rec.category}
-                        </p>
-                        <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem" }}>
-                          <span style={{ color: "var(--gold)" }}>#{rec.car_number}</span>{" "}
-                          {rec.vehicle}
-                          {rec.color ? ` — ${rec.color}` : ""}
-                        </p>
-                        <p style={{ fontSize: "0.8rem", color: "var(--text-light)", marginBottom: "0.3rem" }}>{rec.owner}</p>
-                        <p style={{ fontSize: "0.8rem", color: "var(--text-light)", fontStyle: "italic", margin: 0 }}>
-                          {rec.justification}
-                        </p>
-                      </div>
-                      </div>
-                      <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0, marginLeft: "1rem" }}>
-                        {isAssigned?.id === rec.registration_id ? (
-                          <span style={{ padding: "0.35rem 0.8rem", fontSize: "0.7rem", fontWeight: 600, background: "#e8f5e9", color: "#2e7d32", textTransform: "uppercase" }}>
-                            Assigned
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => rec.registration_id && handleAssignAward(rec.registration_id, rec.category)}
-                            disabled={assigning === rec.category}
-                            style={{
-                              padding: "0.35rem 0.8rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em",
-                              background: "var(--gold)", color: "var(--charcoal)", border: "none",
-                              cursor: assigning === rec.category ? "not-allowed" : "pointer",
-                              opacity: assigning === rec.category ? 0.5 : 1,
-                            }}
-                          >
-                            {assigning === rec.category ? "..." : "Assign"}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => rec.registration_id && router.push(`/admin/registrations/${rec.registration_id}`)}
+            <>
+              {/* Quick-jump bar */}
+              <div
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 20,
+                  background: "#f5f5f5",
+                  borderBottom: "1px solid rgba(0,0,0,0.08)",
+                  padding: "0.6rem 0",
+                  marginBottom: "1rem",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "0.4rem",
+                }}
+              >
+                {categories.map((cat) => {
+                  const hasAssigned = registrations.some((r) => r.award_category === cat.name);
+                  return (
+                    <a
+                      key={cat.id}
+                      href={`#${categoryAnchorId(cat.name)}`}
+                      className="award-jump-link"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        padding: "0.3rem 0.7rem",
+                        background: "var(--white)",
+                        border: "1px solid #ddd",
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        color: "var(--charcoal)",
+                        textDecoration: "none",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {hasAssigned && <span style={{ color: "#2e7d32" }}>✓</span>}
+                      {cat.name}
+                    </a>
+                  );
+                })}
+              </div>
+
+              {/* Per-category sections */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                {categories.map((cat) => {
+                  const category = cat.name;
+                  const recs = recsByCategory.get(category) ?? [];
+                  const winner = registrations.find((r) => r.award_category === category);
+
+                  return (
+                    <div
+                      key={cat.id}
+                      id={categoryAnchorId(category)}
+                      style={{
+                        background: "var(--white)",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                        scrollMarginTop: "70px",
+                      }}
+                    >
+                      {/* Category header */}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.75rem 1.25rem",
+                          background: "var(--cream)",
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          flexWrap: "wrap",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <h3
                           style={{
-                            padding: "0.35rem 0.8rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em",
-                            background: "var(--white)", color: "var(--charcoal)", border: "1px solid #ddd", cursor: "pointer",
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: "1.05rem",
+                            fontWeight: 600,
+                            margin: 0,
+                            color: "var(--charcoal)",
                           }}
                         >
-                          View
-                        </button>
+                          {category}
+                        </h3>
+                        {winner ? (
+                          <span
+                            style={{
+                              padding: "0.25rem 0.7rem",
+                              fontSize: "0.7rem",
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.06em",
+                              background: "#e8f5e9",
+                              color: "#2e7d32",
+                            }}
+                          >
+                            🏆 Assigned: #{winner.car_number} {winner.vehicle_year} {winner.vehicle_make} {winner.vehicle_model}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-light)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                            No winner assigned
+                          </span>
+                        )}
                       </div>
+
+                      {/* Ranked options */}
+                      {recs.length === 0 ? (
+                        <p style={{ padding: "1rem 1.25rem", fontSize: "0.85rem", color: "var(--text-light)", margin: 0 }}>
+                          No AI suggestions for this category yet.
+                        </p>
+                      ) : (
+                        <div>
+                          {recs.map((rec) => {
+                            const isAssigned = winner?.id === rec.registration_id;
+                            const busyKey = `${rec.category}::${rec.registration_id}`;
+                            const isBusy = assigning === busyKey;
+                            return (
+                              <div
+                                key={`${rec.category}-${rec.rank}-${rec.car_number}`}
+                                className="award-row"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "auto 1fr auto",
+                                  alignItems: "center",
+                                  gap: "1rem",
+                                  padding: "0.85rem 1.25rem",
+                                  borderBottom: "1px solid rgba(0,0,0,0.05)",
+                                  background: isAssigned ? "#f8fdf8" : "transparent",
+                                }}
+                              >
+                                {/* Rank badge */}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "50%",
+                                    background:
+                                      rec.rank === 1
+                                        ? "linear-gradient(135deg, #c9a84c, #e8c860)"
+                                        : rec.rank === 2
+                                        ? "#cfd8dc"
+                                        : "#d7ccc8",
+                                    color: rec.rank === 1 ? "#fff" : "var(--charcoal)",
+                                    fontSize: "0.85rem",
+                                    fontWeight: 700,
+                                    flexShrink: 0,
+                                  }}
+                                  title={`Rank ${rec.rank}`}
+                                >
+                                  {rec.rank}
+                                </div>
+
+                                {/* Vehicle info */}
+                                <div style={{ minWidth: 0 }}>
+                                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", margin: 0 }}>
+                                    <span style={{ color: "var(--gold)", fontWeight: 600 }}>#{rec.car_number}</span>{" "}
+                                    {rec.vehicle}
+                                    {rec.color ? <span style={{ color: "var(--text-light)" }}> — {rec.color}</span> : null}
+                                    <span style={{ fontSize: "0.85rem", color: "var(--text-light)", marginLeft: "0.6rem" }}>
+                                      {rec.owner}
+                                    </span>
+                                  </p>
+                                  <p style={{ fontSize: "0.8rem", color: "var(--text-light)", fontStyle: "italic", margin: "0.2rem 0 0" }}>
+                                    {rec.justification}
+                                  </p>
+                                </div>
+
+                                {/* Actions */}
+                                <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
+                                  {isAssigned ? (
+                                    <span
+                                      style={{
+                                        padding: "0.35rem 0.8rem",
+                                        fontSize: "0.7rem",
+                                        fontWeight: 600,
+                                        background: "#e8f5e9",
+                                        color: "#2e7d32",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.04em",
+                                      }}
+                                    >
+                                      Assigned
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => rec.registration_id && handleAssignAward(rec.registration_id, rec.category)}
+                                      disabled={isBusy || !rec.registration_id}
+                                      style={{
+                                        padding: "0.35rem 0.8rem",
+                                        fontSize: "0.7rem",
+                                        fontWeight: 600,
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.04em",
+                                        background: "var(--gold)",
+                                        color: "var(--charcoal)",
+                                        border: "none",
+                                        cursor: isBusy ? "not-allowed" : "pointer",
+                                        opacity: isBusy ? 0.5 : 1,
+                                      }}
+                                    >
+                                      {isBusy ? "..." : winner ? "Pick this" : "Assign"}
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => rec.registration_id && router.push(`/admin/registrations/${rec.registration_id}`)}
+                                    disabled={!rec.registration_id}
+                                    style={{
+                                      padding: "0.35rem 0.8rem",
+                                      fontSize: "0.7rem",
+                                      fontWeight: 600,
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.04em",
+                                      background: "var(--white)",
+                                      color: "var(--charcoal)",
+                                      border: "1px solid #ddd",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    View
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </>
       )}
