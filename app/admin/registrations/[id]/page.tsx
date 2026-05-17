@@ -274,6 +274,32 @@ export default function RegistrationDetailPage() {
     }
   };
 
+  const handleUnarchive = async () => {
+    if (!registration) return;
+    setMenuOpen(false);
+
+    // Infer the previous status: if there's evidence of payment, treat as paid;
+    // otherwise restore to pending. Admin can adjust manually if comped, etc.
+    const wasPaid = Boolean(registration.stripe_payment_intent_id || registration.paid_at);
+    const restoredStatus = wasPaid ? "paid" : "pending";
+
+    if (!confirm(`Unarchive this registration as "${restoredStatus}"? You can change the status afterward if needed.`)) {
+      return;
+    }
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("registrations")
+      .update({ payment_status: restoredStatus })
+      .eq("id", registration.id);
+
+    if (!error) {
+      fetchRegistration();
+    } else {
+      alert("Failed to unarchive: " + error.message);
+    }
+  };
+
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!registration || !contactSubject.trim() || !contactMessage.trim()) return;
@@ -757,7 +783,12 @@ export default function RegistrationDetailPage() {
                   />
                   {/* Divider */}
                   <div style={{ borderTop: "1px solid #eee", margin: "0.25rem 0" }} />
-                  {r.payment_status !== "archived" && (
+                  {r.payment_status === "archived" ? (
+                    <DropdownItem
+                      label="Unarchive"
+                      onClick={handleUnarchive}
+                    />
+                  ) : (
                     <DropdownItem
                       label="Archive"
                       onClick={handleArchive}
