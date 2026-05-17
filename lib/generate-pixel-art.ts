@@ -253,9 +253,9 @@ export async function detectCarFacingLeft(imageBuffer: Buffer): Promise<boolean>
 
 // Google image generation models in fallback order
 const IMAGEN_MODELS = [
-  "imagen-4.0-generate-001",      // Best quality, 70 RPD
-  "imagen-4.0-fast-generate-001", // Fast, 70 RPD
-  "imagen-4.0-ultra-generate-001", // Ultra quality, 30 RPD
+  "imagen-4.0-ultra-generate-001", // Ultra quality
+  "imagen-4.0-generate-001",       // Standard
+  "imagen-4.0-fast-generate-001",  // Fast
 ];
 
 async function tryImagenModel(model: string, prompt: string, aspectRatio: string, geminiKey: string): Promise<Buffer | null> {
