@@ -30,6 +30,7 @@ export default function CheckInPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<Blob | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const [confirmation, setConfirmation] = useState<Registration | null>(null);
 
   const fetchData = useCallback(async () => {
     const supabase = createClient();
@@ -219,6 +220,17 @@ export default function CheckInPage() {
 
   return (
     <>
+      {confirmation && (
+        <CheckedInConfirmation
+          reg={confirmation}
+          onDismiss={() => setConfirmation(null)}
+          onView={() => {
+            const id = confirmation.id;
+            setConfirmation(null);
+            router.push(`/admin/registrations/${id}`);
+          }}
+        />
+      )}
       <div
         style={{
           display: "flex",
@@ -409,7 +421,7 @@ export default function CheckInPage() {
                       await handleCheckIn(m.reg);
                       saveCheckinPhoto(m.reg.id);
                       dismissPhotoResults();
-                      router.push(`/admin/registrations/${m.reg.id}`);
+                      setConfirmation(m.reg);
                     }}
                     style={{
                       padding: "1rem",
@@ -640,5 +652,136 @@ export default function CheckInPage() {
         )}
       </div>
     </>
+  );
+}
+
+function CheckedInConfirmation({
+  reg,
+  onDismiss,
+  onView,
+}: {
+  reg: Registration;
+  onDismiss: () => void;
+  onView: () => void;
+}) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 3000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        position: "fixed",
+        top: "1rem",
+        left: "1rem",
+        right: "1rem",
+        zIndex: 100,
+        display: "flex",
+        justifyContent: "center",
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          pointerEvents: "auto",
+          background: "var(--white)",
+          maxWidth: "440px",
+          width: "100%",
+          padding: "0.85rem 1rem",
+          boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+          borderLeft: "6px solid #2e7d32",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.85rem",
+          animation: "slideDown 0.18s ease-out",
+        }}
+      >
+        <style>{`
+          @keyframes slideDown {
+            from { transform: translateY(-12px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+        `}</style>
+        <div
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            background: "#e8f5e9",
+            color: "#2e7d32",
+            fontSize: "1.2rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
+          ✓
+        </div>
+        <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <p
+            style={{
+              fontSize: "0.6rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: "#2e7d32",
+              fontWeight: 700,
+              marginBottom: "0.1rem",
+            }}
+          >
+            Checked In
+          </p>
+          <p
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: "1rem",
+              lineHeight: 1.2,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            <span style={{ color: "var(--gold)" }}>#{reg.car_number}</span>{" "}
+            {reg.first_name} {reg.last_name}
+          </p>
+        </div>
+        <button
+          onClick={onView}
+          style={{
+            padding: "0.4rem 0.75rem",
+            background: "transparent",
+            color: "var(--text-light)",
+            border: "1px solid #ddd",
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          View
+        </button>
+        <button
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--text-light)",
+            fontSize: "1.1rem",
+            cursor: "pointer",
+            padding: "0 0.25rem",
+            flexShrink: 0,
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
   );
 }
