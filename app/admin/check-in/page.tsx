@@ -14,17 +14,21 @@ type CarIdentification = {
   notes: string;
 };
 
+type Tab = "pending" | "checked";
+
 export default function CheckInPage() {
   const router = useRouter();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<Tab>("pending");
 
   // Photo check-in state
   const [identifying, setIdentifying] = useState(false);
   const [carId, setCarId] = useState<CarIdentification | null>(null);
   const [photoMatches, setPhotoMatches] = useState<{ reg: Registration; score: number }[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [capturedPhoto, setCapturedPhoto] = useState<Blob | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
@@ -110,6 +114,7 @@ export default function CheckInPage() {
     try {
       // Resize before upload to keep request small
       const resized = await resizeImage(file);
+      setCapturedPhoto(resized);
       const fd = new FormData();
       fd.append("photo", new File([resized], "photo.jpg", { type: "image/jpeg" }));
       // Send candidate list with the photo so AI can identify + match in one call
@@ -145,9 +150,36 @@ export default function CheckInPage() {
     setCarId(null);
     setPhotoMatches([]);
     setPhotoPreview(null);
+    setCapturedPhoto(null);
+  };
+
+  // Upload captured photo and save to registration_photos table
+  const saveCheckinPhoto = async (regId: string) => {
+    if (!capturedPhoto) return;
+    try {
+      const supabase = createClient();
+      const fileName = `${regId}-${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("checkin-photos")
+        .upload(fileName, capturedPhoto, { contentType: "image/jpeg", upsert: true });
+      if (uploadError) {
+        console.error("Photo upload failed:", uploadError);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("checkin-photos").getPublicUrl(fileName);
+      await supabase.from("registration_photos").insert({
+        registration_id: regId,
+        url: urlData.publicUrl,
+        type: "checkin",
+      });
+    } catch (err) {
+      console.error("Failed to save check-in photo:", err);
+    }
   };
 
   const filtered = registrations.filter((r) => {
+    if (tab === "pending" && r.checked_in) return false;
+    if (tab === "checked" && !r.checked_in) return false;
     if (!search) return true;
     const s = search.toLowerCase();
     return (
@@ -160,6 +192,16 @@ export default function CheckInPage() {
   });
 
   const checkedInCount = registrations.filter((r) => r.checked_in).length;
+  const pendingCount = registrations.filter((r) => !r.checked_in).length;
+
+  // For the "Checked In" tab, sort by most-recently-checked-in first
+  if (tab === "checked") {
+    filtered.sort((a, b) => {
+      const at = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
+      const bt = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
+      return bt - at;
+    });
+  }
 
   if (loading) {
     return (
@@ -227,6 +269,34 @@ export default function CheckInPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "2px solid rgba(0,0,0,0.08)", marginBottom: "1.5rem" }}>
+        {([
+          { key: "pending", label: `To Check In (${pendingCount})` },
+          { key: "checked", label: `Checked In (${checkedInCount})` },
+        ] as { key: Tab; label: string }[]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            style={{
+              padding: "0.6rem 1.5rem",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              background: "transparent",
+              border: "none",
+              borderBottom: tab === t.key ? "2px solid var(--gold)" : "2px solid transparent",
+              marginBottom: "-2px",
+              color: tab === t.key ? "var(--charcoal)" : "var(--text-light)",
+              cursor: "pointer",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {/* Search + Camera */}
       <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.5rem" }}>
         <input
@@ -244,35 +314,39 @@ export default function CheckInPage() {
             outline: "none",
           }}
         />
-        <button
-          onClick={() => cameraRef.current?.click()}
-          disabled={identifying}
-          style={{
-            padding: "0.75rem 1.25rem",
-            background: identifying ? "#ccc" : "var(--charcoal)",
-            color: "#fff",
-            border: "none",
-            fontSize: "1.5rem",
-            cursor: identifying ? "not-allowed" : "pointer",
-            flexShrink: 0,
-            lineHeight: 1,
-          }}
-          title="Photo check-in"
-        >
-          {identifying ? "..." : "📷"}
-        </button>
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          style={{ display: "none" }}
-          onChange={handlePhoto}
-        />
+        {tab === "pending" && (
+          <>
+            <button
+              onClick={() => cameraRef.current?.click()}
+              disabled={identifying}
+              style={{
+                padding: "0.75rem 1.25rem",
+                background: identifying ? "#ccc" : "var(--charcoal)",
+                color: "#fff",
+                border: "none",
+                fontSize: "1.5rem",
+                cursor: identifying ? "not-allowed" : "pointer",
+                flexShrink: 0,
+                lineHeight: 1,
+              }}
+              title="Photo check-in"
+            >
+              {identifying ? "..." : "📷"}
+            </button>
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={handlePhoto}
+            />
+          </>
+        )}
       </div>
 
       {/* Photo Check-In Results */}
-      {(carId || identifying) && (
+      {tab === "pending" && (carId || identifying) && (
         <div style={{
           background: "var(--white)",
           border: "2px solid var(--gold)",
@@ -330,7 +404,13 @@ export default function CheckInPage() {
                 return (
                   <div
                     key={m.reg.id}
-                    onClick={async () => { if (!unpaid) { await handleCheckIn(m.reg); dismissPhotoResults(); } }}
+                    onClick={async () => {
+                      if (unpaid) return;
+                      await handleCheckIn(m.reg);
+                      saveCheckinPhoto(m.reg.id);
+                      dismissPhotoResults();
+                      router.push(`/admin/registrations/${m.reg.id}`);
+                    }}
                     style={{
                       padding: "1rem",
                       marginBottom: "0.5rem",
@@ -426,6 +506,7 @@ export default function CheckInPage() {
                 <img
                   src={reg.ai_image_url}
                   loading="lazy"
+                  decoding="async"
                   className="checkin-thumb"
                   alt={`${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`}
                   style={{
