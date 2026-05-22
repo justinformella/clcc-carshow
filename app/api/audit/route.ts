@@ -188,8 +188,12 @@ export async function GET() {
 
   // ── Summaries ──
   const stripeRegRevenue = paidRegs.reduce((s, r) => s + (r.amount_paid || 0) + (r.donation_cents || 0), 0);
+  const stripeRegBase = paidRegs.reduce((s, r) => s + (r.amount_paid || 0), 0);
+  const stripeRegDonations = paidRegs.reduce((s, r) => s + (r.donation_cents || 0), 0);
   const cashRegRevenue = cashRegs.reduce((s, r) => s + (r.amount_paid || 0) + (r.donation_cents || 0), 0);
   const stripeSponsorRevenue = paidSponsors.reduce((s, sp) => s + (sp.sponsorship_amount || 0) + (sp.donation_cents || 0), 0);
+  const stripeSponsorBase = paidSponsors.reduce((s, sp) => s + (sp.sponsorship_amount || 0), 0);
+  const stripeSponsorDonations = paidSponsors.reduce((s, sp) => s + (sp.donation_cents || 0), 0);
   const checkSponsorRevenue = checkSponsors.filter((s) => s.status === "paid").reduce((s, sp) => s + (sp.sponsorship_amount || 0) + (sp.donation_cents || 0), 0);
   const cashSponsorRevenue = cashSponsors.filter((s) => s.status === "paid").reduce((s, sp) => s + (sp.sponsorship_amount || 0) + (sp.donation_cents || 0), 0);
 
@@ -197,21 +201,42 @@ export async function GET() {
     .filter((s) => s.payment_status === "complete")
     .reduce((sum, s) => sum + s.amount_total, 0);
 
+  // Pull actual Stripe balance to compare
+  let stripeBalance = 0;
+  let stripeTotalFees = 0;
+  let stripeTotalNet = 0;
+  try {
+    const balance = await stripe.balance.retrieve();
+    stripeBalance = balance.available.reduce((s, b) => s + b.amount, 0)
+      + balance.pending.reduce((s, b) => s + b.amount, 0);
+
+    // Get actual fees from balance transactions
+    for await (const txn of stripe.balanceTransactions.list({ created: { gte: since }, limit: 100, type: "charge" })) {
+      stripeTotalFees += txn.fee;
+      stripeTotalNet += txn.net;
+    }
+  } catch (err) {
+    console.error("Failed to fetch Stripe balance:", err);
+  }
+
   return NextResponse.json({
     summary: {
       registrations: {
-        stripe: { count: paidRegs.length, total: stripeRegRevenue },
+        stripe: { count: paidRegs.length, total: stripeRegRevenue, base: stripeRegBase, donations: stripeRegDonations },
         cash: { count: cashRegs.length, total: cashRegRevenue },
         comped: { count: compedRegs.length },
         pending: { count: pendingRegs.length },
         refunded: { count: refundedRegs.length },
       },
       sponsors: {
-        stripe: { count: paidSponsors.length, total: stripeSponsorRevenue },
+        stripe: { count: paidSponsors.length, total: stripeSponsorRevenue, base: stripeSponsorBase, donations: stripeSponsorDonations },
         check: { count: checkSponsors.length, total: checkSponsorRevenue, unpaid: checkSponsors.filter((s) => s.status !== "paid").length },
         cash: { count: cashSponsors.length, total: cashSponsorRevenue },
       },
-      stripe_actual: stripeTotal,
+      stripe_gross: stripeTotal,
+      stripe_fees: stripeTotalFees,
+      stripe_net: stripeTotalNet,
+      stripe_balance: stripeBalance,
       db_stripe_total: stripeRegRevenue + stripeSponsorRevenue,
       cash_expected: cashRegRevenue + cashSponsorRevenue,
       check_expected: checkSponsorRevenue,

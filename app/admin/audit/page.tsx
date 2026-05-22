@@ -17,18 +17,21 @@ type AuditIssue = {
 
 type AuditSummary = {
   registrations: {
-    stripe: { count: number; total: number };
+    stripe: { count: number; total: number; base: number; donations: number };
     cash: { count: number; total: number };
     comped: { count: number };
     pending: { count: number };
     refunded: { count: number };
   };
   sponsors: {
-    stripe: { count: number; total: number };
+    stripe: { count: number; total: number; base: number; donations: number };
     check: { count: number; total: number; unpaid: number };
     cash: { count: number; total: number };
   };
-  stripe_actual: number;
+  stripe_gross: number;
+  stripe_fees: number;
+  stripe_net: number;
+  stripe_balance: number;
   db_stripe_total: number;
   cash_expected: number;
   check_expected: number;
@@ -138,19 +141,48 @@ export default function AuditPage() {
                 Stripe Reconciliation
               </h3>
               <div style={{ fontSize: "0.85rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px solid #f5f5f5" }}>
-                  <span style={{ color: "var(--text-light)" }}>Stripe says collected</span>
-                  <span style={{ fontWeight: 600 }}>{fmtMoney(summary.stripe_actual)}</span>
+                <p style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", marginBottom: "0.4rem" }}>Gross Charges</p>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", borderBottom: "1px solid #f5f5f5" }}>
+                  <span style={{ color: "var(--text-light)" }}>Registration charges ({summary.registrations.stripe.count})</span>
+                  <span style={{ fontWeight: 600 }}>{fmtMoney(summary.registrations.stripe.total)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", fontSize: "0.8rem", paddingLeft: "1rem", borderBottom: "1px solid #f5f5f5" }}>
+                  <span style={{ color: "var(--text-light)" }}>↳ Fees: {fmtMoney(summary.registrations.stripe.base)} + Donations: {fmtMoney(summary.registrations.stripe.donations)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", borderBottom: "1px solid #f5f5f5" }}>
+                  <span style={{ color: "var(--text-light)" }}>Sponsor charges ({summary.sponsors.stripe.count})</span>
+                  <span style={{ fontWeight: 600 }}>{fmtMoney(summary.sponsors.stripe.total)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", fontSize: "0.8rem", paddingLeft: "1rem", borderBottom: "1px solid #f5f5f5" }}>
+                  <span style={{ color: "var(--text-light)" }}>↳ Sponsorship: {fmtMoney(summary.sponsors.stripe.base)} + Donations: {fmtMoney(summary.sponsors.stripe.donations)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px solid #f5f5f5", fontWeight: 600 }}>
+                  <span>DB Stripe total (gross)</span>
+                  <span>{fmtMoney(summary.db_stripe_total)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px solid #f5f5f5" }}>
-                  <span style={{ color: "var(--text-light)" }}>Our DB says (Stripe payments)</span>
-                  <span style={{ fontWeight: 600 }}>{fmtMoney(summary.db_stripe_total)}</span>
+                  <span style={{ color: "var(--text-light)" }}>Stripe says gross</span>
+                  <span style={{ fontWeight: 600 }}>{fmtMoney(summary.stripe_gross)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0" }}>
-                  <span style={{ color: "var(--text-light)" }}>Difference</span>
-                  <span style={{ fontWeight: 700, color: Math.abs(summary.stripe_actual - summary.db_stripe_total) > 1 ? "#c62828" : "#2e7d32" }}>
-                    {fmtMoney(summary.stripe_actual - summary.db_stripe_total)}
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", borderBottom: "1px solid #f5f5f5" }}>
+                  <span style={{ color: "var(--text-light)" }}>Gross difference</span>
+                  <span style={{ fontWeight: 600, color: Math.abs(summary.stripe_gross - summary.db_stripe_total) > 1 ? "#c62828" : "#2e7d32" }}>
+                    {fmtMoney(summary.stripe_gross - summary.db_stripe_total)}
                   </span>
+                </div>
+
+                <p style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", marginTop: "0.75rem", marginBottom: "0.4rem" }}>After Fees</p>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", borderBottom: "1px solid #f5f5f5" }}>
+                  <span style={{ color: "var(--text-light)" }}>Stripe processing fees</span>
+                  <span style={{ fontWeight: 600, color: "#c62828" }}>({fmtMoney(summary.stripe_fees)})</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", borderBottom: "1px solid #f5f5f5" }}>
+                  <span style={{ color: "var(--text-light)" }}>Net after fees</span>
+                  <span style={{ fontWeight: 600 }}>{fmtMoney(summary.stripe_net)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderTop: "2px solid #ddd", marginTop: "0.25rem" }}>
+                  <span style={{ fontWeight: 700 }}>Stripe balance</span>
+                  <span style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--charcoal)" }}>{fmtMoney(summary.stripe_balance)}</span>
                 </div>
               </div>
             </div>
