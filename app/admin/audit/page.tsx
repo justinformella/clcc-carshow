@@ -38,6 +38,18 @@ type AuditSummary = {
   sessions_checked: number;
 };
 
+type LineItem = {
+  type: "registration" | "sponsor";
+  car_number?: number;
+  name: string;
+  id: string;
+  stripe_session_id: string | null;
+  db_amount: number;
+  stripe_amount: number | null;
+  match: boolean;
+  payment_method: string;
+};
+
 function fmtMoney(cents: number): string {
   return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -58,6 +70,13 @@ export default function AuditPage() {
     }
     return [];
   });
+  const [lineItems, setLineItems] = useState<LineItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const cached = sessionStorage.getItem("audit_lines");
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
   const [ran, setRan] = useState(() => {
     if (typeof window !== "undefined") return !!sessionStorage.getItem("audit_summary");
     return false;
@@ -74,11 +93,13 @@ export default function AuditPage() {
       const data = await res.json();
       setSummary(data.summary);
       setIssues(data.issues || []);
+      setLineItems(data.lineItems || []);
       setRan(true);
       const now = new Date().toLocaleString();
       setLastRun(now);
       sessionStorage.setItem("audit_summary", JSON.stringify(data.summary));
       sessionStorage.setItem("audit_issues", JSON.stringify(data.issues || []));
+      sessionStorage.setItem("audit_lines", JSON.stringify(data.lineItems || []));
       sessionStorage.setItem("audit_last_run", now);
     } catch {
       alert("Audit failed");
@@ -338,8 +359,83 @@ export default function AuditPage() {
               </div>
             </div>
           )}
+
+          {/* Line-by-Line Audit */}
+          {lineItems.length > 0 && (
+            <div style={{ background: "var(--white)", padding: "1.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "1.5rem" }}>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", fontWeight: 400, marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px solid #eee" }}>
+                Line-by-Line Audit ({lineItems.length})
+              </h3>
+              <div style={{ overflow: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.8rem" }}>
+                  <thead>
+                    <tr style={{ background: "#fafafa", textAlign: "left" }}>
+                      <th style={thStyle}>Type</th>
+                      <th style={thStyle}>Name</th>
+                      <th style={thStyle}>Method</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>DB Amount</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>Stripe Amount</th>
+                      <th style={{ ...thStyle, textAlign: "center" }}>Match</th>
+                      <th style={thStyle} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineItems.map((item, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #f0f0f0", background: !item.match ? "#fef2f2" : undefined }}>
+                        <td style={{ padding: "0.5rem 0.75rem" }}>
+                          <span style={{
+                            fontSize: "0.65rem",
+                            fontWeight: 600,
+                            padding: "2px 6px",
+                            textTransform: "uppercase",
+                            background: item.type === "registration" ? "#e3f2fd" : "#fce4ec",
+                            color: item.type === "registration" ? "#1565c0" : "#c62828",
+                          }}>
+                            {item.type === "registration" ? `Reg #${item.car_number}` : "Sponsor"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "0.5rem 0.75rem", fontWeight: 500 }}>{item.name}</td>
+                        <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-light)" }}>{item.payment_method}</td>
+                        <td style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 600 }}>{fmtMoney(item.db_amount)}</td>
+                        <td style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 600 }}>
+                          {item.stripe_amount !== null ? fmtMoney(item.stripe_amount) : "—"}
+                        </td>
+                        <td style={{ padding: "0.5rem 0.75rem", textAlign: "center" }}>
+                          {item.payment_method === "cash" || item.payment_method === "check" ? (
+                            <span style={{ color: "var(--text-light)", fontSize: "0.75rem" }}>n/a</span>
+                          ) : item.match ? (
+                            <span style={{ color: "#2e7d32" }}>✓</span>
+                          ) : (
+                            <span style={{ color: "#c62828", fontWeight: 700 }}>✗</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "0.5rem 0.75rem" }}>
+                          <a
+                            href={item.type === "registration" ? `/admin/registrations/${item.id}` : `/admin/sponsors/${item.id}`}
+                            style={{ fontSize: "0.7rem", color: "var(--gold)", textDecoration: "none", fontWeight: 600 }}
+                          >
+                            View
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </>
   );
 }
+
+const thStyle: React.CSSProperties = {
+  padding: "0.5rem 0.75rem",
+  fontWeight: 600,
+  fontSize: "0.65rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "var(--text-light)",
+  whiteSpace: "nowrap",
+};

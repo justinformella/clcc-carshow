@@ -175,7 +175,7 @@ export async function GET() {
   ]);
 
   for (const [sessionId, session] of Object.entries(sessions)) {
-    if (session.payment_status === "complete" && !knownSessionIds.has(sessionId) && session.amount_total > 0) {
+    if ((session.payment_status === "complete" || session.payment_status === "paid") && !knownSessionIds.has(sessionId) && session.amount_total > 0) {
       issues.push({
         type: "orphan_charge",
         severity: "warning",
@@ -210,13 +210,95 @@ export async function GET() {
     stripeBalance = (balance.available || []).reduce((s, b) => s + (b.amount || 0), 0)
       + (balance.pending || []).reduce((s, b) => s + (b.amount || 0), 0);
 
-    // Get actual fees from balance transactions
-    for await (const txn of stripe.balanceTransactions.list({ created: { gte: since }, limit: 100, type: "charge" })) {
-      stripeTotalFees += (txn.fee || 0);
-      stripeTotalNet += (txn.net || 0);
+    // Get actual fees from ALL balance transactions (auto-paginates)
+    for await (const txn of stripe.balanceTransactions.list({ created: { gte: since }, limit: 100 })) {
+      if (txn.type === "charge") {
+        stripeTotalFees += (txn.fee || 0);
+        stripeTotalNet += (txn.net || 0);
+      } else if (txn.type === "refund") {
+        stripeTotalNet += (txn.net || 0); // refunds are negative
+      }
     }
   } catch (err) {
     console.error("Failed to fetch Stripe balance:", err);
+  }
+
+  // Check gross total mismatch
+  const dbStripeTotal = stripeRegRevenue + stripeSponsorRevenue;
+  if (Math.abs(stripeTotal - dbStripeTotal) > 100) {
+    issues.push({
+      type: "amount_mismatch",
+      severity: "error",
+      description: `Stripe gross total ($${(stripeTotal / 100).toFixed(2)}) differs from DB Stripe total ($${(dbStripeTotal / 100).toFixed(2)}) by $${(Math.abs(stripeTotal - dbStripeTotal) / 100).toFixed(2)}`,
+      expected_amount: dbStripeTotal,
+      actual_amount: stripeTotal,
+    });
+  }
+
+  // ── Line-by-line audit ──
+  // Build a per-session breakdown comparing DB vs Stripe
+  const lineItems: {
+    type: "registration" | "sponsor";
+    car_number?: number;
+    name: string;
+    id: string;
+    stripe_session_id: string | null;
+    db_amount: number;
+    stripe_amount: number | null;
+    match: boolean;
+    payment_method: string;
+  }[] = [];
+
+  // Group registrations by session for multi-vehicle checkouts
+  for (const [sessionId, regs] of Object.entries(regsBySession)) {
+    const session = sessions[sessionId];
+    const dbTotal = regs.reduce((s, r) => s + (r.amount_paid || 0) + (r.donation_cents || 0), 0);
+    const stripeAmt = session ? session.amount_total : null;
+    lineItems.push({
+      type: "registration",
+      car_number: regs[0].car_number,
+      name: regs.length === 1
+        ? `${regs[0].first_name} ${regs[0].last_name}`
+        : `${regs[0].first_name} ${regs[0].last_name} (${regs.length} cars)`,
+      id: regs[0].id,
+      stripe_session_id: sessionId,
+      db_amount: dbTotal,
+      stripe_amount: stripeAmt,
+      match: stripeAmt !== null ? Math.abs(dbTotal - stripeAmt) <= 1 : false,
+      payment_method: "stripe",
+    });
+  }
+
+  // Cash registrations
+  for (const reg of cashRegs) {
+    lineItems.push({
+      type: "registration",
+      car_number: reg.car_number,
+      name: `${reg.first_name} ${reg.last_name}`,
+      id: reg.id,
+      stripe_session_id: null,
+      db_amount: (reg.amount_paid || 0) + (reg.donation_cents || 0),
+      stripe_amount: null,
+      match: true,
+      payment_method: "cash",
+    });
+  }
+
+  // Sponsors
+  for (const sp of [...paidSponsors, ...checkSponsors.filter((s) => s.status === "paid"), ...cashSponsors.filter((s) => s.status === "paid")]) {
+    const session = sp.stripe_session_id ? sessions[sp.stripe_session_id] : null;
+    const dbTotal = (sp.sponsorship_amount || 0) + (sp.donation_cents || 0);
+    const stripeAmt = session ? session.amount_total : null;
+    lineItems.push({
+      type: "sponsor",
+      name: sp.company,
+      id: sp.id,
+      stripe_session_id: sp.stripe_session_id || null,
+      db_amount: dbTotal,
+      stripe_amount: stripeAmt,
+      match: sp.payment_method === "stripe" ? (stripeAmt !== null ? Math.abs(dbTotal - stripeAmt) <= 1 : false) : true,
+      payment_method: sp.payment_method || "unknown",
+    });
   }
 
   return NextResponse.json({
@@ -243,5 +325,6 @@ export async function GET() {
       sessions_checked: Object.keys(sessions).length,
     },
     issues,
+    lineItems,
   });
 }
