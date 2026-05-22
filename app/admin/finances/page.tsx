@@ -137,9 +137,9 @@ export default function FinancesPage() {
 
   const totalRevenue = regRevenue + sponsorRevenue + donationRevenue;
 
-  // Stripe fee estimate: applied to each paid registration (incl. donation) and paid sponsor
-  const regFees = paidRegs.reduce((sum, r) => sum + estimateStripeFee((r.amount_paid || 0) + (r.donation_cents || 0)), 0);
-  const sponsorFees = paidSponsors.reduce((sum, s) => sum + estimateStripeFee((s.sponsorship_amount || 0) + (s.donation_cents || 0)), 0);
+  // Stripe fee estimate: only applied to Stripe payments, not cash/check
+  const regFees = paidRegs.filter((r) => r.payment_method === "stripe").reduce((sum, r) => sum + estimateStripeFee((r.amount_paid || 0) + (r.donation_cents || 0)), 0);
+  const sponsorFees = paidSponsors.filter((s) => s.payment_method === "stripe").reduce((sum, s) => sum + estimateStripeFee((s.sponsorship_amount || 0) + (s.donation_cents || 0)), 0);
   const totalFees = regFees + sponsorFees;
 
   const netAfterFees = totalRevenue - totalFees;

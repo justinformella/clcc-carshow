@@ -13,6 +13,7 @@ type AuditIssue = {
   expected_amount?: number;
   actual_amount?: number;
   stripe_session_id?: string;
+  stripe_payment_intent?: string;
 };
 
 type AuditSummary = {
@@ -40,6 +41,9 @@ type AuditSummary = {
   total_sponsor_revenue: number;
   total_donation_revenue: number;
   total_gross: number;
+  ad_spend: number;
+  show_expenses: number;
+  refunded: number;
 };
 
 type LineItem = {
@@ -299,22 +303,28 @@ export default function AuditPage() {
             gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: "1.5rem",
           }}>
-            {[
-              { label: "Gross Revenue", value: summary.total_gross, color: "#fff" },
-              { label: "Stripe Fees", value: -summary.stripe_fees, color: "#ff6b6b" },
-              { label: "Stripe Balance", value: summary.stripe_balance, color: "#fff" },
-              { label: "Cash + Check", value: summary.cash_expected + summary.check_expected, color: "#fff" },
-              { label: "Total Available", value: summary.stripe_balance + summary.cash_expected + summary.check_expected, color: "var(--gold)", large: true },
-            ].map((item) => (
-              <div key={item.label}>
-                <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", marginBottom: "0.25rem" }}>
-                  {item.label}
-                </p>
-                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: item.large ? "2rem" : "1.5rem", color: item.color }}>
-                  {fmtMoney(item.value)}
-                </p>
-              </div>
-            ))}
+            {(() => {
+              const totalCollected = summary.stripe_balance + summary.cash_expected + summary.check_expected;
+              const totalDeductions = summary.ad_spend + summary.show_expenses + summary.refunded;
+              const netForCharity = totalCollected - totalDeductions;
+              return [
+                { label: "Stripe Balance", value: summary.stripe_balance },
+                { label: "Cash + Check", value: summary.cash_expected + summary.check_expected },
+                { label: "Total Collected", value: totalCollected },
+                { label: "Expenses", value: -summary.show_expenses, red: true },
+                { label: "Ad Spend", value: -summary.ad_spend, red: summary.ad_spend > 0 },
+                { label: "Net for Charity", value: netForCharity, gold: true, large: true },
+              ].map((item) => (
+                <div key={item.label}>
+                  <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", marginBottom: "0.25rem" }}>
+                    {item.label}
+                  </p>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: item.large ? "2rem" : "1.3rem", color: item.red ? "#ff6b6b" : item.gold ? "var(--gold)" : "#fff" }}>
+                    {fmtMoney(item.value)}
+                  </p>
+                </div>
+              ));
+            })()}
           </div>
 
           {/* Issues List */}
@@ -357,14 +367,16 @@ export default function AuditPage() {
                             View →
                           </a>
                         )}
-                        {issue.stripe_session_id && (
+                        {(issue.stripe_payment_intent || issue.stripe_session_id) && (
                           <a
-                            href={`https://dashboard.stripe.com/checkout/sessions/${issue.stripe_session_id}`}
+                            href={issue.stripe_payment_intent
+                              ? `https://dashboard.stripe.com/payments/${issue.stripe_payment_intent}`
+                              : `https://dashboard.stripe.com/search#query=${issue.stripe_session_id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{ fontSize: "0.75rem", color: "#635bff", whiteSpace: "nowrap", textDecoration: "none", fontWeight: 600 }}
                           >
-                            Stripe →
+                            View in Stripe →
                           </a>
                         )}
                       </div>

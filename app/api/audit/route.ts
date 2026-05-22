@@ -15,6 +15,7 @@ type AuditIssue = {
   expected_amount?: number;
   actual_amount?: number;
   stripe_session_id?: string;
+  stripe_payment_intent?: string;
 };
 
 export async function GET() {
@@ -22,13 +23,17 @@ export async function GET() {
   const supabase = createServerClient();
 
   // Fetch all registrations and sponsors
-  const [regResult, sponsorResult] = await Promise.all([
+  const [regResult, sponsorResult, campaignResult, expenseResult] = await Promise.all([
     supabase.from("registrations").select("*").in("payment_status", ["paid", "comped", "pending", "refunded"]),
     supabase.from("sponsors").select("*").neq("status", "archived"),
+    supabase.from("ad_campaigns").select("spent_cents"),
+    supabase.from("show_expenses").select("amount_cents"),
   ]);
 
   const registrations = regResult.data || [];
   const sponsors = sponsorResult.data || [];
+  const totalAdSpend = (campaignResult.data || []).reduce((s: number, c: { spent_cents: number }) => s + (c.spent_cents || 0), 0);
+  const totalShowExpenses = (expenseResult.data || []).reduce((s: number, e: { amount_cents: number }) => s + (e.amount_cents || 0), 0);
 
   // Pull Stripe checkout sessions from the last 90 days
   const since = Math.floor(Date.now() / 1000) - 90 * 24 * 60 * 60;
@@ -177,11 +182,13 @@ export async function GET() {
 
   for (const [sessionId, session] of Object.entries(sessions)) {
     if ((session.payment_status === "complete" || session.payment_status === "paid") && !knownSessionIds.has(sessionId) && session.amount_total > 0) {
+      const piId = session.payment_intent;
       issues.push({
         type: "orphan_charge",
         severity: "warning",
-        description: `Stripe session ($${(session.amount_total / 100).toFixed(2)}) has no matching registration or sponsor`,
+        description: `Stripe charge of $${(session.amount_total / 100).toFixed(2)} has no matching registration or sponsor${piId ? "" : " (no payment intent)"}`,
         stripe_session_id: sessionId,
+        stripe_payment_intent: piId || undefined,
         actual_amount: session.amount_total,
       });
     }
@@ -329,6 +336,9 @@ export async function GET() {
       total_sponsor_revenue: totalSponsorRevenue,
       total_donation_revenue: totalDonationRevenue,
       total_gross: totalGross,
+      ad_spend: totalAdSpend,
+      show_expenses: totalShowExpenses,
+      refunded: registrations.filter((r) => r.payment_status === "refunded").reduce((s, r) => s + (r.amount_paid || 0), 0),
     },
     issues,
     lineItems,
