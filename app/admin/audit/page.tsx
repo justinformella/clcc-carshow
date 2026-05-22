@@ -171,10 +171,8 @@ export default function AuditPage() {
             </span>
             <div>
               <p style={{ fontWeight: 600, color: "var(--charcoal)", fontSize: "1rem" }}>
-                {errors.length > 0
-                  ? `${errors.length} issue${errors.length !== 1 ? "s" : ""} found`
-                  : warnings.length > 0
-                  ? `${warnings.length} warning${warnings.length !== 1 ? "s" : ""}`
+                {issues.length > 0
+                  ? `${issues.length} issue${issues.length !== 1 ? "s" : ""} found`
                   : "All clear — no discrepancies found"}
               </p>
               <p style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
@@ -350,14 +348,26 @@ export default function AuditPage() {
                         </span>
                         <span style={{ color: "var(--charcoal)" }}>{issue.description}</span>
                       </div>
-                      {(issue.registration_id || issue.sponsor_id) && (
-                        <a
-                          href={issue.registration_id ? `/admin/registrations/${issue.registration_id}` : `/admin/sponsors/${issue.sponsor_id}`}
-                          style={{ fontSize: "0.75rem", color: "var(--gold)", whiteSpace: "nowrap", textDecoration: "none", fontWeight: 600 }}
-                        >
-                          View →
-                        </a>
-                      )}
+                      <div style={{ display: "flex", gap: "0.75rem", flexShrink: 0 }}>
+                        {(issue.registration_id || issue.sponsor_id) && (
+                          <a
+                            href={issue.registration_id ? `/admin/registrations/${issue.registration_id}` : `/admin/sponsors/${issue.sponsor_id}`}
+                            style={{ fontSize: "0.75rem", color: "var(--gold)", whiteSpace: "nowrap", textDecoration: "none", fontWeight: 600 }}
+                          >
+                            View →
+                          </a>
+                        )}
+                        {issue.stripe_session_id && (
+                          <a
+                            href={`https://dashboard.stripe.com/checkout/sessions/${issue.stripe_session_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: "0.75rem", color: "#635bff", whiteSpace: "nowrap", textDecoration: "none", fontWeight: 600 }}
+                          >
+                            Stripe →
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

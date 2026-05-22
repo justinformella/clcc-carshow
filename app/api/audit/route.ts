@@ -180,7 +180,7 @@ export async function GET() {
       issues.push({
         type: "orphan_charge",
         severity: "warning",
-        description: `Stripe session ${sessionId.slice(0, 20)}... ($${(session.amount_total / 100).toFixed(2)}) has no matching registration or sponsor`,
+        description: `Stripe session ($${(session.amount_total / 100).toFixed(2)}) has no matching registration or sponsor`,
         stripe_session_id: sessionId,
         actual_amount: session.amount_total,
       });
@@ -202,27 +202,19 @@ export async function GET() {
     .filter((s) => s.payment_status === "complete" || s.payment_status === "paid")
     .reduce((sum, s) => sum + (s.amount_total || 0), 0);
 
-  // Pull actual Stripe balance to compare
+  // Pull actual Stripe balance
   let stripeBalance = 0;
-  let stripeTotalFees = 0;
-  let stripeTotalNet = 0;
   try {
     const balance = await stripe.balance.retrieve();
     stripeBalance = (balance.available || []).reduce((s, b) => s + (b.amount || 0), 0)
       + (balance.pending || []).reduce((s, b) => s + (b.amount || 0), 0);
-
-    // Get actual fees from ALL balance transactions (auto-paginates)
-    for await (const txn of stripe.balanceTransactions.list({ created: { gte: since }, limit: 100 })) {
-      if (txn.type === "charge") {
-        stripeTotalFees += (txn.fee || 0);
-        stripeTotalNet += (txn.net || 0);
-      } else if (txn.type === "refund") {
-        stripeTotalNet += (txn.net || 0); // refunds are negative
-      }
-    }
   } catch (err) {
     console.error("Failed to fetch Stripe balance:", err);
   }
+
+  // Fees = gross charges - balance (accurate when no payouts)
+  const stripeTotalFees = stripeTotal - stripeBalance;
+  const stripeTotalNet = stripeBalance;
 
   // Check gross total mismatch
   const dbStripeTotal = stripeRegRevenue + stripeSponsorRevenue;
