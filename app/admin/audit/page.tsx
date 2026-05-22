@@ -267,6 +267,32 @@ export default function AuditPage() {
             </div>
           </div>
 
+          {/* Total Net Summary */}
+          <div style={{
+            background: "var(--charcoal)",
+            padding: "1.5rem 2rem",
+            marginBottom: "1.5rem",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "1.5rem",
+          }}>
+            {[
+              { label: "Stripe Net (after fees)", value: summary.stripe_net, color: "#fff" },
+              { label: "Cash Collected", value: summary.cash_expected, color: "#fff" },
+              { label: "Check Collected", value: summary.check_expected, color: "#fff" },
+              { label: "Total Net Revenue", value: summary.stripe_net + summary.cash_expected + summary.check_expected, color: "var(--gold)", large: true },
+            ].map((item) => (
+              <div key={item.label}>
+                <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", marginBottom: "0.25rem" }}>
+                  {item.label}
+                </p>
+                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: item.large ? "2rem" : "1.5rem", color: item.color }}>
+                  {fmtMoney(item.value)}
+                </p>
+              </div>
+            ))}
+          </div>
+
           {/* Issues List */}
           {issues.length > 0 && (
             <div style={{ background: "var(--white)", padding: "1.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "1.5rem" }}>
