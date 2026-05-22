@@ -4,24 +4,24 @@ import { useState } from "react";
 
 const faqs = [
   {
-    question: "What types of vehicles can participate?",
+    question: "How can my business sponsor next year's show?",
     answer:
-      "All vehicles are welcome! Classic cars, modern sports cars, muscle cars, imports, trucks, motorcycles, and anything with wheels that you're proud of. We celebrate all automotive enthusiasm. There are no year, make, or model restrictions.",
+      "We'd love to have you! Sponsorship opportunities for the 2027 show are open now. Scroll down to the Sponsors section and submit an inquiry — we'll be in touch with tiers, benefits, and how your support directly fuels the Crystal Lake Food Pantry.",
   },
   {
-    question: "Can I leave early if needed?",
+    question: "Where do the proceeds go?",
     answer:
-      "For safety reasons, we ask that all show vehicles remain in place until 2:00 PM. This ensures the safety of spectators and maintains the integrity of the show. Emergency exits are available if absolutely necessary. Please inform staff at registration if you anticipate needing to leave early.",
+      "100% of net proceeds go directly to the Crystal Lake Food Pantry. Since 1983, the pantry has been a safety net for families across McHenry County facing food insecurity — currently serving over 800 families each month.",
   },
   {
-    question: "Are pets allowed at the event?",
+    question: "What types of vehicles are eligible for the show?",
     answer:
-      "Leashed pets are welcome! Please keep them under control at all times and clean up after them. We ask that pets be kept away from show vehicles unless you're the owner.",
+      "All vehicles are welcome! Classic cars, modern sports cars, muscle cars, imports, trucks, motorcycles — if it has wheels and you're proud of it, it belongs here. There are no year, make, or model restrictions.",
   },
   {
-    question: "Is pre-registration required?",
+    question: "When is the next show?",
     answer:
-      "Pre-registration is strongly encouraged to guarantee your spot. We have limited space for show vehicles, and historically we reach capacity before the event date. Day-of registration may be available but is not guaranteed.",
+      "We host the show every spring in downtown Crystal Lake. The 2027 date will be announced once it's locked in — follow us on social or check back here for the announcement and pre-registration details.",
   },
 ];
 

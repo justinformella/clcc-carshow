@@ -13,8 +13,7 @@ export default function AboutCharitySection() {
               Every year, three blocks of historic downtown Crystal Lake
               transform into an open-air showroom. Over 200 vehicles line
               Grant, Brink, and Williams streets&mdash;each one with a story
-              under the hood. This year&apos;s show is Sunday, May 17, 2026,
-              with a rain date of Sunday, May 31.
+              under the hood. We&apos;ll be back next May.
             </p>
             <p className="about-charity-text">
               Grab a coffee, browse the local shops, and take in the

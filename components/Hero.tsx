@@ -1,29 +1,29 @@
 import Link from "next/link";
-import CountdownTimer from "./CountdownTimer";
 import CharityProgress from "./CharityProgress";
 
 export default function Hero() {
   return (
     <section className="hero">
       <div className="hero-content">
-        <div className="hero-badge">4th Annual Charity Event</div>
+        <div className="hero-badge">4th Annual Charity Event · May 17, 2026</div>
         <h1>
-          CLCC Annual
+          Thank You,
           <br />
-          Charity Car Show
+          Crystal Lake!
         </h1>
-        <p className="hero-date">May 17, 2026</p>
-        <p className="hero-location">
-          Grant, Brink &amp; Williams Streets &middot; Downtown Crystal Lake
+        <p className="hero-date" style={{ background: "transparent", padding: 0, fontSize: "1.4rem" }}>
+          The 2026 show is in the books
         </p>
-        <CountdownTimer />
+        <p className="hero-location">
+          See you next May &middot; Downtown Crystal Lake
+        </p>
         <div className="hero-buttons">
-          <Link href="/register" className="hero-cta">
-            Register Your Vehicle
+          <Link href="#winners" className="hero-cta">
+            View Winners
           </Link>
-          <a href="#sponsors" className="hero-cta hero-cta-outline">
-            Become a Sponsor
-          </a>
+          <Link href="#sponsors" className="hero-cta hero-cta-outline">
+            Sponsor Next Year
+          </Link>
         </div>
       </div>
       <CharityProgress />

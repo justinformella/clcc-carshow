@@ -69,10 +69,10 @@ export default function Header() {
             </li>
             <li>
               <a
-                href="#schedule"
-                onClick={(e) => handleAnchorClick(e, "#schedule")}
+                href="#winners"
+                onClick={(e) => handleAnchorClick(e, "#winners")}
               >
-                Schedule
+                Winners
               </a>
             </li>
             <li>
@@ -90,11 +90,6 @@ export default function Header() {
             </li>
             <li>
               <Link href="/contact">Contact</Link>
-            </li>
-            <li>
-              <Link href="/register" className="nav-cta">
-                Register
-              </Link>
             </li>
           </ul>
         </nav>

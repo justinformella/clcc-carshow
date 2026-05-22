@@ -3,16 +3,13 @@ import { KonamiListener } from "@/components/EightBitEasterEgg";
 import Hero from "@/components/Hero";
 import HeroSponsors from "@/components/HeroSponsors";
 import AboutCharitySection from "@/components/AboutCharitySection";
-import ScheduleAwards from "@/components/ScheduleAwards";
-import SpectatorBanner from "@/components/SpectatorBanner";
-import WeatherPolicy from "@/components/WeatherPolicy";
+import Winners from "@/components/Winners";
 import FAQ from "@/components/FAQ";
 import Gallery from "@/components/Gallery";
 import SponsorsSection from "@/components/SponsorsSection";
 import CommunityBanner from "@/components/CommunityBanner";
 import ArcadeBanner from "@/components/ArcadeBanner";
 import Footer from "@/components/Footer";
-import StickyRegisterBar from "@/components/StickyRegisterBar";
 
 export const revalidate = 60;
 
@@ -21,15 +18,12 @@ export default function Home() {
     <>
       <Header />
       <KonamiListener />
-      <StickyRegisterBar />
       <Hero />
       <HeroSponsors />
+      <Winners />
       <AboutCharitySection />
-      <ScheduleAwards />
-      <SpectatorBanner />
       <CommunityBanner />
       <ArcadeBanner />
-      <WeatherPolicy />
       <FAQ />
       <SponsorsSection />
       <Gallery />

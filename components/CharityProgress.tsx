@@ -97,7 +97,7 @@ export default function CharityProgress() {
         }
       `}</style>
       <div className="charity-progress-inner">
-        <span className="charity-progress-label">Raised for Charity</span>
+        <span className="charity-progress-label">Raised for the Food Pantry</span>
         <div className="charity-progress-bar">
           <div className="charity-progress-bar-fill" />
         </div>
