@@ -198,8 +198,8 @@ export async function GET() {
   const cashSponsorRevenue = cashSponsors.filter((s) => s.status === "paid").reduce((s, sp) => s + (sp.sponsorship_amount || 0) + (sp.donation_cents || 0), 0);
 
   const stripeTotal = Object.values(sessions)
-    .filter((s) => s.payment_status === "complete")
-    .reduce((sum, s) => sum + s.amount_total, 0);
+    .filter((s) => s.payment_status === "complete" || s.payment_status === "paid")
+    .reduce((sum, s) => sum + (s.amount_total || 0), 0);
 
   // Pull actual Stripe balance to compare
   let stripeBalance = 0;
@@ -207,13 +207,13 @@ export async function GET() {
   let stripeTotalNet = 0;
   try {
     const balance = await stripe.balance.retrieve();
-    stripeBalance = balance.available.reduce((s, b) => s + b.amount, 0)
-      + balance.pending.reduce((s, b) => s + b.amount, 0);
+    stripeBalance = (balance.available || []).reduce((s, b) => s + (b.amount || 0), 0)
+      + (balance.pending || []).reduce((s, b) => s + (b.amount || 0), 0);
 
     // Get actual fees from balance transactions
     for await (const txn of stripe.balanceTransactions.list({ created: { gte: since }, limit: 100, type: "charge" })) {
-      stripeTotalFees += txn.fee;
-      stripeTotalNet += txn.net;
+      stripeTotalFees += (txn.fee || 0);
+      stripeTotalNet += (txn.net || 0);
     }
   } catch (err) {
     console.error("Failed to fetch Stripe balance:", err);

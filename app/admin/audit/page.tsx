@@ -44,9 +44,28 @@ function fmtMoney(cents: number): string {
 
 export default function AuditPage() {
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<AuditSummary | null>(null);
-  const [issues, setIssues] = useState<AuditIssue[]>([]);
-  const [ran, setRan] = useState(false);
+  const [summary, setSummary] = useState<AuditSummary | null>(() => {
+    if (typeof window !== "undefined") {
+      const cached = sessionStorage.getItem("audit_summary");
+      return cached ? JSON.parse(cached) : null;
+    }
+    return null;
+  });
+  const [issues, setIssues] = useState<AuditIssue[]>(() => {
+    if (typeof window !== "undefined") {
+      const cached = sessionStorage.getItem("audit_issues");
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
+  const [ran, setRan] = useState(() => {
+    if (typeof window !== "undefined") return !!sessionStorage.getItem("audit_summary");
+    return false;
+  });
+  const [lastRun, setLastRun] = useState<string | null>(() => {
+    if (typeof window !== "undefined") return sessionStorage.getItem("audit_last_run");
+    return null;
+  });
 
   const runAudit = async () => {
     setLoading(true);
@@ -56,6 +75,11 @@ export default function AuditPage() {
       setSummary(data.summary);
       setIssues(data.issues || []);
       setRan(true);
+      const now = new Date().toLocaleString();
+      setLastRun(now);
+      sessionStorage.setItem("audit_summary", JSON.stringify(data.summary));
+      sessionStorage.setItem("audit_issues", JSON.stringify(data.issues || []));
+      sessionStorage.setItem("audit_last_run", now);
     } catch {
       alert("Audit failed");
     } finally {
@@ -75,6 +99,7 @@ export default function AuditPage() {
           </h1>
           <p style={{ color: "var(--text-light)", fontSize: "0.85rem", marginTop: "0.25rem" }}>
             Cross-reference Stripe charges against registrations and sponsors
+            {lastRun && <span> · Last run: {lastRun}</span>}
           </p>
         </div>
         <button
