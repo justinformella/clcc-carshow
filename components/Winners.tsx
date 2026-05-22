@@ -49,6 +49,7 @@ export default async function Winners() {
       style={{
         background: "linear-gradient(180deg, var(--cream) 0%, #ffffff 100%)",
         padding: "6rem 1.5rem",
+        scrollMarginTop: "80px",
       }}
     >
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>

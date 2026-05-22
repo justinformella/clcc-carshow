@@ -1,4 +1,3 @@
-import Link from "next/link";
 import CharityProgress from "./CharityProgress";
 
 export default function Hero() {
@@ -18,12 +17,12 @@ export default function Hero() {
           See you next May &middot; Downtown Crystal Lake
         </p>
         <div className="hero-buttons">
-          <Link href="#winners" className="hero-cta">
+          <a href="#winners" className="hero-cta">
             View Winners
-          </Link>
-          <Link href="#sponsors" className="hero-cta hero-cta-outline">
+          </a>
+          <a href="#sponsors" className="hero-cta hero-cta-outline">
             Sponsor Next Year
-          </Link>
+          </a>
         </div>
       </div>
       <CharityProgress />
