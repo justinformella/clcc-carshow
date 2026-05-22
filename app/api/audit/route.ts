@@ -52,6 +52,7 @@ export async function GET() {
 
   // ── Registration Audit ──
 
+  const allPaidRegs = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
   const paidRegs = registrations.filter((r) => r.payment_status === "paid" && r.payment_method === "stripe");
   const cashRegs = registrations.filter((r) => r.payment_status === "paid" && r.payment_method === "cash");
   const compedRegs = registrations.filter((r) => r.payment_status === "comped");
@@ -301,6 +302,14 @@ export async function GET() {
     });
   }
 
+  // ── Cross-page totals (matching finances page logic) ──
+  const allPaidSponsors = sponsors.filter((s) => s.status === "paid" || s.status === "engaged");
+  const totalRegRevenue = allPaidRegs.reduce((s, r) => s + (r.amount_paid || 0), 0);
+  const totalSponsorRevenue = allPaidSponsors.reduce((s, sp) => s + (sp.sponsorship_amount || 0), 0);
+  const totalDonationRevenue = allPaidRegs.reduce((s, r) => s + (r.donation_cents || 0), 0)
+    + allPaidSponsors.reduce((s, sp) => s + (sp.donation_cents || 0), 0);
+  const totalGross = totalRegRevenue + totalSponsorRevenue + totalDonationRevenue;
+
   return NextResponse.json({
     summary: {
       registrations: {
@@ -323,6 +332,11 @@ export async function GET() {
       cash_expected: cashRegRevenue + cashSponsorRevenue,
       check_expected: checkSponsorRevenue,
       sessions_checked: Object.keys(sessions).length,
+      // Totals matching finances page
+      total_reg_revenue: totalRegRevenue,
+      total_sponsor_revenue: totalSponsorRevenue,
+      total_donation_revenue: totalDonationRevenue,
+      total_gross: totalGross,
     },
     issues,
     lineItems,

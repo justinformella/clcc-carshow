@@ -36,6 +36,10 @@ type AuditSummary = {
   cash_expected: number;
   check_expected: number;
   sessions_checked: number;
+  total_reg_revenue: number;
+  total_sponsor_revenue: number;
+  total_donation_revenue: number;
+  total_gross: number;
 };
 
 type LineItem = {
@@ -298,10 +302,11 @@ export default function AuditPage() {
             gap: "1.5rem",
           }}>
             {[
-              { label: "Stripe Net (after fees)", value: summary.stripe_net, color: "#fff" },
-              { label: "Cash Collected", value: summary.cash_expected, color: "#fff" },
-              { label: "Check Collected", value: summary.check_expected, color: "#fff" },
-              { label: "Total Net Revenue", value: summary.stripe_net + summary.cash_expected + summary.check_expected, color: "var(--gold)", large: true },
+              { label: "Gross Revenue", value: summary.total_gross, color: "#fff" },
+              { label: "Stripe Fees", value: -summary.stripe_fees, color: "#ff6b6b" },
+              { label: "Stripe Balance", value: summary.stripe_balance, color: "#fff" },
+              { label: "Cash + Check", value: summary.cash_expected + summary.check_expected, color: "#fff" },
+              { label: "Total Available", value: summary.stripe_balance + summary.cash_expected + summary.check_expected, color: "var(--gold)", large: true },
             ].map((item) => (
               <div key={item.label}>
                 <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", marginBottom: "0.25rem" }}>
