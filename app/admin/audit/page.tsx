@@ -47,10 +47,11 @@ type AuditSummary = {
 };
 
 type LineItem = {
-  type: "registration" | "sponsor";
+  type: "registration" | "sponsor" | "orphan";
   car_number?: number;
   name: string;
   id: string;
+  status?: string;
   stripe_session_id: string | null;
   db_amount: number;
   stripe_amount: number | null;
@@ -415,11 +416,16 @@ export default function AuditPage() {
                             fontWeight: 600,
                             padding: "2px 6px",
                             textTransform: "uppercase",
-                            background: item.type === "registration" ? "#e3f2fd" : "#fce4ec",
-                            color: item.type === "registration" ? "#1565c0" : "#c62828",
+                            background: item.type === "orphan" ? "#fff3e0" : item.type === "registration" ? "#e3f2fd" : "#fce4ec",
+                            color: item.type === "orphan" ? "#e65100" : item.type === "registration" ? "#1565c0" : "#c62828",
                           }}>
-                            {item.type === "registration" ? `Reg #${item.car_number}` : "Sponsor"}
+                            {item.type === "orphan" ? "Orphan" : item.type === "registration" ? `Reg #${item.car_number}` : "Sponsor"}
                           </span>
+                          {item.status && (item.status === "archived" || item.status === "refunded") && (
+                            <span style={{ fontSize: "0.6rem", fontWeight: 600, padding: "1px 5px", marginLeft: "0.3rem", background: item.status === "refunded" ? "#ffebee" : "#f5f5f5", color: item.status === "refunded" ? "#c62828" : "#666", textTransform: "uppercase" }}>
+                              {item.status}
+                            </span>
+                          )}
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem", fontWeight: 500 }}>{item.name}</td>
                         <td style={{ padding: "0.5rem 0.75rem", color: "var(--text-light)" }}>{item.payment_method}</td>
@@ -437,12 +443,23 @@ export default function AuditPage() {
                           )}
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem" }}>
-                          <a
-                            href={item.type === "registration" ? `/admin/registrations/${item.id}` : `/admin/sponsors/${item.id}`}
-                            style={{ fontSize: "0.7rem", color: "var(--gold)", textDecoration: "none", fontWeight: 600 }}
-                          >
-                            View
-                          </a>
+                          {item.type === "orphan" ? (
+                            <a
+                              href={`https://dashboard.stripe.com/search#query=${item.stripe_session_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontSize: "0.7rem", color: "#635bff", textDecoration: "none", fontWeight: 600 }}
+                            >
+                              Stripe
+                            </a>
+                          ) : (
+                            <a
+                              href={item.type === "registration" ? `/admin/registrations/${item.id}` : `/admin/sponsors/${item.id}`}
+                              style={{ fontSize: "0.7rem", color: "var(--gold)", textDecoration: "none", fontWeight: 600 }}
+                            >
+                              View
+                            </a>
+                          )}
                         </td>
                       </tr>
                     ))}

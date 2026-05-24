@@ -24,8 +24,8 @@ export async function GET() {
 
   // Fetch all registrations and sponsors
   const [regResult, sponsorResult, campaignResult, expenseResult] = await Promise.all([
-    supabase.from("registrations").select("*").in("payment_status", ["paid", "comped", "pending", "refunded"]),
-    supabase.from("sponsors").select("*").neq("status", "archived"),
+    supabase.from("registrations").select("*"),
+    supabase.from("sponsors").select("*"),
     supabase.from("ad_campaigns").select("spent_cents"),
     supabase.from("show_expenses").select("amount_cents"),
   ]);
@@ -256,9 +256,10 @@ export async function GET() {
   // ── Line-by-line audit ──
   // Build a per-session breakdown comparing DB vs Stripe
   const lineItems: {
-    type: "registration" | "sponsor";
+    type: "registration" | "sponsor" | "orphan";
     car_number?: number;
     name: string;
+    status?: string;
     id: string;
     stripe_session_id: string | null;
     db_amount: number;
@@ -317,6 +318,50 @@ export async function GET() {
       match: sp.payment_method === "stripe" ? (stripeAmt !== null ? Math.abs(dbTotal - stripeAmt) <= 1 : false) : true,
       payment_method: sp.payment_method || "unknown",
     });
+  }
+
+  // Archived/refunded registrations with Stripe sessions (for traceability)
+  const archivedRegs = registrations.filter((r) =>
+    (r.payment_status === "archived" || r.payment_status === "refunded") && r.stripe_session_id
+  );
+  for (const reg of archivedRegs) {
+    const session = reg.stripe_session_id ? sessions[reg.stripe_session_id] : null;
+    lineItems.push({
+      type: "registration",
+      car_number: reg.car_number,
+      name: `${reg.first_name} ${reg.last_name}`,
+      id: reg.id,
+      status: reg.payment_status,
+      stripe_session_id: reg.stripe_session_id,
+      db_amount: (reg.amount_paid || 0) + (reg.donation_cents || 0),
+      stripe_amount: session ? session.amount_total : null,
+      match: true, // not a discrepancy, just for visibility
+      payment_method: reg.payment_method || "stripe",
+    });
+  }
+
+  // Orphan Stripe sessions — charges with no DB record at all
+  for (const [sessionId, session] of Object.entries(sessions)) {
+    if ((session.payment_status === "complete" || session.payment_status === "paid") && !knownSessionIds.has(sessionId) && session.amount_total > 0) {
+      let refundStatus = "";
+      if (session.payment_intent) {
+        try {
+          const charges = await stripe.charges.list({ payment_intent: session.payment_intent, limit: 1 });
+          if (charges.data[0]?.refunded) refundStatus = " (refunded)";
+        } catch {}
+      }
+      lineItems.push({
+        type: "orphan",
+        name: `Unknown${refundStatus}`,
+        id: sessionId,
+        status: "orphan" + refundStatus,
+        stripe_session_id: sessionId,
+        db_amount: 0,
+        stripe_amount: session.amount_total,
+        match: false,
+        payment_method: "stripe",
+      });
+    }
   }
 
   // ── Cross-page totals (matching finances page logic) ──
