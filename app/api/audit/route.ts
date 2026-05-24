@@ -344,37 +344,61 @@ export async function GET() {
   }
 
   for (const [sessionId, regs] of Object.entries(archivedBySession)) {
-    const session = sessions[sessionId];
+    let session = sessions[sessionId];
     const isTest = sessionId.startsWith("cs_test_");
 
     // Fetch actual charge details from Stripe for live sessions
     let stripeDetail: typeof lineItems[0]["stripe_detail"];
-    if (!isTest && session?.payment_intent) {
+    if (!isTest) {
       try {
-        const charges = await stripe.charges.list({ payment_intent: session.payment_intent, limit: 1 });
-        const charge = charges.data[0];
-        if (charge) {
-          stripeDetail = {
-            charged: charge.paid,
-            refunded: charge.refunded,
-            amount_charged: charge.amount,
-            amount_refunded: charge.amount_refunded,
-            charge_date: charge.created ? new Date(charge.created * 1000).toISOString() : null,
-            refund_date: charge.refunded && charge.refunds?.data?.[0]?.created
-              ? new Date(charge.refunds.data[0].created * 1000).toISOString()
-              : null,
-            stripe_status: charge.refunded ? "refunded" : charge.paid ? "charged" : charge.status,
+        // If session not in our cache, fetch it directly
+        if (!session) {
+          const fetched = await stripe.checkout.sessions.retrieve(sessionId);
+          session = {
+            id: fetched.id,
+            amount_total: fetched.amount_total || 0,
+            payment_intent: typeof fetched.payment_intent === "string" ? fetched.payment_intent : fetched.payment_intent?.id || null,
+            payment_status: fetched.payment_status || "",
+            metadata: (fetched.metadata || {}) as Record<string, string>,
           };
+        }
+
+        if (session.payment_intent) {
+          const charges = await stripe.charges.list({ payment_intent: session.payment_intent, limit: 1 });
+          const charge = charges.data[0];
+          if (charge) {
+            stripeDetail = {
+              charged: charge.paid,
+              refunded: charge.refunded,
+              amount_charged: charge.amount,
+              amount_refunded: charge.amount_refunded,
+              charge_date: charge.created ? new Date(charge.created * 1000).toISOString() : null,
+              refund_date: charge.refunded && charge.refunds?.data?.[0]?.created
+                ? new Date(charge.refunds.data[0].created * 1000).toISOString()
+                : null,
+              stripe_status: charge.refunded ? "refunded" : charge.paid ? "charged" : charge.status,
+            };
+          } else {
+            stripeDetail = {
+              charged: false, refunded: false, amount_charged: 0, amount_refunded: 0,
+              charge_date: null, refund_date: null, stripe_status: "no charge found",
+            };
+          }
         } else {
+          // Session exists but no payment intent — payment was never completed
           stripeDetail = {
             charged: false, refunded: false, amount_charged: 0, amount_refunded: 0,
-            charge_date: null, refund_date: null, stripe_status: "no charge found",
+            charge_date: null, refund_date: null,
+            stripe_status: session.payment_status === "unpaid" ? "abandoned (never paid)" : session.payment_status || "unknown",
           };
         }
       } catch {
-        stripeDetail = undefined;
+        stripeDetail = {
+          charged: false, refunded: false, amount_charged: 0, amount_refunded: 0,
+          charge_date: null, refund_date: null, stripe_status: "session not found in Stripe",
+        };
       }
-    } else if (isTest) {
+    } else {
       stripeDetail = {
         charged: false, refunded: false, amount_charged: 0, amount_refunded: 0,
         charge_date: null, refund_date: null, stripe_status: "test",
