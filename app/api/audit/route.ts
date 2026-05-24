@@ -266,6 +266,15 @@ export async function GET() {
     stripe_amount: number | null;
     match: boolean;
     payment_method: string;
+    stripe_detail?: {
+      charged: boolean;
+      refunded: boolean;
+      amount_charged: number;
+      amount_refunded: number;
+      charge_date: string | null;
+      refund_date: string | null;
+      stripe_status: string;
+    };
   }[] = [];
 
   // Group registrations by session for multi-vehicle checkouts
@@ -320,46 +329,123 @@ export async function GET() {
     });
   }
 
-  // Archived/refunded registrations with Stripe sessions (for traceability)
+  // Archived/refunded registrations with Stripe sessions — pull full charge details
   const archivedRegs = registrations.filter((r) =>
     (r.payment_status === "archived" || r.payment_status === "refunded") && r.stripe_session_id
   );
+
+  // Dedupe by stripe_session_id to avoid fetching the same session multiple times
+  const archivedBySession: Record<string, typeof archivedRegs> = {};
   for (const reg of archivedRegs) {
-    const session = reg.stripe_session_id ? sessions[reg.stripe_session_id] : null;
+    if (reg.stripe_session_id) {
+      if (!archivedBySession[reg.stripe_session_id]) archivedBySession[reg.stripe_session_id] = [];
+      archivedBySession[reg.stripe_session_id].push(reg);
+    }
+  }
+
+  for (const [sessionId, regs] of Object.entries(archivedBySession)) {
+    const session = sessions[sessionId];
+    const isTest = sessionId.startsWith("cs_test_");
+
+    // Fetch actual charge details from Stripe for live sessions
+    let stripeDetail: typeof lineItems[0]["stripe_detail"];
+    if (!isTest && session?.payment_intent) {
+      try {
+        const charges = await stripe.charges.list({ payment_intent: session.payment_intent, limit: 1 });
+        const charge = charges.data[0];
+        if (charge) {
+          stripeDetail = {
+            charged: charge.paid,
+            refunded: charge.refunded,
+            amount_charged: charge.amount,
+            amount_refunded: charge.amount_refunded,
+            charge_date: charge.created ? new Date(charge.created * 1000).toISOString() : null,
+            refund_date: charge.refunded && charge.refunds?.data?.[0]?.created
+              ? new Date(charge.refunds.data[0].created * 1000).toISOString()
+              : null,
+            stripe_status: charge.refunded ? "refunded" : charge.paid ? "charged" : charge.status,
+          };
+        } else {
+          stripeDetail = {
+            charged: false, refunded: false, amount_charged: 0, amount_refunded: 0,
+            charge_date: null, refund_date: null, stripe_status: "no charge found",
+          };
+        }
+      } catch {
+        stripeDetail = undefined;
+      }
+    } else if (isTest) {
+      stripeDetail = {
+        charged: false, refunded: false, amount_charged: 0, amount_refunded: 0,
+        charge_date: null, refund_date: null, stripe_status: "test",
+      };
+    }
+
+    const reg = regs[0];
     lineItems.push({
       type: "registration",
       car_number: reg.car_number,
-      name: `${reg.first_name} ${reg.last_name}`,
+      name: regs.length === 1
+        ? `${reg.first_name} ${reg.last_name}`
+        : `${reg.first_name} ${reg.last_name} (${regs.length} cars)`,
       id: reg.id,
       status: reg.payment_status,
-      stripe_session_id: reg.stripe_session_id,
-      db_amount: (reg.amount_paid || 0) + (reg.donation_cents || 0),
+      stripe_session_id: sessionId,
+      db_amount: regs.reduce((s, r) => s + (r.amount_paid || 0) + (r.donation_cents || 0), 0),
       stripe_amount: session ? session.amount_total : null,
-      match: true, // not a discrepancy, just for visibility
+      match: true,
       payment_method: reg.payment_method || "stripe",
+      stripe_detail: stripeDetail,
     });
   }
 
   // Orphan Stripe sessions — charges with no DB record at all
   for (const [sessionId, session] of Object.entries(sessions)) {
     if ((session.payment_status === "complete" || session.payment_status === "paid") && !knownSessionIds.has(sessionId) && session.amount_total > 0) {
-      let refundStatus = "";
+      let stripeDetail: typeof lineItems[0]["stripe_detail"];
       if (session.payment_intent) {
         try {
           const charges = await stripe.charges.list({ payment_intent: session.payment_intent, limit: 1 });
-          if (charges.data[0]?.refunded) refundStatus = " (refunded)";
+          const charge = charges.data[0];
+          if (charge) {
+            stripeDetail = {
+              charged: charge.paid,
+              refunded: charge.refunded,
+              amount_charged: charge.amount,
+              amount_refunded: charge.amount_refunded,
+              charge_date: charge.created ? new Date(charge.created * 1000).toISOString() : null,
+              refund_date: charge.refunded && charge.refunds?.data?.[0]?.created
+                ? new Date(charge.refunds.data[0].created * 1000).toISOString()
+                : null,
+              stripe_status: charge.refunded ? "refunded" : charge.paid ? "charged" : charge.status,
+            };
+          }
         } catch {}
       }
+
+      const isRefunded = stripeDetail?.refunded;
+      if (!isRefunded) {
+        issues.push({
+          type: "orphan_charge",
+          severity: "warning",
+          description: `Stripe charge of $${(session.amount_total / 100).toFixed(2)} has no matching registration or sponsor`,
+          stripe_session_id: sessionId,
+          stripe_payment_intent: session.payment_intent || undefined,
+          actual_amount: session.amount_total,
+        });
+      }
+
       lineItems.push({
         type: "orphan",
-        name: `Unknown${refundStatus}`,
+        name: isRefunded ? "Refunded (no DB record)" : "Unknown charge",
         id: sessionId,
-        status: "orphan" + refundStatus,
+        status: isRefunded ? "refunded" : "orphan",
         stripe_session_id: sessionId,
         db_amount: 0,
         stripe_amount: session.amount_total,
-        match: false,
+        match: !!isRefunded,
         payment_method: "stripe",
+        stripe_detail: stripeDetail,
       });
     }
   }

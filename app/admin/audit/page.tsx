@@ -57,6 +57,15 @@ type LineItem = {
   stripe_amount: number | null;
   match: boolean;
   payment_method: string;
+  stripe_detail?: {
+    charged: boolean;
+    refunded: boolean;
+    amount_charged: number;
+    amount_refunded: number;
+    charge_date: string | null;
+    refund_date: string | null;
+    stripe_status: string;
+  };
 };
 
 function fmtMoney(cents: number): string {
@@ -404,6 +413,7 @@ export default function AuditPage() {
                       <th style={{ ...thStyle, textAlign: "right" }}>DB Amount</th>
                       <th style={{ ...thStyle, textAlign: "right" }}>Stripe Amount</th>
                       <th style={{ ...thStyle, textAlign: "center" }}>Match</th>
+                      <th style={thStyle}>Stripe Status</th>
                       <th style={thStyle} />
                     </tr>
                   </thead>
@@ -440,6 +450,37 @@ export default function AuditPage() {
                             <span style={{ color: "#2e7d32" }}>✓</span>
                           ) : (
                             <span style={{ color: "#c62828", fontWeight: 700 }}>✗</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem" }}>
+                          {item.stripe_detail ? (
+                            <div>
+                              {item.stripe_detail.stripe_status === "test" ? (
+                                <span style={{ color: "#999" }}>Test</span>
+                              ) : item.stripe_detail.refunded ? (
+                                <span style={{ color: "#c62828" }}>
+                                  Refunded {fmtMoney(item.stripe_detail.amount_refunded)}
+                                  {item.stripe_detail.refund_date && (
+                                    <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-light)" }}>
+                                      {new Date(item.stripe_detail.refund_date).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </span>
+                              ) : item.stripe_detail.charged ? (
+                                <span style={{ color: "#2e7d32" }}>
+                                  Charged {fmtMoney(item.stripe_detail.amount_charged)}
+                                  {item.stripe_detail.charge_date && (
+                                    <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-light)" }}>
+                                      {new Date(item.stripe_detail.charge_date).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                <span style={{ color: "#e65100" }}>{item.stripe_detail.stripe_status}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ color: "#999" }}>—</span>
                           )}
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem" }}>
