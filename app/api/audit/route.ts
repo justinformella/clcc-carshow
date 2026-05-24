@@ -182,15 +182,33 @@ export async function GET() {
 
   for (const [sessionId, session] of Object.entries(sessions)) {
     if ((session.payment_status === "complete" || session.payment_status === "paid") && !knownSessionIds.has(sessionId) && session.amount_total > 0) {
-      const piId = session.payment_intent;
-      issues.push({
-        type: "orphan_charge",
-        severity: "warning",
-        description: `Stripe charge of $${(session.amount_total / 100).toFixed(2)} has no matching registration or sponsor${piId ? "" : " (no payment intent)"}`,
-        stripe_session_id: sessionId,
-        stripe_payment_intent: piId || undefined,
-        actual_amount: session.amount_total,
-      });
+      // Check if this charge was refunded — if so, skip it
+      let refunded = false;
+      if (session.payment_intent) {
+        try {
+          const pi = await stripe.paymentIntents.retrieve(session.payment_intent);
+          if (pi.status === "canceled" || (pi.amount_received > 0 && pi.amount_received === (pi.latest_charge as { amount_refunded?: number } | null)?.amount_refunded)) {
+            refunded = true;
+          }
+          // Check charges for refunds
+          const charges = await stripe.charges.list({ payment_intent: session.payment_intent, limit: 1 });
+          if (charges.data[0]?.refunded) {
+            refunded = true;
+          }
+        } catch {}
+      }
+
+      if (!refunded) {
+        const piId = session.payment_intent;
+        issues.push({
+          type: "orphan_charge",
+          severity: "warning",
+          description: `Stripe charge of $${(session.amount_total / 100).toFixed(2)} has no matching registration or sponsor`,
+          stripe_session_id: sessionId,
+          stripe_payment_intent: piId || undefined,
+          actual_amount: session.amount_total,
+        });
+      }
     }
   }
 
