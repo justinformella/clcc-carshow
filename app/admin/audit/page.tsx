@@ -32,6 +32,7 @@ type AuditSummary = {
   stripe_gross: number;
   stripe_fees: number;
   stripe_net: number;
+  stripe_payouts: number;
   stripe_balance: number;
   db_stripe_total: number;
   cash_expected: number;
@@ -233,7 +234,7 @@ export default function AuditPage() {
                   </span>
                 </div>
 
-                <p style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", marginTop: "0.75rem", marginBottom: "0.4rem" }}>After Fees</p>
+                <p style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-light)", marginTop: "0.75rem", marginBottom: "0.4rem" }}>After Fees &amp; Payouts</p>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", borderBottom: "1px solid #f5f5f5" }}>
                   <span style={{ color: "var(--text-light)" }}>Stripe processing fees</span>
                   <span style={{ fontWeight: 600, color: "#c62828" }}>({fmtMoney(summary.stripe_fees)})</span>
@@ -242,8 +243,14 @@ export default function AuditPage() {
                   <span style={{ color: "var(--text-light)" }}>Net after fees</span>
                   <span style={{ fontWeight: 600 }}>{fmtMoney(summary.stripe_net)}</span>
                 </div>
+                {summary.stripe_payouts > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0.3rem 0", borderBottom: "1px solid #f5f5f5" }}>
+                    <span style={{ color: "var(--text-light)" }}>Withdrawn (payouts)</span>
+                    <span style={{ fontWeight: 600, color: "#1565c0" }}>({fmtMoney(summary.stripe_payouts)})</span>
+                  </div>
+                )}
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderTop: "2px solid #ddd", marginTop: "0.25rem" }}>
-                  <span style={{ fontWeight: 700 }}>Stripe balance</span>
+                  <span style={{ fontWeight: 700 }}>Stripe balance remaining</span>
                   <span style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--charcoal)" }}>{fmtMoney(summary.stripe_balance)}</span>
                 </div>
               </div>
@@ -314,11 +321,11 @@ export default function AuditPage() {
             gap: "1.5rem",
           }}>
             {(() => {
-              const totalCollected = summary.stripe_balance + summary.cash_expected + summary.check_expected;
+              const totalCollected = summary.stripe_net + summary.cash_expected + summary.check_expected;
               const totalDeductions = summary.ad_spend + summary.show_expenses + summary.refunded;
               const netForCharity = totalCollected - totalDeductions;
               return [
-                { label: "Stripe Balance", value: summary.stripe_balance },
+                { label: "Stripe Net", value: summary.stripe_net },
                 { label: "Cash + Check", value: summary.cash_expected + summary.check_expected },
                 { label: "Total Collected", value: totalCollected },
                 { label: "Expenses", value: -summary.show_expenses, red: true },
