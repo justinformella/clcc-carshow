@@ -227,30 +227,27 @@ export async function GET() {
     .filter((s) => s.payment_status === "complete" || s.payment_status === "paid")
     .reduce((sum, s) => sum + (s.amount_total || 0), 0);
 
-  // Pull actual Stripe balance, fees, and payouts
+  // Pull actual Stripe balance and payouts
   let stripeBalance = 0;
-  let stripeTotalFees = 0;
   let stripeTotalPayouts = 0;
-  let stripeTotalNet = 0;
   try {
     const balance = await stripe.balance.retrieve();
     stripeBalance = (balance.available || []).reduce((s, b) => s + (b.amount || 0), 0)
       + (balance.pending || []).reduce((s, b) => s + (b.amount || 0), 0);
 
-    // Get actual fees and payouts from balance transactions
-    for await (const txn of stripe.balanceTransactions.list({ limit: 100 })) {
-      if (txn.type === "charge") {
-        stripeTotalFees += (txn.fee || 0);
-        stripeTotalNet += (txn.net || 0);
-      } else if (txn.type === "payout") {
-        stripeTotalPayouts += Math.abs(txn.amount || 0);
-      } else if (txn.type === "refund") {
-        stripeTotalNet += (txn.net || 0);
+    // Get total payouts
+    for await (const payout of stripe.payouts.list({ limit: 100 })) {
+      if (payout.status === "paid") {
+        stripeTotalPayouts += (payout.amount || 0);
       }
     }
   } catch (err) {
-    console.error("Failed to fetch Stripe balance/transactions:", err);
+    console.error("Failed to fetch Stripe balance/payouts:", err);
   }
+
+  // Derive: fees = gross - payouts - balance (accounting identity)
+  const stripeTotalFees = stripeTotal - stripeTotalPayouts - stripeBalance;
+  const stripeTotalNet = stripeTotalPayouts + stripeBalance; // what you actually received
 
   // Check gross total mismatch
   const dbStripeTotal = stripeRegRevenue + stripeSponsorRevenue;

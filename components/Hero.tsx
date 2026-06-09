@@ -1,5 +1,3 @@
-import CharityProgress from "./CharityProgress";
-
 export default function Hero() {
   return (
     <section className="hero">
@@ -25,7 +23,6 @@ export default function Hero() {
           </a>
         </div>
       </div>
-      <CharityProgress />
     </section>
   );
 }
