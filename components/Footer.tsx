@@ -2,7 +2,27 @@ import Image from "next/image";
 import Link from "next/link";
 import { FooterPixelBadge } from "@/components/EightBitEasterEgg";
 
-export default function Footer() {
+type FooterLink = { label: string; href: string };
+
+const DEFAULT_EVENT_LINKS: FooterLink[] = [
+  { label: "About", href: "#about" },
+  { label: "Schedule", href: "#schedule" },
+  { label: "Registration", href: "/register" },
+];
+
+function FooterAnchor({ link }: { link: FooterLink }) {
+  return link.href.startsWith("/") ? (
+    <Link href={link.href}>{link.label}</Link>
+  ) : (
+    <a href={link.href}>{link.label}</a>
+  );
+}
+
+export default function Footer({
+  eventLinks = DEFAULT_EVENT_LINKS,
+}: {
+  eventLinks?: FooterLink[];
+}) {
   return (
     <footer>
       <div className="footer-inner">
@@ -27,15 +47,11 @@ export default function Footer() {
           <div className="footer-links">
             <h4>Event</h4>
             <ul>
-              <li>
-                <a href="#about">About</a>
-              </li>
-              <li>
-                <a href="#schedule">Schedule</a>
-              </li>
-              <li>
-                <Link href="/register">Registration</Link>
-              </li>
+              {eventLinks.map((link) => (
+                <li key={link.href}>
+                  <FooterAnchor link={link} />
+                </li>
+              ))}
             </ul>
           </div>
           <div className="footer-links">

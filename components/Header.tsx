@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function Header() {
+export type NavLink = { label: string; href: string };
+
+const DEFAULT_LINKS: NavLink[] = [
+  { label: "About", href: "#about" },
+  { label: "Winners", href: "#winners" },
+  { label: "Sponsors", href: "#sponsors" },
+  { label: "FAQ", href: "#faq" },
+  { label: "Contact", href: "/contact" },
+];
+
+export default function Header({ links = DEFAULT_LINKS }: { links?: NavLink[] }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -62,35 +72,19 @@ export default function Header() {
         </Link>
         <nav>
           <ul style={menuOpen ? { display: "flex" } : undefined}>
-            <li>
-              <a href="#about" onClick={(e) => handleAnchorClick(e, "#about")}>
-                About
-              </a>
-            </li>
-            <li>
-              <a
-                href="#winners"
-                onClick={(e) => handleAnchorClick(e, "#winners")}
-              >
-                Winners
-              </a>
-            </li>
-            <li>
-              <a
-                href="#sponsors"
-                onClick={(e) => handleAnchorClick(e, "#sponsors")}
-              >
-                Sponsors
-              </a>
-            </li>
-            <li>
-              <a href="#faq" onClick={(e) => handleAnchorClick(e, "#faq")}>
-                FAQ
-              </a>
-            </li>
-            <li>
-              <Link href="/contact">Contact</Link>
-            </li>
+            {links.map((link) =>
+              link.href.startsWith("#") ? (
+                <li key={link.href}>
+                  <a href={link.href} onClick={(e) => handleAnchorClick(e, link.href)}>
+                    {link.label}
+                  </a>
+                </li>
+              ) : (
+                <li key={link.href}>
+                  <Link href={link.href}>{link.label}</Link>
+                </li>
+              )
+            )}
           </ul>
         </nav>
         <div

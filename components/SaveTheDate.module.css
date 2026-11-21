@@ -1,29 +1,82 @@
-.page {
-  --navy: #214c76;
-  --navy-deep: #173a5c;
-  --gold: #ffc34d;
-  --gold-soft: #ffd47e;
-  --paper: #fffdf6;
+/* Save the Date page: builds on the site-wide brand classes in globals.css
+   (.hero, .hero-cta, .section-label, .section-title, header, footer). */
 
-  min-height: 100vh;
-  background: var(--navy-deep);
-  color: var(--navy);
-  padding: clamp(12px, 3vw, 40px) clamp(12px, 3vw, 24px) 24px;
-  line-height: 1.4;
+.hero {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.6) 100%),
+    url("/images/2027/porsche-911.jpg") center 60% / cover no-repeat;
 }
 
-.frame {
-  max-width: 920px;
-  margin: 0 auto;
-  background: var(--navy);
-  border: clamp(10px, 2.4vw, 22px) solid var(--navy);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+.hero :global(.hero-location) {
+  margin-bottom: 0.75rem;
 }
 
-/* Illustrated header */
+.rainDate {
+  margin: 0 0 2.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.icsLink {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-underline-offset: 3px;
+}
+
+.icsLink:hover {
+  color: var(--gold-light);
+}
+
+/* About */
+.about {
+  background: var(--cream);
+}
+
+.aboutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.aboutTitle {
+  margin-bottom: 1.5rem;
+}
+
+.text {
+  color: var(--text-light);
+  font-size: 1.05rem;
+  line-height: 1.8;
+  margin-bottom: 1.25rem;
+}
+
+.highlights {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.highlights li {
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(212, 164, 74, 0.5);
+  background: var(--white);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--charcoal);
+}
+
 .artCard {
-  background: #fff;
-  padding: clamp(6px, 1.4vw, 14px);
+  background: var(--white);
+  padding: 1rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
 }
 
 .art {
@@ -32,187 +85,65 @@
   height: auto;
 }
 
-/* Gold date band */
-.dateBand {
-  background: var(--gold);
-  margin-top: clamp(10px, 2.4vw, 22px);
-  padding: clamp(20px, 4vw, 36px) clamp(18px, 4vw, 40px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-}
-
-.eyebrow {
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: clamp(0.85rem, 1.6vw, 1.15rem);
-  margin: 0 0 0.35rem;
-}
-
-.date {
-  font-family: inherit;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  text-transform: uppercase;
-  font-size: clamp(2rem, 6.4vw, 3.6rem);
-  line-height: 1.02;
-  margin: 0;
-  color: var(--navy);
-  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.35);
-}
-
-.rain {
-  margin: 0.7rem 0 0;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: clamp(0.75rem, 1.4vw, 0.95rem);
-}
-
-.calLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 1.25rem;
-}
-
-.calBtn,
-.calBtnGhost {
-  display: inline-block;
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  padding: 0.65rem 1.1rem;
-  border: 2px solid var(--navy);
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s;
-}
-
-.calBtn {
-  background: var(--navy);
-  color: var(--gold);
-}
-
-.calBtn:hover {
-  background: var(--navy-deep);
-}
-
-.calBtnGhost {
-  color: var(--navy);
-  background: transparent;
-}
-
-.calBtnGhost:hover {
-  background: rgba(33, 76, 118, 0.1);
-}
-
-.calBtn:focus-visible,
-.calBtnGhost:focus-visible,
-.footer a:focus-visible,
-.sponsor a:focus-visible,
-.pantry:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 2px;
-}
-
-.flag {
-  flex: 0 0 auto;
-  width: clamp(70px, 12vw, 120px);
-  color: var(--navy);
-  transform: rotate(-4deg);
-}
-
-/* Photos */
-.photos {
-  display: grid;
-  gap: clamp(6px, 1vw, 8px);
-  background: var(--gold);
-  padding: clamp(6px, 1vw, 8px) 0;
-}
-
-.photoHero {
-  position: relative;
-  aspect-ratio: 1536 / 609;
-}
-
-.photoPair {
+.photoGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(6px, 1vw, 8px);
-}
-
-.photoSmall {
-  position: relative;
-  aspect-ratio: 1.95 / 1;
+  gap: 1rem;
+  margin-top: 4rem;
 }
 
 .photo {
-  object-fit: cover;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
 }
 
-/* Info block */
-.info {
-  background: var(--navy);
-  color: #fff;
-  padding: clamp(22px, 4vw, 36px) clamp(18px, 4vw, 36px);
+.photo img {
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.photo:hover img {
+  transform: scale(1.03);
+}
+
+/* Charity */
+.charity {
+  background: var(--charcoal);
+  color: var(--white);
+}
+
+.charityInner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2rem;
+  gap: 4rem;
 }
 
-.place {
-  font-family: inherit;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  font-size: clamp(1.3rem, 3vw, 1.9rem);
-  line-height: 1.15;
-  margin: 0 0 0.6rem;
+.charityTitle {
+  font-size: clamp(1.9rem, 3.4vw, 2.8rem);
+  line-height: 1.25;
+  max-width: 640px;
+  margin-bottom: 1.25rem;
 }
 
-.details {
-  margin: 0 0 0.5rem;
-  font-weight: 500;
-  font-size: clamp(0.95rem, 1.8vw, 1.1rem);
-}
-
-.details span {
-  margin: 0 0.4em;
-  color: var(--gold);
-}
-
-.sponsor {
-  margin: 0 0 1rem;
-  font-weight: 700;
-}
-
-.sponsor a {
-  color: var(--gold);
-  text-underline-offset: 3px;
-}
-
-.sponsor a:hover {
-  color: var(--gold-soft);
-}
-
-.note {
-  margin: 0;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.25);
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
+.charityText {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.05rem;
+  max-width: 560px;
 }
 
 .pantry {
   flex: 0 0 auto;
   display: block;
-  width: clamp(170px, 24vw, 220px);
-  background: var(--paper);
-  padding: 12px 14px;
-  border-radius: 6px;
+  width: 260px;
+  background: var(--cream);
+  padding: 1.25rem 1.5rem;
+  transition: transform 0.3s;
+}
+
+.pantry:hover {
+  transform: translateY(-2px);
 }
 
 .pantry img {
@@ -221,60 +152,48 @@
   height: auto;
 }
 
-.proceeds {
-  background: var(--gold);
-  margin: 0;
-  padding: 0.9rem clamp(18px, 4vw, 36px);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: clamp(0.8rem, 1.7vw, 1.05rem);
+/* Sponsors */
+.sponsors {
+  background: var(--white);
+}
+
+.sponsorCta {
   text-align: center;
+  margin-top: -2rem;
 }
 
-/* Footer */
-.footer {
-  max-width: 920px;
-  margin: 1.25rem auto 0;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.75rem;
-  font-size: 0.85rem;
-}
-
-.footer a {
-  color: rgba(255, 255, 255, 0.75);
-  text-decoration: none;
-}
-
-.footer a:hover {
-  color: var(--gold);
-}
-
-.footer .admin {
-  opacity: 0.45;
-}
-
-@media (max-width: 640px) {
-  .flag {
-    display: none;
-  }
-
-  .photoPair {
+@media (max-width: 900px) {
+  .aboutGrid {
     grid-template-columns: 1fr;
+    gap: 2.5rem;
   }
 
-  .info {
+  .charityInner {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1.5rem;
+    gap: 2.5rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .photoGrid {
+    grid-template-columns: 1fr;
+    margin-top: 2.5rem;
+  }
+
+  .hero {
+    background-position: 28% 60%;
+  }
+
+  .rainDate {
+    margin: 0 0 2rem;
+    line-height: 1.6;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .calBtn,
-  .calBtnGhost {
+  .photo img,
+  .pantry {
     transition: none;
   }
 }
