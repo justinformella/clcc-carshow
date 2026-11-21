@@ -1,17 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FooterPixelBadge } from "@/components/EightBitEasterEgg";
+import { SHOW_SAVE_THE_DATE } from "@/lib/siteMode";
 
 type FooterLink = { label: string; href: string };
 
 const DEFAULT_EVENT_LINKS: FooterLink[] = [
-  { label: "About", href: "#about" },
-  { label: "Schedule", href: "#schedule" },
+  { label: "About", href: "/#about" },
+  { label: "Schedule", href: "/#schedule" },
   { label: "Registration", href: "/register" },
 ];
 
 function FooterAnchor({ link }: { link: FooterLink }) {
-  return link.href.startsWith("/") ? (
+  return link.href.startsWith("/") && !link.href.includes("#") ? (
     <Link href={link.href}>{link.label}</Link>
   ) : (
     <a href={link.href}>{link.label}</a>
@@ -20,10 +21,12 @@ function FooterAnchor({ link }: { link: FooterLink }) {
 
 export default function Footer({
   eventLinks = DEFAULT_EVENT_LINKS,
-  showPixelBadge = true,
+  showPixelBadge = !SHOW_SAVE_THE_DATE,
+  showLinkColumns = !SHOW_SAVE_THE_DATE,
 }: {
   eventLinks?: FooterLink[];
   showPixelBadge?: boolean;
+  showLinkColumns?: boolean;
 }) {
   return (
     <footer>
@@ -46,6 +49,7 @@ export default function Footer({
               premier car show in McHenry County.
             </p>
           </div>
+          {showLinkColumns && (<>
           <div className="footer-links">
             <h4>Event</h4>
             <ul>
@@ -60,7 +64,7 @@ export default function Footer({
             <h4>Partners</h4>
             <ul>
               <li>
-                <a href="#sponsors">Sponsors</a>
+                <a href="/#sponsors">Sponsors</a>
               </li>
             </ul>
           </div>
@@ -72,6 +76,7 @@ export default function Footer({
               </li>
             </ul>
           </div>
+          </>)}
         </div>
         <div className="footer-bottom">
           <div>{showPixelBadge && <FooterPixelBadge />}</div>

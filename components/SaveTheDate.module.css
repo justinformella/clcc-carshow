@@ -26,7 +26,6 @@
 
 .heroContent :global(.hero-location),
 .heroContent .rainDate,
-.heroContent .icsLink,
 .heroTitle {
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
 }
@@ -55,17 +54,6 @@
   color: rgba(255, 255, 255, 0.65);
 }
 
-.icsLink {
-  display: inline-block;
-  margin-top: 1.5rem;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.75);
-  text-underline-offset: 3px;
-}
-
-.icsLink:hover {
-  color: var(--gold-light);
-}
 
 /* About */
 .about {

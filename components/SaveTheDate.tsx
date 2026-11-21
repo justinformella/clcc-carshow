@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import Header, { type NavLink } from "@/components/Header";
+import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import styles from "./SaveTheDate.module.css";
 
@@ -14,19 +14,12 @@ const GOOGLE_CAL_URL =
     "Rain date: Sunday, May 23, 2027. 100% of net proceeds go to the Crystal Lake Food Pantry. crystallakecarshow.com"
   )}`;
 
-const NAV_LINKS: NavLink[] = [
-  { label: "About", href: "#about" },
-  { label: "Charity", href: "#charity" },
-  { label: "Sponsors", href: "#sponsors" },
-  { label: "Contact", href: "/contact" },
-];
-
 const HIGHLIGHTS = ["Open to the Public", "Judged Show", "Awards & Trophies"];
 
 export default function SaveTheDate() {
   return (
     <>
-      <Header links={NAV_LINKS} />
+      <Header />
 
       <section className={`hero ${styles.hero}`}>
         <Image
@@ -54,9 +47,6 @@ export default function SaveTheDate() {
               Become a Sponsor
             </a>
           </div>
-          <a href="/clcc-car-show-2027.ics" download className={styles.icsLink}>
-            Using Apple Calendar or Outlook? Download the .ics file
-          </a>
         </div>
       </section>
 
@@ -159,13 +149,7 @@ export default function SaveTheDate() {
         </div>
       </section>
 
-      <Footer
-        showPixelBadge={false}
-        eventLinks={[
-          { label: "About", href: "#about" },
-          { label: "Food Pantry", href: "#charity" },
-                ]}
-      />
+      <Footer />
     </>
   );
 }

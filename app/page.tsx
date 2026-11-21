@@ -12,12 +12,10 @@ import CommunityBanner from "@/components/CommunityBanner";
 import ArcadeBanner from "@/components/ArcadeBanner";
 import Footer from "@/components/Footer";
 import SaveTheDate from "@/components/SaveTheDate";
+import { SHOW_SAVE_THE_DATE } from "@/lib/siteMode";  // off-season switch
 
 export const revalidate = 60;
 
-// Off-season placeholder. Flip to false to restore the full homepage
-// (2026 recap: winners, gallery, sponsors) once 2027 registration opens.
-const SHOW_SAVE_THE_DATE = true;
 
 export const metadata: Metadata = SHOW_SAVE_THE_DATE
   ? {

@@ -4,17 +4,18 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-export type NavLink = { label: string; href: string };
+import { NAV_LINKS, type SiteLink } from "@/lib/siteMode";
 
-const DEFAULT_LINKS: NavLink[] = [
-  { label: "About", href: "#about" },
-  { label: "Winners", href: "#winners" },
-  { label: "Sponsors", href: "#sponsors" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contact", href: "/contact" },
-];
+export type NavLink = SiteLink;
 
-export default function Header({ links = DEFAULT_LINKS }: { links?: NavLink[] }) {
+export default function Header({
+  links = NAV_LINKS,
+  solid = false,
+}: {
+  links?: NavLink[];
+  /** Always use the white header style (for pages without a dark hero). */
+  solid?: boolean;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -37,9 +38,11 @@ export default function Header({ links = DEFAULT_LINKS }: { links?: NavLink[] })
     e: React.MouseEvent<HTMLAnchorElement>,
     href: string
   ) => {
-    if (href.startsWith("#")) {
+    // "/#id" scrolls in place when we're already on the homepage
+    const hash = href.startsWith("/#") && window.location.pathname === "/" ? href.slice(1) : href;
+    if (hash.startsWith("#")) {
       e.preventDefault();
-      const target = document.querySelector(href);
+      const target = document.querySelector(hash);
       if (target) {
         const headerOffset = 80;
         const elementPosition = target.getBoundingClientRect().top;
@@ -52,7 +55,7 @@ export default function Header({ links = DEFAULT_LINKS }: { links?: NavLink[] })
   };
 
   return (
-    <header id="header" className={scrolled ? "scrolled" : ""}>
+    <header id="header" className={scrolled || solid ? "scrolled" : ""}>
       <div className="header-inner">
         <Link href="/" className="logo">
           <Image
@@ -73,7 +76,7 @@ export default function Header({ links = DEFAULT_LINKS }: { links?: NavLink[] })
         <nav>
           <ul style={menuOpen ? { display: "flex" } : undefined}>
             {links.map((link) =>
-              link.href.startsWith("#") ? (
+              link.href.includes("#") ? (
                 <li key={link.href}>
                   <a href={link.href} onClick={(e) => handleAnchorClick(e, link.href)}>
                     {link.label}

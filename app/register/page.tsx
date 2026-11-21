@@ -3,13 +3,13 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Registration Closed — Crystal Lake Cars & Caffeine",
+  title: "Registration Opens This Spring | Crystal Lake Cars & Caffeine",
 };
 
 export default function RegisterClosedPage() {
   return (
     <>
-      <Header />
+      <Header solid />
       <main
         style={{
           minHeight: "calc(100vh - 200px)",
@@ -41,7 +41,7 @@ export default function RegisterClosedPage() {
               marginBottom: "1rem",
             }}
           >
-            2026 Show is Over
+            Save the Date &middot; May 16, 2027
           </p>
           <h1
             style={{
@@ -52,7 +52,7 @@ export default function RegisterClosedPage() {
               marginBottom: "1rem",
             }}
           >
-            Thank you for an amazing show!
+            Registration opens this spring
           </h1>
           <p
             style={{
@@ -62,9 +62,10 @@ export default function RegisterClosedPage() {
               marginBottom: "2rem",
             }}
           >
-            Registration for the 2026 Crystal Lake Cars &amp; Caffeine Charity
-            Car Show is closed. Check out this year&apos;s award winners and
-            join us next year&mdash;same place, same cause.
+            Car registration for the 2027 Crystal Lake Cars &amp; Caffeine
+            Charity Car Show isn&apos;t open yet. The show is Sunday, May 16,
+            2027 in historic downtown Crystal Lake&mdash;check back in the
+            spring.
           </p>
           <div
             style={{
@@ -75,7 +76,7 @@ export default function RegisterClosedPage() {
             }}
           >
             <Link
-              href="/#winners"
+              href="/"
               style={{
                 padding: "0.9rem 1.75rem",
                 background: "var(--gold)",
@@ -87,7 +88,7 @@ export default function RegisterClosedPage() {
                 textDecoration: "none",
               }}
             >
-              View 2026 Winners
+              Save the Date
             </Link>
             <Link
               href="/#sponsors"
@@ -103,7 +104,7 @@ export default function RegisterClosedPage() {
                 border: "1px solid #ddd",
               }}
             >
-              Sponsor Next Year
+              Become a Sponsor
             </Link>
           </div>
         </div>
