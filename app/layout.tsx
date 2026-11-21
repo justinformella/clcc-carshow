@@ -6,11 +6,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.crystallakecarshow.com"),
-  title: "Crystal Lake Cars & Caffeine | May 17, 2026",
+  title: "Crystal Lake Cars & Caffeine | May 16, 2027",
   description:
-    "CLCC Annual Charity Car Show - May 17, 2026 in Downtown Crystal Lake. Register your vehicle, support the Crystal Lake Food Pantry.",
+    "CLCC Annual Charity Car Show - Sunday, May 16, 2027 in Historic Downtown Crystal Lake. 100% of net proceeds go to the Crystal Lake Food Pantry.",
   openGraph: {
-    title: "Crystal Lake Cars & Caffeine | May 17, 2026",
+    title: "Crystal Lake Cars & Caffeine | May 16, 2027",
     description:
       "Annual Charity Car Show in Downtown Crystal Lake. 200+ vehicles, live awards, all net proceeds to the Crystal Lake Food Pantry.",
     images: [
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Crystal Lake Cars & Caffeine | May 17, 2026",
+    title: "Crystal Lake Cars & Caffeine | May 16, 2027",
     description:
       "Annual Charity Car Show in Downtown Crystal Lake. 200+ vehicles, live awards, all net proceeds to the Crystal Lake Food Pantry.",
     images: ["/images/PXL_20250831_172232318.jpg"],
