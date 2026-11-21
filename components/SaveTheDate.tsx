@@ -29,7 +29,18 @@ export default function SaveTheDate() {
     <>
       <Header links={NAV_LINKS} />
 
-      <section className={styles.hero}>
+      <section className={`hero ${styles.hero}`}>
+        <Image
+          src="/images/2026-show/street-lineup.jpg"
+          alt=""
+          fill
+          priority
+          // on tall screens "cover" scales the 3:2 photo to the viewport
+          // height, so it renders ~150vh wide; request a big enough file
+          sizes="(max-aspect-ratio: 3/2) 150vh, 100vw"
+          className={styles.heroBg}
+        />
+        <div className={styles.heroShade} aria-hidden="true" />
         <div className={`hero-content ${styles.heroContent}`}>
           <div className="hero-badge">5th Annual Charity Event</div>
           <h1 className={styles.heroTitle}>Save the Date</h1>
@@ -47,16 +58,6 @@ export default function SaveTheDate() {
           <a href="/clcc-car-show-2027.ics" download className={styles.icsLink}>
             Using Apple Calendar or Outlook? Download the .ics file
           </a>
-        </div>
-        <div className={styles.heroPhoto}>
-          <Image
-            src="/images/2027/porsche-911.jpg"
-            alt="Yellow classic Porsche 911 cruising through downtown Crystal Lake"
-            width={1536}
-            height={609}
-            priority
-            sizes="(max-width: 1280px) 100vw, 1280px"
-          />
         </div>
       </section>
 
@@ -98,16 +99,16 @@ export default function SaveTheDate() {
           <div className={styles.photoGrid}>
             <div className={styles.photo}>
               <Image
-                src="/images/2027/ferrari-512bb.jpg"
-                alt="Black Ferrari 512 BB at the show"
+                src="/images/2026-show/award-ferrari-512bb.jpg"
+                alt="A 2026 award winner holding his trophy beside his black Ferrari 512 BB"
                 fill
                 sizes="(max-width: 700px) 100vw, 600px"
               />
             </div>
             <div className={styles.photo}>
               <Image
-                src="/images/2027/downtown-crowd.jpg"
-                alt="Crowds walking among show cars on the downtown Crystal Lake streets"
+                src="/images/2026-show/families-strolling.jpg"
+                alt="Families strolling past the show cars in downtown Crystal Lake"
                 fill
                 sizes="(max-width: 700px) 100vw, 600px"
               />
