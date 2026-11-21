@@ -20,8 +20,10 @@ function FooterAnchor({ link }: { link: FooterLink }) {
 
 export default function Footer({
   eventLinks = DEFAULT_EVENT_LINKS,
+  showPixelBadge = true,
 }: {
   eventLinks?: FooterLink[];
+  showPixelBadge?: boolean;
 }) {
   return (
     <footer>
@@ -72,9 +74,7 @@ export default function Footer({
           </div>
         </div>
         <div className="footer-bottom">
-          <div>
-            <FooterPixelBadge />
-          </div>
+          <div>{showPixelBadge && <FooterPixelBadge />}</div>
           <div className="footer-social">
             <a href="https://www.facebook.com/groups/389632989553839" target="_blank" rel="noopener noreferrer">Facebook</a>
             <Link href="/admin" style={{ opacity: 0.5 }}>Admin</Link>

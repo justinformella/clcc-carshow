@@ -1,13 +1,45 @@
 /* Save the Date page: builds on the site-wide brand classes in globals.css
    (.hero, .hero-cta, .section-label, .section-title, header, footer). */
 
+/* Hero: text on charcoal, with the full (uncropped) photo beneath it. */
 .hero {
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.6) 100%),
-    url("/images/2027/porsche-911.jpg") center 60% / cover no-repeat;
+  background: var(--charcoal);
+  padding: 0;
+  overflow: hidden;
 }
 
-.hero :global(.hero-location) {
+.heroContent {
+  margin: 0 auto;
+  padding: 150px 2rem 3.5rem;
+}
+
+.heroTitle {
+  color: var(--white);
+  font-size: clamp(2.6rem, 6vw, 4.5rem);
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.heroPhoto {
+  max-width: 1280px;
+  margin: 0 auto;
+  /* fade the photo's edges into the charcoal background */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+}
+
+.heroPhoto img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* charcoal on gold reads far better than the default white on gold */
+.heroContent :global(.hero-date) {
+  color: var(--charcoal);
+}
+
+.heroContent :global(.hero-location) {
   margin-bottom: 0.75rem;
 }
 
@@ -139,11 +171,6 @@
   width: 260px;
   background: var(--cream);
   padding: 1.25rem 1.5rem;
-  transition: transform 0.3s;
-}
-
-.pantry:hover {
-  transform: translateY(-2px);
 }
 
 .pantry img {
@@ -181,8 +208,13 @@
     margin-top: 2.5rem;
   }
 
-  .hero {
-    background-position: 28% 60%;
+  .heroContent {
+    padding: 120px 1.25rem 2.5rem;
+  }
+
+  .heroPhoto {
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .rainDate {
@@ -192,8 +224,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .photo img,
-  .pantry {
+  .photo img {
     transition: none;
   }
 }

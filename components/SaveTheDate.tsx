@@ -29,10 +29,10 @@ export default function SaveTheDate() {
     <>
       <Header links={NAV_LINKS} />
 
-      <section className={`hero ${styles.hero}`}>
-        <div className="hero-content">
+      <section className={styles.hero}>
+        <div className={`hero-content ${styles.heroContent}`}>
           <div className="hero-badge">5th Annual Charity Event</div>
-          <h1>Save the Date</h1>
+          <h1 className={styles.heroTitle}>Save the Date</h1>
           <p className="hero-date">Sunday, May 16, 2027</p>
           <p className="hero-location">Historic Downtown Crystal Lake</p>
           <p className={styles.rainDate}>Rain date &middot; Sunday, May 23, 2027</p>
@@ -47,6 +47,16 @@ export default function SaveTheDate() {
           <a href="/clcc-car-show-2027.ics" download className={styles.icsLink}>
             Using Apple Calendar or Outlook? Download the .ics file
           </a>
+        </div>
+        <div className={styles.heroPhoto}>
+          <Image
+            src="/images/2027/porsche-911.jpg"
+            alt="Yellow classic Porsche 911 cruising through downtown Crystal Lake"
+            width={1536}
+            height={609}
+            priority
+            sizes="(max-width: 1280px) 100vw, 1280px"
+          />
         </div>
       </section>
 
@@ -118,12 +128,8 @@ export default function SaveTheDate() {
               here in Crystal Lake. No one should go hungry.
             </p>
           </div>
-          <a
-            href="https://www.crystallakefoodpantry.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.pantry}
-          >
+          {/* TODO: link to the pantry's website once its URL is confirmed */}
+          <div className={styles.pantry}>
             <Image
               src="/images/2027/food-pantry-logo.png"
               alt="Crystal Lake Food Pantry: No One Should Go Hungry"
@@ -131,7 +137,7 @@ export default function SaveTheDate() {
               height={198}
               sizes="260px"
             />
-          </a>
+          </div>
         </div>
       </section>
 
@@ -154,6 +160,7 @@ export default function SaveTheDate() {
       </section>
 
       <Footer
+        showPixelBadge={false}
         eventLinks={[
           { label: "About", href: "#about" },
           { label: "Food Pantry", href: "#charity" },
