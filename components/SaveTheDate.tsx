@@ -18,7 +18,6 @@ const NAV_LINKS: NavLink[] = [
   { label: "About", href: "#about" },
   { label: "Charity", href: "#charity" },
   { label: "Sponsors", href: "#sponsors" },
-  { label: "Arcade", href: "/arcade" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -165,8 +164,7 @@ export default function SaveTheDate() {
         eventLinks={[
           { label: "About", href: "#about" },
           { label: "Food Pantry", href: "#charity" },
-          { label: "Arcade", href: "/arcade" },
-        ]}
+                ]}
       />
     </>
   );

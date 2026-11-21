@@ -51,10 +51,7 @@ export const metadata: Metadata = SHOW_SAVE_THE_DATE
 export default function Home() {
   if (SHOW_SAVE_THE_DATE) {
     return (
-      <>
-        <KonamiListener />
-        <SaveTheDate />
-      </>
+      <SaveTheDate />
     );
   }
 
