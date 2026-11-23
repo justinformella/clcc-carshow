@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { AdCampaign, Registration } from "@/types/database";
 import { AD_PLATFORMS } from "@/types/database";
 
@@ -25,6 +26,7 @@ export default function CampaignDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { currentEvent } = useAdminEvent();
 
   const [campaign, setCampaign] = useState<AdCampaign | null>(null);
   const [linkedRegs, setLinkedRegs] = useState<Registration[]>([]);
@@ -49,6 +51,7 @@ export default function CampaignDetailPage() {
       const { data: regs } = await supabase
         .from("registrations")
         .select("*")
+        .eq("event_id", data.event_id)
         .eq("utm_campaign", data.utm_campaign)
         .in("payment_status", ["paid", "pending"])
         .order("created_at", { ascending: false });
@@ -60,8 +63,11 @@ export default function CampaignDetailPage() {
     fetchCampaign();
   }, [fetchCampaign]);
 
+  // Campaigns from past shows are read only.
+  const readOnly = !!campaign && (!currentEvent || campaign.event_id !== currentEvent.id);
+
   const startEdit = () => {
-    if (!campaign) return;
+    if (!campaign || readOnly) return;
     setForm({
       platform: campaign.platform,
       campaign_name: campaign.campaign_name,
@@ -94,7 +100,7 @@ export default function CampaignDetailPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form || !campaign) return;
+    if (!form || !campaign || readOnly) return;
     setSaving(true);
     setSaveError(null);
 
@@ -129,7 +135,7 @@ export default function CampaignDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!campaign) return;
+    if (!campaign || readOnly) return;
     if (!confirm("Are you sure you want to delete this campaign?")) return;
     setDeleting(true);
 
@@ -209,7 +215,7 @@ export default function CampaignDetailPage() {
 
         {!editing && (
           <div style={{ display: "flex", gap: "0.5rem" }}>
-            <ActionButton label="Edit" onClick={startEdit} variant="secondary" />
+            {!readOnly && <ActionButton label="Edit" onClick={startEdit} variant="secondary" />}
             {c.external_url && (
               <a
                 href={c.external_url}
@@ -233,17 +239,19 @@ export default function CampaignDetailPage() {
                 Open in Ads Manager
               </a>
             )}
-            <ActionButton
-              label={deleting ? "Deleting..." : "Delete"}
-              onClick={handleDelete}
-              variant="danger"
-              disabled={deleting}
-            />
+            {!readOnly && (
+              <ActionButton
+                label={deleting ? "Deleting..." : "Delete"}
+                onClick={handleDelete}
+                variant="danger"
+                disabled={deleting}
+              />
+            )}
           </div>
         )}
       </div>
 
-      {editing && form ? (
+      {editing && form && !readOnly ? (
         <form
           onSubmit={handleSave}
           style={{

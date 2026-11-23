@@ -5,8 +5,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import type { Registration, Sponsor, SponsorStatus, AdCampaign, Admin, HelpRequestPriority } from "@/types/database";
 import { MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 export default function AdminDashboard() {
+  const { event } = useAdminEvent();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
@@ -26,6 +28,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!event) return;
+    const eventId = event.id;
+    let cancelled = false;
+    setLoading(true);
+    setRegistrations([]);
+    setSponsors([]);
+    setCampaigns([]);
+    setOpenTickets([]);
     const fetchData = async () => {
       const supabase = createClient();
 
@@ -33,18 +43,22 @@ export default function AdminDashboard() {
         supabase
           .from("registrations")
           .select("*")
+          .eq("event_id", eventId)
           .in("payment_status", ["paid", "comped", "pending"])
           .order("created_at", { ascending: false }),
         supabase
           .from("sponsors")
           .select("*")
+          .eq("event_id", eventId)
           .order("created_at", { ascending: false }),
         supabase
           .from("ad_campaigns")
-          .select("*"),
+          .select("*")
+          .eq("event_id", eventId),
         supabase
           .from("help_requests")
           .select("id, request_number, subject, email, name, priority, status, created_at")
+          .or(`event_id.eq.${eventId},event_id.is.null`)
           .in("status", ["open", "in_progress", "waiting_on_submitter"])
           .order("created_at", { ascending: false }),
         supabase
@@ -54,6 +68,7 @@ export default function AdminDashboard() {
           .maybeSingle(),
       ]);
 
+      if (cancelled) return;
       setRegistrations(regResult.data || []);
       setSponsors((sponsorResult.data as Sponsor[]) || []);
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
@@ -67,6 +82,7 @@ export default function AdminDashboard() {
         .select("date, views, visitors")
         .gte("date", sevenDaysAgo)
         .order("date", { ascending: false });
+      if (cancelled) return;
       setTrafficData(trafficRows || []);
 
       if (settingResult.data?.value) {
@@ -82,13 +98,16 @@ export default function AdminDashboard() {
           .select("*")
           .eq("email", user.email)
           .single();
-        if (adminData) setCurrentAdmin(adminData as Admin);
+        if (adminData && !cancelled) setCurrentAdmin(adminData as Admin);
       }
 
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dashboardStats = useMemo(() => {
     const confirmedRegistrations = registrations.filter((r) => r.payment_status === "paid" || r.payment_status === "comped");
@@ -103,7 +122,7 @@ export default function AdminDashboard() {
     const checkedIn = registrations.filter((r) => r.checked_in).length;
     const uniqueAttendees = new Set(registrations.map((r) => r.email.toLowerCase())).size;
 
-    const eventDate = new Date("2026-05-17T00:00:00");
+    const eventDate = event ? new Date(event.event_date + "T00:00:00") : new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const daysUntilEvent = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -148,11 +167,11 @@ export default function AdminDashboard() {
       : [];
 
     return { confirmedRegistrations, paidRegistrations, unpaidRegistrations, abandonedRegistrations, regRevenueCents, donationRevenueCents, totalRevenue, checkedIn, uniqueAttendees, daysUntilEvent, activeSponsors, sponsorRevenue, committedUnpaid, committedProjected, openSponsors, openPipeline, projectedTotal, fullCapacityReg, avgDonationPerReg, fullCapacityDonations, fullCapacityTotal, adRegistrations, adSourceSummary, totalAdSpend, mySponsors };
-  }, [registrations, sponsors, campaigns, currentAdmin, maxRegistrations]);
+  }, [registrations, sponsors, campaigns, currentAdmin, maxRegistrations, event]);
 
   const { confirmedRegistrations, paidRegistrations, unpaidRegistrations, abandonedRegistrations, regRevenueCents, donationRevenueCents, totalRevenue, checkedIn, uniqueAttendees, daysUntilEvent, activeSponsors, sponsorRevenue, committedUnpaid, committedProjected, openSponsors, openPipeline, projectedTotal, fullCapacityReg, avgDonationPerReg, fullCapacityDonations, fullCapacityTotal, adRegistrations, adSourceSummary, totalAdSpend, mySponsors } = dashboardStats;
 
-  if (loading) {
+  if (loading || !event) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
         Loading...
@@ -217,7 +236,7 @@ export default function AdminDashboard() {
               Event Countdown
             </p>
             <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.6)" }}>
-              May 17, 2026 &middot; Downtown Crystal Lake
+              {new Date(event.event_date + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} &middot; Downtown Crystal Lake
             </p>
           </div>
         </div>

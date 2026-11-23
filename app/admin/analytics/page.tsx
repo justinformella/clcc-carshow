@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
+import type { ShowEvent } from "@/lib/events";
 import type { Registration } from "@/types/database";
 import { MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
 import { ResponsiveBar } from "@nivo/bar";
@@ -29,6 +31,32 @@ type VehicleSpec = {
 };
 
 type RegWithSpec = Registration & { spec?: VehicleSpec };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Traffic tables (page_views etc.) have no event_id, so scope them by date:
+// the 30 days ending at the end of the event's season (now for the current
+// show, the day after show day for a past show), never reaching back before
+// the day after the previous show.
+function trafficWindow(event: ShowEvent, events: ShowEvent[]): { start: Date; end: Date } {
+  const showEnd = new Date(event.event_date + "T00:00:00");
+  showEnd.setDate(showEnd.getDate() + 1);
+  const end = event.is_current ? new Date() : new Date(Math.min(Date.now(), showEnd.getTime()));
+  let start = new Date(end.getTime() - 30 * DAY_MS);
+  const prev = events.filter((e) => e.year < event.year).sort((a, b) => b.year - a.year)[0];
+  if (prev) {
+    const seasonStart = new Date(prev.event_date + "T00:00:00");
+    seasonStart.setDate(seasonStart.getDate() + 1);
+    if (seasonStart > start) start = seasonStart;
+  }
+  return { start, end };
+}
+
+// vehicle_specs has no event_id: keep only specs for this event's registrations.
+function specsForRegs(all: VehicleSpec[] | null, regs: Registration[]): VehicleSpec[] {
+  const ids = new Set(regs.map((r) => r.id));
+  return (all || []).filter((s) => ids.has(s.registration_id));
+}
 
 // ─── Light Theme ───
 const ACCENT_COLORS = ["#4f46e5", "#0d9488", "#c9a84c", "#e11d48", "#7c3aed", "#f59e0b", "#06b6d4", "#84cc16", "#ec4899", "#8b5cf6"];
@@ -197,6 +225,7 @@ function Card({ title, children, headerRight }: { title?: string; children: Reac
 
 export default function AnalyticsPage() {
   const router = useRouter();
+  const { event, events, readOnly } = useAdminEvent();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [specs, setSpecs] = useState<VehicleSpec[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,15 +246,29 @@ export default function AnalyticsPage() {
   const [prospectsRegistered, setProspectsRegistered] = useState(0);
 
   useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    // Reset so the previous year's data never shows under this year
+    setLoading(true);
+    setRegistrations([]);
+    setSpecs([]);
+    setTrafficData([]);
+    setPathData([]);
+    setReferrerData([]);
+    setEmailsByDay([]);
+    setProspectCount(0);
+    setProspectsRegistered(0);
+    setEnrichResult(null);
     const fetchData = async () => {
       const supabase = createClient();
       const [regRes, specRes, settingRes] = await Promise.all([
-        supabase.from("registrations").select("*").in("payment_status", ["paid", "comped"]).order("car_number", { ascending: true }),
+        supabase.from("registrations").select("*").eq("event_id", event.id).in("payment_status", ["paid", "comped"]).order("car_number", { ascending: true }),
         supabase.from("vehicle_specs").select("*"),
         supabase.from("app_settings").select("value").eq("key", "max_registrations").maybeSingle(),
       ]);
+      if (cancelled) return;
       setRegistrations(regRes.data || []);
-      setSpecs((specRes.data as VehicleSpec[]) || []);
+      setSpecs(specsForRegs(specRes.data as VehicleSpec[] | null, regRes.data || []));
       if (settingRes.data?.value) {
         const v = parseInt(settingRes.data.value, 10);
         if (!isNaN(v)) setMaxRegistrations(v);
@@ -233,15 +276,19 @@ export default function AnalyticsPage() {
 
       // Fetch traffic data — use raw events (local-timezone accurate) with
       // fallback to legacy pre-aggregated tables for historical data
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const win = trafficWindow(event, events);
+      const thirtyDaysAgo = win.start.toISOString();
       const thirtyDaysAgoDate = thirtyDaysAgo.split("T")[0];
+      const windowEnd = win.end.toISOString();
+      const windowEndDate = windowEnd.split("T")[0];
 
       const [rawEventsRes, legacyTrafficRes, pathRes, referrerRes] = await Promise.all([
-        supabase.from("page_view_events").select("timestamp, path, referrer, device_id").gte("timestamp", thirtyDaysAgo).order("timestamp"),
-        supabase.from("page_views").select("date, views, visitors").gte("date", thirtyDaysAgoDate).order("date"),
-        supabase.from("page_view_paths").select("path, views").gte("date", thirtyDaysAgoDate),
-        supabase.from("page_view_referrers").select("referrer, visitors").gte("date", thirtyDaysAgoDate),
+        supabase.from("page_view_events").select("timestamp, path, referrer, device_id").gte("timestamp", thirtyDaysAgo).lte("timestamp", windowEnd).order("timestamp"),
+        supabase.from("page_views").select("date, views, visitors").gte("date", thirtyDaysAgoDate).lte("date", windowEndDate).order("date"),
+        supabase.from("page_view_paths").select("path, views").gte("date", thirtyDaysAgoDate).lte("date", windowEndDate),
+        supabase.from("page_view_referrers").select("referrer, visitors").gte("date", thirtyDaysAgoDate).lte("date", windowEndDate),
       ]);
+      if (cancelled) return;
 
       const rawEvents = rawEventsRes.data || [];
 
@@ -320,9 +367,10 @@ export default function AnalyticsPage() {
 
       // Fetch email log data (aggregated by day) and prospect stats
       const [emailLogRes, prospectRes] = await Promise.all([
-        supabase.from("email_log").select("sent_at").gte("sent_at", thirtyDaysAgo),
+        supabase.from("email_log").select("sent_at").gte("sent_at", thirtyDaysAgo).lte("sent_at", windowEnd),
         supabase.from("marketing_prospects").select("email, unsubscribed"),
       ]);
+      if (cancelled) return;
       // Aggregate emails by day
       const emailDayMap: Record<string, number> = {};
       (emailLogRes.data || []).forEach((e: { sent_at: string }) => {
@@ -345,21 +393,38 @@ export default function AnalyticsPage() {
       setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
 
-  // Fetch AI insights when site tab is active
+  // Fetch AI insights when site tab is active (per viewed event)
+  const [insightsEventId, setInsightsEventId] = useState<string | null>(null);
+  const viewedEventIdRef = useRef<string | null>(null);
   useEffect(() => {
+    viewedEventIdRef.current = event?.id ?? null;
+  }, [event?.id]);
+  useEffect(() => {
+    if (!event) return;
+    if (insightsEventId !== event.id) {
+      setInsights(null);
+      setInsightsEventId(event.id);
+      return;
+    }
     if (tab === "site" && !insights && !insightsLoading) {
+      const requestedFor = event.id;
       setInsightsLoading(true);
-      fetch("/api/analytics/insights", { method: "POST" })
+      fetch(`/api/analytics/insights?event=${event.id}`, { method: "POST" })
         .then((r) => r.json())
-        .then((data) => { if (data.trend) setInsights(data); })
+        .then((data) => { if (data.trend && requestedFor === viewedEventIdRef.current) setInsights(data); })
         .catch(() => {})
         .finally(() => setInsightsLoading(false));
     }
-  }, [tab, insights, insightsLoading]);
+  }, [tab, insights, insightsLoading, event, insightsEventId]);
 
   const handleEnrichAll = async () => {
+    if (readOnly) return;
     setEnriching(true);
     setEnrichResult(null);
     try {
@@ -368,7 +433,7 @@ export default function AnalyticsPage() {
       setEnrichResult(`${data.enriched} enriched`);
       const supabase = createClient();
       const { data: newSpecs } = await supabase.from("vehicle_specs").select("*");
-      setSpecs((newSpecs as VehicleSpec[]) || []);
+      setSpecs(specsForRegs(newSpecs as VehicleSpec[] | null, registrations));
     } catch { setEnrichResult("Failed"); }
     finally { setEnriching(false); }
   };
@@ -450,7 +515,8 @@ export default function AnalyticsPage() {
   }, [regsWithSpecs, leaderboard]);
 
   // Site analytics computations
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const trafficEndMs = event ? trafficWindow(event, events).end.getTime() : Date.now();
+  const sevenDaysAgo = new Date(trafficEndMs - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const visitors7d = trafficData.filter((d) => d.date >= sevenDaysAgo).reduce((s, d) => s + d.visitors, 0);
   const regs7d = registrations.filter((r) => r.payment_status === "paid" && r.paid_at && r.paid_at >= sevenDaysAgo).length;
   const conversionRate7d = visitors7d > 0 ? ((regs7d / visitors7d) * 100).toFixed(1) : "0.0";
@@ -793,9 +859,10 @@ export default function AnalyticsPage() {
           {/* Enrich button */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
             {enrichResult && <span style={{ fontSize: "0.7rem", color: "#0d9488" }}>{enrichResult}</span>}
-            {specs.length >= registrations.length ? (
+            {readOnly ? null : specs.length >= registrations.length ? (
               <button
                 onClick={async () => {
+                  if (readOnly) return;
                   if (!confirm("Re-enrich all vehicles? This will refresh specs for every registration.")) return;
                   setEnriching(true);
                   setEnrichResult(null);
@@ -806,7 +873,7 @@ export default function AnalyticsPage() {
                     setEnrichResult(`${data.enriched} re-enriched`);
                     const supabase = createClient();
                     const { data: newSpecs } = await supabase.from("vehicle_specs").select("*");
-                    setSpecs((newSpecs as VehicleSpec[]) || []);
+                    setSpecs(specsForRegs(newSpecs as VehicleSpec[] | null, registrations));
                   } catch { setEnrichResult("Failed"); }
                   finally { setEnriching(false); }
                 }}

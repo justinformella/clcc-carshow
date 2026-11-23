@@ -3,28 +3,43 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 export default function PlacardsPage() {
+  const { event } = useAdminEvent();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [generatingBlanks, setGeneratingBlanks] = useState(false);
 
+  // Placard PDFs are generated client-side and write nothing, so they stay
+  // available (as printing) when viewing a past year.
   useEffect(() => {
+    if (!event) return;
+    const eventId = event.id;
+    let cancelled = false;
+    setLoading(true);
+    setRegistrations([]);
+    setSelectedIds(new Set());
     const fetchData = async () => {
       const supabase = createClient();
       const { data } = await supabase
         .from("registrations")
         .select("*")
+        .eq("event_id", eventId)
         .neq("payment_status", "archived")
         .order("car_number", { ascending: true });
 
+      if (cancelled) return;
       setRegistrations(data || []);
       setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleSelection = (id: string) => {
     const next = new Set(selectedIds);
@@ -99,7 +114,7 @@ export default function PlacardsPage() {
     }
   }, []);
 
-  if (loading) {
+  if (loading || !event) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
         Loading...

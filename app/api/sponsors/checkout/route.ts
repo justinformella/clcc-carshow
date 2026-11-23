@@ -28,12 +28,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Sponsorship already paid" }, { status: 400 });
   }
 
-  // Look up tier price
+  // Look up tier price (tiers belong to the sponsor's own event)
   const { data: tier, error: tierError } = await supabase
     .from("sponsorship_tiers")
     .select("name, price_cents")
+    .eq("event_id", sponsor.event_id)
     .eq("name", selected_level)
     .single();
+
+  const { data: sponsorEvent } = await supabase
+    .from("events")
+    .select("year")
+    .eq("id", sponsor.event_id)
+    .maybeSingle();
+  const showYearLabel = sponsorEvent?.year ? `${sponsorEvent.year} ` : "";
 
   if (tierError || !tier) {
     return NextResponse.json({ error: "Invalid sponsorship level" }, { status: 400 });
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
         currency: "usd",
         product_data: {
           name: `${tier.name} — Crystal Lake Cars & Caffeine`,
-          description: `Sponsorship for the 2026 Crystal Lake Cars & Caffeine Car Show`,
+          description: `Sponsorship for the ${showYearLabel}Crystal Lake Cars & Caffeine Car Show`,
         },
         unit_amount: sponsor.sponsorship_amount > 0 ? sponsor.sponsorship_amount : tier.price_cents,
       },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { ShowExpense } from "@/types/database";
 
 function fmtMoney(cents: number): string {
@@ -11,6 +12,7 @@ function fmtMoney(cents: number): string {
 }
 
 export default function ExpensesPage() {
+  const { event, readOnly } = useAdminEvent();
   const [expenses, setExpenses] = useState<ShowExpense[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -18,14 +20,23 @@ export default function ExpensesPage() {
   const [form, setForm] = useState({ description: "", amount: "", memo: "", date: new Date().toISOString().split("T")[0] });
   const [saving, setSaving] = useState(false);
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = async (eventId: string) => {
     const supabase = createClient();
-    const { data } = await supabase.from("show_expenses").select("*").order("date", { ascending: false });
+    const { data } = await supabase.from("show_expenses").select("*").eq("event_id", eventId).order("date", { ascending: false });
     setExpenses((data as ShowExpense[]) || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchExpenses(); }, []);
+  useEffect(() => {
+    if (!event) return;
+    // Reset so the previous year's expenses never show under this year
+    setLoading(true);
+    setExpenses([]);
+    setAdding(false);
+    setEditId(null);
+    fetchExpenses(event.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
 
   const resetForm = () => {
     setForm({ description: "", amount: "", memo: "", date: new Date().toISOString().split("T")[0] });
@@ -34,6 +45,7 @@ export default function ExpensesPage() {
   };
 
   const handleSave = async () => {
+    if (readOnly || !event) return;
     if (!form.description || !form.amount) return;
     setSaving(true);
     const supabase = createClient();
@@ -49,6 +61,7 @@ export default function ExpensesPage() {
       }).eq("id", editId);
     } else {
       await supabase.from("show_expenses").insert({
+        event_id: event.id,
         description: form.description,
         amount_cents: amountCents,
         memo: form.memo || null,
@@ -58,10 +71,11 @@ export default function ExpensesPage() {
 
     resetForm();
     setSaving(false);
-    fetchExpenses();
+    fetchExpenses(event.id);
   };
 
   const handleEdit = (e: ShowExpense) => {
+    if (readOnly) return;
     setForm({
       description: e.description,
       amount: (e.amount_cents / 100).toFixed(2),
@@ -73,10 +87,11 @@ export default function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (readOnly || !event) return;
     if (!confirm("Delete this expense?")) return;
     const supabase = createClient();
     await supabase.from("show_expenses").delete().eq("id", id);
-    fetchExpenses();
+    fetchExpenses(event.id);
   };
 
   const total = expenses.reduce((s, e) => s + e.amount_cents, 0);
@@ -117,7 +132,7 @@ export default function ExpensesPage() {
         >
           Show Expenses
         </h1>
-        {!adding && (
+        {!adding && !readOnly && (
           <button
             onClick={() => setAdding(true)}
             style={{
@@ -138,7 +153,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Add / Edit form */}
-      {adding && (
+      {adding && !readOnly && (
         <div
           style={{
             background: "var(--white)",
@@ -263,7 +278,7 @@ export default function ExpensesPage() {
       >
         {expenses.length === 0 ? (
           <p style={{ color: "var(--text-light)", fontSize: "0.9rem", textAlign: "center", padding: "3rem" }}>
-            No expenses recorded yet. Click &ldquo;Add Expense&rdquo; to get started.
+            {readOnly ? "No expenses recorded for this show." : <>No expenses recorded yet. Click &ldquo;Add Expense&rdquo; to get started.</>}
           </p>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
@@ -288,10 +303,12 @@ export default function ExpensesPage() {
                     {fmtMoney(e.amount_cents)}
                   </td>
                   <td style={{ padding: "0.8rem 1rem", textAlign: "right" }}>
-                    <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
-                      <button onClick={() => handleEdit(e)} style={smallBtnStyle}>Edit</button>
-                      <button onClick={() => handleDelete(e.id)} style={{ ...smallBtnStyle, color: "#c62828" }}>Delete</button>
-                    </div>
+                    {!readOnly && (
+                      <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
+                        <button onClick={() => handleEdit(e)} style={smallBtnStyle}>Edit</button>
+                        <button onClick={() => handleDelete(e.id)} style={{ ...smallBtnStyle, color: "#c62828" }}>Delete</button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

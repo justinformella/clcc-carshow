@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { sendHelpRequestReplyNotification } from "@/lib/email";
+import { resolveEvent } from "@/lib/events";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { registration_id, name, email, subject, message, admin_name, admin_email } = body;
+    const { registration_id, name, email, subject, message, admin_name, admin_email, event_id } = body;
 
     if (!email || !subject || !message) {
       return NextResponse.json(
@@ -15,6 +16,22 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+
+    // Which show the ticket belongs to: the event the admin page passes
+    // (`event_id` in the body or `?event=`), else the registration's show,
+    // else the current show.
+    const requestedEventId: string | null = event_id || request.nextUrl.searchParams.get("event");
+    let ticketEventId: string;
+    if (!requestedEventId && registration_id) {
+      const { data: reg } = await supabase
+        .from("registrations")
+        .select("event_id")
+        .eq("id", registration_id)
+        .maybeSingle();
+      ticketEventId = reg?.event_id ?? (await resolveEvent(supabase, null)).id;
+    } else {
+      ticketEventId = (await resolveEvent(supabase, requestedEventId)).id;
+    }
 
     // Create the help desk ticket
     const { data: helpRequest, error: insertError } = await supabase
@@ -26,6 +43,7 @@ export async function POST(request: NextRequest) {
         category: "registration",
         status: "in_progress",
         registration_id: registration_id || null,
+        event_id: ticketEventId,
       })
       .select()
       .single();

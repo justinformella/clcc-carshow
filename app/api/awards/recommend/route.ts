@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
+import { resolveEvent } from "@/lib/events";
 
 const OPTIONS_PER_CATEGORY = 3;
 
@@ -13,7 +14,10 @@ type Recommendation = AIRec & {
   owner: string;
 };
 
-export async function POST() {
+// POST /api/awards/recommend?event=<id>
+// Generates recommendations for one show's registrations and categories.
+// Only the current show can be (re)generated; past shows are read only.
+export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -21,10 +25,15 @@ export async function POST() {
     }
 
     const supabase = createServerClient();
+    const event = await resolveEvent(supabase, request.nextUrl.searchParams.get("event"));
+    if (!event.is_current) {
+      return NextResponse.json({ error: `${event.year} is a past show and is read only` }, { status: 403 });
+    }
 
     const { data: registrations } = await supabase
       .from("registrations")
       .select("id, car_number, vehicle_year, vehicle_make, vehicle_model, vehicle_color, story, first_name, last_name, award_category")
+      .eq("event_id", event.id)
       .in("payment_status", ["paid", "comped"])
       .order("car_number", { ascending: true });
 
@@ -35,6 +44,7 @@ export async function POST() {
     const { data: categoryRows } = await supabase
       .from("award_categories")
       .select("name")
+      .eq("event_id", event.id)
       .eq("is_active", true)
       .order("display_order", { ascending: true });
 
@@ -134,10 +144,12 @@ Return JSON:
       return a.rank - b.rank;
     });
 
-    await supabase.from("award_recommendations").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    // Replace only this show's recommendations; other years keep theirs.
+    await supabase.from("award_recommendations").delete().eq("event_id", event.id);
     if (enriched.length > 0) {
       await supabase.from("award_recommendations").insert(
         enriched.map((r) => ({
+          event_id: event.id,
           category: r.category,
           rank: r.rank,
           car_number: r.car_number,

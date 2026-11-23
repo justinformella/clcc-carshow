@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import { REGISTRATION_PRICE_CENTS } from "@/types/database";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -24,6 +25,8 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function QuickAddPage() {
+  const { event, readOnly } = useAdminEvent();
+  const priceCents = event?.registration_price_cents ?? REGISTRATION_PRICE_CENTS;
   const firstNameRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -64,6 +67,7 @@ export default function QuickAddPage() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      if (!event || readOnly) return;
       setSaving(true);
       setError(null);
       setLastSaved(null);
@@ -73,13 +77,14 @@ export default function QuickAddPage() {
         : 0;
 
       const row = {
+        event_id: event.id,
         first_name: form.first_name.trim(),
         last_name: form.last_name.trim(),
         email: form.email.trim() || `onsite-${Date.now()}@placeholder.local`,
         vehicle_year: parseInt(form.vehicle_year),
         vehicle_make: form.vehicle_make.trim(),
         vehicle_model: form.vehicle_model.trim(),
-        amount_paid: REGISTRATION_PRICE_CENTS,
+        amount_paid: priceCents,
         donation_cents: donationCents,
         payment_status: "paid",
         payment_method: "cash",
@@ -145,8 +150,26 @@ export default function QuickAddPage() {
       setSaving(false);
       reset();
     },
-    [form]
+    [form, event, readOnly, priceCents]
   );
+
+  if (!event) {
+    return (
+      <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
+        Loading...
+      </p>
+    );
+  }
+
+  if (readOnly) {
+    return (
+      <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+        <p style={{ color: "var(--text-light)", fontSize: "0.95rem" }}>
+          You&apos;re viewing {event.year}, which is read only. Switch to the current show year to add on-site registrations.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: "700px", margin: "0 auto" }}>
@@ -424,7 +447,7 @@ export default function QuickAddPage() {
             cursor: saving ? "wait" : "pointer",
           }}
         >
-          {saving ? "Saving & Generating Placard..." : `Register — $${REGISTRATION_PRICE_CENTS / 100} Cash`}
+          {saving ? "Saving & Generating Placard..." : `Register — $${priceCents / 100} Cash`}
         </button>
       </form>
     </div>

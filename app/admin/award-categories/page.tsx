@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { AwardCategory } from "@/types/database";
 
 type Form = {
@@ -42,6 +43,8 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function AwardCategoriesAdminPage() {
+  const { event, readOnly } = useAdminEvent();
+  const eventIdRef = useRef<string | null>(null);
   const [categories, setCategories] = useState<AwardCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -49,22 +52,30 @@ export default function AwardCategoriesAdminPage() {
   const [form, setForm] = useState<Form>(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  const fetchData = async () => {
-    const res = await fetch("/api/award-categories");
+  const fetchData = async (eventId: string) => {
+    const res = await fetch(`/api/award-categories?event=${eventId}`);
     const data = await res.json();
+    if (eventIdRef.current !== eventId) return; // year switched mid-fetch
     setCategories(data.categories || []);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!event) return;
+    eventIdRef.current = event.id;
+    setLoading(true);
+    setCategories([]);
+    setAdding(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    fetchData(event.id);
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (isNew: boolean) => {
-    if (!form.name.trim()) return;
+    if (readOnly || !event || !form.name.trim()) return;
     setSaving(true);
     const body = {
-      ...(isNew ? {} : { id: editingId }),
+      ...(isNew ? { event_id: event.id } : { id: editingId }),
       name: form.name.trim(),
       display_order: parseInt(form.display_order || "0", 10),
       is_active: form.is_active,
@@ -79,17 +90,19 @@ export default function AwardCategoriesAdminPage() {
     setForm(emptyForm);
     setSaving(false);
     setLoading(true);
-    await fetchData();
+    await fetchData(event.id);
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (readOnly || !event) return;
     if (!confirm(`Delete "${name}"? Any vehicle currently holding this award will be unassigned.`)) return;
     await fetch(`/api/award-categories?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     setLoading(true);
-    await fetchData();
+    await fetchData(event.id);
   };
 
   const startEdit = (cat: AwardCategory) => {
+    if (readOnly) return;
     setAdding(false);
     setEditingId(cat.id);
     setForm({
@@ -133,6 +146,7 @@ export default function AwardCategoriesAdminPage() {
             Active categories appear on the homepage and are used by AI recommendations and award assignment.
           </p>
         </div>
+        {!readOnly && (
         <button
           onClick={() => {
             setEditingId(null);
@@ -146,9 +160,10 @@ export default function AwardCategoriesAdminPage() {
         >
           Add Category
         </button>
+        )}
       </div>
 
-      {adding && (
+      {adding && !readOnly && (
         <div
           style={{
             background: "var(--white)",
@@ -233,6 +248,7 @@ export default function AwardCategoriesAdminPage() {
                     {cat.is_active ? "Active" : "Hidden"}
                   </span>
                 </div>
+                {!readOnly && (
                 <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
                   <button
                     onClick={() => (isEditing ? cancelEdit() : startEdit(cat))}
@@ -267,9 +283,10 @@ export default function AwardCategoriesAdminPage() {
                     Delete
                   </button>
                 </div>
+                )}
               </div>
 
-              {isEditing && (
+              {isEditing && !readOnly && (
                 <div style={{ borderTop: "1px solid #eee", marginTop: "1rem", paddingTop: "1rem" }}>
                   <FormFields form={form} setForm={setForm} />
                   <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>

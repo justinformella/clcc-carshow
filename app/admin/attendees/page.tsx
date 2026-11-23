@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 const RegistrantMap = dynamic(() => import("@/components/RegistrantMap"), { ssr: false });
 
@@ -65,7 +66,10 @@ function groupByEmail(registrations: Registration[]): Attendee[] {
 
 export default function AttendeesPage() {
   const router = useRouter();
+  const { event, events } = useAdminEvent();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  // Cross-year history (intentionally unfiltered): email -> event_ids attended.
+  const [history, setHistory] = useState<{ email: string; event_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deferredSearch, setDeferredSearch] = useState("");
@@ -78,20 +82,54 @@ export default function AttendeesPage() {
   }, []);
 
   useEffect(() => {
+    if (!event) return;
+    const eventId = event.id;
+    let cancelled = false;
+    setLoading(true);
+    setRegistrations([]);
     const fetchData = async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("registrations")
-        .select("*")
-        .in("payment_status", ["paid", "comped", "pending"])
-        .order("created_at", { ascending: true });
+      const [{ data }, { data: historyRows }] = await Promise.all([
+        supabase
+          .from("registrations")
+          .select("*")
+          .eq("event_id", eventId)
+          .in("payment_status", ["paid", "comped", "pending"])
+          .order("created_at", { ascending: true }),
+        // No event filter on purpose: shows every year each person registered.
+        supabase
+          .from("registrations")
+          .select("email, event_id")
+          // "Years" = years they actually took part (unpaid signups don't count)
+          .in("payment_status", ["paid", "comped"]),
+      ]);
+      if (cancelled) return;
       setRegistrations(data || []);
+      setHistory(historyRows || []);
       setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const attendees = useMemo(() => groupByEmail(registrations), [registrations]);
+
+  const yearsByEmail = useMemo(() => {
+    const yearOf = new Map(events.map((e) => [e.id, e.year]));
+    const map = new Map<string, number[]>();
+    for (const row of history) {
+      const year = yearOf.get(row.event_id);
+      if (year == null) continue;
+      const key = row.email.toLowerCase();
+      const list = map.get(key) || [];
+      if (!list.includes(year)) list.push(year);
+      map.set(key, list);
+    }
+    for (const list of map.values()) list.sort((a, b) => a - b);
+    return map;
+  }, [history, events]);
 
   const filtered = useMemo(() => {
     if (!deferredSearch) return attendees;
@@ -131,7 +169,7 @@ export default function AttendeesPage() {
 
   const [showMap, setShowMap] = useState(true);
 
-  if (loading) {
+  if (loading || !event) {
     return (
       <p
         style={{
@@ -271,6 +309,7 @@ export default function AttendeesPage() {
               <th style={thStyle}>Registration</th>
               <th style={thStyle}>Donation</th>
               <th style={thStyle}>Check-In</th>
+              <th style={thStyle}>Years</th>
             </tr>
           </thead>
           <tbody>
@@ -321,12 +360,15 @@ export default function AttendeesPage() {
                     total={a.vehicles.length}
                   />
                 </td>
+                <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                  {(yearsByEmail.get(a.email) || [event.year]).join(", ")}
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={7}
                   style={{
                     ...tdStyle,
                     textAlign: "center",

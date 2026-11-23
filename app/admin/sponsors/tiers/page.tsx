@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { Sponsor, SponsorshipTier } from "@/types/database";
 import ReactMarkdown from "react-markdown";
 
@@ -58,6 +59,7 @@ const goldButtonStyle: React.CSSProperties = {
 };
 
 export default function TiersPage() {
+  const { event, readOnly } = useAdminEvent();
   const [tiers, setTiers] = useState<SponsorshipTier[]>([]);
   const [sponsorsByTier, setSponsorsByTier] = useState<Record<string, Sponsor[]>>({});
   const [loading, setLoading] = useState(true);
@@ -66,20 +68,25 @@ export default function TiersPage() {
   const [form, setForm] = useState<TierForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (eventId: string) => {
     const [tiersRes, supabase] = await Promise.all([
-      fetch("/api/sponsors/tiers"),
+      fetch(`/api/sponsors/tiers?event=${eventId}`),
       Promise.resolve(createClient()),
     ]);
     const tiersData = await tiersRes.json();
-    const fetchedTiers: SponsorshipTier[] = tiersData.tiers || [];
-    setTiers(fetchedTiers);
+    // Filter client-side too, in case the API returns tiers for every year.
+    const fetchedTiers: SponsorshipTier[] = ((tiersData.tiers || []) as SponsorshipTier[]).filter(
+      (t) => !t.event_id || t.event_id === eventId
+    );
 
     // Fetch sponsors grouped by sponsorship_level
     const { data: sponsors } = await supabase
       .from("sponsors")
       .select("*")
+      .eq("event_id", eventId)
       .order("company");
+    if (eventIdRef.current !== eventId) return; // year switched mid-fetch
+    setTiers(fetchedTiers);
 
     const grouped: Record<string, Sponsor[]> = {};
     for (const tier of fetchedTiers) {
@@ -105,11 +112,21 @@ export default function TiersPage() {
     setLoading(false);
   };
 
+  const eventIdRef = useRef<string | null>(null);
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!event) return;
+    eventIdRef.current = event.id;
+    setLoading(true);
+    setTiers([]);
+    setSponsorsByTier({});
+    setAdding(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    fetchData(event.id);
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (isNew: boolean) => {
+    if (readOnly || !event) return;
     setSaving(true);
     const priceCents = Math.round(parseFloat(form.price_dollars || "0") * 100);
     const body = {
@@ -119,6 +136,7 @@ export default function TiersPage() {
       benefits: form.benefits,
       display_order: parseInt(form.display_order || "0", 10),
       is_active: form.is_active,
+      ...(isNew ? { event_id: event.id } : {}),
     };
 
     await fetch("/api/sponsors/tiers", {
@@ -132,10 +150,11 @@ export default function TiersPage() {
     setForm(emptyForm);
     setSaving(false);
     setLoading(true);
-    await fetchData();
+    await fetchData(event.id);
   };
 
   const startEdit = (tier: SponsorshipTier) => {
+    if (readOnly) return;
     setAdding(false);
     setEditingId(tier.id);
     setForm({
@@ -183,6 +202,7 @@ export default function TiersPage() {
         >
           Sponsorship Tiers
         </h1>
+        {!readOnly && (
         <button
           onClick={() => {
             setEditingId(null);
@@ -193,10 +213,11 @@ export default function TiersPage() {
         >
           Add New Tier
         </button>
+        )}
       </div>
 
       {/* Add new tier form */}
-      {adding && (
+      {adding && !readOnly && (
         <div style={{ background: "var(--white)", padding: "1.5rem", marginBottom: "1.5rem", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
           <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", fontWeight: 600, margin: "0 0 1rem" }}>
             New Tier
@@ -286,6 +307,7 @@ export default function TiersPage() {
                     {tier.is_active ? "Active" : "Hidden"}
                   </span>
                 </div>
+                {!readOnly && (
                 <button
                   onClick={() => (isEditing ? cancelEdit() : startEdit(tier))}
                   style={{
@@ -302,6 +324,7 @@ export default function TiersPage() {
                 >
                   {isEditing ? "Cancel" : "Edit"}
                 </button>
+                )}
               </div>
 
               {/* Sponsors list */}
@@ -344,7 +367,7 @@ export default function TiersPage() {
               </div>
 
               {/* Edit form */}
-              {isEditing && (
+              {isEditing && !readOnly && (
                 <div style={{ borderTop: "1px solid #eee", paddingTop: "1.5rem" }}>
                   <TierFormFields form={form} setForm={setForm} />
                   <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>

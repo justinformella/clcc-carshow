@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
+import { getCurrentEvent } from "@/lib/events";
 
 export type PublicSponsor = {
   company: string;
@@ -23,11 +24,13 @@ function isPresenting(level: string): boolean {
 export async function GET() {
   try {
     const supabase = createServerClient();
+    const event = await getCurrentEvent(supabase);
 
     // Fetch tiers for normalization and ordering
     const { data: tiers } = await supabase
       .from("sponsorship_tiers")
       .select("name, display_order")
+      .eq("event_id", event.id)
       .eq("is_active", true)
       .order("display_order", { ascending: true });
 
@@ -36,6 +39,7 @@ export async function GET() {
     const { data } = await supabase
       .from("sponsors")
       .select("company, sponsorship_level, logo_url, pixel_logo_url, website")
+      .eq("event_id", event.id)
       .in("status", ["paid", "engaged"])
       .order("company");
 

@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import { AD_PLATFORMS } from "@/types/database";
 
 export default function NewCampaignPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +32,7 @@ export default function NewCampaignPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly || !event) return;
     setSaving(true);
     setError(null);
 
@@ -46,6 +49,7 @@ export default function NewCampaignPage() {
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         notes: form.notes || null,
+        event_id: event.id,
       })
       .select()
       .single();
@@ -156,7 +160,7 @@ export default function NewCampaignPage() {
               value={form.campaign_name}
               onChange={handleChange}
               onBlur={suggestUtm}
-              placeholder="e.g., Summer 2026 Launch"
+              placeholder={`e.g., Summer ${event?.year ?? ""} Launch`}
               required
             />
           </div>
@@ -218,7 +222,7 @@ export default function NewCampaignPage() {
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "2rem" }}>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || readOnly || !event}
             style={{
               padding: "0.6rem 1.5rem",
               background: "var(--gold)",

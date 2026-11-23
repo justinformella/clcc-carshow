@@ -1,6 +1,7 @@
 import { CSSProperties } from "react";
 import { COLORS, FONT, sectionTitleStyle, bodyTextStyle } from "@/components/8bit/styles";
 import { createServerClient } from "@/lib/supabase-server";
+import { getCurrentEvent } from "@/lib/events";
 
 const schedule = [
   { time: "7:30 AM", event: "CHECK-IN & DAY-OF REGISTRATION" },
@@ -12,11 +13,15 @@ const schedule = [
 
 export default async function Schedule8Bit() {
   const supabase = createServerClient();
-  const { data } = await supabase
-    .from("award_categories")
-    .select("name")
-    .eq("is_active", true)
-    .order("display_order", { ascending: true });
+  const event = await getCurrentEvent(supabase).catch(() => null);
+  const { data } = event
+    ? await supabase
+        .from("award_categories")
+        .select("name")
+        .eq("event_id", event.id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+    : { data: [] };
   const awards = (data ?? []).map((c) => c.name.toUpperCase());
   const sectionStyle: CSSProperties = {
     backgroundColor: COLORS.bgDark,

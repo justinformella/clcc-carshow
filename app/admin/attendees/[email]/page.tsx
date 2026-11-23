@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import type { Registration, HelpRequest, EmailLog } from "@/types/database";
 import dynamic from "next/dynamic";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), { ssr: false });
 
@@ -42,6 +43,9 @@ export default function AttendeeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const email = decodeURIComponent(params.email as string);
+  // Attendee history is intentionally cross-year; edits only touch the
+  // current show's registrations.
+  const { events, currentEvent, readOnly } = useAdminEvent();
 
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,9 +108,20 @@ export default function AttendeeDetailPage() {
     fetchGravatar();
   }, [email]);
 
+  const yearOf = (eventId: string) => events.find((e) => e.id === eventId)?.year ?? null;
+  // Newest show first, then car number.
+  const sortedRegistrations = [...registrations].sort(
+    (a, b) => (yearOf(b.event_id) ?? 0) - (yearOf(a.event_id) ?? 0) || (a.car_number || 0) - (b.car_number || 0)
+  );
+  const editableRegistrations = currentEvent
+    ? registrations.filter((r) => r.event_id === currentEvent.id)
+    : [];
+  const canEdit = !readOnly && editableRegistrations.length > 0;
+  const yearsAttended = [...new Set(registrations.map((r) => yearOf(r.event_id)).filter((y): y is number => y != null))].sort((a, b) => a - b);
+
   const startEdit = () => {
-    if (registrations.length === 0) return;
-    const first = registrations[0];
+    if (!canEdit) return;
+    const first = editableRegistrations[0];
     setForm({
       first_name: first.first_name,
       last_name: first.last_name,
@@ -134,12 +149,12 @@ export default function AttendeeDetailPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form || registrations.length === 0) return;
+    if (!form || !canEdit) return;
     setSaving(true);
     setSaveError(null);
 
     const supabase = createClient();
-    const ids = registrations.map((r) => r.id);
+    const ids = editableRegistrations.map((r) => r.id);
 
     const { error } = await supabase
       .from("registrations")
@@ -211,7 +226,7 @@ export default function AttendeeDetailPage() {
     );
   }
 
-  const first = registrations[0];
+  const first = sortedRegistrations[0];
   const name = `${first.first_name} ${first.last_name}`;
   const totalPaid = registrations.reduce(
     (sum, r) => sum + (r.amount_paid || 0),
@@ -314,7 +329,7 @@ export default function AttendeeDetailPage() {
             )}
 
             <p style={{ fontSize: "0.8rem", color: "var(--text-light)", marginBottom: "1.25rem" }}>
-              Changes will apply to all {registrations.length} registration{registrations.length > 1 ? "s" : ""} for this attendee.
+              Changes will apply to this attendee&apos;s {editableRegistrations.length} {currentEvent?.year} registration{editableRegistrations.length > 1 ? "s" : ""}. Past years are not changed.
             </p>
 
             <div className="sponsor-form" style={{ maxWidth: "100%", margin: 0 }}>
@@ -369,9 +384,11 @@ export default function AttendeeDetailPage() {
             >
               {name}
             </h1>
-            <button onClick={startEdit} style={btnSecondary}>
-              Edit
-            </button>
+            {canEdit && (
+              <button onClick={startEdit} style={btnSecondary}>
+                Edit
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -388,6 +405,7 @@ export default function AttendeeDetailPage() {
               marginBottom: "1.5rem",
             }}
           >
+            <StatCard label="Years" value={yearsAttended.length > 0 ? yearsAttended.join(", ") : "\u2014"} />
             <StatCard label="Vehicles" value={`${registrations.length}`} />
             <StatCard label="Registration" value={`$${(totalPaid / 100).toLocaleString()}`} />
             <StatCard label="Donations" value={totalDonated > 0 ? `$${(totalDonated / 100).toLocaleString()}` : "$0"} />
@@ -446,7 +464,7 @@ export default function AttendeeDetailPage() {
             Vehicles ({registrations.length})
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "1.5rem" }}>
-            {registrations.map((reg) => (
+            {sortedRegistrations.map((reg) => (
               <Link
                 key={reg.id}
                 href={`/admin/registrations/${reg.id}`}
@@ -467,6 +485,11 @@ export default function AttendeeDetailPage() {
                     </span>
                     <PaymentBadge status={reg.payment_status} />
                   </div>
+                  {yearOf(reg.event_id) != null && (
+                    <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.65rem", fontWeight: 600, background: "var(--charcoal)", color: "var(--gold)", marginRight: "0.4rem" }}>
+                      {yearOf(reg.event_id)}
+                    </span>
+                  )}
                   <span style={{ display: "inline-block", padding: "0.15rem 0.5rem", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", background: reg.checked_in ? "#e8f5e9" : "#f5f5f5", color: reg.checked_in ? "#2e7d32" : "#616161" }}>
                     {reg.checked_in ? "Checked In" : "Not Checked In"}
                   </span>

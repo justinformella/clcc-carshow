@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type {
   HelpRequest,
   HelpRequestMessage,
@@ -21,6 +22,7 @@ export default function HelpRequestDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { currentEvent } = useAdminEvent();
 
   const [request, setRequest] = useState<HelpRequest | null>(null);
   const [messages, setMessages] = useState<HelpRequestMessage[]>([]);
@@ -37,6 +39,9 @@ export default function HelpRequestDetailPage() {
 
   // Sidebar updates
   const [updating, setUpdating] = useState(false);
+
+  // Tickets tied to a past show are read only; tickets with no show stay editable.
+  const readOnly = !!request?.event_id && (!currentEvent || request.event_id !== currentEvent.id);
 
   const fetchRequest = useCallback(async () => {
     const supabase = createClient();
@@ -90,7 +95,7 @@ export default function HelpRequestDetailPage() {
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyBody.trim()) return;
+    if (readOnly || !replyBody.trim()) return;
     setSending(true);
 
     try {
@@ -122,6 +127,7 @@ export default function HelpRequestDetailPage() {
   };
 
   const handleFieldUpdate = async (field: string, value: string) => {
+    if (readOnly) return;
     setUpdating(true);
     try {
       const token = await getAuthToken();
@@ -145,6 +151,7 @@ export default function HelpRequestDetailPage() {
   };
 
   const handleSuggest = async () => {
+    if (readOnly) return;
     setSuggesting(true);
     try {
       const res = await fetch(`/api/help-requests/${id}/suggest`, {
@@ -351,6 +358,11 @@ export default function HelpRequestDetailPage() {
             </div>
 
             {/* Reply form */}
+            {readOnly ? (
+              <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid #eee", fontSize: "0.85rem", color: "var(--text-light)" }}>
+                This ticket belongs to a past show and is read only.
+              </div>
+            ) : (
             <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid #eee" }}>
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem" }}>
                 <button
@@ -458,6 +470,7 @@ export default function HelpRequestDetailPage() {
                 </div>
               </form>
             </div>
+            )}
           </div>
         </div>
 
@@ -469,7 +482,7 @@ export default function HelpRequestDetailPage() {
               <select
                 value={request.status}
                 onChange={(e) => handleFieldUpdate("status", e.target.value)}
-                disabled={updating}
+                disabled={updating || readOnly}
                 style={selectStyle}
               >
                 {HELP_REQUEST_STATUSES.map((s) => (
@@ -481,7 +494,7 @@ export default function HelpRequestDetailPage() {
               <select
                 value={request.priority}
                 onChange={(e) => handleFieldUpdate("priority", e.target.value)}
-                disabled={updating}
+                disabled={updating || readOnly}
                 style={selectStyle}
               >
                 {HELP_REQUEST_PRIORITIES.map((p) => (
@@ -493,7 +506,7 @@ export default function HelpRequestDetailPage() {
               <select
                 value={request.assigned_to || ""}
                 onChange={(e) => handleFieldUpdate("assigned_to", e.target.value)}
-                disabled={updating}
+                disabled={updating || readOnly}
                 style={selectStyle}
               >
                 <option value="">Unassigned</option>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { Registration, AwardCategory } from "@/types/database";
 
 type Recommendation = {
@@ -23,6 +24,8 @@ const categoryAnchorId = (name: string) =>
 
 export default function AwardsPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
+  const eventIdRef = useRef<string | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [categories, setCategories] = useState<AwardCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,24 +35,35 @@ export default function AwardsPage() {
   const [assigning, setAssigning] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!event) return;
+    const eventId = event.id;
+    eventIdRef.current = eventId;
+    setLoading(true);
+    setRegistrations([]);
+    setCategories([]);
+    setRecommendations([]);
     const fetchData = async () => {
       const supabase = createClient();
       const [regRes, recRes, catRes] = await Promise.all([
         supabase
           .from("registrations")
           .select("*")
+          .eq("event_id", eventId)
           .in("payment_status", ["paid", "comped"])
           .order("car_number", { ascending: true }),
         supabase
           .from("award_recommendations")
           .select("*")
+          .eq("event_id", eventId)
           .order("rank", { ascending: true }),
         supabase
           .from("award_categories")
           .select("*")
+          .eq("event_id", eventId)
           .eq("is_active", true)
           .order("display_order", { ascending: true }),
       ]);
+      if (eventIdRef.current !== eventId) return; // year switched mid-fetch
       setRegistrations(regRes.data || []);
       setCategories((catRes.data as AwardCategory[]) || []);
       if (recRes.data && recRes.data.length > 0) {
@@ -58,12 +72,25 @@ export default function AwardsPage() {
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const refetchRegistrations = async (eventId: string) => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("registrations")
+      .select("*")
+      .eq("event_id", eventId)
+      .in("payment_status", ["paid", "comped"])
+      .order("car_number", { ascending: true });
+    if (eventIdRef.current !== eventId) return;
+    setRegistrations(data || []);
+  };
 
   const handleGenerateRecommendations = async () => {
+    if (readOnly || !event) return;
     setGenerating(true);
     try {
-      const res = await fetch("/api/awards/recommend", { method: "POST" });
+      const res = await fetch(`/api/awards/recommend?event=${event.id}`, { method: "POST" });
       const data = await res.json();
       if (data.recommendations) {
         setRecommendations(data.recommendations);
@@ -76,6 +103,7 @@ export default function AwardsPage() {
   };
 
   const handleAssignAward = async (registrationId: string, category: string) => {
+    if (readOnly || !event) return;
     const key = `${category}::${registrationId}`;
     setAssigning(key);
     const supabase = createClient();
@@ -89,24 +117,15 @@ export default function AwardsPage() {
       await supabase.from("registrations").update({ award_category: null }).eq("id", registrationId);
     }
     await supabase.from("registrations").update({ award_category: category }).eq("id", registrationId);
-    const { data } = await supabase
-      .from("registrations")
-      .select("*")
-      .in("payment_status", ["paid", "comped"])
-      .order("car_number", { ascending: true });
-    setRegistrations(data || []);
+    await refetchRegistrations(event.id);
     setAssigning(null);
   };
 
   const handleRemoveAward = async (registrationId: string) => {
+    if (readOnly || !event) return;
     const supabase = createClient();
     await supabase.from("registrations").update({ award_category: null }).eq("id", registrationId);
-    const { data } = await supabase
-      .from("registrations")
-      .select("*")
-      .in("payment_status", ["paid", "comped"])
-      .order("car_number", { ascending: true });
-    setRegistrations(data || []);
+    await refetchRegistrations(event.id);
   };
 
   const recsByCategory = useMemo(() => {
@@ -169,6 +188,7 @@ export default function AwardsPage() {
             <p style={{ fontSize: "0.85rem", color: "var(--text-light)", margin: 0, flex: 1, minWidth: "240px" }}>
               AI ranks the top picks for each category. Pick a winner — assigning one row replaces any other winner in that category.
             </p>
+            {!readOnly && (
             <button
               onClick={handleGenerateRecommendations}
               disabled={generating}
@@ -184,12 +204,15 @@ export default function AwardsPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 2C10 5.31 12.69 8 16 8C12.69 8 10 10.69 10 14C10 10.69 7.31 8 4 8C7.31 8 10 5.31 10 2Z"/><path d="M18 12C18 14.21 19.79 16 22 16C19.79 16 18 17.79 18 20C18 17.79 16.21 16 14 16C16.21 16 18 14.21 18 12Z"/></svg>
               {generating ? "Analyzing..." : recommendations.length > 0 ? "Regenerate" : "Generate Recommendations"}
             </button>
+            )}
           </div>
 
           {recommendations.length === 0 && !generating && (
             <div style={{ background: "var(--cream)", padding: "3rem", textAlign: "center", color: "var(--text-light)" }}>
               <p style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>No recommendations yet</p>
-              <p style={{ fontSize: "0.85rem" }}>Click &ldquo;Generate Recommendations&rdquo; to let AI analyze your vehicles</p>
+              {!readOnly && (
+                <p style={{ fontSize: "0.85rem" }}>Click &ldquo;Generate Recommendations&rdquo; to let AI analyze your vehicles</p>
+              )}
             </div>
           )}
 
@@ -382,7 +405,7 @@ export default function AwardsPage() {
                                     >
                                       Assigned
                                     </span>
-                                  ) : (
+                                  ) : readOnly ? null : (
                                     <button
                                       onClick={() => rec.registration_id && handleAssignAward(rec.registration_id, rec.category)}
                                       disabled={isBusy || !rec.registration_id}
@@ -499,7 +522,7 @@ export default function AwardsPage() {
                         >
                           View
                         </button>
-                        <button
+                        {!readOnly && <button
                           onClick={() => handleRemoveAward(winner.id)}
                           style={{
                             padding: "0.35rem 0.8rem", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase",
@@ -507,7 +530,7 @@ export default function AwardsPage() {
                           }}
                         >
                           Remove
-                        </button>
+                        </button>}
                       </div>
                     )}
                   </div>

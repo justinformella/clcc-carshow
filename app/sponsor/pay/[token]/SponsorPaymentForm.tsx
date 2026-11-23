@@ -9,9 +9,10 @@ type Props = {
   sponsor: Sponsor;
   tiers: SponsorshipTier[];
   token: string;
+  eventYear: number | null;
 };
 
-export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
+export default function SponsorPaymentForm({ sponsor, tiers, token, eventYear }: Props) {
   const [form, setForm] = useState({
     name: sponsor.name,
     company: sponsor.company,
@@ -213,7 +214,7 @@ export default function SponsorPaymentForm({ sponsor, tiers, token }: Props) {
               Sponsorship Payment
             </h1>
             <p style={{ color: "var(--text-light)", maxWidth: "500px", margin: "0 auto", lineHeight: 1.6 }}>
-              Review your information and complete your sponsorship payment for the 2026 Crystal Lake Cars &amp; Caffeine Car Show.
+              Review your information and complete your sponsorship payment for the {eventYear ? `${eventYear} ` : ""}Crystal Lake Cars &amp; Caffeine Car Show.
             </p>
           </div>
 

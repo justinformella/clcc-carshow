@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase-server";
+import { fetchEvents, resolveEvent } from "@/lib/events";
 
 export const maxDuration = 30;
 
@@ -18,16 +19,30 @@ type AuditIssue = {
   stripe_payment_intent?: string;
 };
 
-export async function GET() {
+const DAY_SECONDS = 24 * 60 * 60;
+// Stripe activity for a show is considered settled this long after show day
+const POST_SHOW_DAYS = 45;
+
+// Midnight (Central time, the show's timezone) at the start of a YYYY-MM-DD date, in unix seconds
+function startOfShowDay(date: string): number {
+  return Math.floor(new Date(`${date}T00:00:00-05:00`).getTime() / 1000);
+}
+
+export async function GET(request: Request) {
   const stripe = getStripe();
   const supabase = createServerClient();
+  const ev = await resolveEvent(supabase, new URL(request.url).searchParams.get("event"));
 
-  // Fetch all registrations and sponsors
-  const [regResult, sponsorResult, campaignResult, expenseResult] = await Promise.all([
-    supabase.from("registrations").select("*"),
-    supabase.from("sponsors").select("*"),
-    supabase.from("ad_campaigns").select("spent_cents"),
-    supabase.from("show_expenses").select("amount_cents"),
+  // Fetch this event's registrations and sponsors, plus every event's Stripe
+  // session ids so another year's charges are never reported as orphans here
+  const [regResult, sponsorResult, campaignResult, expenseResult, allRegSessions, allSponsorSessions, allEvents] = await Promise.all([
+    supabase.from("registrations").select("*").eq("event_id", ev.id),
+    supabase.from("sponsors").select("*").eq("event_id", ev.id),
+    supabase.from("ad_campaigns").select("spent_cents").eq("event_id", ev.id),
+    supabase.from("show_expenses").select("amount_cents").eq("event_id", ev.id),
+    supabase.from("registrations").select("stripe_session_id, event_id").not("stripe_session_id", "is", null),
+    supabase.from("sponsors").select("stripe_session_id, event_id").not("stripe_session_id", "is", null),
+    fetchEvents(supabase),
   ]);
 
   const registrations = regResult.data || [];
@@ -35,12 +50,46 @@ export async function GET() {
   const totalAdSpend = (campaignResult.data || []).reduce((s: number, c: { spent_cents: number }) => s + (c.spent_cents || 0), 0);
   const totalShowExpenses = (expenseResult.data || []).reduce((s: number, e: { amount_cents: number }) => s + (e.amount_cents || 0), 0);
 
-  // Pull Stripe checkout sessions from the last 90 days
-  const since = Math.floor(Date.now() / 1000) - 90 * 24 * 60 * 60;
+  // ── Stripe window for this event ──
+  // A show's Stripe season ends POST_SHOW_DAYS after show day (late sponsor
+  // payments, payouts). Sessions are fetched from the day after the previous
+  // show (or, for the first show, from just before its earliest registration/
+  // sponsor) through that cutoff (now, for the current show). Sessions that
+  // belong to another event's rows are dropped. Sessions with no DB row at all
+  // (orphans) and payouts are split at the previous show's cutoff so each one
+  // is counted under exactly one event.
+  const nowSec = Math.floor(Date.now() / 1000);
+  const prevEvent = allEvents.find((e) => e.year < ev.year) || null;
+  const showCutoff = (date: string) => startOfShowDay(date) + (POST_SHOW_DAYS + 1) * DAY_SECONDS;
+  const createdTimes = [...registrations, ...sponsors]
+    .map((r) => (r.created_at ? Math.floor(new Date(r.created_at).getTime() / 1000) : NaN))
+    .filter((t) => !isNaN(t));
+  const earliestRow = createdTimes.length > 0 ? Math.min(...createdTimes) - DAY_SECONDS : null;
+  const fetchStart = prevEvent
+    ? Math.min(startOfShowDay(prevEvent.event_date) + DAY_SECONDS, earliestRow ?? Infinity)
+    : earliestRow ?? startOfShowDay(ev.event_date) - 365 * DAY_SECONDS;
+  const windowEnd = ev.is_current ? nowSec : Math.min(nowSec, showCutoff(ev.event_date));
+  const partitionStart = prevEvent ? showCutoff(prevEvent.event_date) : fetchStart;
+
+  const thisEventSessionIds = new Set<string>();
+  const otherEventSessionIds = new Set<string>();
+  for (const row of [...(allRegSessions.data || []), ...(allSponsorSessions.data || [])]) {
+    if (!row.stripe_session_id) continue;
+    if (row.event_id === ev.id) thisEventSessionIds.add(row.stripe_session_id);
+    else otherEventSessionIds.add(row.stripe_session_id);
+  }
+
+  // Pull Stripe checkout sessions in this event's window
   const sessions: Record<string, { id: string; amount_total: number; payment_intent: string | null; payment_status: string; metadata: Record<string, string> }> = {};
 
   try {
-    for await (const session of stripe.checkout.sessions.list({ created: { gte: since }, limit: 100, expand: ["data.payment_intent"] })) {
+    for await (const session of stripe.checkout.sessions.list({ created: { gte: fetchStart, lte: windowEnd }, limit: 100, expand: ["data.payment_intent"] })) {
+      if (!thisEventSessionIds.has(session.id)) {
+        // Another year's checkout: not ours
+        if (otherEventSessionIds.has(session.id)) continue;
+        // Unmatched checkout: attribute it to one event only
+        if (session.created < partitionStart) continue;
+      }
       sessions[session.id] = {
         id: session.id,
         amount_total: session.amount_total || 0,
@@ -80,11 +129,11 @@ export async function GET() {
 
     const session = sessions[reg.stripe_session_id];
     if (!session) {
-      // Session might be older than 90 days — just note it
+      // Session might be outside this event's Stripe window — just note it
       issues.push({
         type: "missing_stripe",
         severity: "warning",
-        description: `Registration #${reg.car_number} has Stripe session ${reg.stripe_session_id.slice(0, 20)}... but session not found in Stripe (may be older than 90 days)`,
+        description: `Registration #${reg.car_number} has Stripe session ${reg.stripe_session_id.slice(0, 20)}... but session not found in Stripe (may be outside this show's Stripe window)`,
         registration_id: reg.id,
         car_number: reg.car_number,
         name: `${reg.first_name} ${reg.last_name}`,
@@ -227,16 +276,20 @@ export async function GET() {
     .filter((s) => s.payment_status === "complete" || s.payment_status === "paid")
     .reduce((sum, s) => sum + (s.amount_total || 0), 0);
 
-  // Pull actual Stripe balance and payouts
+  // Pull actual Stripe balance and payouts. The balance on hand belongs to the
+  // current show only (a past show's money has been paid out); payouts are
+  // limited to this event's partition of the timeline.
   let stripeBalance = 0;
   let stripeTotalPayouts = 0;
   try {
-    const balance = await stripe.balance.retrieve();
-    stripeBalance = (balance.available || []).reduce((s, b) => s + (b.amount || 0), 0)
-      + (balance.pending || []).reduce((s, b) => s + (b.amount || 0), 0);
+    if (ev.is_current) {
+      const balance = await stripe.balance.retrieve();
+      stripeBalance = (balance.available || []).reduce((s, b) => s + (b.amount || 0), 0)
+        + (balance.pending || []).reduce((s, b) => s + (b.amount || 0), 0);
+    }
 
-    // Get total payouts
-    for await (const payout of stripe.payouts.list({ limit: 100 })) {
+    // Get this event's payouts
+    for await (const payout of stripe.payouts.list({ created: { gte: partitionStart, lte: windowEnd }, limit: 100 })) {
       if (payout.status === "paid") {
         stripeTotalPayouts += (payout.amount || 0);
       }

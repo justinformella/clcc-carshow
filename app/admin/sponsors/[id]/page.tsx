@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { Sponsor, SponsorStatus, SponsorAuditLogEntry, Admin, StripePaymentDetails } from "@/types/database";
 
 type EditForm = {
@@ -25,6 +26,7 @@ export default function SponsorDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { currentEvent } = useAdminEvent();
 
   const [sponsor, setSponsor] = useState<Sponsor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,8 +108,11 @@ export default function SponsorDetailPage() {
       .catch(() => {});
   }, [fetchSponsor, fetchAuditLog]);
 
+  // Sponsors from past shows are read only.
+  const readOnly = !!sponsor && (!currentEvent || sponsor.event_id !== currentEvent.id);
+
   const startEdit = () => {
-    if (!sponsor) return;
+    if (!sponsor || readOnly) return;
     setForm({
       name: sponsor.name,
       company: sponsor.company,
@@ -140,7 +145,7 @@ export default function SponsorDetailPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form || !sponsor) return;
+    if (!form || !sponsor || readOnly) return;
     setSaving(true);
 
     const supabase = createClient();
@@ -187,7 +192,7 @@ export default function SponsorDetailPage() {
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || readOnly) return;
     setUploading(true);
     const formData = new FormData();
     formData.append("logo", file);
@@ -209,7 +214,7 @@ export default function SponsorDetailPage() {
   };
 
   const handleLogoRemove = async () => {
-    if (!confirm("Remove sponsor logo?")) return;
+    if (readOnly || !confirm("Remove sponsor logo?")) return;
     setUploading(true);
     try {
       await fetch(`/api/sponsors/${id}/logo`, { method: "DELETE" });
@@ -235,6 +240,7 @@ export default function SponsorDetailPage() {
   }, [sponsor, fetchStripeDetails]);
 
   const handleGenerateToken = async () => {
+    if (readOnly) return;
     setGeneratingToken(true);
     try {
       const res = await fetch(`/api/sponsors/${id}/generate-token`, { method: "POST" });
@@ -251,6 +257,7 @@ export default function SponsorDetailPage() {
   };
 
   const handleSendPaymentEmail = async () => {
+    if (readOnly) return;
     setSendingEmail(true);
     try {
       const res = await fetch(`/api/sponsors/${id}/send-payment-email`, { method: "POST" });
@@ -265,6 +272,7 @@ export default function SponsorDetailPage() {
   };
 
   const handleSendReceipt = async () => {
+    if (readOnly) return;
     setSendingReceipt(true);
     try {
       const res = await fetch(`/api/sponsors/${id}/send-receipt`, { method: "POST" });
@@ -374,6 +382,7 @@ export default function SponsorDetailPage() {
               No logo
             </div>
           )}
+          {!readOnly && (
           <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
             <label
               style={{
@@ -413,6 +422,7 @@ export default function SponsorDetailPage() {
               </>
             )}
           </div>
+          )}
         </div>
 
         {/* Name / status / edit */}
@@ -435,7 +445,7 @@ export default function SponsorDetailPage() {
                 {s.name} &middot; {s.sponsorship_level}
               </p>
             </div>
-            {!editing && (
+            {!editing && !readOnly && (
               <button
                 onClick={startEdit}
                 style={{
@@ -458,7 +468,7 @@ export default function SponsorDetailPage() {
         </div>
       </div>
 
-      {editing && form ? (
+      {editing && form && !readOnly ? (
         /* Edit Mode */
         <form
           onSubmit={handleSave}
@@ -694,11 +704,15 @@ export default function SponsorDetailPage() {
                     {s.donation_cents > 0 && ` (includes $${(s.donation_cents / 100).toLocaleString()} donation)`}
                   </p>
                 )}
-                <button onClick={handleSendReceipt} disabled={sendingReceipt}
+                {!readOnly && <button onClick={handleSendReceipt} disabled={sendingReceipt}
                   style={{ padding: "0.5rem 1.2rem", background: "var(--charcoal)", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.8rem", letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
                   {sendingReceipt ? "Sending..." : receiptSent ? "Receipt Sent ✓" : "Send Receipt Email"}
-                </button>
+                </button>}
               </div>
+            ) : readOnly ? (
+              <p style={{ fontSize: "0.85rem", color: "var(--text-light)", margin: 0 }}>
+                {paymentUrl ? "Payment link was issued but not paid." : "No payment recorded."} Past shows are read only.
+              </p>
             ) : !paymentToken ? (
               <button onClick={handleGenerateToken} disabled={generatingToken}
                 style={{ padding: "0.6rem 1.5rem", background: "var(--gold)", color: "var(--charcoal)", border: "none", fontWeight: 600, fontSize: "0.85rem", letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
@@ -725,12 +739,12 @@ export default function SponsorDetailPage() {
               <div style={{ marginTop: "1rem", background: "#fff3e0", border: "1px solid #ffe0b2", padding: "0.75rem 1rem", fontSize: "0.85rem", color: "#e65100" }}>
                 <strong>Check Pending</strong>
                 {s.check_note && <span> &mdash; {s.check_note}</span>}
-                <div style={{ marginTop: "0.5rem" }}>
+                {!readOnly && <div style={{ marginTop: "0.5rem" }}>
                   <button onClick={handleSendReceipt} disabled={sendingReceipt}
                     style={{ padding: "0.4rem 1rem", background: "var(--charcoal)", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.75rem", letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer" }}>
                     {sendingReceipt ? "Sending..." : receiptSent ? "Receipt Sent ✓" : "Send Receipt Email"}
                   </button>
-                </div>
+                </div>}
               </div>
             )}
 

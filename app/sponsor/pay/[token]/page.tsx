@@ -18,11 +18,27 @@ export default async function SponsorPayPage({
 
   if (!sponsor) notFound();
 
-  const { data: tiers } = await supabase
-    .from("sponsorship_tiers")
-    .select("*")
-    .eq("is_active", true)
-    .order("display_order", { ascending: true });
+  // Tiers and show year come from the sponsor's own event
+  const [{ data: tiers }, { data: event }] = await Promise.all([
+    supabase
+      .from("sponsorship_tiers")
+      .select("*")
+      .eq("event_id", sponsor.event_id)
+      .eq("is_active", true)
+      .order("display_order", { ascending: true }),
+    supabase
+      .from("events")
+      .select("year")
+      .eq("id", sponsor.event_id)
+      .maybeSingle(),
+  ]);
 
-  return <SponsorPaymentForm sponsor={sponsor} tiers={tiers || []} token={token} />;
+  return (
+    <SponsorPaymentForm
+      sponsor={sponsor}
+      tiers={tiers || []}
+      token={token}
+      eventYear={event?.year ?? null}
+    />
+  );
 }

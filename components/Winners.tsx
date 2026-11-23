@@ -1,5 +1,6 @@
 import { createServerClient } from "@/lib/supabase-server";
 import type { AwardCategory, Registration } from "@/types/database";
+import { fetchEvents } from "@/lib/events";
 
 type WinnerRow = Pick<
   Registration,
@@ -17,10 +18,20 @@ type WinnerRow = Pick<
 export default async function Winners() {
   const supabase = createServerClient();
 
+  // Winners come from the most recent past show (latest event that is not current)
+  let pastEvent;
+  try {
+    pastEvent = (await fetchEvents(supabase)).find((e) => !e.is_current);
+  } catch {
+    return null;
+  }
+  if (!pastEvent) return null;
+
   const [categoriesRes, winnersRes] = await Promise.all([
     supabase
       .from("award_categories")
       .select("*")
+      .eq("event_id", pastEvent.id)
       .eq("is_active", true)
       .order("display_order", { ascending: true }),
     supabase
@@ -28,6 +39,7 @@ export default async function Winners() {
       .select(
         "id, car_number, vehicle_year, vehicle_make, vehicle_model, first_name, last_name, hide_owner_details, award_category"
       )
+      .eq("event_id", pastEvent.id)
       .not("award_category", "is", null),
   ]);
 
@@ -66,7 +78,7 @@ export default async function Winners() {
               marginBottom: "1rem",
             }}
           >
-            🏆 2026 Award Winners
+            🏆 {pastEvent.year} Award Winners
           </span>
           <h2
             style={{

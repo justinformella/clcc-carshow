@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase-server";
+import { getCurrentEvent } from "@/lib/events";
 import {
   REGISTRATION_PRICE_CENTS,
   MAX_REGISTRATIONS,
@@ -91,12 +92,30 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    const event = await getCurrentEvent(supabase);
+    const priceCents = event.registration_price_cents || REGISTRATION_PRICE_CENTS;
 
-    // Check capacity
+    // Registration window (null = no restriction)
+    const now = Date.now();
+    if (event.registration_opens_at && now < new Date(event.registration_opens_at).getTime()) {
+      return NextResponse.json(
+        { error: "Registration is not open yet." },
+        { status: 400 }
+      );
+    }
+    if (event.registration_closes_at && now > new Date(event.registration_closes_at).getTime()) {
+      return NextResponse.json(
+        { error: "Registration is closed." },
+        { status: 400 }
+      );
+    }
+
+    // Check capacity (current event only)
     const [countResult, settingResult] = await Promise.all([
       supabase
         .from("registrations")
         .select("*", { count: "exact", head: true })
+        .eq("event_id", event.id)
         .in("payment_status", ["paid", "comped"]),
       supabase
         .from("app_settings")
@@ -137,7 +156,8 @@ export async function POST(request: NextRequest) {
         .from("promo_codes")
         .select("id, code, email, used")
         .eq("code", promoCode)
-        .single();
+        .eq("event_id", event.id)
+        .maybeSingle();
 
       if (!promo) {
         return NextResponse.json({ error: "Invalid promo code." }, { status: 400 });
@@ -156,6 +176,7 @@ export async function POST(request: NextRequest) {
 
     // Build rows to insert — donation stored on first row only
     const rows = vehicles.map((v, index) => ({
+      event_id: event.id,
       first_name,
       last_name,
       email,
@@ -276,7 +297,7 @@ export async function POST(request: NextRequest) {
           name: "CLCC Car Show Registration",
           description: `${reg.vehicle_year} ${reg.vehicle_make} ${reg.vehicle_model}`,
         },
-        unit_amount: REGISTRATION_PRICE_CENTS,
+        unit_amount: priceCents,
       },
       quantity: 1,
     }));
@@ -306,6 +327,7 @@ export async function POST(request: NextRequest) {
       customer_email: email,
       metadata: {
         registration_ids: registrations.map((r) => r.id).join(","),
+        event_id: event.id,
         donation_cents: String(donationCents),
       },
       ...(connectedAccountId && {

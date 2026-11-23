@@ -5,9 +5,11 @@ import { useEffect, useState, useMemo, useCallback, useTransition, memo } from "
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 export default function RegistrationsPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -33,11 +35,18 @@ export default function RegistrationsPage() {
   };
 
   useEffect(() => {
+    if (!event) return;
+    const eventId = event.id;
+    let cancelled = false;
+    setRegistrations([]);
+    setSelected(new Set());
+    setLoading(true);
     const fetchData = async () => {
       const supabase = createClient();
       let query = supabase
         .from("registrations")
         .select("*")
+        .eq("event_id", eventId)
         .order("car_number", { ascending: true });
 
       if (showArchived) {
@@ -47,11 +56,15 @@ export default function RegistrationsPage() {
       }
 
       const { data } = await query;
+      if (cancelled) return;
       setRegistrations(data || []);
       setLoading(false);
     };
     fetchData();
-  }, [showArchived]);
+    return () => {
+      cancelled = true;
+    };
+  }, [showArchived, event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [deferredSearch, setDeferredSearch] = useState("");
   const [, startTransition] = useTransition();
@@ -196,6 +209,7 @@ export default function RegistrationsPage() {
   };
 
   const handleBulkArchive = async () => {
+    if (readOnly || !event) return;
     if (selected.size === 0) return;
     if (!confirm(`Archive ${selected.size} registration${selected.size !== 1 ? "s" : ""}? They will be hidden from the default list.`)) return;
     setArchiving(true);
@@ -209,6 +223,7 @@ export default function RegistrationsPage() {
     let query = supabase
       .from("registrations")
       .select("*")
+      .eq("event_id", event.id)
       .order("car_number", { ascending: true });
     if (showArchived) {
       query = query.in("payment_status", ["paid", "comped", "pending", "archived"]);
@@ -222,7 +237,7 @@ export default function RegistrationsPage() {
 
   const categories = useMemo(() => [...new Set(registrations.map((r) => r.award_category).filter(Boolean))] as string[], [registrations]);
 
-  if (loading) {
+  if (loading || !event) {
     return (
       <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
         Loading...
@@ -252,7 +267,7 @@ export default function RegistrationsPage() {
           Registrations ({filtered.length})
         </h1>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          {selected.size > 0 && (
+          {!readOnly && selected.size > 0 && (
             <button
               onClick={handleBulkArchive}
               disabled={archiving}
@@ -272,6 +287,7 @@ export default function RegistrationsPage() {
               {archiving ? "Archiving..." : `Archive ${selected.size} Selected`}
             </button>
           )}
+          {!readOnly && (<>
           <button
             onClick={() => router.push("/admin/registrations/quick-add")}
             style={{
@@ -304,6 +320,7 @@ export default function RegistrationsPage() {
           >
             Add Registration
           </button>
+          </>)}
           <button
             onClick={exportCSV}
             style={{
@@ -558,12 +575,12 @@ export default function RegistrationsPage() {
             <thead>
               <tr style={{ background: "var(--cream)", textAlign: "left" }}>
                 <th style={{ ...thStyle, width: "36px" }}>
-                  <input
+                  {!readOnly && <input
                     type="checkbox"
                     checked={selected.size > 0 && selected.size === filtered.filter((r) => r.payment_status !== "archived").length}
                     onChange={toggleSelectAll}
                     style={{ cursor: "pointer" }}
-                  />
+                  />}
                 </th>
                 <th style={thStyle}>#</th>
                 <th style={thStyle}>Name</th>
@@ -588,7 +605,7 @@ export default function RegistrationsPage() {
                   }}
                 >
                   <td style={tdStyle} onClick={(e) => e.stopPropagation()}>
-                    {reg.payment_status !== "archived" && (
+                    {!readOnly && reg.payment_status !== "archived" && (
                       <input
                         type="checkbox"
                         checked={selected.has(reg.id)}

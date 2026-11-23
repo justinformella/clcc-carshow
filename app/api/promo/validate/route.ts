@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
+import { getCurrentEvent } from "@/lib/events";
 
 export async function POST(request: NextRequest) {
   const { code, email } = await request.json();
@@ -9,12 +10,14 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createServerClient();
+  const event = await getCurrentEvent(supabase);
 
   const { data: promo, error } = await supabase
     .from("promo_codes")
     .select("*")
     .eq("code", code.toUpperCase().trim())
-    .single();
+    .eq("event_id", event.id)
+    .maybeSingle();
 
   if (error || !promo) {
     return NextResponse.json({ valid: false, error: "Invalid promo code" });

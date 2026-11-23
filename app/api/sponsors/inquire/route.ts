@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { sendSponsorAdminNotification } from "@/lib/email";
+import { getCurrentEvent } from "@/lib/events";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,10 +17,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    const event = await getCurrentEvent(supabase);
 
     const { data: sponsor, error: insertError } = await supabase
       .from("sponsors")
       .insert({
+        event_id: event.id,
         name,
         company,
         email,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { HelpRequest, HelpRequestStatus, HelpRequestCategory, HelpRequestPriority, HelpRequestMessage, Admin } from "@/types/database";
 import { HELP_REQUEST_STATUSES, HELP_REQUEST_CATEGORIES, HELP_REQUEST_PRIORITIES } from "@/types/database";
 
@@ -15,6 +16,7 @@ const CLOSED_STATUSES: HelpRequestStatus[] = ["resolved", "closed"];
 
 export default function HelpDeskPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
   const [tickets, setTickets] = useState<TicketWithLastMessage[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,13 +35,23 @@ export default function HelpDeskPage() {
   });
 
   useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    setLoading(true);
+    setTickets([]);
     const fetchData = async () => {
       const supabase = createClient();
       const [requestsRes, adminsRes, messagesRes] = await Promise.all([
-        supabase.from("help_requests").select("*").order("created_at", { ascending: false }),
+        // This show's tickets plus general tickets not tied to any show.
+        supabase
+          .from("help_requests")
+          .select("*")
+          .or(`event_id.eq.${event.id},event_id.is.null`)
+          .order("created_at", { ascending: false }),
         supabase.from("admins").select("*").order("name"),
         supabase.from("help_request_messages").select("*").order("created_at", { ascending: false }),
       ]);
+      if (cancelled) return;
 
       const requests = (requestsRes.data as HelpRequest[]) || [];
       const messages = (messagesRes.data as HelpRequestMessage[]) || [];
@@ -66,9 +78,13 @@ export default function HelpDeskPage() {
       setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreateTicket = async () => {
+    if (readOnly || !event) return;
     if (!newTicket.name || !newTicket.email || !newTicket.subject || !newTicket.message) return;
     setCreating(true);
     try {
@@ -81,6 +97,7 @@ export default function HelpDeskPage() {
           subject: newTicket.subject,
           category: newTicket.category,
           priority: newTicket.priority,
+          event_id: event.id,
         })
         .select()
         .single();
@@ -176,6 +193,7 @@ export default function HelpDeskPage() {
             </span>
           )}
         </div>
+        {!readOnly && (
         <button
           onClick={() => setShowNewForm(true)}
           style={{
@@ -192,10 +210,11 @@ export default function HelpDeskPage() {
         >
           + New Ticket
         </button>
+        )}
       </div>
 
       {/* New Ticket Modal */}
-      {showNewForm && (
+      {showNewForm && !readOnly && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowNewForm(false); }}

@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { Registration, Sponsor, AdCampaign, SponsorshipTier, ShowExpense } from "@/types/database";
-import { REGISTRATION_PRICE_CENTS, MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
+import { REGISTRATION_PRICE_CENTS as REGISTRATION_PRICE_CENTS_DEFAULT, MAX_REGISTRATIONS as MAX_REGISTRATIONS_DEFAULT } from "@/types/database";
 import {
   AreaChart,
   Area,
@@ -50,6 +51,8 @@ function fmtMoney(cents: number): string {
 
 export default function FinancesPage() {
   const router = useRouter();
+  const { event } = useAdminEvent();
+  const REGISTRATION_PRICE_CENTS = event?.registration_price_cents ?? REGISTRATION_PRICE_CENTS_DEFAULT;
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
@@ -65,6 +68,16 @@ export default function FinancesPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "refunded">("all");
 
   useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    // Reset so the previous year's numbers never show under this year
+    setLoading(true);
+    setRegistrations([]);
+    setSponsors([]);
+    setCampaigns([]);
+    setTiers([]);
+    setExpenses([]);
+    setDetailModal(null);
     const fetchData = async () => {
       const supabase = createClient();
 
@@ -72,14 +85,17 @@ export default function FinancesPage() {
         supabase
           .from("registrations")
           .select("*")
+          .eq("event_id", event.id)
           .order("created_at", { ascending: false }),
         supabase
           .from("sponsors")
           .select("*")
+          .eq("event_id", event.id)
           .order("created_at", { ascending: false }),
         supabase
           .from("ad_campaigns")
-          .select("*"),
+          .select("*")
+          .eq("event_id", event.id),
         supabase
           .from("app_settings")
           .select("value")
@@ -88,14 +104,17 @@ export default function FinancesPage() {
         supabase
           .from("sponsorship_tiers")
           .select("*")
+          .eq("event_id", event.id)
           .eq("is_active", true)
           .order("display_order"),
         supabase
           .from("show_expenses")
           .select("*")
+          .eq("event_id", event.id)
           .order("date", { ascending: false }),
       ]);
 
+      if (cancelled) return;
       setRegistrations(regResult.data || []);
       setSponsors((sponsorResult.data as Sponsor[]) || []);
       setCampaigns((campaignResult.data as AdCampaign[]) || []);
@@ -108,7 +127,11 @@ export default function FinancesPage() {
       setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
 
   // === Computed values ===
 
@@ -356,7 +379,7 @@ export default function FinancesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `clcc-finances-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `clcc-finances-${event ? `${event.year}-` : ""}${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -459,7 +482,7 @@ export default function FinancesPage() {
 
       {/* ── Cars to Goal ── */}
       {(() => {
-        const CHARITY_GOAL = 1500000;
+        const CHARITY_GOAL = event?.charity_goal_cents ?? 1500000;
         const remaining = Math.max(0, CHARITY_GOAL - netForCharity);
         const netPerReg = REGISTRATION_PRICE_CENTS - estimateStripeFee(REGISTRATION_PRICE_CENTS);
         const carsNeeded = remaining > 0 ? Math.ceil(remaining / netPerReg) : 0;
@@ -483,7 +506,7 @@ export default function FinancesPage() {
               </svg>
               <div>
                 <p style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-light)", marginBottom: "0.15rem" }}>
-                  Cars to $15K Goal
+                  Cars to ${Math.round(CHARITY_GOAL / 100000)}K Goal
                 </p>
                 <p style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "var(--charcoal)", lineHeight: 1 }}>
                   {netForCharity >= CHARITY_GOAL ? (

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Registration } from "@/types/database";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 type CarIdentification = {
   year: number | null;
@@ -18,6 +19,8 @@ type Tab = "pending" | "checked";
 
 export default function CheckInPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
+  const eventId = event?.id;
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -33,22 +36,40 @@ export default function CheckInPage() {
   const [confirmation, setConfirmation] = useState<Registration | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!eventId) return;
     const supabase = createClient();
     const { data } = await supabase
       .from("registrations")
       .select("*")
+      .eq("event_id", eventId)
       .in("payment_status", ["paid", "comped", "pending"])
       .order("car_number", { ascending: true });
 
-    setRegistrations(data || []);
-    setLoading(false);
-  }, []);
+    return data || [];
+  }, [eventId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!eventId) return;
+    let cancelled = false;
+    setLoading(true);
+    setRegistrations([]);
+    setCarId(null);
+    setPhotoMatches([]);
+    setPhotoPreview(null);
+    setCapturedPhoto(null);
+    setConfirmation(null);
+    fetchData().then((rows) => {
+      if (cancelled || !rows) return;
+      setRegistrations(rows);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, fetchData]);
 
   const handleCheckIn = async (reg: Registration) => {
+    if (readOnly) return;
     const supabase = createClient();
     const newCheckedIn = !reg.checked_in;
 
@@ -103,6 +124,7 @@ export default function CheckInPage() {
   };
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (readOnly) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -156,7 +178,7 @@ export default function CheckInPage() {
 
   // Upload captured photo and save to registration_photos table
   const saveCheckinPhoto = async (regId: string) => {
-    if (!capturedPhoto) return;
+    if (readOnly || !capturedPhoto) return;
     try {
       const supabase = createClient();
       const fileName = `${regId}-${Date.now()}.jpg`;
@@ -204,7 +226,7 @@ export default function CheckInPage() {
     });
   }
 
-  if (loading) {
+  if (loading || !event) {
     return (
       <p
         style={{
@@ -326,7 +348,7 @@ export default function CheckInPage() {
             outline: "none",
           }}
         />
-        {tab === "pending" && (
+        {tab === "pending" && !readOnly && (
           <>
             <button
               onClick={() => cameraRef.current?.click()}
@@ -358,7 +380,7 @@ export default function CheckInPage() {
       </div>
 
       {/* Photo Check-In Results */}
-      {tab === "pending" && (carId || identifying) && (
+      {tab === "pending" && !readOnly && (carId || identifying) && (
         <div style={{
           background: "var(--white)",
           border: "2px solid var(--gold)",
@@ -610,6 +632,21 @@ export default function CheckInPage() {
                       )}
                     </div>
                   </div>
+                  {readOnly ? (
+                    <span
+                      style={{
+                        padding: "0.8rem 1rem",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        color: isUnpaid ? "#999" : reg.checked_in ? "#2e7d32" : "var(--text-light)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {isUnpaid ? "Unpaid" : reg.checked_in ? "Checked In" : "Not Checked In"}
+                    </span>
+                  ) : (
                   <button
                     onClick={() => !isUnpaid && handleCheckIn(reg)}
                     disabled={isUnpaid}
@@ -629,6 +666,7 @@ export default function CheckInPage() {
                   >
                     {isUnpaid ? "Unpaid" : reg.checked_in ? "Undo" : "Check In"}
                   </button>
+                  )}
                 </div>
                 {reg.checked_in && reg.checked_in_at && (
                   <p

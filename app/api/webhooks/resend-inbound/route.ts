@@ -5,6 +5,7 @@ import {
   sendHelpRequestConfirmation,
   sendHelpRequestAdminNotification,
 } from "@/lib/email";
+import { getCurrentEvent } from "@/lib/events";
 
 const TICKET_SUBJECT_SUFFIX = " — Crystal Lake Cars & Caffeine";
 
@@ -205,18 +206,24 @@ export async function POST(request: NextRequest) {
 
   // --- No match → create new ticket ---
 
-  // Auto-link registration if email matches a paid registration
-  const { data: registration } = await supabase
+  const event = await getCurrentEvent(supabase);
+
+  // Auto-link registration if email matches a paid registration.
+  // Prefer the current event's registration, fall back to the most recent past one.
+  const { data: paidRegs } = await supabase
     .from("registrations")
-    .select("id")
+    .select("id, event_id")
     .ilike("email", senderEmail)
     .eq("payment_status", "paid")
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const registration =
+    paidRegs?.find((r) => r.event_id === event.id) ?? paidRegs?.[0] ?? null;
 
   const { data: helpRequest, error: insertError } = await supabase
     .from("help_requests")
     .insert({
+      event_id: event.id,
       name: senderName,
       email: senderEmail,
       subject: subject.replace(/^(Re|Fwd|Fw)\s*:\s*/gi, "").trim() || "Email inquiry",

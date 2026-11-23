@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { getResend } from "@/lib/resend";
 import { freeCarOfferEmail } from "@/lib/email-templates";
+import { getCurrentEvent } from "@/lib/events";
 import crypto from "crypto";
 
 const FROM_EMAIL = "Crystal Lake Cars & Caffeine <info@crystallakecarshow.com>";
@@ -22,7 +23,17 @@ export async function POST(request: Request) {
   const customSubject: string | undefined = reqBody.subject;
   const customBody: string | undefined = reqBody.body;
 
-  // Fetch paid registrations — optionally filtered to selected IDs
+  // The offer is always for the current show: codes are issued for it and
+  // "already has a code" is checked against it.
+  let currentEvent;
+  try {
+    currentEvent = await getCurrentEvent(supabase);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
+
+  // Fetch paid registrations from ANY year (past registrants are the
+  // intended audience) — optionally filtered to selected IDs
   let query = supabase
     .from("registrations")
     .select("id, first_name, email")
@@ -50,16 +61,22 @@ export async function POST(request: Request) {
     }
   }
 
-  // Skip anyone who already has a code
+  // Skip anyone who already has a code for the current show. (The offer is a
+  // free *additional* car, so being registered already does not exclude anyone.)
   const { data: existingCodes } = await supabase
     .from("promo_codes")
-    .select("email");
+    .select("email")
+    .eq("event_id", currentEvent.id);
 
   const existingEmails = new Set((existingCodes || []).map((c: { email: string }) => c.email.toLowerCase()));
   const toSend = unique.filter((r) => !existingEmails.has(r.email.toLowerCase()));
 
   if (toSend.length === 0) {
-    return NextResponse.json({ sent: 0, skipped: unique.length, message: "All selected registrants already have promo codes" });
+    return NextResponse.json({
+      sent: 0,
+      skipped: unique.length,
+      message: `All selected registrants already have a ${currentEvent.year} promo code`,
+    });
   }
 
   const resend = getResend();
@@ -71,6 +88,7 @@ export async function POST(request: Request) {
       const code = generateCode();
 
       await supabase.from("promo_codes").insert({
+        event_id: currentEvent.id,
         code,
         registration_id: reg.id,
         email: reg.email,

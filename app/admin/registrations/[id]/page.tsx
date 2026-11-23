@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase";
 import type { Registration, EmailLog, AuditLogEntry, StripePaymentDetails, AwardCategory } from "@/types/database";
 import { REGISTRATION_PRICE_CENTS } from "@/types/database";
 import dynamic from "next/dynamic";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 const LocationMap = dynamic(() => import("@/components/LocationMap"), { ssr: false });
 
@@ -36,6 +37,7 @@ export default function RegistrationDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { events, currentEvent } = useAdminEvent();
 
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,18 +71,26 @@ export default function RegistrationDetailPage() {
   const [savingSpecs, setSavingSpecs] = useState(false);
   const [awardCategories, setAwardCategories] = useState<AwardCategory[]>([]);
 
+  // Past-year registrations are read-only. Until the current event is known,
+  // default to read-only so no write control flashes enabled.
+  const readOnly = !currentEvent || (!!registration && registration.event_id !== currentEvent.id);
+  const registrationYear = registration ? events.find((e) => e.id === registration.event_id)?.year ?? null : null;
+
+  const registrationEventId = registration?.event_id;
   useEffect(() => {
+    if (!registrationEventId) return;
     const fetchCategories = async () => {
       const supabase = createClient();
       const { data } = await supabase
         .from("award_categories")
         .select("*")
+        .eq("event_id", registrationEventId)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
       setAwardCategories((data as AwardCategory[]) || []);
     };
     fetchCategories();
-  }, []);
+  }, [registrationEventId]);
 
   const fetchRegistration = useCallback(async () => {
     const supabase = createClient();
@@ -184,7 +194,7 @@ export default function RegistrationDetailPage() {
   }, [menuOpen]);
 
   const handleCheckIn = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     const supabase = createClient();
     const newCheckedIn = !registration.checked_in;
 
@@ -207,7 +217,7 @@ export default function RegistrationDetailPage() {
   };
 
   const handleRecordCash = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     const supabase = createClient();
     const { error } = await supabase
       .from("registrations")
@@ -232,7 +242,7 @@ export default function RegistrationDetailPage() {
   };
 
   const handleResendConfirmation = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     setSendingEmail(true);
 
     try {
@@ -257,7 +267,7 @@ export default function RegistrationDetailPage() {
   };
 
   const handleArchive = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     setMenuOpen(false);
     if (!confirm("Are you sure you want to archive this registration? It will be hidden from the default list.")) {
       return;
@@ -275,7 +285,7 @@ export default function RegistrationDetailPage() {
   };
 
   const handleUnarchive = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     setMenuOpen(false);
 
     // Infer the previous status: if there's evidence of payment, treat as paid;
@@ -302,7 +312,7 @@ export default function RegistrationDetailPage() {
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registration || !contactSubject.trim() || !contactMessage.trim()) return;
+    if (!registration || readOnly || !contactSubject.trim() || !contactMessage.trim()) return;
     setContactSending(true);
 
     try {
@@ -342,7 +352,7 @@ export default function RegistrationDetailPage() {
   };
 
   const startEdit = () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     setForm({
       first_name: registration.first_name,
       last_name: registration.last_name,
@@ -384,7 +394,7 @@ export default function RegistrationDetailPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form || !registration) return;
+    if (!form || !registration || readOnly) return;
     setSaving(true);
     setSaveError(null);
 
@@ -397,6 +407,7 @@ export default function RegistrationDetailPage() {
         .from("registrations")
         .select("id, first_name, last_name, car_number")
         .eq("award_category", awardValue)
+        .eq("event_id", registration.event_id)
         .neq("id", registration.id)
         .maybeSingle();
 
@@ -479,6 +490,7 @@ export default function RegistrationDetailPage() {
   ];
 
   const startSpecEdit = () => {
+    if (readOnly) return;
     const initial: Record<string, string> = {};
     for (const f of SPEC_FIELDS) {
       initial[f.key] = vehicleSpec?.[f.key] != null ? String(vehicleSpec[f.key]) : "";
@@ -488,7 +500,7 @@ export default function RegistrationDetailPage() {
   };
 
   const handleSpecSave = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     setSavingSpecs(true);
     const supabase = createClient();
 
@@ -548,7 +560,7 @@ export default function RegistrationDetailPage() {
   }, [registration]);
 
   const handleGenerateImage = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     setGeneratingImage(true);
     setImageError(null);
     setImageGenElapsed(0);
@@ -582,7 +594,7 @@ export default function RegistrationDetailPage() {
   };
 
   const handleRegeneratePixelArt = async () => {
-    if (!registration) return;
+    if (!registration || readOnly) return;
     setGeneratingPixelArt(true);
     try {
       const res = await fetch("/api/registrations/pixel-art", {
@@ -688,17 +700,24 @@ export default function RegistrationDetailPage() {
           <p style={{ color: "var(--text-light)", fontSize: "1.1rem", marginTop: "0.3rem" }}>
             {r.vehicle_year} {r.vehicle_make} {r.vehicle_model}
           </p>
+          {readOnly && currentEvent && (
+            <p style={{ color: "var(--text-light)", fontSize: "0.8rem", marginTop: "0.3rem" }}>
+              {registrationYear ? `${registrationYear} registration` : "Past-year registration"} &middot; read only
+            </p>
+          )}
         </div>
 
         {/* Action buttons */}
         {!editing && (
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
+            {!readOnly && (
             <ActionButton
               label={r.checked_in ? "Undo Check-In" : "Check In"}
               onClick={handleCheckIn}
               variant={r.checked_in ? "secondary" : "primary"}
             />
-            {r.payment_status === "pending" && (
+            )}
+            {!readOnly && r.payment_status === "pending" && (
               <ActionButton
                 label={`Cash Paid — $${(REGISTRATION_PRICE_CENTS / 100).toFixed(0)}`}
                 onClick={handleRecordCash}
@@ -713,7 +732,7 @@ export default function RegistrationDetailPage() {
                 disabled={downloadingPlacard}
               />
             )}
-            <ActionButton label="Edit" onClick={startEdit} variant="secondary" />
+            {!readOnly && <ActionButton label="Edit" onClick={startEdit} variant="secondary" />}
             {/* More dropdown */}
             <div ref={menuRef} style={{ position: "relative", display: "flex" }}>
               <button
@@ -745,6 +764,7 @@ export default function RegistrationDetailPage() {
                     zIndex: 50,
                   }}
                 >
+                  {!readOnly && (<>
                   <DropdownItem
                     label={sendingEmail ? "Sending..." : "Resend Confirmation"}
                     onClick={() => { handleResendConfirmation(); setMenuOpen(false); }}
@@ -754,10 +774,12 @@ export default function RegistrationDetailPage() {
                     label="Contact Registrant"
                     onClick={() => { setShowContact(true); setMenuOpen(false); }}
                   />
+                  </>)}
                   <DropdownItem
                     label="Race This Car"
                     onClick={() => { setMenuOpen(false); window.open(`/arcade?car=${r.id}`, "_blank"); }}
                   />
+                  {!readOnly && (<>
                   <DropdownItem
                     label={
                       generatingPixelArt
@@ -773,6 +795,7 @@ export default function RegistrationDetailPage() {
                     label={vehicleSpec ? "Re-enrich Specs" : "Enrich Specs"}
                     onClick={async () => {
                       setMenuOpen(false);
+                      if (readOnly) return;
                       await fetch("/api/registrations/enrich", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -795,6 +818,7 @@ export default function RegistrationDetailPage() {
                       danger
                     />
                   )}
+                  </>)}
                 </div>
               )}
             </div>
@@ -802,7 +826,7 @@ export default function RegistrationDetailPage() {
         )}
       </div>
 
-      {editing && form ? (
+      {editing && form && !readOnly ? (
         /* Edit Mode */
         <form
           onSubmit={handleSave}
@@ -1073,9 +1097,9 @@ export default function RegistrationDetailPage() {
               {vehicleSpec && !editingSpecs && (
                 <DetailSection title="Vehicle Intelligence">
                   <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5rem" }}>
-                    <button onClick={startSpecEdit} style={{ fontSize: "0.8rem", color: "var(--gold)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                    {!readOnly && <button onClick={startSpecEdit} style={{ fontSize: "0.8rem", color: "var(--gold)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
                       Edit
-                    </button>
+                    </button>}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0" }}>
                     {vehicleSpec.category && <DetailRow label="Category" value={String(vehicleSpec.category)} />}
@@ -1238,8 +1262,8 @@ export default function RegistrationDetailPage() {
                       <p style={{ fontSize: "0.75rem", color: url ? "var(--charcoal)" : "var(--text-light)", fontWeight: 500, textAlign: "center", marginBottom: "0.4rem" }}>
                         {label}
                       </p>
-                      <PixelArtActions registrationId={r.id} type={type} hasBgStrip={hasBgStrip} hasOriginal={!!origUrl} />
-                      {type === "side" && (
+                      {!readOnly && <PixelArtActions registrationId={r.id} type={type} hasBgStrip={hasBgStrip} hasOriginal={!!origUrl} />}
+                      {!readOnly && type === "side" && (
                         <button
                           onClick={async () => {
                             const supabase = (await import("@/lib/supabase")).createClient();
@@ -1260,7 +1284,9 @@ export default function RegistrationDetailPage() {
                     <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--charcoal)", whiteSpace: "nowrap" }}>Arcade</label>
                     <select
                       value={r.game_eligible ? "eligible" : "hidden"}
+                      disabled={readOnly}
                       onChange={async (e) => {
+                        if (readOnly) return;
                         const supabase = (await import("@/lib/supabase")).createClient();
                         await supabase.from("registrations").update({ game_eligible: e.target.value === "eligible" }).eq("id", r.id);
                         window.location.reload();
@@ -1760,7 +1786,7 @@ export default function RegistrationDetailPage() {
                   </div>
                 )}
                 {/* Image generation controls */}
-                <div style={{
+                {!readOnly && <div style={{
                   display: "flex",
                   gap: "0.4rem",
                   justifyContent: "center",
@@ -1813,7 +1839,7 @@ export default function RegistrationDetailPage() {
                   {imageError && (
                     <span style={{ fontSize: "0.65rem", color: "#dc2626" }}>{imageError}</span>
                   )}
-                </div>
+                </div>}
               </div>
 
               {/* Quick Info card */}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 type AuditIssue = {
   type: string;
@@ -74,52 +75,66 @@ function fmtMoney(cents: number): string {
 }
 
 export default function AuditPage() {
+  const { event } = useAdminEvent();
   const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState<AuditSummary | null>(() => {
-    if (typeof window !== "undefined") {
-      const cached = sessionStorage.getItem("audit_summary");
-      return cached ? JSON.parse(cached) : null;
+  const [summary, setSummary] = useState<AuditSummary | null>(null);
+  const [issues, setIssues] = useState<AuditIssue[]>([]);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [ran, setRan] = useState(false);
+  const [lastRun, setLastRun] = useState<string | null>(null);
+
+  const viewedEventIdRef = useRef<string | null>(null);
+
+  // Restore the last audit run for the viewed event (cached per event id)
+  useEffect(() => {
+    viewedEventIdRef.current = event?.id ?? null;
+    if (!event) return;
+    const k = (name: string) => `${name}:${event.id}`;
+    let cachedSummary: AuditSummary | null = null;
+    let cachedIssues: AuditIssue[] = [];
+    let cachedLines: LineItem[] = [];
+    let cachedLastRun: string | null = null;
+    try {
+      const sm = sessionStorage.getItem(k("audit_summary"));
+      cachedSummary = sm ? JSON.parse(sm) : null;
+      const is = sessionStorage.getItem(k("audit_issues"));
+      cachedIssues = is ? JSON.parse(is) : [];
+      const li = sessionStorage.getItem(k("audit_lines"));
+      cachedLines = li ? JSON.parse(li) : [];
+      cachedLastRun = sessionStorage.getItem(k("audit_last_run"));
+    } catch {
+      // storage unavailable or corrupt: start fresh
     }
-    return null;
-  });
-  const [issues, setIssues] = useState<AuditIssue[]>(() => {
-    if (typeof window !== "undefined") {
-      const cached = sessionStorage.getItem("audit_issues");
-      return cached ? JSON.parse(cached) : [];
-    }
-    return [];
-  });
-  const [lineItems, setLineItems] = useState<LineItem[]>(() => {
-    if (typeof window !== "undefined") {
-      const cached = sessionStorage.getItem("audit_lines");
-      return cached ? JSON.parse(cached) : [];
-    }
-    return [];
-  });
-  const [ran, setRan] = useState(() => {
-    if (typeof window !== "undefined") return !!sessionStorage.getItem("audit_summary");
-    return false;
-  });
-  const [lastRun, setLastRun] = useState<string | null>(() => {
-    if (typeof window !== "undefined") return sessionStorage.getItem("audit_last_run");
-    return null;
-  });
+    setSummary(cachedSummary);
+    setIssues(cachedIssues);
+    setLineItems(cachedLines);
+    setRan(!!cachedSummary);
+    setLastRun(cachedLastRun);
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const runAudit = async () => {
+    if (!event) return;
+    const eventId = event.id;
+    const k = (name: string) => `${name}:${eventId}`;
     setLoading(true);
     try {
-      const res = await fetch("/api/audit");
+      const res = await fetch(`/api/audit?event=${eventId}`);
       const data = await res.json();
+      try {
+        sessionStorage.setItem(k("audit_summary"), JSON.stringify(data.summary));
+        sessionStorage.setItem(k("audit_issues"), JSON.stringify(data.issues || []));
+        sessionStorage.setItem(k("audit_lines"), JSON.stringify(data.lineItems || []));
+        sessionStorage.setItem(k("audit_last_run"), new Date().toLocaleString());
+      } catch {
+        // ignore storage failures
+      }
+      // The admin switched years while this ran: it's cached, don't show it here
+      if (viewedEventIdRef.current !== eventId) return;
       setSummary(data.summary);
       setIssues(data.issues || []);
       setLineItems(data.lineItems || []);
       setRan(true);
-      const now = new Date().toLocaleString();
-      setLastRun(now);
-      sessionStorage.setItem("audit_summary", JSON.stringify(data.summary));
-      sessionStorage.setItem("audit_issues", JSON.stringify(data.issues || []));
-      sessionStorage.setItem("audit_lines", JSON.stringify(data.lineItems || []));
-      sessionStorage.setItem("audit_last_run", now);
+      setLastRun(new Date().toLocaleString());
     } catch {
       alert("Audit failed");
     } finally {
@@ -138,13 +153,13 @@ export default function AuditPage() {
             Financial Audit
           </h1>
           <p style={{ color: "var(--text-light)", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-            Cross-reference Stripe charges against registrations and sponsors
+            Cross-reference {event ? `${event.year} ` : ""}Stripe charges against registrations and sponsors
             {lastRun && <span> · Last run: {lastRun}</span>}
           </p>
         </div>
         <button
           onClick={runAudit}
-          disabled={loading}
+          disabled={loading || !event}
           style={{
             padding: "0.6rem 1.5rem",
             background: loading ? "#ccc" : "var(--gold)",

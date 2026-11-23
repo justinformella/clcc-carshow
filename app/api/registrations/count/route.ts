@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import { MAX_REGISTRATIONS } from "@/types/database";
+import { getCurrentEvent } from "@/lib/events";
 
 export async function GET() {
   try {
     const supabase = createServerClient();
+    const event = await getCurrentEvent(supabase);
     const [countResult, settingResult] = await Promise.all([
       supabase
         .from("registrations")
         .select("*", { count: "exact", head: true })
+        .eq("event_id", event.id)
         .in("payment_status", ["paid", "comped"]),
       supabase
         .from("app_settings")

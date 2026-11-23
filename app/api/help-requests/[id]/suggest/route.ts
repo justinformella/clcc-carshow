@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
+import { resolveEvent } from "@/lib/events";
 
 export async function POST(
   request: NextRequest,
@@ -43,6 +44,17 @@ export async function POST(
     const ticket = ticketResult.data;
     const messages = messagesResult.data || [];
 
+    // Show details come from the ticket's event (falls back to current event)
+    const event = await resolveEvent(supabase, ticket.event_id);
+    const showDate = new Date(event.event_date + "T12:00:00").toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+    const priceDollars = (event.registration_price_cents / 100).toLocaleString("en-US", {
+      minimumFractionDigits: event.registration_price_cents % 100 === 0 ? 0 : 2,
+    });
+
     // Build conversation history for GPT
     const conversationLines = messages.map(
       (m) =>
@@ -57,7 +69,7 @@ export async function POST(
       messages: [
         {
           role: "system",
-          content: `You are a friendly, helpful support agent for Crystal Lake Cars & Caffeine (CLCC), a charity car show benefiting the Crystal Lake Food Pantry held on May 17, 2026 in downtown Crystal Lake, Illinois. Registration is $30 per vehicle.
+          content: `You are a friendly, helpful support agent for Crystal Lake Cars & Caffeine (CLCC), a charity car show benefiting the Crystal Lake Food Pantry held on ${showDate} in downtown Crystal Lake, Illinois. Registration is $${priceDollars} per vehicle.
 
 Draft a concise, warm reply to this help desk ticket. Be helpful and specific. Do not include a subject line — just the reply body. Do not use placeholder brackets like [Name]. Keep it to 2-4 short paragraphs.`,
         },

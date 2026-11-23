@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
+import { getCurrentEvent } from "@/lib/events";
 
-const GOAL_CENTS = 1500000; // $15,000
+const GOAL_CENTS = 1500000; // $15,000 (fallback when the event has no charity_goal_cents)
 
 function estimateStripeFee(amountCents: number): number {
   return Math.round(amountCents * 0.029) + 30;
@@ -9,23 +10,27 @@ function estimateStripeFee(amountCents: number): number {
 
 export async function GET() {
   const supabase = createServerClient();
+  const event = await getCurrentEvent(supabase);
 
   const [regResult, refundResult, sponsorResult, expenseResult, campaignResult] =
     await Promise.all([
       supabase
         .from("registrations")
         .select("amount_paid, donation_cents")
-        .eq("payment_status", "paid"),
+        .eq("payment_status", "paid")
+        .eq("event_id", event.id),
       supabase
         .from("registrations")
         .select("amount_paid")
-        .eq("payment_status", "refunded"),
+        .eq("payment_status", "refunded")
+        .eq("event_id", event.id),
       supabase
         .from("sponsors")
         .select("sponsorship_amount, donation_cents")
-        .eq("status", "paid"),
-      supabase.from("show_expenses").select("amount_cents"),
-      supabase.from("ad_campaigns").select("spent_cents"),
+        .eq("status", "paid")
+        .eq("event_id", event.id),
+      supabase.from("show_expenses").select("amount_cents").eq("event_id", event.id),
+      supabase.from("ad_campaigns").select("spent_cents").eq("event_id", event.id),
     ]);
 
   const regs = regResult.data || [];
@@ -93,7 +98,7 @@ export async function GET() {
   return NextResponse.json(
     {
       raised_cents: Math.max(0, netForCharity),
-      goal_cents: GOAL_CENTS,
+      goal_cents: event.charity_goal_cents ?? GOAL_CENTS,
     },
     {
       headers: {

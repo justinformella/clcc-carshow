@@ -1,13 +1,18 @@
 import { createServerClient } from "@/lib/supabase-server";
 import type { AwardCategory } from "@/types/database";
+import { getCurrentEvent } from "@/lib/events";
 
 export default async function ScheduleAwards() {
   const supabase = createServerClient();
-  const { data } = await supabase
-    .from("award_categories")
-    .select("name, display_order, is_active")
-    .eq("is_active", true)
-    .order("display_order", { ascending: true });
+  const event = await getCurrentEvent(supabase).catch(() => null);
+  const { data } = event
+    ? await supabase
+        .from("award_categories")
+        .select("name, display_order, is_active")
+        .eq("event_id", event.id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+    : { data: [] };
 
   const categories = (data ?? []) as Pick<AwardCategory, "name" | "display_order" | "is_active">[];
 

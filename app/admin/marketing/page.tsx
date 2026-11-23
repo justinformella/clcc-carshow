@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { AdCampaign, MarketingProspect, MarketingSend } from "@/types/database";
 import { customMarketingEmailHtml } from "@/lib/marketing-email-templates";
 import { freeCarOfferEmail, FREE_CAR_DEFAULT_SUBJECT, FREE_CAR_DEFAULT_BODY } from "@/lib/email-templates";
@@ -404,9 +405,13 @@ type PromoRegistrant = {
   vehicle_model: string;
   hasCode: boolean;
   codeUsed: boolean;
+  /** Already registered (paid/comped) for the current show. */
+  registered: boolean;
 };
 
 function FreeCarPromoSection() {
+  const { currentEvent, readOnly } = useAdminEvent();
+  const currentEventId = currentEvent?.id ?? null;
   const [registrants, setRegistrants] = useState<PromoRegistrant[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -418,11 +423,18 @@ function FreeCarPromoSection() {
   const promoIframeRef = useRef<HTMLIFrameElement>(null);
 
   const fetchData = useCallback(async () => {
+    if (!currentEventId) return;
     const supabase = createClient();
-    const [regResult, codeResult] = await Promise.all([
+    // Audience: paid/comped registrants from every year (intentionally
+    // cross-year). Codes and "already registered" are for the current show.
+    const [regResult, codeResult, currentRegResult] = await Promise.all([
       supabase.from("registrations").select("id, first_name, last_name, email, vehicle_year, vehicle_make, vehicle_model").in("payment_status", ["paid", "comped"]).order("created_at", { ascending: true }),
-      supabase.from("promo_codes").select("email, used"),
+      supabase.from("promo_codes").select("email, used").eq("event_id", currentEventId),
+      supabase.from("registrations").select("email").eq("event_id", currentEventId).in("payment_status", ["paid", "comped"]),
     ]);
+    const registeredEmails = new Set(
+      ((currentRegResult.data || []) as { email: string }[]).map((r) => r.email.toLowerCase())
+    );
 
     const codes = codeResult.data || [];
     const codeMap = new Map<string, boolean>();
@@ -441,13 +453,14 @@ function FreeCarPromoSection() {
           ...r,
           hasCode: codeMap.has(key),
           codeUsed: codeMap.get(key) || false,
+          registered: registeredEmails.has(key),
         });
       }
     }
 
     setRegistrants(unique);
     setLoading(false);
-  }, []);
+  }, [currentEventId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -471,6 +484,7 @@ function FreeCarPromoSection() {
   };
 
   const handleSend = async () => {
+    if (readOnly) return;
     const toSend = registrants.filter((r) => selectedIds.has(r.id) && !r.hasCode);
     if (toSend.length === 0) {
       alert("No eligible registrants selected.");
@@ -521,7 +535,13 @@ function FreeCarPromoSection() {
       <p style={{ fontSize: "0.8rem", color: "var(--text-light)", marginBottom: "1rem", lineHeight: 1.5 }}>
         Send unique promo codes to paid &amp; comped registrants for one free additional vehicle registration.
         The CTA button and promo code are added automatically.
+        {currentEvent && <> Codes are for the {currentEvent.year} show.</>}
       </p>
+      {readOnly && (
+        <p style={{ fontSize: "0.8rem", color: "#e65100", marginBottom: "1rem" }}>
+          Sending is disabled while viewing a past show. Switch to the current year to send.
+        </p>
+      )}
 
       {/* Subject & Body */}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
@@ -584,6 +604,7 @@ function FreeCarPromoSection() {
       <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", fontSize: "0.85rem" }}>
         <span><strong style={{ color: "var(--charcoal)" }}>{registrants.length}</strong> paid registrants</span>
         <span><strong style={{ color: "#2e7d32" }}>{totalCodes}</strong> codes sent</span>
+        <span><strong style={{ color: "#5e35b1" }}>{registrants.filter((r) => r.registered).length}</strong> already registered{currentEvent ? ` for ${currentEvent.year}` : ""}</span>
         <span><strong style={{ color: "#1565c0" }}>{usedCodes}</strong> redeemed</span>
         <span><strong style={{ color: "var(--gold)" }}>{eligible.length}</strong> eligible</span>
         {selectedIds.size > 0 && <span><strong style={{ color: "#7b1fa2" }}>{selectedIds.size}</strong> selected</span>}
@@ -596,10 +617,10 @@ function FreeCarPromoSection() {
         </button>
         <button
           onClick={handleSend}
-          disabled={sending || selectedIds.size === 0}
+          disabled={readOnly || sending || selectedIds.size === 0}
           style={{
-            ...btnStyle(sending || selectedIds.size === 0),
-            background: sending || selectedIds.size === 0 ? "#ccc" : "var(--gold)",
+            ...btnStyle(readOnly || sending || selectedIds.size === 0),
+            background: readOnly || sending || selectedIds.size === 0 ? "#ccc" : "var(--gold)",
           }}
         >
           {sending ? "Sending..." : `Send to ${selectedIds.size} Registrant${selectedIds.size !== 1 ? "s" : ""}`}
@@ -644,6 +665,8 @@ function FreeCarPromoSection() {
                     <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "2px 8px", background: "#e8f5e9", color: "#2e7d32", textTransform: "uppercase" }}>Redeemed</span>
                   ) : r.hasCode ? (
                     <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "2px 8px", background: "#e3f2fd", color: "#1565c0", textTransform: "uppercase" }}>Sent</span>
+                  ) : r.registered ? (
+                    <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "2px 8px", background: "#ede7f6", color: "#5e35b1", textTransform: "uppercase" }}>Registered · Eligible</span>
                   ) : (
                     <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "2px 8px", background: "#fff3e0", color: "#e65100", textTransform: "uppercase" }}>Eligible</span>
                   )}
@@ -660,6 +683,7 @@ function FreeCarPromoSection() {
 // ─── Import Prospects ───
 
 function ImportSection({ onImported }: { onImported: () => void }) {
+  const { readOnly } = useAdminEvent();
   const [raw, setRaw] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{
@@ -669,7 +693,7 @@ function ImportSection({ onImported }: { onImported: () => void }) {
   } | null>(null);
 
   const handleImport = async () => {
-    if (!raw.trim()) return;
+    if (readOnly || !raw.trim()) return;
     setImporting(true);
     setResult(null);
 
@@ -708,7 +732,7 @@ function ImportSection({ onImported }: { onImported: () => void }) {
         style={{ ...inputStyle, resize: "vertical", marginBottom: "0.75rem" }}
       />
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-        <button onClick={handleImport} disabled={importing || !raw.trim()} style={btnStyle(importing)}>
+        <button onClick={handleImport} disabled={readOnly || importing || !raw.trim()} style={btnStyle(readOnly || importing)}>
           {importing ? "Importing..." : "Import"}
         </button>
         {result && (
@@ -735,6 +759,7 @@ function ComposeCustomEmailSection({
   selectedEmails?: string[];
   onSent: () => void;
 }) {
+  const { readOnly } = useAdminEvent();
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [ctaLabel, setCtaLabel] = useState("Register Now");
@@ -761,6 +786,7 @@ function ComposeCustomEmailSection({
   }, [showPreview, subject, body, ctaLabel, ctaUrl]);
 
   const handleSend = async () => {
+    if (readOnly) return;
     if (!subject || !body) {
       alert("Subject and body are required.");
       return;
@@ -899,10 +925,11 @@ function ComposeCustomEmailSection({
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
         <button
           onClick={handleSend}
-          disabled={sending || !subject || !body || totalRecipients === 0}
+          disabled={readOnly || sending || !subject || !body || totalRecipients === 0}
+          title={readOnly ? "Sending is disabled while viewing a past show" : undefined}
           style={{
-            ...btnStyle(sending || !subject || !body || totalRecipients === 0),
-            background: sending || !subject || !body || totalRecipients === 0 ? "#ccc" : "var(--gold)",
+            ...btnStyle(readOnly || sending || !subject || !body || totalRecipients === 0),
+            background: readOnly || sending || !subject || !body || totalRecipients === 0 ? "#ccc" : "var(--gold)",
           }}
         >
           {sending ? "Sending..." : `Send to ${totalRecipients} Recipient${totalRecipients === 1 ? "" : "s"}`}
@@ -924,6 +951,7 @@ function ComposeCustomEmailSection({
 
 function AdCampaignsTab() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
   const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
   const [registrations, setRegistrations] = useState<RegistrationUtm[]>([]);
   const [loading, setLoading] = useState(true);
@@ -931,18 +959,27 @@ function AdCampaignsTab() {
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    setLoading(true);
+    setCampaigns([]);
+    setRegistrations([]);
     const fetchData = async () => {
       const supabase = createClient();
       const [campResult, regResult] = await Promise.all([
-        supabase.from("ad_campaigns").select("*").order("created_at", { ascending: false }),
-        supabase.from("registrations").select("id, utm_source, utm_medium, utm_campaign, payment_status").in("payment_status", ["paid", "pending"]),
+        supabase.from("ad_campaigns").select("*").eq("event_id", event.id).order("created_at", { ascending: false }),
+        supabase.from("registrations").select("id, utm_source, utm_medium, utm_campaign, payment_status").eq("event_id", event.id).in("payment_status", ["paid", "pending"]),
       ]);
+      if (cancelled) return;
       setCampaigns((campResult.data as AdCampaign[]) || []);
       setRegistrations((regResult.data as RegistrationUtm[]) || []);
       setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = campaigns.filter((c) => {
     if (platformFilter && c.platform !== platformFilter) return false;
@@ -974,6 +1011,7 @@ function AdCampaignsTab() {
     <>
       {/* Action bar */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1.5rem" }}>
+        {!readOnly && (
         <button
           onClick={() => router.push("/admin/marketing/new")}
           style={{
@@ -990,6 +1028,7 @@ function AdCampaignsTab() {
         >
           Add Campaign
         </button>
+        )}
       </div>
 
       {/* Summary row */}

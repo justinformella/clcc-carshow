@@ -206,6 +206,7 @@ export async function sendSponsorPaymentLink(sponsorId: string) {
   const { data: tier } = await supabase
     .from("sponsorship_tiers")
     .select("name, price_cents")
+    .eq("event_id", sponsor.event_id)
     .eq("name", sponsor.sponsorship_level)
     .single();
 
@@ -239,6 +240,7 @@ export async function sendSponsorReceipt(sponsorId: string) {
   const { data: tier } = await supabase
     .from("sponsorship_tiers")
     .select("name, price_cents, benefits")
+    .eq("event_id", sponsor.event_id)
     .eq("name", sponsor.sponsorship_level)
     .single();
 
@@ -277,6 +279,7 @@ export async function sendSponsorPaymentAdminNotification(sponsorId: string, pay
   const { data: tier } = await supabase
     .from("sponsorship_tiers")
     .select("name, price_cents")
+    .eq("event_id", sponsor.event_id)
     .eq("name", sponsor.sponsorship_level)
     .single();
 

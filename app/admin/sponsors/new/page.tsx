@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { Admin } from "@/types/database";
 
 export default function NewSponsorPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [admins, setAdmins] = useState<Admin[]>([]);
@@ -47,6 +49,7 @@ export default function NewSponsorPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly || !event) return;
     setSaving(true);
     setError(null);
 
@@ -64,6 +67,7 @@ export default function NewSponsorPage() {
         status: form.status,
         notes: form.notes || null,
         assigned_to: form.assigned_to || null,
+        event_id: event.id,
       })
       .select()
       .single();
@@ -207,7 +211,7 @@ export default function NewSponsorPage() {
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "2rem" }}>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || readOnly || !event}
             style={{
               padding: "0.6rem 1.5rem",
               background: "var(--gold)",
@@ -217,8 +221,8 @@ export default function NewSponsorPage() {
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.6 : 1,
+              cursor: saving || readOnly || !event ? "not-allowed" : "pointer",
+              opacity: saving || readOnly || !event ? 0.6 : 1,
             }}
           >
             {saving ? "Creating..." : "Create Sponsor"}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 import OpenAI from "openai";
+import { fetchEvents, resolveEvent } from "@/lib/events";
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -11,15 +12,18 @@ interface InsightsResult {
   cached_at: string;
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = createServerClient();
+    const ev = await resolveEvent(supabase, new URL(request.url).searchParams.get("event"));
+    // Insights are cached per event so 2026 and 2027 never share a result
+    const cacheKey = `analytics_insights_cache:${ev.id}`;
 
     // 1. Check cache in app_settings
     const { data: cacheRow } = await supabase
       .from("app_settings")
       .select("value")
-      .eq("key", "analytics_insights_cache")
+      .eq("key", cacheKey)
       .maybeSingle();
 
     if (cacheRow?.value) {
@@ -39,24 +43,38 @@ export async function POST() {
       }
     }
 
-    // 2. Fetch last 30 days of page_views
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    // 2. Fetch 30 days of page_views (no event_id; scoped by date). Window
+    // ends now for the current show, or the day after show day for a past
+    // show, and never starts before the day after the previous show.
+    const showEnd = new Date(ev.event_date + "T00:00:00");
+    showEnd.setDate(showEnd.getDate() + 1);
+    const windowEnd = ev.is_current ? new Date() : new Date(Math.min(Date.now(), showEnd.getTime()));
+    let windowStart = new Date(windowEnd.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const prevEvent = (await fetchEvents(supabase)).find((e) => e.year < ev.year);
+    if (prevEvent) {
+      const seasonStart = new Date(prevEvent.event_date + "T00:00:00");
+      seasonStart.setDate(seasonStart.getDate() + 1);
+      if (seasonStart > windowStart) windowStart = seasonStart;
+    }
+    const thirtyDaysAgo = windowStart.toISOString().split("T")[0];
+    const windowEndDate = windowEnd.toISOString().split("T")[0];
 
     const { data: pageViews } = await supabase
       .from("page_views")
       .select("date, views, visitors")
       .gte("date", thirtyDaysAgo)
+      .lte("date", windowEndDate)
       .order("date", { ascending: true });
 
-    // 3. Fetch last 30 days of paid registrations grouped by date
+    // 3. Fetch this event's paid registrations in the same window, grouped by date
     const { data: regRows } = await supabase
       .from("registrations")
       .select("paid_at")
+      .eq("event_id", ev.id)
       .in("payment_status", ["paid", "comped"])
       .not("paid_at", "is", null)
-      .gte("paid_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+      .gte("paid_at", windowStart.toISOString())
+      .lte("paid_at", windowEnd.toISOString());
 
     // Group registrations by date
     const regByDate: Record<string, number> = {};
@@ -69,6 +87,7 @@ export async function POST() {
     const { count: totalRegs } = await supabase
       .from("registrations")
       .select("*", { count: "exact", head: true })
+      .eq("event_id", ev.id)
       .in("payment_status", ["paid", "comped"])
       .not("paid_at", "is", null);
 
@@ -99,19 +118,21 @@ export async function POST() {
       });
 
     // Days until event
-    const eventDate = new Date("2026-05-17");
+    const eventDate = new Date(ev.event_date + "T12:00:00");
+    const eventDateLabel = eventDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     const daysAway = Math.ceil(
       (eventDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     );
+    const daysLabel = daysAway >= 0 ? `${daysAway} days away` : `took place ${-daysAway} days ago`;
 
     // 5. Build prompt
-    const prompt = `You are an analytics advisor for a charity car show event (Crystal Lake Cars & Caffeine, May 17, 2026).
+    const prompt = `You are an analytics advisor for a charity car show event (Crystal Lake Cars & Caffeine, ${eventDateLabel}).
 
 Here is the daily website traffic and registration data:
 ${JSON.stringify(dailyData)}
 
 Current total registrations: ${totalRegs ?? 0} of ${maxRegs} max capacity.
-Event date: May 17, 2026 (${daysAway} days away).
+Event date: ${eventDateLabel} (${daysLabel}).
 
 Provide:
 1. TREND: One word — "improving", "declining", or "stable"
@@ -177,7 +198,7 @@ Respond ONLY with valid JSON, no markdown:
 
     // 7. Cache the result in app_settings
     await supabase.from("app_settings").upsert(
-      { key: "analytics_insights_cache", value: JSON.stringify(finalResult) },
+      { key: cacheKey, value: JSON.stringify(finalResult) },
       { onConflict: "key" }
     );
 

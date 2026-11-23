@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase-server";
 import { getStripe } from "@/lib/stripe";
+import { getCurrentEvent } from "@/lib/events";
 
 function LoadingState() {
   return (
@@ -21,6 +22,7 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
   let amountDisplay = "";
   let amountPaidCents = 0;
   let donationCents = 0;
+  let eventId: string | null = null;
 
   if (sessionId) {
     const stripe = getStripe();
@@ -31,7 +33,7 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
       const supabase = createServerClient();
       const { data: sponsor } = await supabase
         .from("sponsors")
-        .select("company, sponsorship_level, sponsorship_amount, donation_cents")
+        .select("company, sponsorship_level, sponsorship_amount, donation_cents, event_id")
         .eq("id", sponsorId)
         .single();
 
@@ -41,12 +43,32 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
         amountPaidCents = sponsor.sponsorship_amount;
         amountDisplay = `$${(sponsor.sponsorship_amount / 100).toLocaleString()}`;
         donationCents = sponsor.donation_cents || 0;
+        eventId = sponsor.event_id;
       }
     }
 
     if (!amountDisplay && session.amount_total) {
       amountDisplay = `$${(session.amount_total / 100).toLocaleString()}`;
     }
+  }
+
+  // Show date comes from the sponsor's event (falls back to the current event)
+  let showDateLabel = "";
+  try {
+    const supabase = createServerClient();
+    let eventDate: string | null = null;
+    if (eventId) {
+      const { data: ev } = await supabase.from("events").select("event_date").eq("id", eventId).maybeSingle();
+      eventDate = ev?.event_date ?? null;
+    }
+    if (!eventDate) eventDate = (await getCurrentEvent(supabase)).event_date;
+    showDateLabel = new Date(eventDate + "T12:00:00").toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    showDateLabel = "";
   }
 
   return (
@@ -160,7 +182,7 @@ async function SuccessContent({ searchParams }: { searchParams: Promise<Record<s
                 Crystal Lake Cars &amp; Caffeine Car Show
               </p>
               <p style={{ fontSize: 14, color: "var(--charcoal)", margin: "0 0 4px", fontWeight: 600 }}>
-                May 17, 2026 · 7:30 AM – 2:00 PM
+                {showDateLabel ? `${showDateLabel} · ` : ""}7:30 AM – 2:00 PM
               </p>
               <p style={{ fontSize: 13, color: "#888", margin: 0 }}>
                 Grant, Brink &amp; Williams Streets · Downtown Crystal Lake, IL

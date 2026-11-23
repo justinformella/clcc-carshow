@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateImage } from "@/lib/generate-pixel-art";
 import { createServerClient } from "@/lib/supabase-server";
+import { getCurrentEvent } from "@/lib/events";
 
 const HERO_PROMPT =
   "8-bit retro pixel art scene of a charity car show in a downtown small-town American setting. " +
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
     const { data: sponsorRows, error: fetchErr } = await supabase
       .from("sponsors")
       .select("id, company, logo_url, pixel_logo_url")
+      .eq("event_id", (await getCurrentEvent(supabase)).id)
       .in("status", ["paid", "engaged"])
       .not("logo_url", "is", null)
       .is("pixel_logo_url", null);

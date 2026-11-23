@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { Sponsor, SponsorStatus, Admin } from "@/types/database";
 
 type SortField = "company" | "name" | "status" | "sponsorship_level" | "sponsorship_amount";
 
 export default function SponsorsPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,19 +26,27 @@ export default function SponsorsPage() {
   };
 
   useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    setLoading(true);
+    setSponsors([]);
     const fetchData = async () => {
       const supabase = createClient();
       const [sponsorsRes, adminsRes] = await Promise.all([
-        supabase.from("sponsors").select("*").order("created_at", { ascending: false }),
+        supabase.from("sponsors").select("*").eq("event_id", event.id).order("created_at", { ascending: false }),
         supabase.from("admins").select("*").order("name"),
       ]);
+      if (cancelled) return;
 
       setSponsors((sponsorsRes.data as Sponsor[]) || []);
       setAdmins((adminsRes.data as Admin[]) || []);
       setLoading(false);
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = sponsors.filter((s) => {
     const matchesSearch =
@@ -96,6 +106,7 @@ export default function SponsorsPage() {
         >
           Sponsors ({filtered.length})
         </h1>
+        {!readOnly && (
         <button
           onClick={() => router.push("/admin/sponsors/new")}
           style={{
@@ -112,6 +123,7 @@ export default function SponsorsPage() {
         >
           Add Sponsor
         </button>
+        )}
       </div>
 
       {/* Filters */}

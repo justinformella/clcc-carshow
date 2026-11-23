@@ -4,6 +4,7 @@ import {
   sendHelpRequestConfirmation,
   sendHelpRequestAdminNotification,
 } from "@/lib/email";
+import { getCurrentEvent } from "@/lib/events";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,18 +42,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-link: look up submitter email in registrations table
-    const { data: registration } = await supabase
+    const event = await getCurrentEvent(supabase);
+
+    // Auto-link: look up submitter email in registrations table.
+    // Prefer the current event's registration, fall back to the most recent past one.
+    const { data: paidRegs } = await supabase
       .from("registrations")
-      .select("id")
+      .select("id, event_id")
       .ilike("email", email)
       .eq("payment_status", "paid")
-      .limit(1)
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const registration =
+      paidRegs?.find((r) => r.event_id === event.id) ?? paidRegs?.[0] ?? null;
 
     const { data: helpRequest, error: insertError } = await supabase
       .from("help_requests")
       .insert({
+        event_id: event.id,
         name,
         email,
         subject,

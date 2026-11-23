@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { MAX_VEHICLES_PER_CHECKOUT } from "@/types/database";
+import { useAdminEvent } from "@/components/admin/AdminEventContext";
 
 type VehicleForm = {
   vehicle_year: string;
@@ -23,6 +24,7 @@ const emptyVehicle = (): VehicleForm => ({
 
 export default function NewRegistrationPage() {
   const router = useRouter();
+  const { event, readOnly } = useAdminEvent();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,10 +72,12 @@ export default function NewRegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!event || readOnly) return;
     setSaving(true);
     setError(null);
 
     const rows = vehicles.map((v) => ({
+      event_id: event.id,
       first_name: owner.first_name,
       last_name: owner.last_name,
       email: owner.email,
@@ -149,6 +153,30 @@ export default function NewRegistrationPage() {
       router.push("/admin/registrations");
     }
   };
+
+  if (!event) {
+    return (
+      <p style={{ color: "var(--text-light)", textAlign: "center", padding: "3rem" }}>
+        Loading...
+      </p>
+    );
+  }
+
+  if (readOnly) {
+    return (
+      <>
+        <button
+          onClick={() => router.push("/admin/registrations")}
+          style={{ background: "none", border: "none", color: "var(--text-light)", cursor: "pointer", fontSize: "0.85rem", padding: 0, marginBottom: "1.5rem" }}
+        >
+          &larr; Back to Registrations
+        </button>
+        <p style={{ color: "var(--text-light)", fontSize: "0.95rem" }}>
+          You&apos;re viewing {event.year}, which is read only. Switch to the current show year to add registrations.
+        </p>
+      </>
+    );
+  }
 
   return (
     <>
