@@ -21,6 +21,7 @@ type Tab = "configuration" | "emails";
 
 const sampleReg: Registration = {
   id: "sample",
+  event_id: "sample-event",
   car_number: 42,
   first_name: "John",
   last_name: "Smith",
@@ -68,6 +69,7 @@ const sampleReg: Registration = {
 
 const sampleHelpRequest: HelpRequest = {
   id: "sample-help",
+  event_id: "sample-event",
   request_number: 7,
   name: "Jane Doe",
   email: "jane@example.com",
@@ -115,6 +117,7 @@ const sampleHelpReplyHtml = helpRequestReplyNotificationEmail(
 
 const sampleSponsor: Sponsor = {
   id: "sample-sponsor",
+  event_id: "sample-event",
   name: "Frank Franco",
   company: "Weatherwise Heating & Cooling",
   email: "frank@weatherwise.com",

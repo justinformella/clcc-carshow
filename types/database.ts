@@ -1,5 +1,6 @@
 export type Registration = {
   id: string;
+  event_id: string;
   car_number: number;
   // Owner info
   first_name: string;
@@ -56,16 +57,28 @@ export type Registration = {
   updated_at: string;
 };
 
+export type RegistrationPhoto = {
+  id: string;
+  registration_id: string;
+  url: string;
+  type: "checkin" | "show" | "general";
+  caption: string | null;
+  created_at: string;
+};
+
 export type RegistrationInsert = Omit<
   Registration,
-  "id" | "car_number" | "created_at" | "updated_at" | "checked_in" | "checked_in_at" | "payment_status" | "amount_paid" | "ai_image_url" | "award_category" | "utm_source" | "utm_medium" | "utm_campaign"
+  "id" | "event_id" | "car_number" | "created_at" | "updated_at" | "checked_in" | "checked_in_at" | "payment_status" | "amount_paid" | "ai_image_url" | "award_category" | "utm_source" | "utm_medium" | "utm_campaign"
 > & {
   payment_status?: string;
   amount_paid?: number;
+  /** Defaults to the current event in the database. */
+  event_id?: string;
 };
 
 export type AwardCategory = {
   id: string;
+  event_id: string;
   name: string;
   display_order: number;
   is_active: boolean;
@@ -180,6 +193,7 @@ export type SponsorStatus = "prospect" | "inquired" | "engaged" | "paid" | "arch
 
 export type Sponsor = {
   id: string;
+  event_id: string;
   name: string;
   company: string;
   email: string;
@@ -215,6 +229,7 @@ export type SponsorAuditLogEntry = {
 
 export type SponsorshipTier = {
   id: string;
+  event_id: string;
   name: string;
   price_cents: number;
   benefits: string;
@@ -226,6 +241,7 @@ export type SponsorshipTier = {
 
 export type ShowExpense = {
   id: string;
+  event_id: string;
   description: string;
   amount_cents: number;
   memo: string | null;
@@ -236,6 +252,7 @@ export type ShowExpense = {
 
 export type PromoCode = {
   id: string;
+  event_id: string;
   code: string;
   registration_id: string;
   email: string;
@@ -271,6 +288,7 @@ export const AD_PLATFORMS = [
 
 export type AdCampaign = {
   id: string;
+  event_id: string;
   platform: string;
   campaign_name: string;
   status: "active" | "paused" | "completed";
@@ -318,6 +336,7 @@ export const HELP_REQUEST_PRIORITIES: { value: HelpRequestPriority; label: strin
 
 export type HelpRequest = {
   id: string;
+  event_id: string | null;
   request_number: number;
   name: string;
   email: string;

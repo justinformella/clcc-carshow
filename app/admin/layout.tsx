@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { Admin } from "@/types/database";
+import { AdminEventProvider, AdminEventSwitcher, AdminReadOnlyBanner } from "@/components/admin/AdminEventContext";
 
 type NavItem = { href: string; label: string; icon: string };
 type NavGroup = { label: string; items: NavItem[] };
@@ -106,7 +107,7 @@ export default function AdminLayout({
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <>
+    <AdminEventProvider>
       <style>{`
         .admin-sidebar {
           position: fixed;
@@ -249,6 +250,8 @@ export default function AdminLayout({
           </Link>
         </div>
 
+        <AdminEventSwitcher onChange={closeSidebar} />
+
         {/* Nav links */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0.25rem 0", overflowY: "auto" }}>
           {navGroups.map((group) => (
@@ -355,9 +358,10 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="admin-content">
         <div style={{ padding: "2rem", maxWidth: "1400px", margin: "0 auto" }}>
+          <AdminReadOnlyBanner />
           {children}
         </div>
       </div>
-    </>
+    </AdminEventProvider>
   );
 }
