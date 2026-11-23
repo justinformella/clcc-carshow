@@ -10,6 +10,13 @@ from pathlib import Path
 
 import requests
 
+
+def internal_headers():
+    """Server-to-server auth for the site's admin API (see lib/requireAdmin.ts)."""
+    import hashlib, hmac
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    return {"x-clcc-internal": hmac.new(key.encode(), b"clcc-internal-v1", hashlib.sha256).hexdigest()}
+
 # Load env
 env_file = Path(__file__).parent.parent / ".env.local"
 if env_file.exists():
@@ -57,6 +64,7 @@ def main():
             res = requests.post(
                 f"{API_BASE}/api/registrations/pixel-art/regenerate",
                 json={"registration_id": r["id"], "type": "dashboard"},
+                headers=internal_headers(),
                 timeout=180,
             )
             elapsed = time.time() - start
