@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase";
 import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { AdCampaign, MarketingProspect, MarketingSend } from "@/types/database";
 import { customMarketingEmailHtml } from "@/lib/marketing-email-templates";
-import { freeCarOfferEmail, FREE_CAR_DEFAULT_SUBJECT, FREE_CAR_DEFAULT_BODY } from "@/lib/email-templates";
+import { freeCarOfferEmail, freeCarDefaultSubject, FREE_CAR_DEFAULT_BODY } from "@/lib/email-templates";
 
 type RegistrationUtm = {
   id: string;
@@ -417,7 +417,11 @@ function FreeCarPromoSection() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ sent: number; skipped: number; failed: number } | null>(null);
-  const [promoSubject, setPromoSubject] = useState(FREE_CAR_DEFAULT_SUBJECT);
+  const [promoSubject, setPromoSubject] = useState("");
+  // Default subject names the current show's year once it loads (unless edited)
+  useEffect(() => {
+    if (currentEvent) setPromoSubject((s) => s || freeCarDefaultSubject(currentEvent.year));
+  }, [currentEvent]);
   const [promoBody, setPromoBody] = useState(FREE_CAR_DEFAULT_BODY);
   const [showPromoPreview, setShowPromoPreview] = useState(false);
   const promoIframeRef = useRef<HTMLIFrameElement>(null);
@@ -576,7 +580,7 @@ function FreeCarPromoSection() {
                     const doc = promoIframeRef.current.contentDocument;
                     if (doc) {
                       doc.open();
-                      doc.write(freeCarOfferEmail("John", "ABC123", "#", promoSubject, promoBody).html);
+                      doc.write(freeCarOfferEmail("John", "ABC123", "#", promoSubject, promoBody, currentEvent ?? { year: 2027, event_date: "2027-05-16" }).html);
                       doc.close();
                     }
                   }

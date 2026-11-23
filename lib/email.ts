@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase-server";
+import { getCurrentEvent } from "@/lib/events";
 import { getResend } from "@/lib/resend";
 import {
   confirmationEmail,
@@ -14,6 +15,7 @@ import {
   helpRequestReplyNotificationEmail,
 } from "@/lib/email-templates";
 import type { Registration, Sponsor, HelpRequest, HelpRequestMessage } from "@/types/database";
+import type { ShowDateInfo } from "@/lib/showDates";
 
 const FROM_EMAIL = "Crystal Lake Cars & Caffeine <info@crystallakecarshow.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
@@ -69,6 +71,19 @@ async function logEmail(
   });
 }
 
+// Year and date of the show a registration belongs to (for confirmation emails)
+async function showForEvent(
+  supabase: ReturnType<typeof createServerClient>,
+  eventId: string | null | undefined
+): Promise<ShowDateInfo> {
+  if (eventId) {
+    const { data } = await supabase.from("events").select("year, event_date").eq("id", eventId).maybeSingle();
+    if (data) return data as ShowDateInfo;
+  }
+  const current = await getCurrentEvent(supabase);
+  return { year: current.year, event_date: current.event_date };
+}
+
 export async function sendConfirmation(registrationId: string) {
   const supabase = createServerClient();
   const { data: reg } = await supabase
@@ -79,7 +94,8 @@ export async function sendConfirmation(registrationId: string) {
 
   if (!reg) throw new Error("Registration not found");
 
-  const { subject, html } = confirmationEmail(reg as Registration);
+  const show = await showForEvent(supabase, reg.event_id);
+  const { subject, html } = confirmationEmail(reg as Registration, show);
 
   const result = await sendWithRetry({ from: FROM_EMAIL, to: reg.email, subject, html });
 
@@ -101,7 +117,8 @@ export async function sendMultiVehicleConfirmation(registrationIds: string[]) {
 
   if (!regs || regs.length === 0) throw new Error("Registrations not found");
 
-  const { subject, html } = multiVehicleConfirmationEmail(regs as Registration[]);
+  const show = await showForEvent(supabase, regs[0].event_id);
+  const { subject, html } = multiVehicleConfirmationEmail(regs as Registration[], show);
 
   const result = await sendWithRetry({ from: FROM_EMAIL, to: regs[0].email, subject, html });
 

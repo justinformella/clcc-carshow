@@ -7,11 +7,9 @@ import { RaceCar, C, FONT, pageStyle, pixelBtnStyle } from "@/lib/race-types";
 interface CarSelectProps {
   cars: RaceCar[];
   onSelect: (car: RaceCar) => void;
-  generating: boolean;
-  onGenerateAll: () => void;
 }
 
-export default function CarSelect({ cars, onSelect, generating, onGenerateAll }: CarSelectProps) {
+export default function CarSelect({ cars, onSelect }: CarSelectProps) {
   return (
     <div style={{ ...pageStyle, position: "relative", overflow: "hidden" }}>
       {/* Dimmed Redline background */}
@@ -35,11 +33,6 @@ export default function CarSelect({ cars, onSelect, generating, onGenerateAll }:
           <Link href="/arcade/leaderboard" style={{ fontFamily: FONT, fontSize: "0.55rem", color: C.gold, textDecoration: "underline" }}>
             LEADERBOARD
           </Link>
-          {cars.some((c) => !c.pixelArt) && (
-            <button onClick={onGenerateAll} disabled={generating} style={{ ...pixelBtnStyle, marginTop: "1rem", background: C.bgMid, color: C.gold, border: `2px solid ${C.goldDark}`, opacity: generating ? 0.5 : 1, cursor: generating ? "wait" : "pointer" }}>
-              {generating ? "GENERATING..." : `GENERATE PIXEL ART (${cars.filter((c) => !c.pixelArt).length})`}
-            </button>
-          )}
         </div>
 
         {/* Register CTA banner */}

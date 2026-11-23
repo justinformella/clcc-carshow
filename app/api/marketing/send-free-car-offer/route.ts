@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       });
 
       const registerUrl = `${SITE_URL}/register?promo=${code}`;
-      const { subject, html } = freeCarOfferEmail(reg.first_name, code, registerUrl, customSubject, customBody);
+      const { subject, html } = freeCarOfferEmail(reg.first_name, code, registerUrl, customSubject, customBody, currentEvent);
 
       const { error } = await resend.emails.send({
         from: FROM_EMAIL,

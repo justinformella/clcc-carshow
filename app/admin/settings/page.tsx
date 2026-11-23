@@ -87,7 +87,7 @@ const sampleHelpRequest: HelpRequest = {
   updated_at: new Date().toISOString(),
 };
 
-const sampleConfirmationHtml = confirmationEmail(sampleReg).html;
+const sampleConfirmationHtml = confirmationEmail(sampleReg, { year: 2027, event_date: "2027-05-16" }).html;
 const sampleAdminHtml = adminNotificationEmail(sampleReg, "#").html;
 const sampleAnnouncementHtml = announcementEmail(
   "Parking Update for May 17th",

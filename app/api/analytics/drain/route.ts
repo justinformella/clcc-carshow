@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
+import crypto from "crypto";
+
+// Vercel signs each drain delivery: x-vercel-signature = HMAC-SHA1(body, drain
+// secret). Once VERCEL_DRAIN_SECRET is set in Vercel, unsigned or forged
+// requests are rejected; until then the route accepts all (previous behavior).
+function validSignature(rawBody: string, signature: string | null): boolean {
+  const secret = process.env.VERCEL_DRAIN_SECRET;
+  if (!secret) return true;
+  if (!signature) return false;
+  const expected = crypto.createHmac("sha1", secret).update(rawBody).digest("hex");
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signature);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rawBody = await request.text();
+    if (!validSignature(rawBody, request.headers.get("x-vercel-signature"))) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+    }
+    const body = JSON.parse(rawBody);
     const events = Array.isArray(body) ? body : [body];
     const supabase = createServerClient();
 

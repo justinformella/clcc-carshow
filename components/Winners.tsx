@@ -93,7 +93,7 @@ export default async function Winners() {
               lineHeight: 1.1,
             }}
           >
-            Congratulations to this year&apos;s winners
+            Congratulations to our {pastEvent.year} winners
           </h2>
           <p
             style={{

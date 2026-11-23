@@ -147,7 +147,7 @@ export default function AdminDashboard() {
     }, 0);
 
     const projectedTotal = totalRevenue + sponsorRevenue + committedProjected;
-    const fullCapacityReg = maxRegistrations * 3000;
+    const fullCapacityReg = maxRegistrations * (event?.registration_price_cents || 3000);
     const avgDonationPerReg = paidRegistrations.length > 0 ? donationRevenueCents / paidRegistrations.length : 0;
     const fullCapacityDonations = Math.round(avgDonationPerReg * maxRegistrations);
     const fullCapacityTotal = fullCapacityReg + fullCapacityDonations + sponsorRevenue + committedProjected;

@@ -1,17 +1,11 @@
 import type { Registration, Sponsor, HelpRequest } from "@/types/database";
+import { googleCalendarUrl, showDateLong, type ShowDateInfo } from "@/lib/showDates";
 
 // Always use production URL — emails should never link to localhost
 const SITE_URL = "https://crystallakecarshow.com";
 
 const GOOGLE_MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Grant+Brink+Williams+Streets+Crystal+Lake+IL";
-
-const GOOGLE_CALENDAR_URL =
-  "https://calendar.google.com/calendar/render?action=TEMPLATE" +
-  "&text=Crystal+Lake+Cars+%26+Caffeine+Car+Show" +
-  "&dates=20260517T073000/20260517T140000" +
-  "&location=Grant%2C+Brink+%26+Williams+Streets%2C+Downtown+Crystal+Lake%2C+IL" +
-  "&details=Annual+car+show+benefiting+the+Crystal+Lake+Food+Pantry.+Check-in+opens+at+7%3A30+AM.";
 
 function htmlShell(content: string): string {
   return `<!DOCTYPE html>
@@ -57,7 +51,7 @@ function htmlShell(content: string): string {
 </html>`;
 }
 
-export function confirmationEmail(reg: Registration): { subject: string; html: string } {
+export function confirmationEmail(reg: Registration, show: ShowDateInfo): { subject: string; html: string } {
   const content = `
     <!-- Heading -->
     <h1 style="margin:0 0 24px; font-size:26px; color:#2c2c2c; text-align:center;">
@@ -84,7 +78,7 @@ export function confirmationEmail(reg: Registration): { subject: string; html: s
       <tr>
         <td style="padding:20px 24px;">
           <p style="margin:0 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
-          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">Sunday, May 17, 2026</p>
+          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">${showDateLong(show)}</p>
           <p style="margin:0 0 8px; font-size:15px; color:#444;">Grant, Brink &amp; Williams Streets<br/>Downtown Crystal Lake, IL</p>
           <a href="${GOOGLE_MAPS_URL}" style="font-size:14px; color:#c9a84c; text-decoration:none; font-weight:600;">View on Google Maps &rarr;</a>
         </td>
@@ -145,7 +139,7 @@ export function confirmationEmail(reg: Registration): { subject: string; html: s
     <!-- Add to Calendar Button -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
       <tr><td align="center">
-        <a href="${GOOGLE_CALENDAR_URL}" style="display:inline-block; padding:14px 32px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:15px; border-radius:6px; letter-spacing:0.02em;">
+        <a href="${googleCalendarUrl(show)}" style="display:inline-block; padding:14px 32px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:15px; border-radius:6px; letter-spacing:0.02em;">
           Add to Calendar
         </a>
       </td></tr>
@@ -180,7 +174,8 @@ export function confirmationEmail(reg: Registration): { subject: string; html: s
 }
 
 export function multiVehicleConfirmationEmail(
-  registrations: Registration[]
+  registrations: Registration[],
+  show: ShowDateInfo
 ): { subject: string; html: string } {
   const carNumbers = registrations.map((r) => `#${r.car_number}`).join(", ");
   const totalDonation = registrations.reduce((sum, r) => sum + (r.donation_cents || 0), 0);
@@ -222,7 +217,7 @@ export function multiVehicleConfirmationEmail(
       <tr>
         <td style="padding:20px 24px;">
           <p style="margin:0 0 4px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
-          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">Sunday, May 17, 2026</p>
+          <p style="margin:0 0 8px; font-size:17px; font-weight:700; color:#2c2c2c;">${showDateLong(show)}</p>
           <p style="margin:0 0 8px; font-size:15px; color:#444;">Grant, Brink &amp; Williams Streets<br/>Downtown Crystal Lake, IL</p>
           <a href="${GOOGLE_MAPS_URL}" style="font-size:14px; color:#c9a84c; text-decoration:none; font-weight:600;">View on Google Maps &rarr;</a>
         </td>
@@ -283,7 +278,7 @@ export function multiVehicleConfirmationEmail(
     <!-- Add to Calendar Button -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
       <tr><td align="center">
-        <a href="${GOOGLE_CALENDAR_URL}" style="display:inline-block; padding:14px 32px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:15px; border-radius:6px; letter-spacing:0.02em;">
+        <a href="${googleCalendarUrl(show)}" style="display:inline-block; padding:14px 32px; background:#c9a84c; color:#2c2c2c; text-decoration:none; font-weight:700; font-size:15px; border-radius:6px; letter-spacing:0.02em;">
           Add to Calendar
         </a>
       </td></tr>
@@ -736,7 +731,9 @@ export function helpRequestAdminNotificationEmail(
   };
 }
 
-export const FREE_CAR_DEFAULT_SUBJECT = "CLCC 2026 Car Show - Complimentary extra car registration";
+export function freeCarDefaultSubject(year: number): string {
+  return `CLCC ${year} Car Show - Complimentary extra car registration`;
+}
 export const FREE_CAR_DEFAULT_BODY = `Over the past few weeks we've been approached by show members who have multiple cars in their collection that have expressed interest in exhibiting an additional car. In recognition to our core members who have registered in advance, we're extending to you a code for an additional complimentary registration.
 
 Just click the link below — your promo code is already applied.`;
@@ -745,10 +742,11 @@ export function freeCarOfferEmail(
   firstName: string,
   promoCode: string,
   registerUrl: string,
-  customSubject?: string,
-  customBody?: string
+  customSubject: string | undefined,
+  customBody: string | undefined,
+  show: ShowDateInfo
 ): { subject: string; html: string } {
-  const emailSubject = customSubject || FREE_CAR_DEFAULT_SUBJECT;
+  const emailSubject = customSubject || freeCarDefaultSubject(show.year);
 
   const bodyText = customBody || FREE_CAR_DEFAULT_BODY;
   const bodyHtml = bodyText
@@ -798,7 +796,7 @@ export function freeCarOfferEmail(
         <td style="padding:16px 24px;">
           <p style="margin:0 0 8px; font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em;">Event Details</p>
           <p style="margin:0; font-size:14px; color:#333;">
-            <strong>Sunday, May 17, 2026</strong><br/>
+            <strong>${showDateLong(show)}</strong><br/>
             Grant, Brink &amp; Williams Streets &middot; Downtown Crystal Lake, IL
           </p>
         </td>

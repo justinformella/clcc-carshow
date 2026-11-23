@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase";
+import { showDateLong, showDateShort, showIcsLines, type ShowDateInfo } from "@/lib/showDates";
 
 declare global {
   interface Window {
@@ -17,29 +19,34 @@ type VehicleSummary = {
   vehicle_model: string;
 };
 
-function downloadCalendarEvent() {
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//CLCC Car Show//EN",
-    "BEGIN:VEVENT",
-    "DTSTART:20260517T123000Z",
-    "DTEND:20260517T180000Z",
-    "SUMMARY:CLCC Annual Charity Car Show",
-    "LOCATION:Downtown Crystal Lake\\, IL — Grant\\, Brink & Williams Streets",
-    "DESCRIPTION:Check-in starts at 7:30 AM. Bring your registered vehicle. 100% of net proceeds go to the Crystal Lake Food Pantry.",
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ];
-  const blob = new Blob([lines.join("\r\n")], {
+function downloadCalendarEvent(show: ShowDateInfo) {
+  const blob = new Blob([showIcsLines(show).join("\r\n")], {
     type: "text/calendar;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "clcc-car-show-2026.ics";
+  a.download = `clcc-car-show-${show.year}.ics`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// The show people are registering for (the current event). Falls back to the
+// 2027 show date if the lookup fails so the page never shows a blank date.
+const FALLBACK_SHOW: ShowDateInfo = { year: 2027, event_date: "2027-05-16" };
+function useCurrentShow(): ShowDateInfo {
+  const [show, setShow] = useState<ShowDateInfo>(FALLBACK_SHOW);
+  useEffect(() => {
+    createClient()
+      .from("events")
+      .select("year, event_date")
+      .eq("is_current", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setShow(data as ShowDateInfo);
+      });
+  }, []);
+  return show;
 }
 
 const brandedHeader = (
@@ -77,6 +84,7 @@ const greenCheckmark = (
 );
 
 function CompedSuccessContent() {
+  const show = useCurrentShow();
   return (
     <>
       {brandedHeader}
@@ -147,7 +155,7 @@ function CompedSuccessContent() {
                 }}
               >
                 <li style={{ padding: "0.5rem 0" }}>
-                  &#10003; Sunday, May 17, 2026
+                  &#10003; {showDateLong(show)}
                 </li>
                 <li style={{ padding: "0.5rem 0" }}>
                   &#10003; Check-in starts at 7:30 AM
@@ -167,7 +175,7 @@ function CompedSuccessContent() {
               }}
             >
               <button
-                onClick={downloadCalendarEvent}
+                onClick={() => downloadCalendarEvent(show)}
                 style={{
                   padding: "1rem 2.5rem",
                   background: "transparent",
@@ -207,6 +215,7 @@ function CompedSuccessContent() {
 }
 
 function SuccessContent() {
+  const show = useCurrentShow();
   const searchParams = useSearchParams();
   const comped = searchParams.get("comped") === "true";
   const sessionId = searchParams.get("session_id");
@@ -380,7 +389,7 @@ function SuccessContent() {
                   &#10003; Check your email for confirmation details
                 </li>
                 <li style={{ padding: "0.5rem 0" }}>
-                  &#10003; Event day: May 17, 2026 — Check-in starts at 7:30 AM
+                  &#10003; Event day: {showDateShort(show)} — Check-in starts at 7:30 AM
                 </li>
                 <li style={{ padding: "0.5rem 0" }}>
                   &#10003; Bring your vehicle{isMulti ? "s" : ""} to Grant, Brink &amp; Williams
@@ -410,7 +419,7 @@ function SuccessContent() {
               }}
             >
               <button
-                onClick={downloadCalendarEvent}
+                onClick={() => downloadCalendarEvent(show)}
                 style={{
                   padding: "1rem 2.5rem",
                   background: "transparent",

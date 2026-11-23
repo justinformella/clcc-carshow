@@ -62,7 +62,6 @@ function RacePage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [playerCar, setPlayerCar] = useState<RaceCar | null>(null);
   const [activeGame, setActiveGame] = useState<ActiveGame>(null);
-  const [generating, setGenerating] = useState(false);
   const [scoreData, setScoreData] = useState<ScoreData | null>(null);
   const [initials, setInitials] = useState(["", "", ""]);
   const [fullName, setFullName] = useState("");
@@ -185,21 +184,6 @@ function RacePage() {
       const prev = document.getElementById(`initial-${index - 1}`);
       prev?.focus();
     }
-  };
-
-  const handleGenerateAll = async () => {
-    setGenerating(true);
-    try {
-      await fetch("/api/registrations/pixel-art", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ batch: true }),
-      });
-      const res = await fetch("/api/race?eligible=1");
-      const data = await res.json();
-      setCars(data.cars || []);
-    } catch {}
-    setGenerating(false);
   };
 
   // ─── ACTIVE GAME ───
@@ -402,7 +386,7 @@ function RacePage() {
 
   // ─── CAR SELECT ───
   if (phase === "select") {
-    return <CarSelect cars={cars} onSelect={selectCar} generating={generating} onGenerateAll={handleGenerateAll} />;
+    return <CarSelect cars={cars} onSelect={selectCar} />;
   }
 
   // ─── ACTION MENU ───
