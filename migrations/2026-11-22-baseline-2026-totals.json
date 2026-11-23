@@ -1,0 +1,15 @@
+{
+  "captured_at": "2026-11-22T22:48:00-06:00",
+  "note": "2026 totals before the events migration. These must be identical when viewing 2026 after the change.",
+  "registrations":        { "rows": 242, "amount_paid_cents": 660000, "donation_cents": 103500, "max_car_number": 244 },
+  "registrations_paid":   { "rows": 190, "amount_paid_cents": 567000, "donation_cents": 96500 },
+  "sponsors":             { "rows": 34,  "sponsorship_amount_cents": 1750000, "donation_cents": 30000 },
+  "sponsors_paid":        { "rows": 26,  "sponsorship_amount_cents": 1500000, "donation_cents": 30000 },
+  "show_expenses":        { "rows": 1,   "amount_cents": 200000 },
+  "award_categories":     { "rows": 9 },
+  "award_recommendations":{ "rows": 27 },
+  "sponsorship_tiers":    { "rows": 3,   "price_cents_total": 400000 },
+  "promo_codes":          { "rows": 0 },
+  "ad_campaigns":         { "rows": 0 },
+  "help_requests":        { "rows": 42 }
+}

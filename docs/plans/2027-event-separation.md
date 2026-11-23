@@ -25,13 +25,14 @@ What's in production today:
 | vehicle_specs, registration_photos, registration_audit_log | 209 / 116 / 956 | Inherits from its registration |
 | sponsor_audit_log | 171 | Inherits from its sponsor |
 | email_log, help_request_messages | 2005 / 74 | Inherits from its parent |
-| admins, app_settings, award_categories | 6 / 3 / 9 | No — shared across years |
+| award_categories | 9 | **Yes** — categories change each year |
+| admins, app_settings | 6 / 3 | No — shared across years |
 | marketing_prospects / marketing_sends | 177 / 287 | No — the mailing list spans years |
 | page_views*, arcade_scores | — | No — already dated, filter by date range |
 
 ## Recommendation: tag rows with an event, don't archive
 
-Add an `events` table and an `event_id` column to the seven "Yes" tables.
+Add an `events` table and an `event_id` column to the eight "Yes" tables.
 Everything else either inherits through its parent or is shared.
 
 **Why not archive 2026 into separate tables (what I suggested earlier):**
@@ -81,7 +82,7 @@ alter table registrations add column event_id uuid references events(id);
 alter table registrations alter column event_id set default current_event_id();
 alter table registrations alter column event_id set not null;
 -- same for sponsors, show_expenses, award_recommendations, promo_codes,
--- ad_campaigns, sponsorship_tiers; help_requests stays nullable.
+-- ad_campaigns, sponsorship_tiers, award_categories; help_requests stays nullable.
 create index on registrations (event_id);
 ```
 
@@ -116,7 +117,24 @@ per-event numbering:
   - `components/Winners.tsx` shows a *specific* past event (2026).
 - Child tables need no change — they're always fetched through their parent.
 
-### 5. Attendees and marketing stay cross-year (on purpose)
+### 5. Award categories per year
+
+Categories change each year, so `award_categories` gets `event_id` too. The
+nine 2026 categories stay attached to 2026 (the public Winners list and 2026
+award picks keep working). 2027 starts with an editable copy of the 2026 list
+so you can rename, add or retire categories in **Admin → Award Categories**
+without touching 2026. Uniqueness becomes `(event_id, name)`.
+`registrations.award_category` stores the category name, so it stays
+correct per year.
+
+### 6. Sponsors carry over as prospects
+
+After the migration, copy the 34 sponsors from 2026 into 2027 as new rows
+with status "prospect": name, company, contact info, website and logos carry
+over; amounts, payment, Stripe IDs and tokens do not. The 2026 rows stay as
+the record of what was paid.
+
+### 7. Attendees and marketing stay cross-year (on purpose)
 
 Attendee history gets a "Years attended" column. Marketing gets a
 "2026 entrants not yet registered for 2027" audience — the renewal list.
@@ -141,18 +159,13 @@ Attendee history gets a "Years attended" column. Marketing gets a
 Phases after this (separate work): replace hardcoded 2026 dates with the
 `events` row; reopen registration; 2027 sponsor tiers.
 
-## Decisions needed from you
+## Decisions (answered 2026-11-22)
 
-1. **Read-only 2026** — OK to lock past years in the admin? (Recommended: yes;
-   corrections to 2026 would be rare and can be done in SQL.)
-2. **Car numbers restart at #1 for 2027?** (Recommended: yes.)
-3. **Sponsors** — start 2027 with an empty list, or copy the 34 sponsors from
-   2026 in as "renewal prospects"? (Recommended: copy as prospects.)
-4. **Award categories** — same nine categories for 2027? (Recommended: keep
-   shared; add per-year only if they change.)
-5. **Supabase access** — the rehearsal is much easier if I can create a
-   Supabase branch. Finish the Supabase MCP sign-in, or I can do it against a
-   local Postgres restored from a backup.
+1. **2026 read-only in the admin** — yes.
+2. **Car numbers restart at #1 for 2027** — yes.
+3. **Sponsors** — copy the 2026 sponsors into 2027 as prospects.
+4. **Award categories** — change each year; made per-event (section 5).
+5. **Rehearsal** — on a Supabase branch.
 
 ## Size
 
