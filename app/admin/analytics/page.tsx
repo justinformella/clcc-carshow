@@ -402,6 +402,7 @@ export default function AnalyticsPage() {
   // Fetch AI insights when site tab is active (per viewed event)
   const [insightsEventId, setInsightsEventId] = useState<string | null>(null);
   const viewedEventIdRef = useRef<string | null>(null);
+  const insightsAttemptedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     viewedEventIdRef.current = event?.id ?? null;
   }, [event?.id]);
@@ -412,7 +413,10 @@ export default function AnalyticsPage() {
       setInsightsEventId(event.id);
       return;
     }
-    if (tab === "site" && !insights && !insightsLoading) {
+    // Try each year at most once per page load, so an error response (no
+    // insights) doesn't trigger an endless refetch loop
+    if (tab === "site" && !insights && !insightsLoading && !insightsAttemptedRef.current.has(event.id)) {
+      insightsAttemptedRef.current.add(event.id);
       const requestedFor = event.id;
       setInsightsLoading(true);
       fetch(`/api/analytics/insights?event=${event.id}`, { method: "POST" })
@@ -428,7 +432,7 @@ export default function AnalyticsPage() {
     setEnriching(true);
     setEnrichResult(null);
     try {
-      const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true }) });
+      const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true, event_id: event?.id }) });
       const data = await res.json();
       setEnrichResult(`${data.enriched} enriched`);
       const supabase = createClient();
@@ -868,7 +872,7 @@ export default function AnalyticsPage() {
                   setEnrichResult(null);
                   setSpecs([]);
                   try {
-                    const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true, force: true }) });
+                    const res = await fetch("/api/registrations/enrich", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batch: true, force: true, event_id: event?.id }) });
                     const data = await res.json();
                     setEnrichResult(`${data.enriched} re-enriched`);
                     const supabase = createClient();

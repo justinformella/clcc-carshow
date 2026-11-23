@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { resolveEvent } from "@/lib/events";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   try {
-    const { registration_id, batch, force } = await request.json();
+    const { registration_id, batch, force, event_id } = await request.json();
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -64,17 +65,22 @@ export async function POST(request: NextRequest) {
     // Get registrations to enrich
     let registrations;
     if (batch) {
-      // Force mode: delete all existing specs first so every vehicle gets re-enriched
-      if (force) {
-        await supabase.from("vehicle_specs").delete().neq("registration_id", "00000000-0000-0000-0000-000000000000");
-      }
+      // Batch work is limited to one show (?event / body.event_id, default
+      // current) so re-enriching 2027 never wipes 2026's specs.
+      const ev = await resolveEvent(supabase, event_id);
 
-      // Batch mode: enrich all registrations that don't have specs yet
+      // Batch mode: enrich this show's registrations that don't have specs yet
       const { data } = await supabase
         .from("registrations")
         .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_trim, vehicle_color")
+        .eq("event_id", ev.id)
         .in("payment_status", ["paid", "comped"])
         .order("car_number", { ascending: true });
+
+      // Force mode: delete this show's existing specs first so its vehicles get re-enriched
+      if (force && data && data.length > 0) {
+        await supabase.from("vehicle_specs").delete().in("registration_id", data.map((r) => r.id));
+      }
 
       const { data: existingSpecs } = await supabase
         .from("vehicle_specs")

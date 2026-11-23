@@ -41,7 +41,12 @@ export default function HelpRequestDetailPage() {
   const [updating, setUpdating] = useState(false);
 
   // Tickets tied to a past show are read only; tickets with no show stay editable.
-  const readOnly = !!request?.event_id && (!currentEvent || request.event_id !== currentEvent.id);
+  // Tickets are live correspondence: only resolved/closed tickets from a past
+  // show are read-only. An open ticket from any year can still be answered.
+  const readOnly =
+    !!request?.event_id &&
+    (!currentEvent || request.event_id !== currentEvent.id) &&
+    (request.status === "resolved" || request.status === "closed");
 
   const fetchRequest = useCallback(async () => {
     const supabase = createClient();

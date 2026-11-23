@@ -42,11 +42,16 @@ export default function HelpDeskPage() {
     const fetchData = async () => {
       const supabase = createClient();
       const [requestsRes, adminsRes, messagesRes] = await Promise.all([
-        // This show's tickets plus general tickets not tied to any show.
+        // Current show: its tickets, general tickets, and any still-open ticket
+        // from an earlier year (people reply to old threads). Past show: its own.
         supabase
           .from("help_requests")
           .select("*")
-          .or(`event_id.eq.${event.id},event_id.is.null`)
+          .or(
+            event.is_current
+              ? `event_id.eq.${event.id},event_id.is.null,status.in.(open,in_progress,waiting_on_submitter)`
+              : `event_id.eq.${event.id}`
+          )
           .order("created_at", { ascending: false }),
         supabase.from("admins").select("*").order("name"),
         supabase.from("help_request_messages").select("*").order("created_at", { ascending: false }),

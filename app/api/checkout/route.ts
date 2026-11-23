@@ -178,6 +178,8 @@ export async function POST(request: NextRequest) {
     // Build rows to insert — donation stored on first row only
     const rows = vehicles.map((v, index) => ({
       event_id: event.id,
+      // record what this show charges (the column default is a fixed 3000)
+      amount_paid: priceCents,
       first_name,
       last_name,
       email,

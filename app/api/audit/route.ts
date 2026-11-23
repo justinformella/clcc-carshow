@@ -24,9 +24,16 @@ const DAY_SECONDS = 24 * 60 * 60;
 // Stripe activity for a show is considered settled this long after show day
 const POST_SHOW_DAYS = 45;
 
-// Midnight (Central time, the show's timezone) at the start of a YYYY-MM-DD date, in unix seconds
+// Midnight (Central time, the show's timezone) at the start of a YYYY-MM-DD date, in unix seconds.
+// Uses the real America/Chicago offset for that date (CDT -5 in summer, CST -6 in winter).
 function startOfShowDay(date: string): number {
-  return Math.floor(new Date(`${date}T00:00:00-05:00`).getTime() / 1000);
+  const utcMidnight = new Date(`${date}T00:00:00Z`);
+  const tz = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", timeZoneName: "shortOffset" })
+    .formatToParts(utcMidnight)
+    .find((p) => p.type === "timeZoneName")?.value;
+  const match = tz?.match(/GMT([+-]\d+)/);
+  const offsetHours = match ? parseInt(match[1], 10) : -5;
+  return Math.floor(utcMidnight.getTime() / 1000) - offsetHours * 3600;
 }
 
 export async function GET(request: Request) {
@@ -104,6 +111,29 @@ export async function GET(request: Request) {
     }
   } catch (err) {
     console.error("Failed to fetch Stripe sessions:", err);
+  }
+
+  // Sessions this event's rows point to but that fall outside the window
+  // (e.g. a sponsor who paid months after the show): fetch them directly so
+  // they still count toward this event.
+  const missingIds = [...thisEventSessionIds].filter((id) => !sessions[id]);
+  for (let i = 0; i < missingIds.length; i += 10) {
+    await Promise.all(
+      missingIds.slice(i, i + 10).map(async (id) => {
+        try {
+          const session = await stripe.checkout.sessions.retrieve(id, { expand: ["payment_intent"] });
+          sessions[session.id] = {
+            id: session.id,
+            amount_total: session.amount_total || 0,
+            payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null,
+            payment_status: session.payment_status || "",
+            metadata: (session.metadata || {}) as Record<string, string>,
+          };
+        } catch {
+          // Not found in this Stripe account: reported as missing below
+        }
+      })
+    );
   }
 
   const issues: AuditIssue[] = [];
@@ -293,7 +323,10 @@ export async function GET(request: Request) {
     }
 
     // Get this event's payouts
-    for await (const payout of stripe.payouts.list({ created: { gte: partitionStart, lte: windowEnd }, limit: 100 })) {
+    // Past shows end exclusively at their cutoff so a payout at that exact
+    // second isn't also counted by the next show (which starts there).
+    const payoutRange = ev.is_current ? { gte: partitionStart, lte: windowEnd } : { gte: partitionStart, lt: windowEnd };
+    for await (const payout of stripe.payouts.list({ created: payoutRange, limit: 100 })) {
       if (payout.status === "paid") {
         stripeTotalPayouts += (payout.amount || 0);
       }

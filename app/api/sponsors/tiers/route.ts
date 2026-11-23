@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
   if (!name || price_cents == null) {
     return NextResponse.json({ error: "Name and price are required" }, { status: 400 });
   }
+  if (!event.is_current) {
+    return NextResponse.json({ error: `${event.year} is a past show and is read only` }, { status: 403 });
+  }
 
   const { data, error } = await supabase
     .from("sponsorship_tiers")
@@ -61,6 +64,20 @@ export async function PUT(request: NextRequest) {
 
   if (!id) {
     return NextResponse.json({ error: "Tier ID is required" }, { status: 400 });
+  }
+
+  // Past shows are read only
+  const { data: tier } = await supabase
+    .from("sponsorship_tiers")
+    .select("event_id, events!inner(is_current, year)")
+    .eq("id", id)
+    .maybeSingle();
+  const tierEvent = (tier as { events?: { is_current: boolean; year: number } } | null)?.events;
+  if (!tierEvent) {
+    return NextResponse.json({ error: "Tier not found" }, { status: 404 });
+  }
+  if (!tierEvent.is_current) {
+    return NextResponse.json({ error: `${tierEvent.year} is a past show and is read only` }, { status: 403 });
   }
 
   const { data, error } = await supabase

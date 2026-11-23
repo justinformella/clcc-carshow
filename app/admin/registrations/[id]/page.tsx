@@ -74,6 +74,8 @@ export default function RegistrationDetailPage() {
   // Past-year registrations are read-only. Until the current event is known,
   // default to read-only so no write control flashes enabled.
   const readOnly = !currentEvent || (!!registration && registration.event_id !== currentEvent.id);
+  // Cash payments are only possible for the current show, at its price
+  const priceCents = currentEvent?.registration_price_cents || REGISTRATION_PRICE_CENTS;
   const registrationYear = registration ? events.find((e) => e.id === registration.event_id)?.year ?? null : null;
 
   const registrationEventId = registration?.event_id;
@@ -224,7 +226,7 @@ export default function RegistrationDetailPage() {
       .update({
         payment_status: "paid",
         payment_method: "cash",
-        amount_paid: REGISTRATION_PRICE_CENTS,
+        amount_paid: priceCents,
         paid_at: new Date().toISOString(),
       })
       .eq("id", registration.id);
@@ -234,7 +236,7 @@ export default function RegistrationDetailPage() {
         ...registration,
         payment_status: "paid",
         payment_method: "cash",
-        amount_paid: REGISTRATION_PRICE_CENTS,
+        amount_paid: priceCents,
         paid_at: new Date().toISOString(),
       });
       fetchAuditLog();
@@ -719,7 +721,7 @@ export default function RegistrationDetailPage() {
             )}
             {!readOnly && r.payment_status === "pending" && (
               <ActionButton
-                label={`Cash Paid — $${(REGISTRATION_PRICE_CENTS / 100).toFixed(0)}`}
+                label={`Cash Paid — $${(priceCents / 100).toFixed(0)}`}
                 onClick={handleRecordCash}
                 variant="primary"
               />

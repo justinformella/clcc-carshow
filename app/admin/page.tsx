@@ -58,7 +58,9 @@ export default function AdminDashboard() {
         supabase
           .from("help_requests")
           .select("id, request_number, subject, email, name, priority, status, created_at")
-          .or(`event_id.eq.${eventId},event_id.is.null`)
+          // open tickets are operational: show them regardless of year when
+          // viewing the current show
+          .or(event.is_current ? `event_id.eq.${eventId},event_id.is.null,status.neq.closed` : `event_id.eq.${eventId}`)
           .in("status", ["open", "in_progress", "waiting_on_submitter"])
           .order("created_at", { ascending: false }),
         supabase

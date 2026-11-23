@@ -21,7 +21,11 @@ export default async function Winners() {
   // Winners come from the most recent past show (latest event that is not current)
   let pastEvent;
   try {
-    pastEvent = (await fetchEvents(supabase)).find((e) => !e.is_current);
+    // Latest show before the current one (events come newest first); ignores
+    // any future show created ahead of time
+    const events = await fetchEvents(supabase);
+    const current = events.find((e) => e.is_current);
+    pastEvent = events.find((e) => !e.is_current && (!current || e.year < current.year));
   } catch {
     return null;
   }

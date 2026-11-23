@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAdminEvent } from "@/components/admin/AdminEventContext";
 import type { ShowExpense } from "@/types/database";
@@ -20,15 +20,20 @@ export default function ExpensesPage() {
   const [form, setForm] = useState({ description: "", amount: "", memo: "", date: new Date().toISOString().split("T")[0] });
   const [saving, setSaving] = useState(false);
 
+  // The year currently on screen; late responses for another year are dropped.
+  const eventIdRef = useRef<string | null>(null);
+
   const fetchExpenses = async (eventId: string) => {
     const supabase = createClient();
     const { data } = await supabase.from("show_expenses").select("*").eq("event_id", eventId).order("date", { ascending: false });
+    if (eventIdRef.current !== eventId) return;
     setExpenses((data as ShowExpense[]) || []);
     setLoading(false);
   };
 
   useEffect(() => {
     if (!event) return;
+    eventIdRef.current = event.id;
     // Reset so the previous year's expenses never show under this year
     setLoading(true);
     setExpenses([]);
