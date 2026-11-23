@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 type ServiceStatus = {
   name: string;
@@ -7,7 +8,10 @@ type ServiceStatus = {
   error?: string;
 };
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const results: ServiceStatus[] = await Promise.all([
     checkGemini(),
     checkOpenAI(),

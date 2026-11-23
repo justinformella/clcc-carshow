@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase-server";
 import { fetchEvents, resolveEvent } from "@/lib/events";
@@ -29,6 +30,9 @@ function startOfShowDay(date: string): number {
 }
 
 export async function GET(request: Request) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const stripe = getStripe();
   const supabase = createServerClient();
   const ev = await resolveEvent(supabase, new URL(request.url).searchParams.get("event"));

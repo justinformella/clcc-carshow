@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const formData = await request.formData();
     const registrationId = formData.get("registration_id") as string;

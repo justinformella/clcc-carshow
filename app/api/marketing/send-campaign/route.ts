@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { getResend } from "@/lib/resend";
 import { getMarketingEmailHtml } from "@/lib/marketing-email-templates";
@@ -36,6 +37,9 @@ async function sendWithRetry(
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
 
   const { templateKey, prospectIds } = await request.json();

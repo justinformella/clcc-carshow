@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { id } = await params;
     const formData = await request.formData();
@@ -71,6 +75,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin(_request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { id } = await params;
     const supabase = createServerClient();

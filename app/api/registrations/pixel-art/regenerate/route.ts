@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { generateImage, buildRearPrompt, removeBackground, detectCarFacingLeft } from "@/lib/generate-pixel-art";
 import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { registration_id, type, model, quality, background } = await request.json();
 

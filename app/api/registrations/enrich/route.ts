@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 
@@ -46,6 +47,9 @@ const SPEC_SCHEMA = {
 };
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { registration_id, batch, force } = await request.json();
 

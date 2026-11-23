@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 import { resolveEvent } from "@/lib/events";
@@ -7,6 +8,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { id } = await params;
     const apiKey = process.env.OPENAI_API_KEY;

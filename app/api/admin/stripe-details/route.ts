@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { getStripe } from "@/lib/stripe";
 import type Stripe from "stripe";
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   let paymentIntentId = request.nextUrl.searchParams.get("payment_intent_id");
   const sessionId = request.nextUrl.searchParams.get("session_id");
 

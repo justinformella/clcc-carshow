@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { getResend } from "@/lib/resend";
 import { freeCarOfferEmail } from "@/lib/email-templates";
@@ -17,6 +18,9 @@ function generateCode(): string {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const reqBody = await request.json().catch(() => ({}));
   const selectedIds: string[] | undefined = reqBody.registration_ids;

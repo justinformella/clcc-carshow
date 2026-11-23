@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { generateImage, removeBackground } from "@/lib/generate-pixel-art";
 
@@ -139,6 +140,9 @@ const BMW_ASSETS = [
 ];
 
 export async function POST(req: Request) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { slug: onlySlug } = await req.json().catch(() => ({ slug: null }));
     const supabase = createServerClient();

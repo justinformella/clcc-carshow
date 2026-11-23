@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import OpenAI from "openai";
 import { fetchEvents, resolveEvent } from "@/lib/events";
@@ -13,6 +14,9 @@ interface InsightsResult {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const supabase = createServerClient();
     const ev = await resolveEvent(supabase, new URL(request.url).searchParams.get("event"));

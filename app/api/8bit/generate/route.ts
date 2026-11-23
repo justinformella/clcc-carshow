@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { generateImage } from "@/lib/generate-pixel-art";
 import { createServerClient } from "@/lib/supabase-server";
 import { getCurrentEvent } from "@/lib/events";
@@ -28,6 +29,9 @@ async function ensureBucket(supabase: ReturnType<typeof createServerClient>) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
+
   const body = await req.json().catch(() => ({}));
   const type: "hero" | "gallery" | "sponsors" | "all" = body.type ?? "all";
 

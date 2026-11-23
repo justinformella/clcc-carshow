@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { getCurrentEvent, getEventByYear, resolveEvent } from "@/lib/events";
 
@@ -35,6 +36,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const body = await request.json();
   const { name, display_order, is_active } = body;
@@ -69,6 +73,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const body = await request.json();
   const { id, name, display_order, is_active } = body;
@@ -95,6 +102,9 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const id = request.nextUrl.searchParams.get("id");
 

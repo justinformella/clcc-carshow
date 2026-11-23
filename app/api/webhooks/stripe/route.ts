@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase-server";
+import { internalAuthHeader } from "@/lib/requireAdmin";
 import { generateCarImage } from "@/lib/generate-car-image";
 import { sendConfirmation, sendAdminNotification, sendSponsorReceipt, sendSponsorPaymentAdminNotification } from "@/lib/email";
 import Stripe from "stripe";
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
           try {
             await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com"}/api/registrations/enrich`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...internalAuthHeader() },
               body: JSON.stringify({ registration_id: regId }),
             });
           } catch (err) {
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
           try {
             await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com"}/api/registrations/pixel-art`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...internalAuthHeader() },
               body: JSON.stringify({ registration_id: regId }),
             });
           } catch (err) {

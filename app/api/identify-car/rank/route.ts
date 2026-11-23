@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const geminiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!geminiKey) {
     return NextResponse.json({ error: "Gemini API key not configured" }, { status: 500 });

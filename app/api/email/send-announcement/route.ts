@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { sendAnnouncement } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { subject, body, recipientIds } = await request.json();
 

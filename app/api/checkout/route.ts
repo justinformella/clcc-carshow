@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase-server";
+import { internalAuthHeader } from "@/lib/requireAdmin";
 import { getCurrentEvent } from "@/lib/events";
 import {
   REGISTRATION_PRICE_CENTS,
@@ -273,7 +274,7 @@ export async function POST(request: NextRequest) {
       // Generate car image in background
       fetch(`${siteUrl}/api/generate-car-image`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...internalAuthHeader() },
         body: JSON.stringify({ registrationId: regId }),
       }).catch(() => {});
 

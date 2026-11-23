@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 
 const BUCKET = "public-files";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://crystallakecarshow.com";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const { data, error } = await supabase.storage.from(BUCKET).list("", {
     sortBy: { column: "name", order: "asc" },
@@ -27,6 +31,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const formData = await request.formData();
   const file = formData.get("file") as File;
@@ -56,6 +63,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const { name } = await request.json();
 

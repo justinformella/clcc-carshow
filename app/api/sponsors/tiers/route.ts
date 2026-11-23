@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { resolveEvent } from "@/lib/events";
 
 // GET: List all tiers (admin — includes inactive). Accepts ?event=<id>, defaults to current.
 export async function GET(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const event = await resolveEvent(supabase, request.nextUrl.searchParams.get("event"));
   const { data, error } = await supabase
@@ -20,6 +24,9 @@ export async function GET(request: NextRequest) {
 
 // POST: Create a new tier
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const body = await request.json();
   const { name, price_cents, benefits, display_order, is_active } = body;
@@ -44,6 +51,9 @@ export async function POST(request: NextRequest) {
 
 // PUT: Update an existing tier
 export async function PUT(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createServerClient();
   const body = await request.json();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

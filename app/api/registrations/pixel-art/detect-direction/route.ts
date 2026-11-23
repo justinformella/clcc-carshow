@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { detectCarFacingLeft } from "@/lib/generate-pixel-art";
 
@@ -10,6 +11,9 @@ import { detectCarFacingLeft } from "@/lib/generate-pixel-art";
  * POST { backfill: true, dry_run: true }     — preview without updating
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = await request.json();
     const supabase = createServerClient();

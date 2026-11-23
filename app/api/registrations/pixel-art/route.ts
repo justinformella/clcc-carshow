@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { generatePixelArt, generateImage, buildRearPrompt, removeBackground } from "@/lib/generate-pixel-art";
 
@@ -38,6 +39,9 @@ async function generateRearOnly(registrationId: string): Promise<void> {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { registration_id, batch, batch_rear } = await request.json();
 

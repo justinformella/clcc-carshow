@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import OpenAI from "openai";
 import { createServerClient } from "@/lib/supabase-server";
 import { resolveEvent } from "@/lib/events";
@@ -18,6 +19,9 @@ type Recommendation = AIRec & {
 // Generates recommendations for one show's registrations and categories.
 // Only the current show can be (re)generated; past shows are read only.
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { createServerClient } from "@/lib/supabase-server";
 import { sendHelpRequestReplyNotification } from "@/lib/email";
 import { resolveEvent } from "@/lib/events";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = await request.json();
     const { registration_id, name, email, subject, message, admin_name, admin_email, event_id } = body;
